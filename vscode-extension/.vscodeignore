@@ -1,0 +1,32 @@
+# Source files
+src/**
+!src/extension.ts
+
+# Development files
+.vscode/**
+.vscode-test/**
+.gitignore
+.git/**
+.github/**
+node_modules/**
+scripts/**
+tsconfig.json
+.vscodeignore
+*.vsix
+publish/**
+.DS_Store
+
+# Test files
+test/**
+out/test/**
+*.test.ts
+*.spec.ts
+
+# Build output (except the compiled extension)
+out/**
+!out/extension.js
+!out/extension.js.map
+
+# Documentation
+*.md
+!README.md 
