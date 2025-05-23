@@ -3,20 +3,22 @@ import traverse from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { resolve, basename } from 'path';
+import { resolve, basename, relative, dirname } from 'path';
 import { TypeChecker } from '../typeChecker';
 
 interface CompileOptions {
   watch?: boolean;
   outDir?: string;
   sourceFile?: string;
+  sourceRoot?: string;
 }
 
 export async function compile(options: CompileOptions = {}): Promise<void> {
   const { 
     watch = false,
     outDir = './dist',
-    sourceFile = './examples/todo-list.sjs'
+    sourceFile = './examples/todo-list.sjs',
+    sourceRoot = process.cwd()
   } = options;
 
   // Initialize type checker
@@ -36,6 +38,7 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
         'classPrivateProperties',
         'classPrivateMethods'
       ],
+      sourceFilename: relative(sourceRoot, resolvedSourceFile)
     });
 
     // Type checking phase
@@ -132,21 +135,34 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
 
     // Code generation phase
     console.log('Generating code...');
-    const { code } = generate(ast, {
-      retainLines: true,
-      compact: false,
-      sourceMaps: true
-    });
 
     // Ensure output directory exists
     const outputDir = resolve(process.cwd(), outDir);
     mkdirSync(outputDir, { recursive: true });
 
-    // Write the output file
+    // Setup output paths
     const outputFile = resolve(outputDir, basename(sourceFile).replace(/\.sjs$/, '.js'));
-    writeFileSync(outputFile, code);
+    const outputMapFile = outputFile + '.map';
+    const sourceMapRelativePath = basename(outputMapFile);
+
+    // Generate code with source maps
+    const { code, map } = generate(ast, {
+      retainLines: true,
+      compact: false,
+      sourceMaps: true,
+      sourceFileName: relative(sourceRoot, resolvedSourceFile),
+      sourceRoot: relative(dirname(outputFile), sourceRoot)
+    });
+
+    // Add source map comment to generated code
+    const codeWithSourceMap = code + '\n//# sourceMappingURL=' + sourceMapRelativePath + '\n';
+
+    // Write the output files
+    writeFileSync(outputFile, codeWithSourceMap);
+    writeFileSync(outputMapFile, JSON.stringify(map));
 
     console.log(`Output written to ${outputFile}`);
+    console.log(`Source map written to ${outputMapFile}`);
     console.log('Compilation successful');
 
     if (watch) {

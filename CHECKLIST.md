@@ -23,7 +23,7 @@
 ### Parser
 - [x] Create lexer for tokenization
 - [x] Implement parser for super.js syntax
-- [ ] Add source map support
+- [x] Add source map support
 - [ ] Add error recovery
 - [x] Add AST validation
 
@@ -33,7 +33,7 @@
 - [x] Add source transformation
 - [x] Add code generation
 - [ ] Add optimization passes
-- [ ] Add source map generation
+- [x] Add source map generation
 - [ ] Add watch mode support
 
 ## 3. Built-in Tools Integration
@@ -130,9 +130,9 @@
 Core Language Implementation (Phase 2)
 
 ### Next Steps
-1. Add source map support
-2. Add optimization passes
-3. Add watch mode support
+1. Add optimization passes
+2. Add watch mode support
+3. Add error recovery
 
 ### Completed Phases
 - Project structure and initial setup
@@ -140,6 +140,7 @@ Core Language Implementation (Phase 2)
 - Core module structure
 - Type stripping and code generation
 - Example project creation
+- Source map support
 
 ### In Progress
 - Core language implementation
@@ -152,4 +153,5 @@ Core Language Implementation (Phase 2)
 - Documentation should be updated as features are added
 - Type stripping and code generation are working well
 - Private fields are correctly transformed to use # prefix
-- Union types and interfaces are properly handled 
+- Union types and interfaces are properly handled
+- Source maps are generated for better debugging
