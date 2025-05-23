@@ -17,7 +17,21 @@
     "example:todo": "node dist/cli.js build --source examples/todo-list.sjs",
     "example:watch": "node dist/cli.js build --source examples/todo-list.sjs --watch",
     "examples": "npm run example:todo",
-    "build:examples": "for file in examples/**/*.sjs; do node dist/cli.js build --source \"$file\"; done"
+    "build:examples": "for file in examples/**/*.sjs; do node dist/cli.js build --source \"$file\"; done",
+    "start:dev": "ts-node src/cli.ts",
+    "watch:dev": "ts-node-dev --respawn src/cli.ts",
+    "compile": "ts-node src/cli.ts build --source",
+    "compile:watch": "ts-node-dev --respawn src/cli.ts build --source",
+    "compile:dir": "ts-node src/cli.ts build --dir",
+    "compile:all": "ts-node src/cli.ts build --dir ./",
+    "compile:examples": "ts-node src/cli.ts build --dir ./examples",
+    "compile:watch:dir": "ts-node-dev --respawn src/cli.ts build --dir",
+    "run": "node",
+    "run:example": "npm run compile -- examples/todo-list.sjs && node dist/examples/todo-list.js",
+    "run:file": "node scripts/run-sjs.js",
+    "run:dir": "node scripts/run-dir.js",
+    "run:all": "node scripts/run-all.js",
+    "run:examples": "node scripts/run-examples.js"
   },
   "keywords": [
     "javascript",
@@ -50,9 +64,10 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "ts-jest": "^29.1.2",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
   }
-} 
+}

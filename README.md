@@ -33,7 +33,82 @@ superjs init my-project
 cd my-project
 ```
 
-### Running the compiler
+### Development with ts-node
+
+For rapid development, you can use ts-node to run the compiler directly without building:
+
+```bash
+# Start the compiler in development mode
+npm run start:dev
+
+# Run with file watching (auto-reload)
+npm run watch:dev
+
+# Compile a single file
+npm run compile -- path/to/your/file.sjs
+
+# Compile a single file with watch mode
+npm run compile:watch -- path/to/your/file.sjs
+
+# Compile all files in a directory
+npm run compile:dir -- ./src
+
+# Compile all files in the project
+npm run compile:all
+
+# Compile all example files
+npm run compile:examples
+
+# Watch and compile files in a directory
+npm run compile:watch:dir -- ./src
+```
+
+The compiler will automatically:
+- Find all `.sjs` files in the specified directory
+- Maintain the directory structure in the output
+- Generate source maps for debugging
+- Skip files that haven't changed
+- Report compilation errors for all files
+
+### Directory Structure Example
+
+```
+project/
+├── src/
+│   ├── models/
+│   │   └── user.sjs
+│   ├── utils/
+│   │   └── helpers.sjs
+│   └── index.sjs
+└── dist/
+    ├── models/
+    │   └── user.js
+    ├── utils/
+    │   └── helpers.js
+    └── index.js
+```
+
+To compile the above structure:
+```bash
+# Compile everything
+npm run compile:all
+
+# Compile just the src directory
+npm run compile:dir -- ./src
+
+# Compile a specific subdirectory
+npm run compile:dir -- ./src/models
+```
+
+### Production Build
+
+For production use, build the compiler first:
+
+```bash
+npm run build
+```
+
+Then run the compiled version:
 
 ```bash
 superjs build
@@ -151,4 +226,49 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details. 
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js >= 14.0.0
+- npm >= 6.0.0
+
+### Local Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-org/super-js.git
+cd super-js
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start development:
+```bash
+# Using ts-node (recommended for development)
+npm run start:dev
+
+# Or with file watching
+npm run watch:dev
+```
+
+4. Build for production:
+```bash
+npm run build
+```
+
+### Development Scripts
+
+- `npm run start:dev` - Run compiler directly using ts-node
+- `npm run watch:dev` - Run compiler with auto-reload on changes
+- `npm run compile` - Compile a specific file using ts-node
+- `npm run compile:watch` - Watch and compile a specific file
+- `npm run build` - Build for production
+- `npm run test` - Run tests
+- `npm run lint` - Run linter
+- `npm run format` - Format code 

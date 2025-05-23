@@ -20,12 +20,14 @@ program
   .option('-w, --watch', 'Watch mode')
   .option('-o, --outDir <dir>', 'Output directory', './dist')
   .option('-s, --source <file>', 'Source file to compile')
+  .option('-d, --dir <directory>', 'Directory containing .sjs files to compile')
   .action(async (options) => {
     try {
       await compile({
         watch: options.watch,
         outDir: options.outDir,
-        sourceFile: options.source
+        sourceFile: options.source,
+        directory: options.dir
       });
     } catch (error) {
       console.error('Build failed:', error);
