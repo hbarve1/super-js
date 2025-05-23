@@ -16,7 +16,8 @@
     "prepare": "npm run build",
     "example:todo": "node dist/cli.js build --source examples/todo-list.sjs",
     "example:watch": "node dist/cli.js build --source examples/todo-list.sjs --watch",
-    "examples": "npm run example:todo"
+    "examples": "npm run example:todo",
+    "build:examples": "for file in examples/**/*.sjs; do node dist/cli.js build --source \"$file\"; done"
   },
   "keywords": [
     "javascript",
