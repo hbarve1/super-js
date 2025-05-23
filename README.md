@@ -272,3 +272,32 @@ npm run build
 - `npm run test` - Run tests
 - `npm run lint` - Run linter
 - `npm run format` - Format code 
+
+## Build System
+
+super.js comes with a powerful and flexible build system that supports:
+
+- Parallel compilation
+- Source maps
+- Incremental builds
+- Custom output organization
+- Build caching
+- Watch mode
+
+For detailed information about the build system, configuration options, and best practices, see [Build Documentation](docs/BUILD.md).
+
+### Quick Start
+
+```bash
+# Compile a single file
+npm run run:file path/to/file.sjs
+
+# Compile a directory
+npm run run:dir path/to/directory
+
+# Watch mode
+npm run build:watch
+
+# Clean and rebuild
+npm run build:clean
+``` 

@@ -50,7 +50,7 @@ if (files.length === 0) {
 
 // Compile all files first
 console.log('Compiling all files...');
-const compile = spawn('npm', ['run', 'compile:dir', '--', directory], {
+const compile = spawn('npm', ['run', 'compile:dir', '--', directory, '--outDir', 'build'], {
   stdio: 'inherit',
   shell: true
 });
@@ -65,7 +65,7 @@ compile.on('close', async (code) => {
   console.log('\nRunning compiled files:');
   for (const file of files) {
     const relativeFile = relative(cwd, file);
-    const compiledFile = join('dist', relativeFile).replace(/\.sjs$/, '.js');
+    const compiledFile = join('build', relativeFile).replace(/\.sjs$/, '.js');
     
     if (!existsSync(compiledFile)) {
       console.error(`Compiled file not found: ${compiledFile}`);

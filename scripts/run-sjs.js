@@ -1,55 +1,66 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process');
-const { resolve, relative, join } = require('path');
+const { resolve, relative } = require('path');
 const { existsSync } = require('fs');
+const { ensureDirs, cleanDirs, getOutputPath, compileFile } = require('./build-utils');
+const config = require('../build.config');
 
-// Get the source file from command line arguments
-const sourceFile = process.argv[2];
-if (!sourceFile) {
-  console.error('Please provide a .sjs file to run');
-  process.exit(1);
-}
+async function main() {
+  try {
+    // Get the source file from command line arguments
+    const sourceFile = process.argv[2];
+    if (!sourceFile) {
+      console.error('Please provide a .sjs file to run');
+      process.exit(1);
+    }
 
-// Resolve paths
-const cwd = process.cwd();
-const resolvedSource = resolve(cwd, sourceFile);
-const distPath = resolve(cwd, 'dist');
-const relativeSource = relative(cwd, resolvedSource);
-const compiledFile = join(distPath, relativeSource).replace(/\.sjs$/, '.js');
+    // Resolve paths
+    const cwd = process.cwd();
+    const resolvedSource = resolve(cwd, sourceFile);
 
-// Check if source file exists
-if (!existsSync(resolvedSource)) {
-  console.error(`Source file not found: ${resolvedSource}`);
-  process.exit(1);
-}
+    // Check if source file exists
+    if (!existsSync(resolvedSource)) {
+      console.error(`Source file not found: ${resolvedSource}`);
+      process.exit(1);
+    }
 
-// First compile the file
-const compile = spawn('npm', ['run', 'compile', '--', sourceFile], {
-  stdio: 'inherit',
-  shell: true
-});
+    // Setup build environment
+    if (config.clean.beforeBuild) {
+      console.log('Cleaning build directories...');
+      cleanDirs();
+    }
+    
+    console.log('Ensuring build directories exist...');
+    ensureDirs();
 
-compile.on('close', (code) => {
-  if (code !== 0) {
-    console.error('Compilation failed');
-    process.exit(code);
-  }
+    // Get output path
+    const compiledFile = getOutputPath(resolvedSource).replace(/\.sjs$/, '.js');
 
-  // Check if compiled file exists
-  if (!existsSync(compiledFile)) {
-    console.error(`Compiled file not found: ${compiledFile}`);
+    // Compile the file
+    console.log(`Compiling ${relative(cwd, resolvedSource)}...`);
+    await compileFile(resolvedSource);
+
+    // Check if compiled file exists
+    if (!existsSync(compiledFile)) {
+      console.error(`Compiled file not found: ${compiledFile}`);
+      process.exit(1);
+    }
+
+    // Run the compiled file
+    console.log(`Running ${relative(cwd, compiledFile)}...`);
+    const run = spawn('node', [compiledFile], {
+      stdio: 'inherit',
+      shell: true
+    });
+
+    run.on('close', (code) => {
+      process.exit(code);
+    });
+  } catch (error) {
+    console.error('Error:', error.message);
     process.exit(1);
   }
+}
 
-  // Run the compiled file
-  console.log(`Running ${compiledFile}...`);
-  const run = spawn('node', [compiledFile], {
-    stdio: 'inherit',
-    shell: true
-  });
-
-  run.on('close', (code) => {
-    process.exit(code);
-  });
-}); 
+main(); 
