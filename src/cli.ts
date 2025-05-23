@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+
+import { Command } from 'commander';
+import { version } from '../package.json';
+import { compile } from './compiler';
+import { lint } from './linter';
+import { format } from './formatter';
+import { runTests } from './tester';
+
+const program = new Command();
+
+program
+  .name('superjs')
+  .description('super.js compiler and development tools')
+  .version(version);
+
+program
+  .command('build')
+  .description('Build the project')
+  .option('-w, --watch', 'Watch mode')
+  .option('-o, --outDir <dir>', 'Output directory', './dist')
+  .action(async (options) => {
+    try {
+      await compile({
+        watch: options.watch,
+        outDir: options.outDir,
+      });
+    } catch (error) {
+      console.error('Build failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('lint')
+  .description('Lint source files')
+  .option('--fix', 'Automatically fix problems')
+  .action(async (options) => {
+    try {
+      await lint({
+        fix: options.fix,
+      });
+    } catch (error) {
+      console.error('Linting failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('format')
+  .description('Format source files')
+  .option('--check', 'Check if files are formatted')
+  .action(async (options) => {
+    try {
+      await format({
+        check: options.check,
+      });
+    } catch (error) {
+      console.error('Formatting failed:', error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('test')
+  .description('Run tests')
+  .option('-w, --watch', 'Watch mode')
+  .option('--coverage', 'Generate coverage report')
+  .action(async (options) => {
+    try {
+      await runTests({
+        watch: options.watch,
+        coverage: options.coverage,
+      });
+    } catch (error) {
+      console.error('Tests failed:', error);
+      process.exit(1);
+    }
+  });
+
+program.parse(); 
