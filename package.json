@@ -13,7 +13,10 @@
     "test": "jest",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "example:todo": "node dist/cli.js build --source examples/todo-list.sjs",
+    "example:watch": "node dist/cli.js build --source examples/todo-list.sjs --watch",
+    "examples": "npm run example:todo"
   },
   "keywords": [
     "javascript",
