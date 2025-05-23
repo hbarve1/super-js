@@ -2,6 +2,7 @@ import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
+import { transformFromAstSync } from '@babel/core';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'fs';
 import { resolve, basename, relative, dirname, join } from 'path';
 import { TypeChecker } from '../typeChecker';
@@ -12,6 +13,9 @@ interface CompileOptions {
   sourceFile?: string;
   sourceRoot?: string;
   directory?: string;
+  target?: string;
+  jsxPragma?: string;
+  jsxFragmentPragma?: string;
 }
 
 function findSjsFiles(dir: string): string[] {
@@ -40,7 +44,10 @@ async function compileFile(
   sourceFile: string,
   outDir: string,
   sourceRoot: string,
-  typeChecker: TypeChecker
+  typeChecker: TypeChecker,
+  target: string = 'es2022',
+  jsxPragma: string = 'sjs.createElement',
+  jsxFragmentPragma: string = 'sjs.Fragment'
 ): Promise<void> {
   const resolvedSourceFile = resolve(process.cwd(), sourceFile);
   console.log(`Compiling ${resolvedSourceFile}...`);
@@ -51,6 +58,7 @@ async function compileFile(
     sourceType: 'module',
     plugins: [
       'typescript',
+      ['jsx', { throwIfNamespace: false }],
       'classProperties',
       'classPrivateProperties',
       'classPrivateMethods',
@@ -239,13 +247,42 @@ async function compileFile(
   const outputMapFile = outputFile + '.map';
   const sourceMapRelativePath = basename(outputMapFile);
 
+  // Transform AST with preset-env and custom JSX transform
+  const { ast: transformedAst } = transformFromAstSync(ast, sourceCode, {
+    presets: [
+      ['@babel/preset-env', {
+        targets: {
+          [target]: true
+        }
+      }]
+    ],
+    plugins: [
+      ['@babel/plugin-transform-react-jsx', {
+        pragma: jsxPragma,
+        pragmaFrag: jsxFragmentPragma,
+        runtime: 'classic',
+        useBuiltIns: true
+      }]
+    ],
+    sourceMaps: true,
+    sourceFileName: relative(sourceRoot, resolvedSourceFile),
+    sourceRoot: relative(dirname(outputFile), sourceRoot)
+  }) || { ast: null };
+
+  if (!transformedAst) {
+    throw new Error('Failed to transform AST');
+  }
+
   // Generate code with source maps
-  const { code, map } = generate(ast, {
+  const { code, map } = generate(transformedAst, {
     retainLines: true,
     compact: false,
     sourceMaps: true,
     sourceFileName: relative(sourceRoot, resolvedSourceFile),
-    sourceRoot: relative(dirname(outputFile), sourceRoot)
+    sourceRoot: relative(dirname(outputFile), sourceRoot),
+    jsescOption: {
+      minimal: true
+    }
   });
 
   // Add source map comment to generated code
@@ -265,7 +302,10 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
     outDir = './dist',
     sourceFile,
     sourceRoot = process.cwd(),
-    directory
+    directory,
+    target = 'es2022',
+    jsxPragma = 'sjs.createElement',
+    jsxFragmentPragma = 'sjs.Fragment'
   } = options;
 
   // Initialize type checker
@@ -281,13 +321,13 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
       console.log(`Found ${files.length} .sjs files`);
       
       for (const file of files) {
-        await compileFile(file, outDir, sourceRoot, typeChecker);
+        await compileFile(file, outDir, sourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma);
       }
       
       console.log('Directory compilation successful');
     } else if (sourceFile) {
       // Compile single file
-      await compileFile(sourceFile, outDir, sourceRoot, typeChecker);
+      await compileFile(sourceFile, outDir, sourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma);
       console.log('File compilation successful');
     } else {
       throw new Error('Either --source or --dir option must be specified');

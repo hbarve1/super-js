@@ -21,13 +21,19 @@ program
   .option('-o, --outDir <dir>', 'Output directory', './dist')
   .option('-s, --source <file>', 'Source file to compile')
   .option('-d, --dir <directory>', 'Directory containing .sjs files to compile')
+  .option('-t, --target <version>', 'JavaScript version to target (es5, es2015, es2016, es2017, es2018, es2019, es2020, es2021, es2022)', 'es2022')
+  .option('--jsx-pragma <pragma>', 'JSX pragma to use (default: React.createElement)')
+  .option('--jsx-fragment-pragma <pragma>', 'JSX fragment pragma to use (default: React.Fragment)')
   .action(async (options) => {
     try {
       await compile({
         watch: options.watch,
         outDir: options.outDir,
         sourceFile: options.source,
-        directory: options.dir
+        directory: options.dir,
+        target: options.target,
+        jsxPragma: options.jsxPragma,
+        jsxFragmentPragma: options.jsxFragmentPragma
       });
     } catch (error) {
       console.error('Build failed:', error);
