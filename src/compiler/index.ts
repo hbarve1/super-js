@@ -1,9 +1,7 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import * as t from '@babel/types';
 import { readFileSync } from 'fs';
 import { TypeChecker } from '../typeChecker';
-import { TransformOptions } from './types';
 
 interface CompileOptions {
   watch?: boolean;
@@ -11,7 +9,7 @@ interface CompileOptions {
 }
 
 export async function compile(options: CompileOptions = {}): Promise<void> {
-  const { watch = false, outDir = './dist' } = options;
+  const { watch = false } = options;
 
   // Initialize type checker
   const typeChecker = new TypeChecker();
@@ -31,14 +29,6 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
       },
     });
 
-    // Transform phase (remove types, etc.)
-    const transformOptions: TransformOptions = {
-      target: 'ES2020',
-      module: 'commonjs',
-      sourceMaps: true,
-    };
-
-    // TODO: Implement transformation
     console.log('Compilation successful');
 
     if (watch) {
