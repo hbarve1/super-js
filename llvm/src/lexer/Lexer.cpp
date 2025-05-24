@@ -37,10 +37,19 @@ namespace {
         {"abstract", TokenKind::Abstract},
         {"async", TokenKind::Async},
         {"await", TokenKind::Await},
-        {"true", TokenKind::Boolean},
-        {"false", TokenKind::Boolean},
+        {"true", TokenKind::True},
+        {"false", TokenKind::False},
         {"null", TokenKind::Null},
-        {"undefined", TokenKind::Undefined}
+        {"undefined", TokenKind::Undefined},
+        // Type-related keywords
+        {"number", TokenKind::Number},
+        {"string", TokenKind::String},
+        {"boolean", TokenKind::Boolean},
+        {"any", TokenKind::Any},
+        {"unknown", TokenKind::Unknown},
+        {"never", TokenKind::Never},
+        {"object", TokenKind::Object},
+        {"array", TokenKind::Array}
     };
 }
 
@@ -237,7 +246,7 @@ Token Lexer::scanNumber() {
         while (std::isdigit(currentChar())) advance();
     }
     
-    return makeToken(TokenKind::Number);
+    return makeToken(TokenKind::NumberLiteral);
 }
 
 Token Lexer::scanString() {
@@ -255,7 +264,7 @@ Token Lexer::scanString() {
     }
     
     advance(); // Consume the closing quote
-    return makeToken(TokenKind::String);
+    return makeToken(TokenKind::StringLiteral);
 }
 
 Token Lexer::scanTemplate() {

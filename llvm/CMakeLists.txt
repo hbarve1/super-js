@@ -31,14 +31,22 @@ link_directories(${LLVM_LIBRARY_DIRS})
 # Add subdirectories
 add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
+add_subdirectory(src/ast)
 
 # Add executable
-add_executable(superjs src/main.cpp)
-target_link_libraries(superjs
-    PRIVATE
-        superjs_lexer
-        superjs_parser
-        ${LLVM_AVAILABLE_LIBS}
+add_executable(superjs main.cpp)
+
+# Set include directories
+target_include_directories(superjs PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+# Link libraries
+target_link_libraries(superjs PRIVATE
+    superjs_lexer
+    superjs_parser
+    superjs_ast
 )
 
 # Add tests
@@ -48,6 +56,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(superjs_tests
     tests/lexer_test.cpp
     tests/parser_test.cpp
+    tests/semantic_test.cpp
 )
 
 target_include_directories(superjs_tests
@@ -59,6 +68,7 @@ target_link_libraries(superjs_tests
     PRIVATE
         superjs_lexer
         superjs_parser
+        superjs_ast
         ${GTEST_LIBRARIES}
         ${GTEST_MAIN_LIBRARIES}
         pthread
@@ -76,4 +86,10 @@ install(DIRECTORY include/ DESTINATION include)
 install(TARGETS superjs
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib) 
+        ARCHIVE DESTINATION lib)
+
+target_include_directories(superjs
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+) 
