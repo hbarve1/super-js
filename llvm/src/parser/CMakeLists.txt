@@ -1,16 +1,14 @@
-add_library(superjs_parser
+add_library(parser
     Parser.cpp
 )
 
-target_include_directories(superjs_parser
+target_include_directories(parser
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
 )
 
-target_link_libraries(superjs_parser
+target_link_libraries(parser
     PRIVATE
-        superjs_lexer
-        superjs_ast
+        lexer
+        ast
 ) 

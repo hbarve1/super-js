@@ -1,19 +1,14 @@
-add_library(superjs_ast
+add_library(ast
     AST.cpp
 )
 
-target_include_directories(superjs_ast
+target_include_directories(ast
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/lexer
-        ${CMAKE_SOURCE_DIR}/src/parser
-        ${CMAKE_SOURCE_DIR}/src/ast
 )
 
-target_link_libraries(superjs_ast
+target_link_libraries(ast
     PRIVATE
-        superjs_lexer
-        superjs_parser
+        lexer
+        parser
 ) 

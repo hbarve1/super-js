@@ -29,6 +29,7 @@ include_directories(
 )
 
 # Add subdirectories
+add_subdirectory(src/token)
 add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
 add_subdirectory(src/ast)
@@ -41,18 +42,14 @@ add_executable(superjs main.cpp)
 target_include_directories(superjs PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/lexer
-    ${CMAKE_SOURCE_DIR}/src/parser
-    ${CMAKE_SOURCE_DIR}/src/ast
-    ${CMAKE_SOURCE_DIR}/src/semantic
 )
 
 # Link libraries
 target_link_libraries(superjs PRIVATE
-    superjs_lexer
-    superjs_parser
-    superjs_ast
-    superjs_semantic
+    lexer
+    parser
+    ast
+    semantic
 )
 
 # Add tests
@@ -68,17 +65,13 @@ add_executable(superjs_tests
 target_include_directories(superjs_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/lexer
-    ${CMAKE_SOURCE_DIR}/src/parser
-    ${CMAKE_SOURCE_DIR}/src/ast
-    ${CMAKE_SOURCE_DIR}/src/semantic
 )
 
 target_link_libraries(superjs_tests PRIVATE
-    superjs_lexer
-    superjs_parser
-    superjs_ast
-    superjs_semantic
+    lexer
+    parser
+    ast
+    semantic
     ${GTEST_LIBRARIES}
     ${GTEST_MAIN_LIBRARIES}
     pthread
