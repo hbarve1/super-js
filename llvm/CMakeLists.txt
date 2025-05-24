@@ -29,11 +29,42 @@ include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
 # Add subdirectories
-add_subdirectory(src)
-add_subdirectory(tests)
+add_subdirectory(src/lexer)
+add_subdirectory(src/parser)
 
-# Enable testing
+# Add executable
+add_executable(superjs src/main.cpp)
+target_link_libraries(superjs
+    PRIVATE
+        superjs_lexer
+        superjs_parser
+        ${LLVM_AVAILABLE_LIBS}
+)
+
+# Add tests
 enable_testing()
+include_directories(${GTEST_INCLUDE_DIRS})
+
+add_executable(superjs_tests
+    tests/lexer_test.cpp
+    tests/parser_test.cpp
+)
+
+target_include_directories(superjs_tests
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(superjs_tests
+    PRIVATE
+        superjs_lexer
+        superjs_parser
+        ${GTEST_LIBRARIES}
+        ${GTEST_MAIN_LIBRARIES}
+        pthread
+)
+
+add_test(NAME superjs_tests COMMAND superjs_tests)
 
 # Set output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
