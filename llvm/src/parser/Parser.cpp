@@ -230,15 +230,115 @@ void Parser::synchronize() {
 }
 
 std::unique_ptr<Statement> Parser::parseForStatement() {
-    throw std::runtime_error("parseForStatement not implemented");
+    consume(TokenKind::LeftParen, "Expect '(' after 'for'.");
+
+    // Parse initializer
+    std::unique_ptr<Statement> initializer;
+    if (match(TokenKind::Semicolon)) {
+        initializer = nullptr;
+    } else if (match(TokenKind::Let) || match(TokenKind::Const) || match(TokenKind::Var)) {
+        initializer = parseVariableDeclaration();
+    } else {
+        initializer = parseExpressionStatement();
+    }
+
+    // Parse condition
+    std::unique_ptr<Expression> condition;
+    if (!check(TokenKind::Semicolon)) {
+        condition = parseExpression();
+    }
+    consume(TokenKind::Semicolon, "Expect ';' after loop condition.");
+
+    // Parse increment
+    std::unique_ptr<Expression> increment;
+    if (!check(TokenKind::RightParen)) {
+        increment = parseExpression();
+    }
+    consume(TokenKind::RightParen, "Expect ')' after for clauses.");
+
+    // Parse body
+    auto body = parseStatement();
+
+    // If increment exists, append it to the end of the loop body
+    if (increment) {
+        std::vector<std::unique_ptr<Statement>> bodyStmts;
+        if (auto* block = dynamic_cast<BlockStatement*>(body.get())) {
+            bodyStmts = std::move(block->statements);
+        } else {
+            bodyStmts.push_back(std::move(body));
+        }
+        bodyStmts.push_back(std::make_unique<ExpressionStatement>(std::move(increment)));
+        body = std::make_unique<BlockStatement>(std::move(bodyStmts));
+    }
+
+    // If no condition, use 'true' as the condition
+    if (!condition) {
+        Token trueToken;
+        trueToken.kind = TokenKind::True;
+        condition = std::make_unique<LiteralExpression>(trueToken);
+    }
+
+    // Create the while loop
+    auto whileStmt = std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+
+    // If initializer exists, wrap everything in a block
+    if (initializer) {
+        std::vector<std::unique_ptr<Statement>> stmts;
+        stmts.push_back(std::move(initializer));
+        stmts.push_back(std::move(whileStmt));
+        return std::make_unique<BlockStatement>(std::move(stmts));
+    } else {
+        return whileStmt;
+    }
 }
 
 std::unique_ptr<Statement> Parser::parseFunctionDeclaration() {
-    throw std::runtime_error("parseFunctionDeclaration not implemented");
+    // Parse the function name
+    Token name = consume(TokenKind::Identifier, "Expect function name.");
+    
+    // Parse the parameter list
+    consume(TokenKind::LeftParen, "Expect '(' after function name.");
+    std::vector<Token> parameters;
+    
+    if (!check(TokenKind::RightParen)) {
+        do {
+            if (parameters.size() >= 255) {
+                throw std::runtime_error("Cannot have more than 255 parameters.");
+            }
+            
+            parameters.push_back(consume(TokenKind::Identifier, "Expect parameter name."));
+        } while (match(TokenKind::Comma));
+    }
+    
+    consume(TokenKind::RightParen, "Expect ')' after parameters.");
+    
+    // Parse the function body
+    consume(TokenKind::LeftBrace, "Expect '{' before function body.");
+    auto body = std::unique_ptr<BlockStatement>(dynamic_cast<BlockStatement*>(parseBlockStatement().release()));
+    if (!body) {
+        throw std::runtime_error("Function body must be a block statement.");
+    }
+    
+    return std::make_unique<FunctionDeclaration>(name, std::move(parameters), std::move(body));
 }
 
 std::unique_ptr<Statement> Parser::parseVariableDeclaration() {
-    throw std::runtime_error("parseVariableDeclaration not implemented");
+    // Get the declaration keyword (let, const, var)
+    Token keyword = previous();
+    
+    // Parse the variable name
+    Token name = consume(TokenKind::Identifier, "Expect variable name.");
+    
+    // Parse the initializer if present
+    std::unique_ptr<Expression> initializer;
+    if (match(TokenKind::Equal)) {
+        initializer = parseExpression();
+    }
+    
+    // Consume the semicolon
+    consume(TokenKind::Semicolon, "Expect ';' after variable declaration.");
+    
+    return std::make_unique<VariableDeclaration>(name, std::move(initializer));
 }
 
 } // namespace superjs 

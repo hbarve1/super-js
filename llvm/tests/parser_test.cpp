@@ -90,4 +90,34 @@ TEST_F(ParserTest, Assignment) {
     Parser parser(tokens);
     auto statements = parser.parse();
     ASSERT_EQ(statements.size(), 2);
+}
+
+TEST_F(ParserTest, ForStatement) {
+    // Test basic for loop with all clauses
+    auto tokens = tokenize("for (let i = 0; i < 10; i = i + 1) { x = x + i; }");
+    Parser parser(tokens);
+    auto statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+    ASSERT_NE(dynamic_cast<BlockStatement*>(statements[0].get()), nullptr);
+
+    // Test for loop with empty clauses
+    tokens = tokenize("for (;;) { break; }");
+    parser = Parser(tokens);
+    statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+    ASSERT_NE(dynamic_cast<WhileStatement*>(statements[0].get()), nullptr);
+
+    // Test for loop with expression in initializer
+    tokens = tokenize("for (x = 0; x < 10; x = x + 1) { y = y + x; }");
+    parser = Parser(tokens);
+    statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+    ASSERT_NE(dynamic_cast<BlockStatement*>(statements[0].get()), nullptr);
+
+    // Test for loop with variable declaration in initializer
+    tokens = tokenize("for (let i = 0, j = 10; i < j; i = i + 1) { sum = sum + i; }");
+    parser = Parser(tokens);
+    statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+    ASSERT_NE(dynamic_cast<BlockStatement*>(statements[0].get()), nullptr);
 } 
