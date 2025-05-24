@@ -1,6 +1,11 @@
 #include "../../include/semantic/SemanticAnalyzer.h"
-#include "../../include/parser/AST.h"
-#include <stdexcept>
+#include "../../include/ast/Statements.h"
+#include "../../include/ast/Expressions.h"
+#include "../../include/ast/Type.h"
+#include "../../include/ast/Types.h"
+#include <memory>
+#include <vector>
+#include <string>
 
 namespace superjs {
 
@@ -10,7 +15,7 @@ SemanticAnalyzer::SemanticAnalyzer() {
 
 void SemanticAnalyzer::analyze(const std::vector<std::unique_ptr<Statement>>& statements) {
     for (const auto& stmt : statements) {
-        stmt->accept(*this);
+        if (stmt) stmt->accept(*this);
     }
 }
 
@@ -28,86 +33,161 @@ void SemanticAnalyzer::reportError(const std::string& message) {
     errors_.push_back(message);
 }
 
-std::shared_ptr<Type> SemanticAnalyzer::visitExpression(Expression& expr) {
-    expr.accept(*this);
-    return nullptr; // TODO: Implement proper type inference
-}
-
-// ASTVisitor implementations
-void SemanticAnalyzer::visitExpressionStatement(ExpressionStatement& stmt) {
-    visitExpression(*stmt.expression);
-}
-
-void SemanticAnalyzer::visitAssignmentExpression(AssignmentExpression& expr) {
-    auto valueType = visitExpression(*expr.value);
-    auto symbol = currentScope_->resolve(expr.name.text);
-    if (!symbol) {
-        reportError("Undefined variable: " + expr.name.text);
-        return;
+// Statement visitor methods
+void SemanticAnalyzer::visitBlockStatement(BlockStatement* stmt) {
+    enterScope();
+    for (const auto& statement : stmt->statements) {
+        if (statement) statement->accept(*this);
     }
-    if (!symbol->isMutable) {
-        reportError("Cannot assign to constant: " + expr.name.text);
+    exitScope();
+}
+
+void SemanticAnalyzer::visitExpressionStatement(ExpressionStatement* stmt) {
+    if (stmt->expression) stmt->expression->accept(*this);
+}
+
+void SemanticAnalyzer::visitIfStatement(IfStatement* stmt) {
+    if (stmt->condition) stmt->condition->accept(*this);
+    if (stmt->thenBranch) stmt->thenBranch->accept(*this);
+    if (stmt->elseBranch) stmt->elseBranch->accept(*this);
+}
+
+void SemanticAnalyzer::visitWhileStatement(WhileStatement* stmt) {
+    if (stmt->condition) stmt->condition->accept(*this);
+    if (stmt->body) stmt->body->accept(*this);
+}
+
+void SemanticAnalyzer::visitForStatement(ForStatement* stmt) {
+    if (stmt->initializer) stmt->initializer->accept(*this);
+    if (stmt->condition) stmt->condition->accept(*this);
+    if (stmt->increment) stmt->increment->accept(*this);
+    if (stmt->body) stmt->body->accept(*this);
+}
+
+void SemanticAnalyzer::visitFunctionDeclaration(FunctionDeclaration* stmt) {
+    enterScope();
+    for (const auto& param : stmt->params) {
+        // TODO: Add parameter types to symbol table
     }
+    if (stmt->body) stmt->body->accept(*this);
+    exitScope();
 }
 
-void SemanticAnalyzer::visitBinaryExpression(BinaryExpression& expr) {
-    auto leftType = visitExpression(*expr.left);
-    auto rightType = visitExpression(*expr.right);
-    // TODO: Implement type checking for binary operations
+void SemanticAnalyzer::visitClassDeclaration(ClassDeclaration* stmt) {
+    // TODO: Implement class declaration analysis
 }
 
-void SemanticAnalyzer::visitUnaryExpression(UnaryExpression& expr) {
-    auto rightType = visitExpression(*expr.right);
-    // TODO: Implement type checking for unary operations
+void SemanticAnalyzer::visitReturnStatement(ReturnStatement* stmt) {
+    if (stmt->value) stmt->value->accept(*this);
 }
 
-void SemanticAnalyzer::visitLiteralExpression(LiteralExpression& expr) {
+void SemanticAnalyzer::visitBreakStatement(BreakStatement* stmt) {
+    // TODO: Implement break statement analysis
+}
+
+void SemanticAnalyzer::visitContinueStatement(ContinueStatement* stmt) {
+    // TODO: Implement continue statement analysis
+}
+
+void SemanticAnalyzer::visitVariableDeclaration(VariableDeclaration* stmt) {
+    if (stmt->initializer) stmt->initializer->accept(*this);
+    // TODO: Add variable to symbol table with type
+}
+
+void SemanticAnalyzer::visitImportStatement(ImportStatement* stmt) {
+    // TODO: Implement import statement analysis
+}
+
+void SemanticAnalyzer::visitExportStatement(ExportStatement* stmt) {
+    // TODO: Implement export statement analysis
+}
+
+void SemanticAnalyzer::visitTypeDeclaration(TypeDeclaration* stmt) {
+    // TODO: Implement type declaration analysis
+}
+
+void SemanticAnalyzer::visitInterfaceDeclaration(InterfaceDeclaration* stmt) {
+    // TODO: Implement interface declaration analysis
+}
+
+// Expression visitor methods
+void SemanticAnalyzer::visitBinaryExpression(BinaryExpression* expr) {
+    if (expr->left) expr->left->accept(*this);
+    if (expr->right) expr->right->accept(*this);
+}
+
+void SemanticAnalyzer::visitUnaryExpression(UnaryExpression* expr) {
+    if (expr->right) expr->right->accept(*this);
+}
+
+void SemanticAnalyzer::visitLiteralExpression(LiteralExpression* expr) {
     // TODO: Return appropriate type based on literal value
 }
 
-void SemanticAnalyzer::visitIdentifierExpression(IdentifierExpression& expr) {
-    auto symbol = currentScope_->resolve(expr.name.text);
+void SemanticAnalyzer::visitVariableExpression(VariableExpression* expr) {
+    // TODO: Implement variable expression analysis
+}
+
+void SemanticAnalyzer::visitAssignmentExpression(AssignmentExpression* expr) {
+    if (expr->value) expr->value->accept(*this);
+    auto symbol = currentScope_->resolve(expr->name.text);
     if (!symbol) {
-        reportError("Undefined variable: " + expr.name.text);
+        reportError("Undefined variable: " + expr->name.text);
+        return;
+    }
+    if (symbol->isMutable == false) {
+        reportError("Cannot assign to constant: " + expr->name.text);
+        return;
     }
 }
 
-void SemanticAnalyzer::visitIfStatement(IfStatement& stmt) {
-    auto conditionType = visitExpression(*stmt.condition);
-    stmt.thenBranch->accept(*this);
-    if (stmt.elseBranch) {
-        stmt.elseBranch->accept(*this);
+void SemanticAnalyzer::visitCallExpression(CallExpression* expr) {
+    if (expr->callee) expr->callee->accept(*this);
+    for (const auto& arg : expr->arguments) {
+        if (arg) arg->accept(*this);
     }
 }
 
-void SemanticAnalyzer::visitWhileStatement(WhileStatement& stmt) {
-    auto conditionType = visitExpression(*stmt.condition);
-    stmt.body->accept(*this);
+void SemanticAnalyzer::visitGetExpression(GetExpression* expr) {
+    if (expr->object) expr->object->accept(*this);
 }
 
-void SemanticAnalyzer::visitBlockStatement(BlockStatement& stmt) {
-    enterScope();
-    for (const auto& statement : stmt.statements) {
-        statement->accept(*this);
-    }
-    exitScope();
+void SemanticAnalyzer::visitSetExpression(SetExpression* expr) {
+    if (expr->object) expr->object->accept(*this);
+    if (expr->value) expr->value->accept(*this);
 }
 
-void SemanticAnalyzer::visitFunctionDeclaration(FunctionDeclaration& stmt) {
-    enterScope();
-    for (const auto& param : stmt.parameters) {
-        // TODO: Add parameter types to symbol table
-    }
-    stmt.body->accept(*this);
-    exitScope();
+void SemanticAnalyzer::visitThisExpression(ThisExpression* expr) {
+    // TODO: Implement this expression analysis
 }
 
-void SemanticAnalyzer::visitVariableDeclaration(VariableDeclaration& stmt) {
-    if (stmt.initializer) {
-        auto initType = visitExpression(*stmt.initializer);
-        // TODO: Check type compatibility with annotation
-    }
-    // TODO: Add variable to symbol table with type
+void SemanticAnalyzer::visitSuperExpression(SuperExpression* expr) {
+    // TODO: Implement super expression analysis
 }
+
+void SemanticAnalyzer::visitFunctionExpression(FunctionExpression* expr) {
+    // TODO: Implement function expression analysis
+}
+
+void SemanticAnalyzer::visitClassExpression(ClassExpression* expr) {
+    // TODO: Implement class expression analysis
+}
+
+void SemanticAnalyzer::visitJSXExpression(JSXExpression* expr) {
+    // TODO: Implement JSX expression analysis
+}
+
+void SemanticAnalyzer::visitGroupingExpression(GroupingExpression* expr) {
+    if (expr->expression) expr->expression->accept(*this);
+}
+
+// Type visitor methods
+void SemanticAnalyzer::visitPrimitiveType(PrimitiveType* type) {}
+void SemanticAnalyzer::visitArrayType(ArrayType* type) {}
+void SemanticAnalyzer::visitFunctionType(FunctionType* type) {}
+void SemanticAnalyzer::visitObjectType(ObjectType* type) {}
+void SemanticAnalyzer::visitUnionType(UnionType* type) {}
+void SemanticAnalyzer::visitIntersectionType(IntersectionType* type) {}
+void SemanticAnalyzer::visitGenericType(GenericType* type) {}
 
 } // namespace superjs 

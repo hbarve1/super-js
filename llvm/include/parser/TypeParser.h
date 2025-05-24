@@ -1,5 +1,8 @@
 #pragma once
 
+#include "ParserBase.h"
+#include "../ast/Type.h"
+#include "../ast/Types.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -12,10 +15,10 @@ namespace superjs {
 // Forward declarations
 class Type;
 
-class TypeParser {
+class TypeParser : public ParserBase {
 public:
     explicit TypeParser(std::vector<Token>& tokens, size_t& current)
-        : tokens(tokens), current(current) {}
+        : ParserBase(tokens, current) {}
 
     std::unique_ptr<Type> parseType();
     std::unique_ptr<Type> parsePrimitiveType();
@@ -23,11 +26,10 @@ public:
     std::unique_ptr<Type> parseFunctionType();
     std::unique_ptr<Type> parseGenericType();
     std::unique_ptr<Type> parseUnionType();
+    std::unique_ptr<Type> parseIntersectionType();
+    std::unique_ptr<Type> parseArrayType();
 
 private:
-    std::vector<Token>& tokens;
-    size_t& current;
-
     // Helper methods
     bool match(TokenKind kind);
     bool check(TokenKind kind) const;

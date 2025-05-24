@@ -1,4 +1,5 @@
 add_library(parser
+    ParserBase.cpp
     Parser.cpp
     ExpressionParser.cpp
     StatementParser.cpp

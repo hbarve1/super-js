@@ -1,4 +1,6 @@
 #include "../../include/parser/TypeParser.h"
+#include "../../include/ast/Type.h"
+#include "../../include/ast/Types.h"
 #include <memory>
 
 namespace superjs {
@@ -9,7 +11,7 @@ std::unique_ptr<Type> TypeParser::parseType() {
         if (match(TokenKind::Less)) {
             return parseGenericType();
         }
-        return std::make_unique<GenericType>(name.text, std::vector<std::unique_ptr<Type>>{});
+        return std::make_unique<PrimitiveType>(name);
     }
 
     if (match(TokenKind::LeftBrace)) {
@@ -20,15 +22,27 @@ std::unique_ptr<Type> TypeParser::parseType() {
         return parseFunctionType();
     }
 
+    if (match(TokenKind::LeftBracket)) {
+        return parseArrayType();
+    }
+
+    if (match(TokenKind::Pipe)) {
+        return parseUnionType();
+    }
+
+    if (match(TokenKind::Ampersand)) {
+        return parseIntersectionType();
+    }
+
     return parsePrimitiveType();
 }
 
 std::unique_ptr<Type> TypeParser::parsePrimitiveType() {
-    if (match(TokenKind::Number)) return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Number);
-    if (match(TokenKind::String)) return std::make_unique<PrimitiveType>(PrimitiveType::Kind::String);
-    if (match(TokenKind::Boolean)) return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Boolean);
-    if (match(TokenKind::Void)) return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Void);
-    if (match(TokenKind::Any)) return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Any);
+    if (match(TokenKind::Number)) return std::make_unique<PrimitiveType>(Token(TokenKind::Number, "number", peek().line, peek().column));
+    if (match(TokenKind::String)) return std::make_unique<PrimitiveType>(Token(TokenKind::String, "string", peek().line, peek().column));
+    if (match(TokenKind::Boolean)) return std::make_unique<PrimitiveType>(Token(TokenKind::Boolean, "boolean", peek().line, peek().column));
+    if (match(TokenKind::Void)) return std::make_unique<PrimitiveType>(Token(TokenKind::Void, "void", peek().line, peek().column));
+    if (match(TokenKind::Any)) return std::make_unique<PrimitiveType>(Token(TokenKind::Any, "any", peek().line, peek().column));
 
     throw error(peek(), "Expect type.");
 }
@@ -76,7 +90,35 @@ std::unique_ptr<Type> TypeParser::parseGenericType() {
 
     consume(TokenKind::Greater, "Expect '>' after generic type arguments.");
     Token name = previous();
-    return std::make_unique<GenericType>(name.text, std::move(typeArguments));
+    return std::make_unique<GenericType>(name, std::move(typeArguments));
+}
+
+std::unique_ptr<Type> TypeParser::parseUnionType() {
+    std::vector<std::unique_ptr<Type>> types;
+    types.push_back(parseType());
+
+    while (match(TokenKind::Pipe)) {
+        types.push_back(parseType());
+    }
+
+    return std::make_unique<UnionType>(std::move(types));
+}
+
+std::unique_ptr<Type> TypeParser::parseIntersectionType() {
+    std::vector<std::unique_ptr<Type>> types;
+    types.push_back(parseType());
+
+    while (match(TokenKind::Ampersand)) {
+        types.push_back(parseType());
+    }
+
+    return std::make_unique<IntersectionType>(std::move(types));
+}
+
+std::unique_ptr<Type> TypeParser::parseArrayType() {
+    auto elementType = parseType();
+    consume(TokenKind::RightBracket, "Expect ']' after array type.");
+    return std::make_unique<ArrayType>(std::move(elementType));
 }
 
 // Helper methods

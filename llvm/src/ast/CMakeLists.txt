@@ -1,5 +1,10 @@
 add_library(ast
-    AST.cpp
+    Statement.cpp
+    Statements.cpp
+    Expression.cpp
+    Expressions.cpp
+    Type.cpp
+    Types.cpp
 )
 
 target_include_directories(ast
@@ -10,5 +15,4 @@ target_include_directories(ast
 target_link_libraries(ast
     PRIVATE
         lexer
-        parser
 ) 

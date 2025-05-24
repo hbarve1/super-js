@@ -1,16 +1,18 @@
 #pragma once
 
+#include "../../include/parser/ParserBase.h"
+#include "../../include/ast/Type.h"
+#include "../../include/ast/Types.h"
 #include <memory>
 #include <vector>
-#include "lexer/Lexer.h"
-#include "ast/AST.h"
+#include <string>
 
 namespace superjs {
 
-class TypeParser {
+class TypeParser : public ParserBase {
 public:
     explicit TypeParser(std::vector<Token>& tokens, size_t& current)
-        : tokens(tokens), current(current) {}
+        : ParserBase(tokens, current) {}
 
     std::unique_ptr<Type> parseType();
     std::unique_ptr<Type> parsePrimitiveType();
@@ -18,20 +20,8 @@ public:
     std::unique_ptr<Type> parseFunctionType();
     std::unique_ptr<Type> parseGenericType();
     std::unique_ptr<Type> parseUnionType();
-
-private:
-    std::vector<Token>& tokens;
-    size_t& current;
-
-    // Helper methods
-    bool match(TokenKind kind);
-    bool check(TokenKind kind) const;
-    Token advance();
-    Token peek() const;
-    Token previous() const;
-    bool isAtEnd() const;
-    Token consume(TokenKind kind, const std::string& message);
-    ParseError error(const Token& token, const std::string& message);
+    std::unique_ptr<Type> parseIntersectionType();
+    std::unique_ptr<Type> parseArrayType();
 };
 
 } // namespace superjs 

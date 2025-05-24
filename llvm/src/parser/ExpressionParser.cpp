@@ -1,6 +1,12 @@
 #include "../../include/parser/ExpressionParser.h"
-#include "../../include/parser/AST.h"
+#include "../../include/ast/Expressions.h"
+#include "../../include/ast/Statements.h"
+#include "../../include/ast/Type.h"
+#include "../../include/ast/Types.h"
+#include <stdexcept>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace superjs {
 
@@ -63,7 +69,7 @@ std::unique_ptr<Expression> ExpressionParser::parseComparison() {
 std::unique_ptr<Expression> ExpressionParser::parseTerm() {
     auto expr = parseFactor();
 
-    while (match(TokenKind::Plus) || match(TokenKind::Minus)) {
+    while (match(TokenKind::Minus) || match(TokenKind::Plus)) {
         Token op = previous();
         auto right = parseFactor();
         expr = std::make_unique<BinaryExpression>(std::move(expr), op, std::move(right));
@@ -75,7 +81,7 @@ std::unique_ptr<Expression> ExpressionParser::parseTerm() {
 std::unique_ptr<Expression> ExpressionParser::parseFactor() {
     auto expr = parseUnary();
 
-    while (match(TokenKind::Star) || match(TokenKind::Slash)) {
+    while (match(TokenKind::Slash) || match(TokenKind::Star)) {
         Token op = previous();
         auto right = parseUnary();
         expr = std::make_unique<BinaryExpression>(std::move(expr), op, std::move(right));
@@ -99,8 +105,7 @@ std::unique_ptr<Expression> ExpressionParser::parseCall() {
 
     while (true) {
         if (match(TokenKind::LeftParen)) {
-            // Removed finishCall call
-            // expr = finishCall(std::move(expr));
+            expr = finishCall(std::move(expr));
         } else if (match(TokenKind::Dot)) {
             Token name = consume(TokenKind::Identifier, "Expect property name after '.'.");
             expr = std::make_unique<GetExpression>(std::move(expr), name);
@@ -110,6 +115,21 @@ std::unique_ptr<Expression> ExpressionParser::parseCall() {
     }
 
     return expr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::finishCall(std::unique_ptr<Expression> callee) {
+    std::vector<std::unique_ptr<Expression>> arguments;
+    if (!check(TokenKind::RightParen)) {
+        do {
+            if (arguments.size() >= 255) {
+                error(peek(), "Cannot have more than 255 arguments.");
+            }
+            arguments.push_back(parseExpression());
+        } while (match(TokenKind::Comma));
+    }
+
+    Token paren = consume(TokenKind::RightParen, "Expect ')' after arguments.");
+    return std::make_unique<CallExpression>(std::move(callee), paren, std::move(arguments));
 }
 
 std::unique_ptr<Expression> ExpressionParser::parsePrimary() {
@@ -132,6 +152,48 @@ std::unique_ptr<Expression> ExpressionParser::parsePrimary() {
     }
 
     throw error(peek(), "Expect expression.");
+}
+
+std::unique_ptr<Expression> ExpressionParser::parseFunctionExpression() {
+    consume(TokenKind::LeftParen, "Expect '(' after 'function'.");
+    std::vector<Token> parameters;
+    if (!check(TokenKind::RightParen)) {
+        do {
+            if (parameters.size() >= 255) {
+                error(peek(), "Cannot have more than 255 parameters.");
+            }
+            parameters.push_back(consume(TokenKind::Identifier, "Expect parameter name."));
+        } while (match(TokenKind::Comma));
+    }
+    consume(TokenKind::LeftBrace, "Expect '{' before function body.");
+    auto body = std::make_unique<BlockStatement>(std::vector<std::unique_ptr<Statement>>());
+    return std::make_unique<FunctionExpression>(
+        std::move(parameters),
+        std::vector<std::unique_ptr<Type>>{},
+        nullptr,
+        std::move(body)
+    );
+}
+
+std::unique_ptr<Expression> ExpressionParser::parseClassExpression() {
+    Token name = consume(TokenKind::Identifier, "Expect class name.");
+    std::unique_ptr<VariableExpression> superclass = nullptr;
+    if (match(TokenKind::Less)) {
+        consume(TokenKind::Identifier, "Expect superclass name.");
+        superclass = std::make_unique<VariableExpression>(previous());
+    }
+    consume(TokenKind::LeftBrace, "Expect '{' before class body.");
+    std::vector<std::unique_ptr<Expression>> methods;
+    while (!check(TokenKind::RightBrace) && !isAtEnd()) {
+        methods.push_back(parseFunctionExpression());
+    }
+    consume(TokenKind::RightBrace, "Expect '}' after class body.");
+    return std::make_unique<ClassExpression>(std::move(superclass), std::move(methods));
+}
+
+std::unique_ptr<Expression> ExpressionParser::parseJSXExpression() {
+    // TODO: Implement JSX parsing
+    throw error(peek(), "JSX parsing not implemented yet.");
 }
 
 // Helper methods

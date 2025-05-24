@@ -17,6 +17,7 @@ enum class TokenKind {
     Plus, Minus, Star, Slash, Percent, Equal, EqualEqual, BangEqual,
     Less, LessEqual, Greater, GreaterEqual, And, Or, Bang,
     PlusPlus, MinusMinus, PlusEqual, MinusEqual, StarEqual, SlashEqual,
+    Pipe, Ampersand,
     
     // JSX
     JSXOpen, JSXClose, JSXSelfClose, JSXIdentifier, JSXText,

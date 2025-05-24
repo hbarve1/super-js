@@ -1,5 +1,10 @@
 #pragma once
 
+#include "ParserBase.h"
+#include "../ast/Expressions.h"
+#include "../ast/Statements.h"
+#include "../ast/Type.h"
+#include "../ast/Types.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -12,10 +17,10 @@ namespace superjs {
 // Forward declarations
 class Expression;
 
-class ExpressionParser {
+class ExpressionParser : public ParserBase {
 public:
     explicit ExpressionParser(std::vector<Token>& tokens, size_t& current)
-        : tokens(tokens), current(current) {}
+        : ParserBase(tokens, current) {}
 
     std::unique_ptr<Expression> parseExpression();
     std::unique_ptr<Expression> parseAssignment();
@@ -31,9 +36,6 @@ public:
     std::unique_ptr<Expression> parseJSXExpression();
 
 private:
-    std::vector<Token>& tokens;
-    size_t& current;
-
     // Helper methods
     bool match(TokenKind kind);
     bool check(TokenKind kind) const;
@@ -43,6 +45,7 @@ private:
     bool isAtEnd() const;
     Token consume(TokenKind kind, const std::string& message);
     ParseError error(const Token& token, const std::string& message);
+    std::unique_ptr<Expression> finishCall(std::unique_ptr<Expression> callee);
 };
 
 } // namespace superjs 

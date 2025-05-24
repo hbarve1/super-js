@@ -1,4 +1,5 @@
 #include "../../include/parser/StatementParser.h"
+#include "../../include/ast/Expressions.h"
 #include <memory>
 
 namespace superjs {
@@ -16,6 +17,8 @@ std::unique_ptr<Statement> StatementParser::parseStatement() {
     if (match(TokenKind::Interface)) return parseInterfaceDeclaration();
     if (match(TokenKind::Let) || match(TokenKind::Const)) return parseVariableDeclaration();
     if (match(TokenKind::LeftBrace)) return parseBlockStatement();
+    if (match(TokenKind::Break)) return parseBreakStatement();
+    if (match(TokenKind::Continue)) return parseContinueStatement();
 
     return std::make_unique<ExpressionStatement>(exprParser.parseExpression());
 }
@@ -120,20 +123,39 @@ std::unique_ptr<Statement> StatementParser::parseFunctionDeclaration() {
     consume(TokenKind::LeftParen, "Expect '(' after function name.");
 
     std::vector<Token> parameters;
+    std::vector<std::unique_ptr<Type>> paramTypes;
     if (!check(TokenKind::RightParen)) {
         do {
             if (parameters.size() >= 255) {
                 error(peek(), "Cannot have more than 255 parameters.");
             }
-            parameters.push_back(consume(TokenKind::Identifier, "Expect parameter name."));
+            Token param = consume(TokenKind::Identifier, "Expect parameter name.");
+            parameters.push_back(param);
+
+            if (match(TokenKind::Colon)) {
+                paramTypes.push_back(typeParser.parseType());
+            } else {
+                paramTypes.push_back(nullptr);
+            }
         } while (match(TokenKind::Comma));
     }
     consume(TokenKind::RightParen, "Expect ')' after parameters.");
 
+    std::unique_ptr<Type> returnType = nullptr;
+    if (match(TokenKind::Colon)) {
+        returnType = typeParser.parseType();
+    }
+
     consume(TokenKind::LeftBrace, "Expect '{' before function body.");
     auto body = parseBlockStatement();
 
-    return std::make_unique<FunctionDeclaration>(name, std::move(parameters), std::move(body));
+    return std::make_unique<FunctionDeclaration>(
+        name,
+        std::move(parameters),
+        std::move(paramTypes),
+        std::move(returnType),
+        std::move(body)
+    );
 }
 
 std::unique_ptr<Statement> StatementParser::parseClassDeclaration() {
@@ -147,10 +169,9 @@ std::unique_ptr<Statement> StatementParser::parseClassDeclaration() {
 
     consume(TokenKind::LeftBrace, "Expect '{' before class body.");
 
-    std::vector<std::unique_ptr<FunctionExpression>> methods;
+    std::vector<std::unique_ptr<Statement>> methods;
     while (!check(TokenKind::RightBrace) && !isAtEnd()) {
-        methods.push_back(std::unique_ptr<FunctionExpression>(
-            dynamic_cast<FunctionExpression*>(parseFunctionDeclaration().release())));
+        methods.push_back(parseFunctionDeclaration());
     }
 
     consume(TokenKind::RightBrace, "Expect '}' after class body.");
@@ -159,83 +180,94 @@ std::unique_ptr<Statement> StatementParser::parseClassDeclaration() {
 
 std::unique_ptr<Statement> StatementParser::parseVariableDeclaration() {
     Token name = consume(TokenKind::Identifier, "Expect variable name.");
-
+    
+    std::unique_ptr<Type> typeAnnotation = nullptr;
+    if (match(TokenKind::Colon)) {
+        typeAnnotation = typeParser.parseType();
+    }
+    
     std::unique_ptr<Expression> initializer = nullptr;
     if (match(TokenKind::Equal)) {
         initializer = exprParser.parseExpression();
     }
-
+    
     consume(TokenKind::Semicolon, "Expect ';' after variable declaration.");
-    return std::make_unique<VariableDeclaration>(name, nullptr, std::move(initializer));
+    return std::make_unique<VariableDeclaration>(name, std::move(typeAnnotation), std::move(initializer));
 }
 
-std::unique_ptr<Statement> StatementParser::parseExportStatement() { return nullptr; }
-std::unique_ptr<Statement> StatementParser::parseImportStatement() { return nullptr; }
-std::unique_ptr<Statement> StatementParser::parseTypeDeclaration() { return nullptr; }
-std::unique_ptr<Statement> StatementParser::parseInterfaceDeclaration() { return nullptr; }
-
-// Helper methods
-bool StatementParser::match(TokenKind kind) {
-    if (check(kind)) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-bool StatementParser::check(TokenKind kind) const {
-    if (isAtEnd()) return false;
-    return peek().kind == kind;
-}
-
-Token StatementParser::advance() {
-    if (!isAtEnd()) current++;
-    return previous();
-}
-
-Token StatementParser::peek() const {
-    return tokens[current];
-}
-
-Token StatementParser::previous() const {
-    return tokens[current - 1];
-}
-
-bool StatementParser::isAtEnd() const {
-    return peek().kind == TokenKind::EndOfFile;
-}
-
-Token StatementParser::consume(TokenKind kind, const std::string& message) {
-    if (check(kind)) return advance();
-    throw error(peek(), message);
-}
-
-ParseError StatementParser::error(const Token& token, const std::string& message) {
-    return ParseError(message);
-}
-
-void StatementParser::synchronize() {
-    advance();
-
-    while (!isAtEnd()) {
-        if (previous().kind == TokenKind::Semicolon) return;
-
-        switch (peek().kind) {
-            case TokenKind::Class:
-            case TokenKind::Function:
-            case TokenKind::Let:
-            case TokenKind::Const:
-            case TokenKind::For:
-            case TokenKind::If:
-            case TokenKind::While:
-            case TokenKind::Return:
-                return;
-            default:
-                break;
+std::unique_ptr<Statement> StatementParser::parseExportStatement() {
+    std::unique_ptr<Statement> declaration;
+    
+    if (match(TokenKind::Default)) {
+        if (match(TokenKind::Function)) {
+            declaration = parseFunctionDeclaration();
+        } else if (match(TokenKind::Class)) {
+            declaration = parseClassDeclaration();
+        } else {
+            throw error(peek(), "Expect function or class after 'export default'.");
         }
-
-        advance();
+    } else {
+        declaration = parseStatement();
     }
+    
+    return std::make_unique<ExportStatement>(std::move(declaration));
+}
+
+std::unique_ptr<Statement> StatementParser::parseImportStatement() {
+    Token module = consume(TokenKind::String, "Expect module path.");
+    
+    std::vector<Token> names;
+    if (match(TokenKind::LeftBrace)) {
+        if (!check(TokenKind::RightBrace)) {
+            do {
+                names.push_back(consume(TokenKind::Identifier, "Expect import name."));
+            } while (match(TokenKind::Comma));
+        }
+        consume(TokenKind::RightBrace, "Expect '}' after import names.");
+    } else {
+        names.push_back(consume(TokenKind::Identifier, "Expect import name."));
+    }
+    
+    consume(TokenKind::Semicolon, "Expect ';' after import statement.");
+    return std::make_unique<ImportStatement>(module, std::move(names));
+}
+
+std::unique_ptr<Statement> StatementParser::parseTypeDeclaration() {
+    Token name = consume(TokenKind::Identifier, "Expect type name.");
+    consume(TokenKind::Equal, "Expect '=' after type name.");
+    
+    auto type = typeParser.parseType();
+    consume(TokenKind::Semicolon, "Expect ';' after type declaration.");
+    
+    return std::make_unique<TypeDeclaration>(name, std::move(type));
+}
+
+std::unique_ptr<Statement> StatementParser::parseInterfaceDeclaration() {
+    Token name = consume(TokenKind::Identifier, "Expect interface name.");
+    consume(TokenKind::LeftBrace, "Expect '{' before interface body.");
+    
+    std::vector<std::pair<Token, std::unique_ptr<Type>>> properties;
+    while (!check(TokenKind::RightBrace) && !isAtEnd()) {
+        Token propName = consume(TokenKind::Identifier, "Expect property name.");
+        consume(TokenKind::Colon, "Expect ':' after property name.");
+        properties.push_back({propName, typeParser.parseType()});
+        consume(TokenKind::Semicolon, "Expect ';' after property declaration.");
+    }
+    
+    consume(TokenKind::RightBrace, "Expect '}' after interface body.");
+    return std::make_unique<InterfaceDeclaration>(name, std::move(properties));
+}
+
+std::unique_ptr<Statement> StatementParser::parseBreakStatement() {
+    Token keyword = previous();
+    consume(TokenKind::Semicolon, "Expect ';' after 'break'.");
+    return std::make_unique<BreakStatement>(keyword);
+}
+
+std::unique_ptr<Statement> StatementParser::parseContinueStatement() {
+    Token keyword = previous();
+    consume(TokenKind::Semicolon, "Expect ';' after 'continue'.");
+    return std::make_unique<ContinueStatement>(keyword);
 }
 
 } // namespace superjs 

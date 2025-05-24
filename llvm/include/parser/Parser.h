@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "../lexer/Token.h"
+#include "ParserBase.h"
 #include "AST.h"
 #include "ExpressionParser.h"
 #include "StatementParser.h"
@@ -15,13 +16,14 @@ namespace superjs {
 // Forward declarations
 class Statement;
 
-class Parser {
+class Parser : public ParserBase {
 public:
     explicit Parser(std::vector<Token> tokens)
-        : tokens(std::move(tokens)), current(0),
-          exprParser(this->tokens, current),
-          stmtParser(this->tokens, current, exprParser),
-          typeParser(this->tokens, current) {}
+        : ParserBase(tokens, current),
+          current(0),
+          exprParser(tokens, current),
+          typeParser(tokens, current),
+          stmtParser(tokens, current, exprParser, typeParser) {}
 
     std::vector<std::unique_ptr<Statement>> parse();
 
@@ -30,22 +32,10 @@ public:
     const std::vector<std::string>& getErrors() const { return errors_; }
 
 private:
-    std::vector<Token> tokens;
     size_t current;
     ExpressionParser exprParser;
-    StatementParser stmtParser;
     TypeParser typeParser;
-
-    // Helper methods
-    bool match(TokenKind kind);
-    bool check(TokenKind kind) const;
-    Token advance();
-    Token peek() const;
-    Token previous() const;
-    bool isAtEnd() const;
-    Token consume(TokenKind kind, const std::string& message);
-    ParseError error(const Token& token, const std::string& message);
-    void synchronize();
+    StatementParser stmtParser;
 
     // Member variables
     std::vector<std::string> errors_;
