@@ -73,6 +73,9 @@ void JSXExpression::accept(ASTVisitor& visitor) {
     visitor.visitJSXExpression(*this);
 }
 
+void GetExpression::accept(ASTVisitor& visitor) { visitor.visitGetExpression(*this); }
+void GroupingExpression::accept(ASTVisitor& visitor) { visitor.visitGroupingExpression(*this); }
+
 // Statement accept implementations
 void IfStatement::accept(ASTVisitor& visitor) {
     visitor.visitIfStatement(*this);

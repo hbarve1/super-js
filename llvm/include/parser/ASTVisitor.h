@@ -32,6 +32,8 @@ class ImportStatement;
 class ExportStatement;
 class TypeDeclaration;
 class InterfaceDeclaration;
+class GetExpression;
+class GroupingExpression;
 
 class ASTVisitor {
 public:
@@ -57,6 +59,8 @@ public:
     virtual void visitFunctionExpression(FunctionExpression& expr) = 0;
     virtual void visitClassExpression(ClassExpression& expr) = 0;
     virtual void visitJSXExpression(JSXExpression& expr) = 0;
+    virtual void visitGetExpression(GetExpression& expr) = 0;
+    virtual void visitGroupingExpression(GroupingExpression& expr) = 0;
 
     // Statement visitor methods
     virtual void visitIfStatement(IfStatement& stmt) = 0;

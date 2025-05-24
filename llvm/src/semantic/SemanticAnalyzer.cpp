@@ -1,5 +1,5 @@
-#include <semantic/SemanticAnalyzer.h>
-#include <parser/AST.h>
+#include "../../include/semantic/SemanticAnalyzer.h"
+#include "../../include/parser/AST.h"
 #include <stdexcept>
 
 namespace superjs {

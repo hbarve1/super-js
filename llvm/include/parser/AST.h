@@ -437,4 +437,25 @@ public:
     Token property;
 };
 
+// Get expressions (e.g., obj.prop)
+class GetExpression : public Expression {
+public:
+    GetExpression(std::unique_ptr<Expression> object, Token name)
+        : object(std::move(object)), name(name) {}
+    virtual ~GetExpression() = default;
+    void accept(ASTVisitor& visitor) override;
+    std::unique_ptr<Expression> object;
+    Token name;
+};
+
+// Grouping expressions (e.g., (a + b))
+class GroupingExpression : public Expression {
+public:
+    explicit GroupingExpression(std::unique_ptr<Expression> expression)
+        : expression(std::move(expression)) {}
+    virtual ~GroupingExpression() = default;
+    void accept(ASTVisitor& visitor) override;
+    std::unique_ptr<Expression> expression;
+};
+
 } // namespace superjs 

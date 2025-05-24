@@ -36,6 +36,18 @@ llvm/
 - [x] Error recovery
 - [ ] Unit tests
 
+#### Parser Code Organization (TODO)
+- [ ] Split Parser.cpp into smaller, focused files:
+  - [ ] ExpressionParser.cpp (for expression parsing)
+  - [ ] StatementParser.cpp (for statement parsing)
+  - [ ] DeclarationParser.cpp (for variable/function declarations)
+  - [ ] TypeParser.cpp (for type annotations)
+- [ ] Consolidate AST code into ast/ directory
+- [ ] Add proper header files for each parser component
+- [ ] Implement visitor pattern for AST traversal
+- [ ] Add parser utility functions for common operations
+- [ ] Improve error handling and recovery mechanisms
+
 ### Phase 3: Semantic Analysis
 - [x] Type system design
 - [x] Symbol table implementation

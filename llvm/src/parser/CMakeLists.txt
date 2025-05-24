@@ -1,5 +1,8 @@
 add_library(parser
     Parser.cpp
+    ExpressionParser.cpp
+    StatementParser.cpp
+    TypeParser.cpp
 )
 
 target_include_directories(parser
@@ -8,7 +11,7 @@ target_include_directories(parser
 )
 
 target_link_libraries(parser
-    PRIVATE
+    PUBLIC
         lexer
         ast
 ) 

@@ -63,8 +63,6 @@ public:
     void visitBlockStatement(BlockStatement& stmt) override;
     void visitFunctionDeclaration(FunctionDeclaration& stmt) override;
     void visitVariableDeclaration(VariableDeclaration& stmt) override;
-
-    // Stub implementations for missing visitor methods
     void visitForStatement(ForStatement& stmt) override {}
     void visitReturnStatement(ReturnStatement& stmt) override {}
     void visitClassDeclaration(ClassDeclaration& stmt) override {}
@@ -83,6 +81,8 @@ public:
     void visitFunctionType(FunctionType& type) override {}
     void visitGenericType(GenericType& type) override {}
     void visitUnionType(UnionType& type) override {}
+    void visitGetExpression(GetExpression& expr) override {}
+    void visitGroupingExpression(GroupingExpression& expr) override {}
 
 private:
     // Helper methods

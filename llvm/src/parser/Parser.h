@@ -4,7 +4,10 @@
 #include <memory>
 #include <string>
 #include "lexer/Lexer.h"
-#include "parser/AST.h"
+#include "ast/AST.h"
+#include "parser/ExpressionParser.h"
+#include "parser/StatementParser.h"
+#include "parser/TypeParser.h"
 
 namespace superjs {
 
@@ -15,50 +18,20 @@ public:
 
 class Parser {
 public:
-    explicit Parser(std::vector<Token> tokens) : tokens(std::move(tokens)), current(0) {}
+    explicit Parser(std::vector<Token> tokens) 
+        : tokens(std::move(tokens)), current(0),
+          exprParser(this->tokens, this->current),
+          stmtParser(this->tokens, this->current),
+          typeParser(this->tokens, this->current) {}
 
     std::vector<std::unique_ptr<Statement>> parse();
 
 private:
     std::vector<Token> tokens;
     size_t current;
-
-    // Statement parsing
-    std::unique_ptr<Statement> parseStatement();
-    std::unique_ptr<Statement> parseBlockStatement();
-    std::unique_ptr<Statement> parseIfStatement();
-    std::unique_ptr<Statement> parseWhileStatement();
-    std::unique_ptr<Statement> parseForStatement();
-    std::unique_ptr<Statement> parseReturnStatement();
-    std::unique_ptr<Statement> parseFunctionDeclaration();
-    std::unique_ptr<Statement> parseClassDeclaration();
-    std::unique_ptr<Statement> parseImportStatement();
-    std::unique_ptr<Statement> parseExportStatement();
-    std::unique_ptr<Statement> parseTypeDeclaration();
-    std::unique_ptr<Statement> parseInterfaceDeclaration();
-    std::unique_ptr<Statement> parseVariableDeclaration();
-
-    // Expression parsing
-    std::unique_ptr<Expression> parseExpression();
-    std::unique_ptr<Expression> parseAssignment();
-    std::unique_ptr<Expression> parseEquality();
-    std::unique_ptr<Expression> parseComparison();
-    std::unique_ptr<Expression> parseTerm();
-    std::unique_ptr<Expression> parseFactor();
-    std::unique_ptr<Expression> parseUnary();
-    std::unique_ptr<Expression> parseCall();
-    std::unique_ptr<Expression> parsePrimary();
-    std::unique_ptr<Expression> parseFunctionExpression();
-    std::unique_ptr<Expression> parseClassExpression();
-    std::unique_ptr<Expression> parseJSXExpression();
-
-    // Type parsing
-    std::unique_ptr<Type> parseType();
-    std::unique_ptr<Type> parsePrimitiveType();
-    std::unique_ptr<Type> parseObjectType();
-    std::unique_ptr<Type> parseFunctionType();
-    std::unique_ptr<Type> parseGenericType();
-    std::unique_ptr<Type> parseUnionType();
+    ExpressionParser exprParser;
+    StatementParser stmtParser;
+    TypeParser typeParser;
 
     // Helper methods
     bool match(TokenKind kind);
