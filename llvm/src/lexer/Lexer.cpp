@@ -1,4 +1,6 @@
-#include "Lexer.h"
+#include "lexer/Lexer.h"
+#include <string>
+#include <vector>
 #include <cctype>
 #include <unordered_map>
 

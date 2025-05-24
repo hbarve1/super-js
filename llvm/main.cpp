@@ -1,6 +1,6 @@
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
-#include "ast/AST.h"
+#include "parser/AST.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>

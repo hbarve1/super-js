@@ -5,37 +5,15 @@
 #include <unordered_map>
 #include <vector>
 #include "parser/AST.h"
+#include "parser/ASTVisitor.h"
 
 namespace superjs {
 
 // Forward declarations
+class Expression;
+class Statement;
 class Type;
 class SymbolTable;
-
-// Type hierarchy
-class Type {
-public:
-    virtual ~Type() = default;
-    virtual std::string toString() const = 0;
-    virtual bool isAssignableFrom(const Type& other) const = 0;
-};
-
-class PrimitiveType : public Type {
-public:
-    enum class Kind {
-        Number,
-        Boolean,
-        String,
-        Void
-    };
-
-    explicit PrimitiveType(Kind kind) : kind_(kind) {}
-    std::string toString() const override;
-    bool isAssignableFrom(const Type& other) const override;
-
-private:
-    Kind kind_;
-};
 
 // Symbol table entry
 struct Symbol {
@@ -85,6 +63,26 @@ public:
     void visitBlockStatement(BlockStatement& stmt) override;
     void visitFunctionDeclaration(FunctionDeclaration& stmt) override;
     void visitVariableDeclaration(VariableDeclaration& stmt) override;
+
+    // Stub implementations for missing visitor methods
+    void visitForStatement(ForStatement& stmt) override {}
+    void visitReturnStatement(ReturnStatement& stmt) override {}
+    void visitClassDeclaration(ClassDeclaration& stmt) override {}
+    void visitImportStatement(ImportStatement& stmt) override {}
+    void visitExportStatement(ExportStatement& stmt) override {}
+    void visitTypeDeclaration(TypeDeclaration& stmt) override {}
+    void visitInterfaceDeclaration(InterfaceDeclaration& stmt) override {}
+    void visitCallExpression(CallExpression& expr) override {}
+    void visitMemberExpression(MemberExpression& expr) override {}
+    void visitFunctionExpression(FunctionExpression& expr) override {}
+    void visitClassExpression(ClassExpression& expr) override {}
+    void visitJSXExpression(JSXExpression& expr) override {}
+    void visitVariableExpression(VariableExpression& expr) override {}
+    void visitPrimitiveType(PrimitiveType& type) override {}
+    void visitObjectType(ObjectType& type) override {}
+    void visitFunctionType(FunctionType& type) override {}
+    void visitGenericType(GenericType& type) override {}
+    void visitUnionType(UnionType& type) override {}
 
 private:
     // Helper methods

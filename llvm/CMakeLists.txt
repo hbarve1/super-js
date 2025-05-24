@@ -20,26 +20,31 @@ endif()
 
 # Find required packages
 find_package(LibEdit REQUIRED)
-find_package(LLVM REQUIRED CONFIG)
 find_package(GTest REQUIRED)
 
-# Add LLVM definitions and include directories
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(${LLVM_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIRS})
+# Set include directories for all targets
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+)
 
 # Add subdirectories
 add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
 add_subdirectory(src/ast)
+add_subdirectory(src/semantic)
 
 # Add executable
 add_executable(superjs main.cpp)
 
-# Set include directories
+# Set include directories for the main executable
 target_include_directories(superjs PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/lexer
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/ast
+    ${CMAKE_SOURCE_DIR}/src/semantic
 )
 
 # Link libraries
@@ -47,6 +52,7 @@ target_link_libraries(superjs PRIVATE
     superjs_lexer
     superjs_parser
     superjs_ast
+    superjs_semantic
 )
 
 # Add tests
@@ -59,19 +65,23 @@ add_executable(superjs_tests
     tests/semantic_test.cpp
 )
 
-target_include_directories(superjs_tests
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
+target_include_directories(superjs_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/lexer
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/ast
+    ${CMAKE_SOURCE_DIR}/src/semantic
 )
 
-target_link_libraries(superjs_tests
-    PRIVATE
-        superjs_lexer
-        superjs_parser
-        superjs_ast
-        ${GTEST_LIBRARIES}
-        ${GTEST_MAIN_LIBRARIES}
-        pthread
+target_link_libraries(superjs_tests PRIVATE
+    superjs_lexer
+    superjs_parser
+    superjs_ast
+    superjs_semantic
+    ${GTEST_LIBRARIES}
+    ${GTEST_MAIN_LIBRARIES}
+    pthread
 )
 
 add_test(NAME superjs_tests COMMAND superjs_tests)
@@ -84,12 +94,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Installation
 install(DIRECTORY include/ DESTINATION include)
 install(TARGETS superjs
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-
-target_include_directories(superjs
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
 ) 

@@ -8,9 +8,4 @@ target_include_directories(superjs_lexer
         ${CMAKE_SOURCE_DIR}/src
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src/lexer
-)
-
-target_link_libraries(superjs_lexer
-    PRIVATE
-        ${LLVM_AVAILABLE_LIBS}
 ) 

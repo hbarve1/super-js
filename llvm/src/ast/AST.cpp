@@ -1,42 +1,7 @@
-#include "parser/AST.h"
-#include "parser/ASTVisitor.h"
+#include "../../include/parser/ASTVisitor.h"
+#include "../../include/parser/AST.h"
 
 namespace superjs {
-
-// Out-of-line destructors for AST node classes
-Node::~Node() = default;
-Type::~Type() = default;
-Expression::~Expression() = default;
-Statement::~Statement() = default;
-PrimitiveType::~PrimitiveType() = default;
-ObjectType::~ObjectType() = default;
-FunctionType::~FunctionType() = default;
-GenericType::~GenericType() = default;
-UnionType::~UnionType() = default;
-ExpressionStatement::~ExpressionStatement() = default;
-AssignmentExpression::~AssignmentExpression() = default;
-BinaryExpression::~BinaryExpression() = default;
-UnaryExpression::~UnaryExpression() = default;
-LiteralExpression::~LiteralExpression() = default;
-IdentifierExpression::~IdentifierExpression() = default;
-VariableExpression::~VariableExpression() = default;
-CallExpression::~CallExpression() = default;
-MemberExpression::~MemberExpression() = default;
-FunctionExpression::~FunctionExpression() = default;
-ClassExpression::~ClassExpression() = default;
-JSXExpression::~JSXExpression() = default;
-IfStatement::~IfStatement() = default;
-WhileStatement::~WhileStatement() = default;
-ForStatement::~ForStatement() = default;
-BlockStatement::~BlockStatement() = default;
-FunctionDeclaration::~FunctionDeclaration() = default;
-VariableDeclaration::~VariableDeclaration() = default;
-ReturnStatement::~ReturnStatement() = default;
-ClassDeclaration::~ClassDeclaration() = default;
-ImportStatement::~ImportStatement() = default;
-ExportStatement::~ExportStatement() = default;
-TypeDeclaration::~TypeDeclaration() = default;
-InterfaceDeclaration::~InterfaceDeclaration() = default;
 
 // Type accept implementations
 void PrimitiveType::accept(ASTVisitor& visitor) {

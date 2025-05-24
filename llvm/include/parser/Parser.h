@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 #include "lexer/Lexer.h"
 #include "parser/AST.h"
 
@@ -33,6 +34,12 @@ private:
     std::unique_ptr<Statement> parseFunctionDeclaration();
     std::unique_ptr<Statement> parseVariableDeclaration();
     std::unique_ptr<Statement> parseExpressionStatement();
+    std::unique_ptr<Statement> parseReturnStatement();
+    std::unique_ptr<Statement> parseClassDeclaration();
+    std::unique_ptr<Statement> parseImportStatement();
+    std::unique_ptr<Statement> parseExportStatement();
+    std::unique_ptr<Statement> parseTypeDeclaration();
+    std::unique_ptr<Statement> parseInterfaceDeclaration();
     std::unique_ptr<Expression> parseExpression();
     std::unique_ptr<Expression> parseAssignment();
     std::unique_ptr<Expression> parseEquality();
@@ -41,6 +48,17 @@ private:
     std::unique_ptr<Expression> parseFactor();
     std::unique_ptr<Expression> parseUnary();
     std::unique_ptr<Expression> parsePrimary();
+    std::unique_ptr<Expression> parseFunctionExpression();
+    std::unique_ptr<Expression> parseClassExpression();
+    std::unique_ptr<Expression> parseJSXExpression();
+
+    // Type parsing methods
+    std::unique_ptr<Type> parseType();
+    std::unique_ptr<Type> parsePrimitiveType();
+    std::unique_ptr<Type> parseObjectType();
+    std::unique_ptr<Type> parseFunctionType();
+    std::unique_ptr<Type> parseGenericType();
+    std::unique_ptr<Type> parseUnionType();
 
     // Error handling
     void synchronize();

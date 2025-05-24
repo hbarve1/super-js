@@ -32,7 +32,9 @@ enum class TokenKind {
     Identifier, Dot, Comma, Semicolon, Colon, Question, Arrow,
     LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
     EndOfFile, Error,
-    Boolean
+    Boolean,
+    Any, Unknown, Never, Object, Array,
+    NumberLiteral, StringLiteral
 };
 
 // Token structure

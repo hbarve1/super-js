@@ -1,7 +1,10 @@
-#include "parser/Parser.h"
-#include "parser/AST.h"
-#include "lexer/Lexer.h"
+#include "../../include/parser/Parser.h"
+#include "../../include/parser/AST.h"
+#include "../../include/lexer/Lexer.h"
 #include <stdexcept>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace superjs {
 
@@ -209,7 +212,8 @@ std::unique_ptr<Statement> Parser::parseClassDeclaration() {
     consume(TokenKind::LeftBrace, "Expect '{' before class body.");
     std::vector<std::unique_ptr<FunctionExpression>> methods;
     while (!check(TokenKind::RightBrace) && !isAtEnd()) {
-        methods.push_back(parseFunctionExpression());
+        auto method = parseFunctionExpression();
+        methods.push_back(std::unique_ptr<FunctionExpression>(static_cast<FunctionExpression*>(method.release())));
     }
     consume(TokenKind::RightBrace, "Expect '}' after class body.");
     return std::make_unique<ClassDeclaration>(name, std::move(superclass), std::move(methods));
@@ -235,7 +239,7 @@ std::unique_ptr<Statement> Parser::parseExportStatement() {
 
 std::unique_ptr<Statement> Parser::parseTypeDeclaration() {
     Token name = consume(TokenKind::Identifier, "Expect type name.");
-    consume(TokenKind::Equals, "Expect '=' after type name.");
+    consume(TokenKind::Equal, "Expect '=' after type name.");
     auto type = parseType();
     consume(TokenKind::Semicolon, "Expect ';' after type declaration.");
     return std::make_unique<TypeDeclaration>(name, std::move(type));
@@ -265,7 +269,7 @@ std::unique_ptr<Statement> Parser::parseVariableDeclaration() {
         typeAnnotation = parseType();
     }
     std::unique_ptr<Expression> initializer = nullptr;
-    if (match(TokenKind::Equals)) {
+    if (match(TokenKind::Equal)) {
         initializer = parseExpression();
     }
     consume(TokenKind::Semicolon, "Expect ';' after variable declaration.");
@@ -278,7 +282,7 @@ std::unique_ptr<Expression> Parser::parseExpression() {
 
 std::unique_ptr<Expression> Parser::parseAssignment() {
     auto expr = parseEquality();
-    if (match(TokenKind::Equals)) {
+    if (match(TokenKind::Equal)) {
         Token equals = previous();
         auto value = parseAssignment();
         if (auto* varExpr = dynamic_cast<VariableExpression*>(expr.get())) {
@@ -291,7 +295,7 @@ std::unique_ptr<Expression> Parser::parseAssignment() {
 
 std::unique_ptr<Expression> Parser::parseEquality() {
     auto expr = parseComparison();
-    while (match(TokenKind::BangEquals) || match(TokenKind::EqualsEquals)) {
+    while (match(TokenKind::BangEqual) || match(TokenKind::EqualEqual)) {
         Token op = previous();
         auto right = parseComparison();
         expr = std::make_unique<BinaryExpression>(std::move(expr), op, std::move(right));
@@ -301,8 +305,8 @@ std::unique_ptr<Expression> Parser::parseEquality() {
 
 std::unique_ptr<Expression> Parser::parseComparison() {
     auto expr = parseTerm();
-    while (match(TokenKind::Greater) || match(TokenKind::GreaterEquals) ||
-           match(TokenKind::Less) || match(TokenKind::LessEquals)) {
+    while (match(TokenKind::Greater) || match(TokenKind::GreaterEqual) ||
+           match(TokenKind::Less) || match(TokenKind::LessEqual)) {
         Token op = previous();
         auto right = parseTerm();
         expr = std::make_unique<BinaryExpression>(std::move(expr), op, std::move(right));
@@ -393,7 +397,8 @@ std::unique_ptr<Expression> Parser::parseClassExpression() {
     consume(TokenKind::LeftBrace, "Expect '{' before class body.");
     std::vector<std::unique_ptr<FunctionExpression>> methods;
     while (!check(TokenKind::RightBrace) && !isAtEnd()) {
-        methods.push_back(parseFunctionExpression());
+        auto method = parseFunctionExpression();
+        methods.push_back(std::unique_ptr<FunctionExpression>(static_cast<FunctionExpression*>(method.release())));
     }
     consume(TokenKind::RightBrace, "Expect '}' after class body.");
     return std::make_unique<ClassExpression>(name, std::move(superclass), std::move(methods));
@@ -406,7 +411,7 @@ std::unique_ptr<Expression> Parser::parseJSXExpression() {
     while (!check(TokenKind::Greater) && !isAtEnd()) {
         if (match(TokenKind::Identifier)) {
             Token propName = previous();
-            if (match(TokenKind::Equals)) {
+            if (match(TokenKind::Equal)) {
                 if (match(TokenKind::LeftBrace)) {
                     auto value = parseExpression();
                     consume(TokenKind::RightBrace, "Expect '}' after JSX prop value.");
@@ -467,7 +472,7 @@ std::unique_ptr<Type> Parser::parseType() {
     if (match(TokenKind::Identifier)) {
         return parseGenericType();
     }
-    if (match(TokenKind::Pipe)) {
+    if (match(TokenKind::Or)) {
         return parseUnionType();
     }
     throw std::runtime_error("Expect type.");
@@ -537,7 +542,7 @@ std::unique_ptr<Type> Parser::parseUnionType() {
     std::vector<std::unique_ptr<Type>> types;
     do {
         types.push_back(parseType());
-    } while (match(TokenKind::Pipe));
+    } while (match(TokenKind::Or));
     return std::make_unique<UnionType>(std::move(types));
 }
 
