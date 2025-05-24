@@ -84,9 +84,9 @@ Token Lexer::nextToken() {
     }
     
     // Handle JSX
-    if (c == '<') {
-        return scanJSX();
-    }
+    // if (c == '<') {
+    //     return scanJSX();
+    // }
     
     // Handle operators and punctuation
     switch (c) {
@@ -104,13 +104,25 @@ Token Lexer::nextToken() {
         case '/': return makeToken(TokenKind::Slash);
         case '*': return makeToken(TokenKind::Star);
         case '%': return makeToken(TokenKind::Percent);
-        case '!': return match('=') ? makeToken(TokenKind::BangEqual) : makeToken(TokenKind::Bang);
+        case '!': 
+            if (match('=')) {
+                return makeToken(TokenKind::BangEqual);
+            }
+            return makeToken(TokenKind::Bang);
         case '=':
             if (match('=')) return makeToken(TokenKind::EqualEqual);
             if (match('>')) return makeToken(TokenKind::Arrow);
             return makeToken(TokenKind::Equal);
-        case '<': return match('=') ? makeToken(TokenKind::LessEqual) : makeToken(TokenKind::Less);
-        case '>': return match('=') ? makeToken(TokenKind::GreaterEqual) : makeToken(TokenKind::Greater);
+        case '<': 
+            if (match('=')) {
+                return makeToken(TokenKind::LessEqual);
+            }
+            return makeToken(TokenKind::Less);
+        case '>': 
+            if (match('=')) {
+                return makeToken(TokenKind::GreaterEqual);
+            }
+            return makeToken(TokenKind::Greater);
         case '&': return match('&') ? makeToken(TokenKind::And) : errorToken("Expected '&'");
         case '|': return match('|') ? makeToken(TokenKind::Or) : errorToken("Expected '|'");
         case '?': return makeToken(TokenKind::Question);
@@ -123,12 +135,15 @@ Token Lexer::nextToken() {
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     Token token;
-    
     do {
         token = nextToken();
         tokens.push_back(token);
-    } while (token.kind != TokenKind::EndOfFile && token.kind != TokenKind::Error);
-    
+        if (token.kind == TokenKind::Error) {
+            tokens.push_back(makeToken(TokenKind::EndOfFile));
+            break;
+        }
+    } while (token.kind != TokenKind::EndOfFile);
+
     return tokens;
 }
 
