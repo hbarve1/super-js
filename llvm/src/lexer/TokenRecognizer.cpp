@@ -31,7 +31,7 @@ Token TokenRecognizer::scanNumber() {
         }
     }
     
-    return makeToken(TokenKind::NumberLiteral);
+    return makeToken(TokenKind::Number);
 }
 
 Token TokenRecognizer::scanString() {
@@ -51,7 +51,7 @@ Token TokenRecognizer::scanString() {
     }
     
     advance(); // consume the closing quote
-    return makeToken(TokenKind::StringLiteral);
+    return makeToken(TokenKind::String);
 }
 
 Token TokenRecognizer::scanTemplate() {
@@ -70,7 +70,7 @@ Token TokenRecognizer::scanTemplate() {
     }
     
     advance(); // consume the closing backtick
-    return makeToken(TokenKind::StringLiteral);
+    return makeToken(TokenKind::String);
 }
 
 Token TokenRecognizer::scanJSX() {
@@ -120,6 +120,33 @@ void TokenRecognizer::skipWhitespace() {
                 line++;
                 column = 1;
                 advance();
+                break;
+            case '/':
+                if (peek() == '/') {
+                    // Single-line comment
+                    advance(); // consume '/'
+                    advance(); // consume second '/'
+                    while (currentChar() != '\n' && !isAtEnd()) {
+                        advance();
+                    }
+                } else if (peek() == '*') {
+                    // Multi-line comment
+                    advance(); // consume '/'
+                    advance(); // consume '*'
+                    while (!(currentChar() == '*' && peek() == '/') && !isAtEnd()) {
+                        if (currentChar() == '\n') {
+                            line++;
+                            column = 1;
+                        }
+                        advance();
+                    }
+                    if (!isAtEnd()) {
+                        advance(); // consume '*'
+                        advance(); // consume '/'
+                    }
+                } else {
+                    return;
+                }
                 break;
             default:
                 return;

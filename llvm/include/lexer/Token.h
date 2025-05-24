@@ -7,7 +7,7 @@ namespace superjs {
 // Token kinds
 enum class TokenKind {
     // Keywords
-    Let, Const, Var, Function, Return, If, Else, While, For, In, Of,
+    Let = 1, Const, Var, Function, Return, If, Else, While, For, In, Of,
     Class, Extends, New, This, Super, Import, Export, Default,
     Async, Await, Try, Catch, Finally, Throw, Type, Interface,
     Break, Continue, Delete, Typeof, Instanceof, Void,
@@ -22,7 +22,7 @@ enum class TokenKind {
     JSXOpen, JSXClose, JSXSelfClose, JSXIdentifier, JSXText,
     
     // Literals
-    Number, String, TemplateStart, TemplateMiddle, TemplateEnd,
+    Number = 41, String, TemplateStart, TemplateMiddle, TemplateEnd,
     True, False, Null, Undefined,
     
     // Special
@@ -30,8 +30,7 @@ enum class TokenKind {
     LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
     EndOfFile, Error,
     Boolean,
-    Any, Unknown, Never, Object, Array,
-    NumberLiteral, StringLiteral
+    Any, Unknown, Never, Object, Array
 };
 
 // Token structure

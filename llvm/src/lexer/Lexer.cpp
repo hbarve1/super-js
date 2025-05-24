@@ -19,6 +19,8 @@ Lexer::Lexer(const std::string& source)
 Token Lexer::nextToken() {
     recognizer->skipWhitespace();
     
+    // Reset start to current for each new token
+    recognizer->setStart(recognizer->getCurrent());
     start = recognizer->getStart();
     current = recognizer->getCurrent();
     line = recognizer->getLine();
@@ -63,9 +65,11 @@ Token Lexer::nextToken() {
             operatorKind == TokenKind::LessEqual || operatorKind == TokenKind::GreaterEqual ||
             operatorKind == TokenKind::And || operatorKind == TokenKind::Or) {
             recognizer->advance(); // consume the second character
+            recognizer->advance(); // consume the first character
+            return Token(operatorKind, source.substr(start, 2), line, column);
         }
-        recognizer->advance(); // consume the first character
-        return Token(operatorKind, source.substr(start, recognizer->getCurrent() - start), line, column);
+        recognizer->advance(); // consume the operator
+        return Token(operatorKind, std::string(1, c), line, column);
     }
     
     // Handle punctuation
