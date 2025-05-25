@@ -11,6 +11,7 @@ class Type {
 public:
     virtual ~Type() = default;
     virtual void accept(class TypeVisitor& visitor) = 0;
+    virtual std::unique_ptr<Type> clone() const = 0;
 };
 
 class TypeVisitor {

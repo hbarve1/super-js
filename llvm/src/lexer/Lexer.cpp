@@ -3,13 +3,12 @@
 #include "../../include/lexer/TokenClassifier.h"
 #include "../../include/lexer/LexerUtils.h"
 #include <cctype>
+#include <iostream>
 
 namespace superjs {
 
 Lexer::Lexer(const std::string& source)
     : source(source)
-    , current(0)
-    , start(0)
     , line(1)
     , column(1)
     , recognizer(std::make_unique<TokenRecognizer>(source))
@@ -21,8 +20,6 @@ Token Lexer::nextToken() {
     
     // Reset start to current for each new token
     recognizer->setStart(recognizer->getCurrent());
-    start = recognizer->getStart();
-    current = recognizer->getCurrent();
     line = recognizer->getLine();
     column = recognizer->getColumn();
     
@@ -66,7 +63,7 @@ Token Lexer::nextToken() {
             operatorKind == TokenKind::And || operatorKind == TokenKind::Or) {
             recognizer->advance(); // consume the second character
             recognizer->advance(); // consume the first character
-            return Token(operatorKind, source.substr(start, 2), line, column);
+            return Token(operatorKind, source.substr(recognizer->getStart(), 2), line, column);
         }
         recognizer->advance(); // consume the operator
         return Token(operatorKind, std::string(1, c), line, column);
@@ -87,6 +84,7 @@ std::vector<Token> Lexer::tokenize() {
     Token token;
     do {
         token = nextToken();
+        std::cerr << "Token: " << token.text << " (Kind: " << static_cast<int>(token.kind) << ")" << std::endl;
         tokens.push_back(token);
         if (token.kind == TokenKind::Error) {
             tokens.push_back(Token(TokenKind::EndOfFile, "", line, column));

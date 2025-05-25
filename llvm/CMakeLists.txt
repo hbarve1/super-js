@@ -21,6 +21,12 @@ endif()
 # Find required packages
 find_package(LibEdit REQUIRED)
 find_package(GTest REQUIRED)
+find_package(LLVM REQUIRED CONFIG)
+
+# Add LLVM definitions and include directories
+add_definitions(${LLVM_DEFINITIONS})
+include_directories(${LLVM_INCLUDE_DIRS})
+link_directories(${LLVM_LIBRARY_DIRS})
 
 # Set include directories for all targets
 include_directories(
@@ -34,6 +40,7 @@ add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
 add_subdirectory(src/ast)
 add_subdirectory(src/semantic)
+add_subdirectory(src/codegen)
 
 # Add executable
 add_executable(superjs main.cpp)
@@ -50,6 +57,8 @@ target_link_libraries(superjs PRIVATE
     parser
     ast
     semantic
+    superjs_codegen
+    ${LLVM_AVAILABLE_LIBS}
 )
 
 # Add tests
@@ -60,6 +69,7 @@ add_executable(superjs_tests
     tests/lexer_test.cpp
     tests/parser_test.cpp
     tests/semantic_test.cpp
+    tests/codegen_test.cpp
 )
 
 target_include_directories(superjs_tests PRIVATE
@@ -72,6 +82,7 @@ target_link_libraries(superjs_tests PRIVATE
     parser
     ast
     semantic
+    superjs_codegen
     ${GTEST_LIBRARIES}
     ${GTEST_MAIN_LIBRARIES}
     pthread

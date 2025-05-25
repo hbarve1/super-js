@@ -17,7 +17,7 @@ class Type;
 
 class TypeParser : public ParserBase {
 public:
-    explicit TypeParser(std::vector<Token>& tokens, size_t& current)
+    TypeParser(std::vector<Token>& tokens, size_t& current)
         : ParserBase(tokens, current) {}
 
     std::unique_ptr<Type> parseType();

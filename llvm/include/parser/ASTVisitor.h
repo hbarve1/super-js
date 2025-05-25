@@ -1,5 +1,9 @@
 #pragma once
 
+#include "../ast/Statement.h"
+#include "../ast/Expression.h"
+#include "../ast/Type.h"
+
 namespace superjs {
 
 // Forward declarations
@@ -35,46 +39,53 @@ class InterfaceDeclaration;
 class GetExpression;
 class GroupingExpression;
 
-class ASTVisitor {
+class ASTVisitor : public StatementVisitor, public ExpressionVisitor, public TypeVisitor {
 public:
     virtual ~ASTVisitor() = default;
 
     // Type visitor methods
-    virtual void visitPrimitiveType(PrimitiveType& type) = 0;
-    virtual void visitObjectType(ObjectType& type) = 0;
-    virtual void visitFunctionType(FunctionType& type) = 0;
-    virtual void visitGenericType(GenericType& type) = 0;
-    virtual void visitUnionType(UnionType& type) = 0;
+    void visitPrimitiveType(PrimitiveType* type) override = 0;
+    void visitArrayType(ArrayType* type) override = 0;
+    void visitFunctionType(FunctionType* type) override = 0;
+    void visitObjectType(ObjectType* type) override = 0;
+    void visitUnionType(UnionType* type) override = 0;
+    void visitIntersectionType(IntersectionType* type) override = 0;
+    void visitGenericType(GenericType* type) override = 0;
 
     // Expression visitor methods
-    virtual void visitExpressionStatement(ExpressionStatement& stmt) = 0;
-    virtual void visitAssignmentExpression(AssignmentExpression& expr) = 0;
-    virtual void visitBinaryExpression(BinaryExpression& expr) = 0;
-    virtual void visitUnaryExpression(UnaryExpression& expr) = 0;
-    virtual void visitLiteralExpression(LiteralExpression& expr) = 0;
-    virtual void visitIdentifierExpression(IdentifierExpression& expr) = 0;
-    virtual void visitVariableExpression(VariableExpression& expr) = 0;
-    virtual void visitCallExpression(CallExpression& expr) = 0;
-    virtual void visitMemberExpression(MemberExpression& expr) = 0;
-    virtual void visitFunctionExpression(FunctionExpression& expr) = 0;
-    virtual void visitClassExpression(ClassExpression& expr) = 0;
-    virtual void visitJSXExpression(JSXExpression& expr) = 0;
-    virtual void visitGetExpression(GetExpression& expr) = 0;
-    virtual void visitGroupingExpression(GroupingExpression& expr) = 0;
+    void visitBinaryExpression(BinaryExpression* expr) override = 0;
+    void visitUnaryExpression(UnaryExpression* expr) override = 0;
+    void visitLiteralExpression(LiteralExpression* expr) override = 0;
+    void visitIdentifierExpression(IdentifierExpression* expr) override = 0;
+    void visitVariableExpression(VariableExpression* expr) override = 0;
+    void visitAssignmentExpression(AssignmentExpression* expr) override = 0;
+    void visitCallExpression(CallExpression* expr) override = 0;
+    void visitMemberExpression(MemberExpression* expr) override = 0;
+    void visitFunctionExpression(FunctionExpression* expr) override = 0;
+    void visitClassExpression(ClassExpression* expr) override = 0;
+    void visitJSXExpression(JSXExpression* expr) override = 0;
+    void visitGetExpression(GetExpression* expr) override = 0;
+    void visitGroupingExpression(GroupingExpression* expr) override = 0;
+    void visitSetExpression(SetExpression* expr) override = 0;
+    void visitThisExpression(ThisExpression* expr) override = 0;
+    void visitSuperExpression(SuperExpression* expr) override = 0;
 
     // Statement visitor methods
-    virtual void visitIfStatement(IfStatement& stmt) = 0;
-    virtual void visitWhileStatement(WhileStatement& stmt) = 0;
-    virtual void visitForStatement(ForStatement& stmt) = 0;
-    virtual void visitBlockStatement(BlockStatement& stmt) = 0;
-    virtual void visitFunctionDeclaration(FunctionDeclaration& stmt) = 0;
-    virtual void visitVariableDeclaration(VariableDeclaration& stmt) = 0;
-    virtual void visitReturnStatement(ReturnStatement& stmt) = 0;
-    virtual void visitClassDeclaration(ClassDeclaration& stmt) = 0;
-    virtual void visitImportStatement(ImportStatement& stmt) = 0;
-    virtual void visitExportStatement(ExportStatement& stmt) = 0;
-    virtual void visitTypeDeclaration(TypeDeclaration& stmt) = 0;
-    virtual void visitInterfaceDeclaration(InterfaceDeclaration& stmt) = 0;
+    void visitBlockStatement(BlockStatement* stmt) override = 0;
+    void visitExpressionStatement(ExpressionStatement* stmt) override = 0;
+    void visitIfStatement(IfStatement* stmt) override = 0;
+    void visitWhileStatement(WhileStatement* stmt) override = 0;
+    void visitForStatement(ForStatement* stmt) override = 0;
+    void visitFunctionDeclaration(FunctionDeclaration* stmt) override = 0;
+    void visitVariableDeclaration(VariableDeclaration* stmt) override = 0;
+    void visitReturnStatement(ReturnStatement* stmt) override = 0;
+    void visitClassDeclaration(ClassDeclaration* stmt) override = 0;
+    void visitBreakStatement(BreakStatement* stmt) override = 0;
+    void visitContinueStatement(ContinueStatement* stmt) override = 0;
+    void visitImportStatement(ImportStatement* stmt) override = 0;
+    void visitExportStatement(ExportStatement* stmt) override = 0;
+    void visitTypeDeclaration(TypeDeclaration* stmt) override = 0;
+    void visitInterfaceDeclaration(InterfaceDeclaration* stmt) override = 0;
 };
 
 } // namespace superjs 

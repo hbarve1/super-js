@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "parser/AST.h"
+#include "../ast/Type.h"
 
 namespace superjs {
 

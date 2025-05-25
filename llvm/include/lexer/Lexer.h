@@ -23,8 +23,6 @@ public:
     
 private:
     std::string source;
-    size_t current;
-    size_t start;
     size_t line;
     size_t column;
     

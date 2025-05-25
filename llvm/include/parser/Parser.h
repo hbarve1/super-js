@@ -5,7 +5,6 @@
 #include <string>
 #include "../lexer/Token.h"
 #include "ParserBase.h"
-#include "AST.h"
 #include "ExpressionParser.h"
 #include "StatementParser.h"
 #include "TypeParser.h"
@@ -18,12 +17,11 @@ class Statement;
 
 class Parser : public ParserBase {
 public:
-    explicit Parser(std::vector<Token> tokens)
+    Parser(std::vector<Token>& tokens, size_t& current)
         : ParserBase(tokens, current),
-          current(0),
-          exprParser(tokens, current),
-          typeParser(tokens, current),
-          stmtParser(tokens, current, exprParser, typeParser) {}
+          expression_parser_(tokens, current),
+          type_parser_(tokens, current),
+          statement_parser_(tokens, current) {}
 
     std::vector<std::unique_ptr<Statement>> parse();
 
@@ -32,12 +30,9 @@ public:
     const std::vector<std::string>& getErrors() const { return errors_; }
 
 private:
-    size_t current;
-    ExpressionParser exprParser;
-    TypeParser typeParser;
-    StatementParser stmtParser;
-
-    // Member variables
+    ExpressionParser expression_parser_;
+    TypeParser type_parser_;
+    StatementParser statement_parser_;
     std::vector<std::string> errors_;
 };
 

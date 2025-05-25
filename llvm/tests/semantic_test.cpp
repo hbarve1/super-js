@@ -18,7 +18,8 @@ protected:
 
     vector<string> analyze(const string& source) {
         auto tokens = tokenize(source);
-        Parser parser(tokens);
+        size_t current = 0;
+        Parser parser(tokens, current);
         auto statements = parser.parse();
         
         SemanticAnalyzer analyzer;

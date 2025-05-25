@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace superjs {
 
@@ -21,21 +22,21 @@ class BinaryExpression;
 class UnaryExpression;
 
 std::unique_ptr<Expression> ExpressionParser::parseExpression() {
+    std::cerr << "ExpressionParser::parseExpression() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     return parseAssignment();
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseAssignment() {
+    std::cerr << "ExpressionParser::parseAssignment() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parseEquality();
 
     if (match(TokenKind::Equal)) {
-        Token equals = previous();
+        std::cerr << "Found assignment operator" << std::endl;
         auto value = parseAssignment();
-
         if (auto* varExpr = dynamic_cast<VariableExpression*>(expr.get())) {
             return std::make_unique<AssignmentExpression>(varExpr->name, std::move(value));
         }
-
-        error(equals, "Invalid assignment target.");
+        throw std::runtime_error("Invalid assignment target");
     }
 
     return expr;
@@ -133,9 +134,9 @@ std::unique_ptr<Expression> ExpressionParser::finishCall(std::unique_ptr<Express
 }
 
 std::unique_ptr<Expression> ExpressionParser::parsePrimary() {
-    if (match(TokenKind::False)) return std::make_unique<LiteralExpression>(Token(TokenKind::False, "false", peek().line, peek().column));
-    if (match(TokenKind::True)) return std::make_unique<LiteralExpression>(Token(TokenKind::True, "true", peek().line, peek().column));
-    if (match(TokenKind::Null)) return std::make_unique<LiteralExpression>(Token(TokenKind::Null, "null", peek().line, peek().column));
+    if (match(TokenKind::False)) return std::make_unique<LiteralExpression>(previous());
+    if (match(TokenKind::True)) return std::make_unique<LiteralExpression>(previous());
+    if (match(TokenKind::Null)) return std::make_unique<LiteralExpression>(previous());
 
     if (match(TokenKind::Number) || match(TokenKind::String)) {
         return std::make_unique<LiteralExpression>(previous());
@@ -151,7 +152,14 @@ std::unique_ptr<Expression> ExpressionParser::parsePrimary() {
         return std::make_unique<GroupingExpression>(std::move(expr));
     }
 
-    throw error(peek(), "Expect expression.");
+    // If the current token is a semicolon, return nullptr to let the statement parser handle it
+    if (check(TokenKind::Semicolon)) {
+        return nullptr;
+    }
+
+    std::cerr << "Unexpected token in primary expression: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
+    error(peek(), "Expect expression.");
+    return nullptr;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseFunctionExpression() {
@@ -194,46 +202,6 @@ std::unique_ptr<Expression> ExpressionParser::parseClassExpression() {
 std::unique_ptr<Expression> ExpressionParser::parseJSXExpression() {
     // TODO: Implement JSX parsing
     throw error(peek(), "JSX parsing not implemented yet.");
-}
-
-// Helper methods
-bool ExpressionParser::match(TokenKind kind) {
-    if (check(kind)) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-bool ExpressionParser::check(TokenKind kind) const {
-    if (isAtEnd()) return false;
-    return peek().kind == kind;
-}
-
-Token ExpressionParser::advance() {
-    if (!isAtEnd()) current++;
-    return previous();
-}
-
-Token ExpressionParser::peek() const {
-    return tokens[current];
-}
-
-Token ExpressionParser::previous() const {
-    return tokens[current - 1];
-}
-
-bool ExpressionParser::isAtEnd() const {
-    return peek().kind == TokenKind::EndOfFile;
-}
-
-Token ExpressionParser::consume(TokenKind kind, const std::string& message) {
-    if (check(kind)) return advance();
-    throw error(peek(), message);
-}
-
-ParseError ExpressionParser::error(const Token& token, const std::string& message) {
-    return ParseError(message);
 }
 
 } // namespace superjs 

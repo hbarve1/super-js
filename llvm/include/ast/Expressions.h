@@ -47,6 +47,15 @@ public:
     Token value;
 };
 
+class IdentifierExpression : public Expression {
+public:
+    explicit IdentifierExpression(Token name) : name(name) {}
+
+    void accept(ExpressionVisitor& visitor) override { visitor.visitIdentifierExpression(this); }
+
+    Token name;
+};
+
 class VariableExpression : public Expression {
 public:
     explicit VariableExpression(Token name) : name(name) {}
@@ -81,6 +90,19 @@ public:
     std::unique_ptr<Expression> callee;
     Token paren;
     std::vector<std::unique_ptr<Expression>> arguments;
+};
+
+class MemberExpression : public Expression {
+public:
+    MemberExpression(std::unique_ptr<Expression> object,
+                    std::unique_ptr<Expression> property)
+        : object(std::move(object)),
+          property(std::move(property)) {}
+
+    void accept(ExpressionVisitor& visitor) override { visitor.visitMemberExpression(this); }
+
+    std::unique_ptr<Expression> object;
+    std::unique_ptr<Expression> property;
 };
 
 class GetExpression : public Expression {

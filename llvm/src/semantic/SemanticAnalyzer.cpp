@@ -9,10 +9,6 @@
 
 namespace superjs {
 
-SemanticAnalyzer::SemanticAnalyzer() {
-    currentScope_ = std::make_shared<SymbolTable>();
-}
-
 void SemanticAnalyzer::analyze(const std::vector<std::unique_ptr<Statement>>& statements) {
     for (const auto& stmt : statements) {
         if (stmt) stmt->accept(*this);
@@ -29,8 +25,9 @@ void SemanticAnalyzer::exitScope() {
     }
 }
 
-void SemanticAnalyzer::reportError(const std::string& message) {
-    errors_.push_back(message);
+void SemanticAnalyzer::reportError(const Token& token, const std::string& message) {
+    std::string error = "Error at '" + token.text + "': " + message;
+    errors_.push_back(error);
 }
 
 // Statement visitor methods
@@ -89,9 +86,63 @@ void SemanticAnalyzer::visitContinueStatement(ContinueStatement* stmt) {
     // TODO: Implement continue statement analysis
 }
 
-void SemanticAnalyzer::visitVariableDeclaration(VariableDeclaration* stmt) {
-    if (stmt->initializer) stmt->initializer->accept(*this);
-    // TODO: Add variable to symbol table with type
+void SemanticAnalyzer::visitVariableDeclaration(VariableDeclaration* node) {
+    // If there's a type annotation, use it
+    if (node->typeAnnotation) {
+        // Store the variable with its annotated type
+        currentScope_->define(node->name.text, node->typeAnnotation->clone(), true);
+    } else if (node->initializer) {
+        // Visit the initializer to determine its type
+        node->initializer->accept(*this);
+        
+        // If the initializer is a literal, determine its type
+        if (auto* literal = dynamic_cast<LiteralExpression*>(node->initializer.get())) {
+            std::unique_ptr<Type> type;
+            switch (literal->value.kind) {
+                case TokenKind::Number:
+                    type = std::make_unique<PrimitiveType>(Token(TokenKind::Number, "number", literal->value.line, literal->value.column));
+                    break;
+                case TokenKind::String:
+                    type = std::make_unique<PrimitiveType>(Token(TokenKind::String, "string", literal->value.line, literal->value.column));
+                    break;
+                case TokenKind::True:
+                case TokenKind::False:
+                    type = std::make_unique<PrimitiveType>(Token(TokenKind::True, "boolean", literal->value.line, literal->value.column));
+                    break;
+                default:
+                    reportError(node->name, "Invalid literal type");
+                    return;
+            }
+            currentScope_->define(node->name.text, std::move(type), true);
+        } else {
+            // For non-literal expressions, use the type from the initializer
+            currentScope_->define(node->name.text, std::make_unique<PrimitiveType>(Token(TokenKind::Identifier, "any", node->name.line, node->name.column)), true);
+        }
+    } else {
+        // No type annotation or initializer, use 'any' type
+        currentScope_->define(node->name.text, std::make_unique<PrimitiveType>(Token(TokenKind::Identifier, "any", node->name.line, node->name.column)), true);
+    }
+}
+
+bool SemanticAnalyzer::isTypeCompatible(const Type* expected, const Type* actual) {
+    if (!expected || !actual) return false;
+    
+    // For primitive types, check if they are the same
+    if (auto* expectedPrim = dynamic_cast<const PrimitiveType*>(expected)) {
+        if (auto* actualPrim = dynamic_cast<const PrimitiveType*>(actual)) {
+            return expectedPrim->name.text == actualPrim->name.text;
+        }
+    }
+    
+    return false;
+}
+
+std::string SemanticAnalyzer::typeToString(const Type* type) {
+    if (!type) return "unknown";
+    if (auto* prim = dynamic_cast<const PrimitiveType*>(type)) {
+        return prim->name.text;
+    }
+    return "unknown";
 }
 
 void SemanticAnalyzer::visitImportStatement(ImportStatement* stmt) {
@@ -121,7 +172,21 @@ void SemanticAnalyzer::visitUnaryExpression(UnaryExpression* expr) {
 }
 
 void SemanticAnalyzer::visitLiteralExpression(LiteralExpression* expr) {
-    // TODO: Return appropriate type based on literal value
+    // The type is determined by the token kind
+    switch (expr->value.kind) {
+        case TokenKind::Number:
+            expr->type = std::make_shared<PrimitiveType>(Token(TokenKind::Number, "number", expr->value.line, expr->value.column));
+            break;
+        case TokenKind::String:
+            expr->type = std::make_shared<PrimitiveType>(Token(TokenKind::String, "string", expr->value.line, expr->value.column));
+            break;
+        case TokenKind::True:
+        case TokenKind::False:
+            expr->type = std::make_shared<PrimitiveType>(Token(TokenKind::True, "boolean", expr->value.line, expr->value.column));
+            break;
+        default:
+            expr->type = nullptr;
+    }
 }
 
 void SemanticAnalyzer::visitVariableExpression(VariableExpression* expr) {
@@ -132,11 +197,11 @@ void SemanticAnalyzer::visitAssignmentExpression(AssignmentExpression* expr) {
     if (expr->value) expr->value->accept(*this);
     auto symbol = currentScope_->resolve(expr->name.text);
     if (!symbol) {
-        reportError("Undefined variable: " + expr->name.text);
+        reportError(expr->name, "Undefined variable: " + expr->name.text);
         return;
     }
     if (symbol->isMutable == false) {
-        reportError("Cannot assign to constant: " + expr->name.text);
+        reportError(expr->name, "Cannot assign to constant: " + expr->name.text);
         return;
     }
 }
@@ -181,6 +246,14 @@ void SemanticAnalyzer::visitGroupingExpression(GroupingExpression* expr) {
     if (expr->expression) expr->expression->accept(*this);
 }
 
+void SemanticAnalyzer::visitIdentifierExpression(IdentifierExpression* expr) {
+    // TODO: Implement identifier expression analysis
+}
+
+void SemanticAnalyzer::visitMemberExpression(MemberExpression* expr) {
+    // TODO: Implement member expression analysis
+}
+
 // Type visitor methods
 void SemanticAnalyzer::visitPrimitiveType(PrimitiveType* type) {}
 void SemanticAnalyzer::visitArrayType(ArrayType* type) {}
@@ -189,5 +262,15 @@ void SemanticAnalyzer::visitObjectType(ObjectType* type) {}
 void SemanticAnalyzer::visitUnionType(UnionType* type) {}
 void SemanticAnalyzer::visitIntersectionType(IntersectionType* type) {}
 void SemanticAnalyzer::visitGenericType(GenericType* type) {}
+
+std::shared_ptr<Type> SemanticAnalyzer::getExpressionType(Expression* expr) {
+    if (!expr) return nullptr;
+    
+    // Visit the expression to set its type
+    expr->accept(*this);
+    
+    // Return the type that was set during the visit
+    return expr->type;
+}
 
 } // namespace superjs 

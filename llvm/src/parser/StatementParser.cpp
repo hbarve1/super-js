@@ -1,33 +1,124 @@
 #include "../../include/parser/StatementParser.h"
 #include "../../include/ast/Expressions.h"
 #include <memory>
+#include <iostream>
 
 namespace superjs {
 
-std::unique_ptr<Statement> StatementParser::parseStatement() {
-    if (match(TokenKind::If)) return parseIfStatement();
-    if (match(TokenKind::While)) return parseWhileStatement();
-    if (match(TokenKind::For)) return parseForStatement();
-    if (match(TokenKind::Return)) return parseReturnStatement();
-    if (match(TokenKind::Function)) return parseFunctionDeclaration();
-    if (match(TokenKind::Class)) return parseClassDeclaration();
-    if (match(TokenKind::Import)) return parseImportStatement();
-    if (match(TokenKind::Export)) return parseExportStatement();
-    if (match(TokenKind::Type)) return parseTypeDeclaration();
-    if (match(TokenKind::Interface)) return parseInterfaceDeclaration();
-    if (match(TokenKind::Let) || match(TokenKind::Const)) return parseVariableDeclaration();
-    if (match(TokenKind::LeftBrace)) return parseBlockStatement();
-    if (match(TokenKind::Break)) return parseBreakStatement();
-    if (match(TokenKind::Continue)) return parseContinueStatement();
+// Helper to peek one token ahead
+bool StatementParser::checkNext(TokenKind kind) {
+    if (current + 1 >= tokens.size()) return false;
+    return tokens[current + 1].kind == kind;
+}
 
-    return std::make_unique<ExpressionStatement>(exprParser.parseExpression());
+std::unique_ptr<Statement> StatementParser::parseStatement() {
+    std::cerr << "StatementParser::parseStatement() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
+
+    if (match(TokenKind::If)) {
+        std::cerr << "Found if statement" << std::endl;
+        return parseIfStatement();
+    }
+
+    if (match(TokenKind::While)) {
+        std::cerr << "Found while statement" << std::endl;
+        return parseWhileStatement();
+    }
+
+    if (match(TokenKind::For)) {
+        std::cerr << "Found for statement" << std::endl;
+        return parseForStatement();
+    }
+
+    if (match(TokenKind::Return)) {
+        std::cerr << "Found return statement" << std::endl;
+        return parseReturnStatement();
+    }
+
+    if (match(TokenKind::Function)) {
+        std::cerr << "Found function declaration" << std::endl;
+        return parseFunctionDeclaration();
+    }
+
+    if (match(TokenKind::Class)) {
+        std::cerr << "Found class declaration" << std::endl;
+        return parseClassDeclaration();
+    }
+
+    // Only match let/const if not in for-loop context
+    if ((check(TokenKind::Let) || check(TokenKind::Const)) && !checkNext(TokenKind::LeftParen)) {
+        advance();
+        std::cerr << "Found variable declaration" << std::endl;
+        return parseVariableDeclaration();
+    }
+
+    if (match(TokenKind::Export)) {
+        std::cerr << "Found export statement" << std::endl;
+        return parseExportStatement();
+    }
+
+    if (match(TokenKind::Import)) {
+        std::cerr << "Found import statement" << std::endl;
+        return parseImportStatement();
+    }
+
+    if (match(TokenKind::Type)) {
+        std::cerr << "Found type declaration" << std::endl;
+        return parseTypeDeclaration();
+    }
+
+    if (match(TokenKind::Interface)) {
+        std::cerr << "Found interface declaration" << std::endl;
+        return parseInterfaceDeclaration();
+    }
+
+    if (match(TokenKind::Break)) {
+        std::cerr << "Found break statement" << std::endl;
+        return parseBreakStatement();
+    }
+
+    if (match(TokenKind::Continue)) {
+        std::cerr << "Found continue statement" << std::endl;
+        return parseContinueStatement();
+    }
+
+    if (match(TokenKind::LeftBrace)) {
+        std::cerr << "Found block statement" << std::endl;
+        return parseBlockStatement();
+    }
+
+    std::cerr << "Parsing expression statement" << std::endl;
+    auto expr = exprParser.parseExpression();
+    if (!expr) {
+        if (match(TokenKind::Semicolon)) {
+            std::cerr << "Empty statement (just a semicolon)" << std::endl;
+            return nullptr; // skip adding empty statement, but do not break parsing
+        }
+        std::cerr << "Failed to parse expression" << std::endl;
+        synchronize();
+        return nullptr;
+    }
+
+    // Always wrap expressions in ExpressionStatement
+    if (match(TokenKind::Semicolon)) {
+        std::cerr << "Successfully parsed expression statement (with semicolon)" << std::endl;
+        return std::make_unique<ExpressionStatement>(std::move(expr));
+    } else {
+        std::cerr << "Expected semicolon after expression" << std::endl;
+        synchronize();
+        return std::make_unique<ExpressionStatement>(std::move(expr));
+    }
 }
 
 std::unique_ptr<Statement> StatementParser::parseBlockStatement() {
     std::vector<std::unique_ptr<Statement>> statements;
 
     while (!check(TokenKind::RightBrace) && !isAtEnd()) {
-        statements.push_back(parseStatement());
+        auto stmt = parseStatement();
+        if (stmt) {
+            statements.push_back(std::move(stmt));
+        } else {
+            synchronize();
+        }
     }
 
     consume(TokenKind::RightBrace, "Expect '}' after block.");
@@ -58,30 +149,51 @@ std::unique_ptr<Statement> StatementParser::parseWhileStatement() {
 }
 
 std::unique_ptr<Statement> StatementParser::parseForStatement() {
+    std::cerr << "Found for statement" << std::endl;
     consume(TokenKind::LeftParen, "Expect '(' after 'for'.");
 
+    // Parse initializer
     std::unique_ptr<Statement> initializer;
     if (match(TokenKind::Semicolon)) {
         initializer = nullptr;
-    } else if (match(TokenKind::Let) || match(TokenKind::Const)) {
-        initializer = parseVariableDeclaration();
-    } else {
-        initializer = std::make_unique<ExpressionStatement>(exprParser.parseExpression());
+    } else if (match(TokenKind::Let)) {
+        // Handle multiple variable declarations
+        std::vector<std::unique_ptr<Statement>> declarations;
+        do {
+            Token name = consume(TokenKind::Identifier, "Expect variable name.");
+            std::unique_ptr<Type> typeAnnotation = nullptr;
+            if (match(TokenKind::Colon)) {
+                typeAnnotation = typeParser.parseType();
+            }
+            std::unique_ptr<Expression> initializer = nullptr;
+            if (match(TokenKind::Equal)) {
+                initializer = exprParser.parseExpression();
+            }
+            declarations.push_back(std::make_unique<VariableDeclaration>(name, std::move(typeAnnotation), std::move(initializer)));
+        } while (match(TokenKind::Comma));
         consume(TokenKind::Semicolon, "Expect ';' after loop initializer.");
+        
+        // Create a single block statement for all declarations
+        initializer = std::make_unique<BlockStatement>(std::move(declarations));
+    } else {
+        initializer = parseExpressionStatement();
     }
 
+    // Parse condition
     std::unique_ptr<Expression> condition = nullptr;
     if (!check(TokenKind::Semicolon)) {
         condition = exprParser.parseExpression();
     }
     consume(TokenKind::Semicolon, "Expect ';' after loop condition.");
 
+    // Parse increment
     std::unique_ptr<Expression> increment = nullptr;
     if (!check(TokenKind::RightParen)) {
         increment = exprParser.parseExpression();
     }
     consume(TokenKind::RightParen, "Expect ')' after for clauses.");
 
+    // Parse body
     auto body = parseStatement();
 
     // Desugar for loop into while loop
@@ -93,18 +205,18 @@ std::unique_ptr<Statement> StatementParser::parseForStatement() {
     }
 
     if (condition == nullptr) {
-        condition = std::make_unique<LiteralExpression>(Token(TokenKind::True, "true", peek().line, peek().column));
+        condition = std::make_unique<LiteralExpression>(Token(TokenKind::True, "true", 0, 0));
     }
-    body = std::make_unique<WhileStatement>(std::move(condition), std::move(body));
 
+    auto whileLoop = std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+
+    // Always return a BlockStatement for the for loop
+    std::vector<std::unique_ptr<Statement>> statements;
     if (initializer != nullptr) {
-        std::vector<std::unique_ptr<Statement>> statements;
         statements.push_back(std::move(initializer));
-        statements.push_back(std::move(body));
-        body = std::make_unique<BlockStatement>(std::move(statements));
     }
-
-    return body;
+    statements.push_back(std::move(whileLoop));
+    return std::make_unique<BlockStatement>(std::move(statements));
 }
 
 std::unique_ptr<Statement> StatementParser::parseReturnStatement() {
@@ -268,6 +380,12 @@ std::unique_ptr<Statement> StatementParser::parseContinueStatement() {
     Token keyword = previous();
     consume(TokenKind::Semicolon, "Expect ';' after 'continue'.");
     return std::make_unique<ContinueStatement>(keyword);
+}
+
+std::unique_ptr<Statement> StatementParser::parseExpressionStatement() {
+    auto expr = exprParser.parseExpression();
+    consume(TokenKind::Semicolon, "Expect ';' after expression.");
+    return std::make_unique<ExpressionStatement>(std::move(expr));
 }
 
 } // namespace superjs 

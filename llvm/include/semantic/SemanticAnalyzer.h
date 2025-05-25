@@ -1,52 +1,25 @@
 #pragma once
 
-#include <string>
-#include <unordered_map>
-#include <memory>
-#include <vector>
 #include "../ast/Statements.h"
 #include "../ast/Expressions.h"
 #include "../ast/Type.h"
 #include "../ast/Types.h"
-#include "../ast/Statement.h"
-#include "../ast/Expression.h"
+#include "../lexer/Token.h"
+#include "SymbolTable.h"
+#include <memory>
+#include <vector>
+#include <string>
 
 namespace superjs {
 
 // Forward declarations
-class Expression;
-class Statement;
 class Type;
 class SymbolTable;
-
-// Symbol table entry
-struct Symbol {
-    std::string name;
-    std::shared_ptr<Type> type;
-    bool isMutable;
-    bool isInitialized;
-};
-
-// Symbol table for scoping
-class SymbolTable {
-public:
-    SymbolTable() = default;
-    explicit SymbolTable(std::shared_ptr<SymbolTable> parent) : parent_(parent) {}
-
-    void define(const std::string& name, std::shared_ptr<Type> type, bool isMutable = true);
-    Symbol* resolve(const std::string& name);
-    void markInitialized(const std::string& name);
-    std::shared_ptr<SymbolTable> getParent() const { return parent_; }
-
-private:
-    std::unordered_map<std::string, Symbol> symbols_;
-    std::shared_ptr<SymbolTable> parent_;
-};
 
 // Semantic analyzer
 class SemanticAnalyzer : public StatementVisitor, public ExpressionVisitor, public TypeVisitor {
 public:
-    SemanticAnalyzer();
+    explicit SemanticAnalyzer() : currentScope_(nullptr) {}
     
     // Main analysis entry point
     void analyze(const std::vector<std::unique_ptr<Statement>>& statements);
@@ -87,6 +60,8 @@ public:
     virtual void visitClassExpression(ClassExpression* expr) override;
     virtual void visitJSXExpression(JSXExpression* expr) override;
     virtual void visitGroupingExpression(GroupingExpression* expr) override;
+    virtual void visitIdentifierExpression(IdentifierExpression* expr) override;
+    virtual void visitMemberExpression(MemberExpression* expr) override;
 
     // Type visitor methods
     virtual void visitPrimitiveType(PrimitiveType* type) override;
@@ -97,13 +72,15 @@ public:
     virtual void visitIntersectionType(IntersectionType* type) override;
     virtual void visitGenericType(GenericType* type) override;
 
-private:
     // Helper methods
+    std::shared_ptr<Type> getExpressionType(Expression* expr);
+    void reportError(const Token& token, const std::string& message);
+    bool isTypeCompatible(const Type* expected, const Type* actual);
+    std::string typeToString(const Type* type);
+
+private:
     void enterScope();
     void exitScope();
-    void reportError(const std::string& message);
-    std::shared_ptr<Type> visitExpression(Expression* expr);
-
     std::shared_ptr<SymbolTable> currentScope_;
     std::vector<std::string> errors_;
 };
