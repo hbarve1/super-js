@@ -5,6 +5,10 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <memory>
+#include <string>
+#include <vector>
+#include <map>
 
 namespace superjs {
 
@@ -124,7 +128,19 @@ void IRGenerator::setVariableValue(const std::string& name, llvm::Value* value) 
 
 // Statement visitor implementations
 void IRGenerator::visitBlockStatement(BlockStatement* stmt) {
-    // TODO: Implement block statement IR generation
+    // Create a new scope for variables
+    std::map<std::string, llvm::Value*> oldVariables = variables_;
+    
+    // Process each statement in the block
+    for (const auto& statement : stmt->statements) {
+        statement->accept(*this);
+        if (!errors_.empty()) {
+            break;
+        }
+    }
+    
+    // Restore the previous scope
+    variables_ = oldVariables;
 }
 
 void IRGenerator::visitExpressionStatement(ExpressionStatement* stmt) {
@@ -132,11 +148,78 @@ void IRGenerator::visitExpressionStatement(ExpressionStatement* stmt) {
 }
 
 void IRGenerator::visitIfStatement(IfStatement* stmt) {
-    // TODO: Implement if statement IR generation
+    // Generate code for the condition
+    stmt->condition->accept(*this);
+    llvm::Value* condition = result_;
+    if (!condition) {
+        reportError("Invalid condition in if statement");
+        return;
+    }
+
+    // Get the current function and create basic blocks
+    llvm::Function* function = builder_->GetInsertBlock()->getParent();
+    llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context_, "then", function);
+    llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context_, "else");
+    llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context_, "ifcont");
+
+    // Create conditional branch
+    builder_->CreateCondBr(condition, thenBlock, elseBlock);
+
+    // Generate code for the then block
+    builder_->SetInsertPoint(thenBlock);
+    stmt->thenBranch->accept(*this);
+    if (!builder_->GetInsertBlock()->getTerminator()) {
+        builder_->CreateBr(mergeBlock);
+    }
+
+    // Generate code for the else block
+    function->insert(function->end(), elseBlock);
+    builder_->SetInsertPoint(elseBlock);
+    if (stmt->elseBranch) {
+        stmt->elseBranch->accept(*this);
+    }
+    if (!builder_->GetInsertBlock()->getTerminator()) {
+        builder_->CreateBr(mergeBlock);
+    }
+
+    // Add the merge block
+    function->insert(function->end(), mergeBlock);
+    builder_->SetInsertPoint(mergeBlock);
 }
 
 void IRGenerator::visitWhileStatement(WhileStatement* stmt) {
-    // TODO: Implement while statement IR generation
+    // Get the current function
+    llvm::Function* function = builder_->GetInsertBlock()->getParent();
+
+    // Create basic blocks
+    llvm::BasicBlock* loopHeader = llvm::BasicBlock::Create(*context_, "loop_header", function);
+    llvm::BasicBlock* loopBody = llvm::BasicBlock::Create(*context_, "loop_body");
+    llvm::BasicBlock* loopExit = llvm::BasicBlock::Create(*context_, "loop_exit");
+
+    // Branch to the loop header
+    builder_->CreateBr(loopHeader);
+
+    // Generate code for the loop header (condition)
+    builder_->SetInsertPoint(loopHeader);
+    stmt->condition->accept(*this);
+    llvm::Value* condition = result_;
+    if (!condition) {
+        reportError("Invalid condition in while statement");
+        return;
+    }
+    builder_->CreateCondBr(condition, loopBody, loopExit);
+
+    // Generate code for the loop body
+    function->insert(function->end(), loopBody);
+    builder_->SetInsertPoint(loopBody);
+    stmt->body->accept(*this);
+    if (!builder_->GetInsertBlock()->getTerminator()) {
+        builder_->CreateBr(loopHeader);
+    }
+
+    // Add the exit block
+    function->insert(function->end(), loopExit);
+    builder_->SetInsertPoint(loopExit);
 }
 
 void IRGenerator::visitForStatement(ForStatement* stmt) {
@@ -225,7 +308,34 @@ void IRGenerator::visitContinueStatement(ContinueStatement* stmt) {
 }
 
 void IRGenerator::visitVariableDeclaration(VariableDeclaration* stmt) {
-    // TODO: Implement variable declaration IR generation
+    // Get the variable type
+    llvm::Type* varType = getLLVMType(stmt->typeAnnotation.get());
+    if (!varType) {
+        reportError("Invalid type for variable: " + stmt->name.text);
+        return;
+    }
+
+    // Create alloca instruction for the variable
+    llvm::Value* alloca = builder_->CreateAlloca(varType, nullptr, stmt->name.text);
+    
+    // If there's an initializer, generate code for it
+    if (stmt->initializer) {
+        stmt->initializer->accept(*this);
+        if (result_) {
+            // Store the initializer value into the variable
+            builder_->CreateStore(result_, alloca);
+        } else {
+            reportError("Invalid initializer for variable: " + stmt->name.text);
+            return;
+        }
+    } else {
+        // Initialize with null/zero value if no initializer
+        builder_->CreateStore(llvm::Constant::getNullValue(varType), alloca);
+    }
+
+    // Store the variable in the current scope
+    setVariableValue(stmt->name.text, alloca);
+    result_ = alloca;
 }
 
 void IRGenerator::visitImportStatement(ImportStatement* stmt) {
