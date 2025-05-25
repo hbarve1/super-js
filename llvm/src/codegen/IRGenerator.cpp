@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 namespace superjs {
 
@@ -26,10 +27,29 @@ std::unique_ptr<llvm::Module> IRGenerator::generate(
     errors_.clear();
     result_ = nullptr;
 
+    // Create main function
+    llvm::FunctionType* mainType = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(*context_),  // Return type
+        false  // Is vararg
+    );
+    llvm::Function* mainFunction = llvm::Function::Create(
+        mainType,
+        llvm::Function::ExternalLinkage,
+        "main",
+        module_.get()
+    );
+
+    // Create entry block
+    llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(*context_, "entry", mainFunction);
+    builder_->SetInsertPoint(entryBlock);
+
     // Process each statement
     for (const auto& stmt : statements) {
         stmt->accept(*this);
     }
+
+    // Add return 0 at the end of main
+    builder_->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context_), 0));
 
     // Verify the module
     std::string error;
@@ -38,6 +58,9 @@ std::unique_ptr<llvm::Module> IRGenerator::generate(
         reportError("Module verification failed: " + error);
         return nullptr;
     }
+
+    // Print the module
+    module_->print(llvm::errs(), nullptr);
 
     return std::move(module_);
 }
@@ -129,7 +152,7 @@ void IRGenerator::setVariableValue(const std::string& name, llvm::Value* value) 
 // Statement visitor implementations
 void IRGenerator::visitBlockStatement(BlockStatement* stmt) {
     // Create a new scope for variables
-    std::map<std::string, llvm::Value*> oldVariables = variables_;
+    std::unordered_map<std::string, llvm::Value*> oldVariables = variables_;
     
     // Process each statement in the block
     for (const auto& statement : stmt->statements) {
@@ -419,7 +442,44 @@ void IRGenerator::visitAssignmentExpression(AssignmentExpression* expr) {
 }
 
 void IRGenerator::visitCallExpression(CallExpression* expr) {
-    // TODO: Implement call expression IR generation
+    // Only support print for now
+    // Check if callee is a VariableExpression with name 'print'
+    VariableExpression* varExpr = dynamic_cast<VariableExpression*>(expr->callee.get());
+    if (varExpr && varExpr->name.text == "print") {
+        // Only support one argument for now
+        if (expr->arguments.size() != 1) {
+            reportError("print expects one argument");
+            result_ = nullptr;
+            return;
+        }
+        // Generate code for the argument
+        expr->arguments[0]->accept(*this);
+        llvm::Value* argVal = result_;
+        if (!argVal) {
+            reportError("Invalid argument to print");
+            result_ = nullptr;
+            return;
+        }
+        // Declare printf if not already declared
+        llvm::Function* printfFunc = module_->getFunction("printf");
+        if (!printfFunc) {
+            std::vector<llvm::Type*> printfArgs;
+            printfArgs.push_back(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*context_)));
+            llvm::FunctionType* printfType = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(*context_), printfArgs, true);
+            printfFunc = llvm::Function::Create(
+                printfType, llvm::Function::ExternalLinkage, "printf", module_.get());
+        }
+        // Create format string global
+        llvm::Value* formatStr = builder_->CreateGlobalString("%f\n");
+        // Call printf
+        builder_->CreateCall(printfFunc, {formatStr, argVal});
+        result_ = nullptr;
+        return;
+    }
+    // TODO: Support other function calls
+    reportError("Only 'print' function is supported in this demo");
+    result_ = nullptr;
 }
 
 void IRGenerator::visitGetExpression(GetExpression* expr) {

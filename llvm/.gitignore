@@ -54,3 +54,5 @@ yarn.lock
 # Misc
 *.bak
 *.tmp 
+
+output.txt
