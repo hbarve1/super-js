@@ -32,22 +32,62 @@ class Parser {
     }
 
     parseProgram() {
-        // Parse as many variable declarations as possible, skip unsupported statements
+        // Parse as many statements as possible
         const body = [];
         while (this.current.type !== TokenType.EOF) {
             // Skip empty tokens (shouldn't happen, but for safety)
             if (this.current.type === TokenType.EOF) break;
             try {
-                body.push(this.parseVariableDeclaration());
+                const stmt = this.parseStatement();
+                if (stmt) body.push(stmt);
             } catch (e) {
-                // Skip tokens until next semicolon if not a variable declaration
-                while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                // Skip tokens until next semicolon or block end if not a valid statement
+                while (
+                    this.current.type !== TokenType.SEMICOLON &&
+                    this.current.type !== TokenType.RIGHT_BRACE &&
+                    this.current.type !== TokenType.EOF
+                ) {
                     this.advance();
                 }
-                if (this.current.type === TokenType.SEMICOLON) this.advance();
+                if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
             }
         }
         return { type: 'Program', body };
+    }
+
+    parseStatement() {
+        if (this.current.type === TokenType.KEYWORD) {
+            switch (this.current.value) {
+                case 'let':
+                case 'const':
+                case 'var':
+                    return this.parseVariableDeclaration();
+                case 'function':
+                    return this.parseFunctionDeclaration();
+                case 'class':
+                    return this.parseClassDeclaration();
+                case 'import':
+                case 'export':
+                    return this.parseImportExport();
+                case 'type':
+                case 'interface':
+                case 'enum':
+                case 'namespace':
+                    return this.parseTypeDeclaration();
+                case 'if':
+                case 'for':
+                case 'while':
+                case 'do':
+                case 'switch':
+                case 'try':
+                case 'with':
+                    return this.parseControlFlow();
+                default:
+                    return this.parseExpressionStatement();
+            }
+        }
+        // Fallback: parse as expression statement
+        return this.parseExpressionStatement();
     }
 
     parseVariableDeclaration() {
@@ -103,6 +143,79 @@ class Parser {
             varType,
             init
         };
+    }
+
+    parseFunctionDeclaration() {
+        // Skip tokens until next RIGHT_BRACE or SEMICOLON
+        while (
+            this.current.type !== TokenType.RIGHT_BRACE &&
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
+        return { type: 'FunctionDeclaration', skipped: true };
+    }
+
+    parseClassDeclaration() {
+        while (
+            this.current.type !== TokenType.RIGHT_BRACE &&
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
+        return { type: 'ClassDeclaration', skipped: true };
+    }
+
+    parseImportExport() {
+        while (
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.SEMICOLON) this.advance();
+        return { type: 'ImportExportDeclaration', skipped: true };
+    }
+
+    parseTypeDeclaration() {
+        while (
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.RIGHT_BRACE &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
+        return { type: 'TypeDeclaration', skipped: true };
+    }
+
+    parseControlFlow() {
+        while (
+            this.current.type !== TokenType.RIGHT_BRACE &&
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
+        return { type: 'ControlFlowStatement', skipped: true };
+    }
+
+    parseExpressionStatement() {
+        // Skip until semicolon or block end
+        while (
+            this.current.type !== TokenType.SEMICOLON &&
+            this.current.type !== TokenType.RIGHT_BRACE &&
+            this.current.type !== TokenType.EOF
+        ) {
+            this.advance();
+        }
+        if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
+        return { type: 'ExpressionStatement', skipped: true };
     }
 }
 

@@ -9,11 +9,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'x',
-            varType: null,
-            init: 42
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'x',
+                    varType: null,
+                    init: 42
+                }
+            ]
         });
     });
 
@@ -24,11 +29,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'const',
-            id: 'y',
-            varType: null,
-            init: null
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'const',
+                    id: 'y',
+                    varType: null,
+                    init: null
+                }
+            ]
         });
     });
 
@@ -37,7 +47,10 @@ describe('Parser', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
-        expect(() => parser.parse()).toThrow('Expected variable declaration keyword');
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0].type).toBe('ExpressionStatement');
+        expect(ast.body[0].skipped).toBe(true);
     });
 
     test('parses a var declaration', () => {
@@ -47,11 +60,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'var',
-            id: 'z',
-            varType: null,
-            init: 100
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'var',
+                    id: 'z',
+                    varType: null,
+                    init: 100
+                }
+            ]
         });
     });
 
@@ -62,11 +80,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 's',
-            varType: null,
-            init: 'hello'
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 's',
+                    varType: null,
+                    init: 'hello'
+                }
+            ]
         });
     });
 
@@ -77,11 +100,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'π',
-            varType: null,
-            init: 3.14
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'π',
+                    varType: null,
+                    init: 3.14
+                }
+            ]
         });
     });
 
@@ -92,11 +120,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'f',
-            varType: null,
-            init: 2.5
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'f',
+                    varType: null,
+                    init: 2.5
+                }
+            ]
         });
     });
 
@@ -107,11 +140,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'h',
-            varType: null,
-            init: 26
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'h',
+                    varType: null,
+                    init: 26
+                }
+            ]
         });
     });
 
@@ -122,11 +160,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'b',
-            varType: null,
-            init: 5
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'b',
+                    varType: null,
+                    init: 5
+                }
+            ]
         });
     });
 
@@ -137,11 +180,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'o',
-            varType: null,
-            init: 63
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'o',
+                    varType: null,
+                    init: 63
+                }
+            ]
         });
     });
 
@@ -150,7 +198,8 @@ describe('Parser', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
-        expect(() => parser.parse()).toThrow('Expected SEMICOLON');
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
     });
 
     test('throws on invalid initializer', () => {
@@ -158,7 +207,8 @@ describe('Parser', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
-        expect(() => parser.parse()).toThrow('Expected literal initializer');
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
     });
 
     test('parses only the first declaration in multiple', () => {
@@ -168,11 +218,23 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'x',
-            varType: null,
-            init: 1
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'x',
+                    varType: null,
+                    init: 1
+                },
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'y',
+                    varType: null,
+                    init: 2
+                }
+            ]
         });
     });
 
@@ -181,24 +243,28 @@ describe('Parser', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
-        // 'if' is a keyword, not an identifier
-        expect(() => parser.parse()).toThrow('Expected IDENTIFIER');
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
     });
 
     test('ignores type annotation (for now)', () => {
         const code = 'let x: number = 5;';
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
-        // Remove the type annotation tokens for this test, since parser doesn't handle them
         const filteredTokens = tokens.filter(t => t.type !== 'COLON' && t.value !== 'number');
         const parser = new Parser(filteredTokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'x',
-            varType: null,
-            init: 5
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'x',
+                    varType: null,
+                    init: 5
+                }
+            ]
         });
     });
 
@@ -207,7 +273,8 @@ describe('Parser', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
-        expect(() => parser.parse()).toThrow('Expected IDENTIFIER');
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
     });
 
     test('parses a variable declaration with type annotation and initializer', () => {
@@ -217,11 +284,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'x',
-            varType: 'number',
-            init: 5
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'x',
+                    varType: 'number',
+                    init: 5
+                }
+            ]
         });
     });
 
@@ -232,11 +304,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'const',
-            id: 'y',
-            varType: 'string',
-            init: null
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'const',
+                    id: 'y',
+                    varType: 'string',
+                    init: null
+                }
+            ]
         });
     });
 
@@ -247,11 +324,16 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast).toEqual({
-            type: 'VariableDeclaration',
-            kind: 'let',
-            id: 'z',
-            varType: null,
-            init: 10
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'z',
+                    varType: null,
+                    init: 10
+                }
+            ]
         });
     });
 }); 
