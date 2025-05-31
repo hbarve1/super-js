@@ -146,16 +146,70 @@ class Parser {
     }
 
     parseFunctionDeclaration() {
-        // Skip tokens until next RIGHT_BRACE or SEMICOLON
-        while (
-            this.current.type !== TokenType.RIGHT_BRACE &&
-            this.current.type !== TokenType.SEMICOLON &&
-            this.current.type !== TokenType.EOF
-        ) {
+        // function [*] name (params) [: returnType] { body }
+        this.expect(TokenType.KEYWORD, 'function');
+        // Support generator functions: function* name ...
+        let isGenerator = false;
+        if (this.current.type === TokenType.OPERATOR && this.current.value === '*') {
+            isGenerator = true;
             this.advance();
         }
-        if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
-        return { type: 'FunctionDeclaration', skipped: true };
+        // Support async functions: async function ...
+        // (Handled in parseStatement if you want to support async)
+        const idToken = this.expect(TokenType.IDENTIFIER);
+        // Parse parameter list
+        this.expect(TokenType.LEFT_PAREN);
+        const params = [];
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            if (this.current.type === TokenType.IDENTIFIER) {
+                const paramName = this.current.value;
+                this.advance();
+                let varType = null;
+                if (this.current.type === TokenType.COLON) {
+                    this.advance();
+                    if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
+                        varType = this.current.value;
+                        this.advance();
+                    }
+                }
+                params.push({ name: paramName, varType });
+                if (this.current.type === TokenType.COMMA) {
+                    this.advance();
+                } else if (this.current.type !== TokenType.RIGHT_PAREN) {
+                    break;
+                }
+            } else {
+                // Skip unexpected tokens in params
+                this.advance();
+            }
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Optional return type
+        let returnType = null;
+        if (this.current.type === TokenType.COLON) {
+            this.advance();
+            if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
+                returnType = this.current.value;
+                this.advance();
+            }
+        }
+        // Parse body (for now, just skip to matching RIGHT_BRACE)
+        this.expect(TokenType.LEFT_BRACE);
+        let braceDepth = 1;
+        // Optionally, collect body tokens for future expansion
+        while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+            if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+            if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+            this.advance();
+        }
+        return {
+            type: 'FunctionDeclaration',
+            id: idToken.value,
+            params,
+            returnType,
+            isGenerator,
+            body: { type: 'BlockStatement', body: [] } // stub for now
+        };
     }
 
     parseClassDeclaration() {

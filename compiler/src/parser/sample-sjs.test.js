@@ -11,136 +11,76 @@ describe('Parser full program from sample.sjs', () => {
         source = fs.readFileSync(sampleFile, 'utf8');
     });
 
-    // Expected sequence of node types for the current sample.sjs
-    const expectedNodeTypes =  [
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "VariableDeclaration",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "TypeDeclaration",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "TypeDeclaration",
-        "TypeDeclaration",
-        "TypeDeclaration",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ControlFlowStatement",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "FunctionDeclaration",
-        "ExpressionStatement",
-        "ClassDeclaration",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement",
-        "ExpressionStatement"
-      ];
-    // const expectedNodeTypes = [
-    //     'VariableDeclaration', // let a = 1;
-    //     'VariableDeclaration', // const b: number = 2;
-    //     'VariableDeclaration', // var c: string = 'test';
-    //     'VariableDeclaration', // let π = 3.14;
-    //     'VariableDeclaration', // let bin: number = 0b101;
-    //     'VariableDeclaration', // let oct: number = 0o77;
-    //     'VariableDeclaration', // let hex: number = 0x1A;
-    //     'VariableDeclaration', // let s: string = 'hello';
-    //     'VariableDeclaration', // let f = 2.5;
-    //     'VariableDeclaration', // let flag: boolean = true;
-    //     'VariableDeclaration', // let nothing: null = null;
-    //     'VariableDeclaration', // let undef: undefined = undefined;
-    //     'VariableDeclaration', // let nan: number = NaN;
-    //     'VariableDeclaration', // let inf: number = Infinity;
-    //     'VariableDeclaration', // let 变量: string = 'unicode';
-    //     'ExpressionStatement', // let arr: number[] = [1, 2, 3]; (unsupported)
-    //     'ExpressionStatement', // let obj: { p: number, q: number } = { p: 1, q: 2 };
-    //     'ExpressionStatement', // let union: string | number = 'foo';
-    //     'ExpressionStatement', // let complex: { x: number, y: string } = { x: 1, y: 'bar' };
-    //     'ExpressionStatement', // let message: string = `The value is ${a}`;
-    //     'ExpressionStatement', // let sum = a + b;
-    //     'ExpressionStatement', // let isEqual = a === b;
-    //     'ExpressionStatement', // let isNot = !flag;
-    //     'ExpressionStatement', // let tern = flag ? a : b;
-    //     'ExpressionStatement', // let called = add(a, b);
-    //     'ExpressionStatement', // let member = obj.p;
-    //     'ExpressionStatement', // let [x, y] = [1, 2];
-    //     'ExpressionStatement', // let { p, q } = obj;
-    //     'TypeDeclaration',     // interface Foo { ... }
-    //     'TypeDeclaration',     // type Bar = ...
-    //     'TypeDeclaration',     // enum Color ...
-    //     'TypeDeclaration',     // namespace NS ...
-    //     'ControlFlowStatement',// if (a > 0) { ... }
-    //     'ControlFlowStatement',// for (let i = 0; ...)
-    //     'ControlFlowStatement',// while (a < 100) ...
-    //     'ControlFlowStatement',// do { ... } while (a > 0);
-    //     'ControlFlowStatement',// switch (b) { ... }
-    //     'FunctionDeclaration', // function ret(): number { ... }
-    //     'FunctionDeclaration', // function* gen() { ... }
-    //     'FunctionDeclaration', // async function afn() { ... }
-    //     'ExpressionStatement', // const d = Object.freeze({ x: 1 });
-    //     'FunctionDeclaration', // function contractFn(x: number): number { ... }
-    //     'ControlFlowStatement',// try { ... } catch ...
-    //     'FunctionDeclaration', // function g() { ... }
-    //     'FunctionDeclaration', // function docFn() {}
-    //     'ControlFlowStatement',// with (obj) { debugger; }
-    //     'ExpressionStatement', // let message: string = `The value is ${a}`;
-    //     'FunctionDeclaration', // function add(x: number, y: number): number { ... }
-    //     'FunctionDeclaration', // function greet(name: string) { ... }
-    //     'ExpressionStatement', // const arrow = (x: number): number => x * 2;
-    //     'ClassDeclaration',    // class Point { ... }
-    // ];
+    // Map of function name to expected AST for all function declarations in sample.sjs
+    const expectedFunctions = {
+        ret: {
+            type: 'FunctionDeclaration',
+            id: 'ret',
+            params: [],
+            returnType: 'number',
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        gen: {
+            type: 'FunctionDeclaration',
+            id: 'gen',
+            params: [],
+            returnType: null,
+            isGenerator: true,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        afn: {
+            type: 'FunctionDeclaration',
+            id: 'afn',
+            params: [],
+            returnType: null,
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        contractFn: {
+            type: 'FunctionDeclaration',
+            id: 'contractFn',
+            params: [ { name: 'x', varType: 'number' } ],
+            returnType: 'number',
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        g: {
+            type: 'FunctionDeclaration',
+            id: 'g',
+            params: [],
+            returnType: null,
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        docFn: {
+            type: 'FunctionDeclaration',
+            id: 'docFn',
+            params: [],
+            returnType: null,
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        add: {
+            type: 'FunctionDeclaration',
+            id: 'add',
+            params: [
+                { name: 'x', varType: 'number' },
+                { name: 'y', varType: 'number' }
+            ],
+            returnType: 'number',
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        },
+        greet: {
+            type: 'FunctionDeclaration',
+            id: 'greet',
+            params: [ { name: 'name', varType: 'string' } ],
+            returnType: null,
+            isGenerator: false,
+            body: { type: 'BlockStatement', body: [] }
+        }
+    };
 
     test('parses all top-level constructs in sample.sjs as a program (structure)', () => {
         const lexer = new Lexer(source);
@@ -154,6 +94,9 @@ describe('Parser full program from sample.sjs', () => {
                 expect(typeof node.id).toBe('string');
                 expect(node).toHaveProperty('varType');
                 expect(node).toHaveProperty('init');
+            } else if (node.type === 'FunctionDeclaration') {
+                // Check against expected function ASTs
+                expect(node).toEqual(expectedFunctions[node.id]);
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),
