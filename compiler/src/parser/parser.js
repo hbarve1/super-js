@@ -377,6 +377,10 @@ class Parser {
     }
 
     parseControlFlow() {
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'if') {
+            return this.parseIfStatement();
+        }
+        // For now, fallback to stub for other control flow
         while (
             this.current.type !== TokenType.RIGHT_BRACE &&
             this.current.type !== TokenType.SEMICOLON &&
@@ -386,6 +390,59 @@ class Parser {
         }
         if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
         return { type: 'ControlFlowStatement', skipped: true };
+    }
+
+    parseIfStatement() {
+        this.expect(TokenType.KEYWORD, 'if');
+        this.expect(TokenType.LEFT_PAREN);
+        // For now, stub the test (condition)
+        let test = { type: 'Expression', stub: true };
+        // Skip until RIGHT_PAREN
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            this.advance();
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Parse consequent (then branch)
+        let consequent = { type: 'BlockStatement', body: [] };
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        } else {
+            // Skip single statement
+            if (this.current.type !== TokenType.EOF) this.advance();
+        }
+        // Parse alternate (else branch)
+        let alternate = null;
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'else') {
+            this.advance();
+            if (this.current.type === TokenType.LEFT_BRACE) {
+                // Skip block
+                this.advance();
+                let braceDepth = 1;
+                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                    this.advance();
+                }
+                alternate = { type: 'BlockStatement', body: [] };
+            } else {
+                // Skip single statement
+                if (this.current.type !== TokenType.EOF) this.advance();
+                alternate = { type: 'BlockStatement', body: [] };
+            }
+        }
+        return {
+            type: 'IfStatement',
+            test,
+            consequent,
+            alternate
+        };
     }
 
     parseExpressionStatement() {

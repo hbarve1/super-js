@@ -163,6 +163,13 @@ describe('Parser full program from sample.sjs', () => {
                     id: 'NS',
                     body: []
                 });
+            } else if (node.type === 'IfStatement') {
+                expect(node).toEqual({
+                    type: 'IfStatement',
+                    test: { type: 'Expression', stub: true },
+                    consequent: { type: 'BlockStatement', body: [] },
+                    alternate: { type: 'BlockStatement', body: [] }
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),
