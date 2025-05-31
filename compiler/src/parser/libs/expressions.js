@@ -322,6 +322,69 @@ function parsePrimaryExpression(parser) {
         parser.expect(parser.TokenType.RIGHT_BRACE);
         return { type: 'ObjectExpression', properties };
     }
+    if (
+        (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'async' && parser.peek().type === parser.TokenType.KEYWORD && parser.peek().value === 'function') ||
+        (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'function')
+    ) {
+        // Support optional 'async' before 'function'
+        let isAsync = false;
+        if (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'async') {
+            isAsync = true;
+            parser.advance();
+        }
+        parser.expect(parser.TokenType.KEYWORD, 'function');
+        // Support optional generator '*'
+        let isGenerator = false;
+        if (parser.current.type === parser.TokenType.OPERATOR && parser.current.value === '*') {
+            isGenerator = true;
+            parser.advance();
+        }
+        // Optional function name (for named function expressions)
+        let id = null;
+        if (parser.current.type === parser.TokenType.IDENTIFIER) {
+            id = parser.current.value;
+            parser.advance();
+        }
+        // Parse generics (if supported)
+        let generics = null;
+        if (parser.current.type === parser.TokenType.LEFT_ANGLE) {
+            if (typeof parser._parseGenerics === 'function') {
+                generics = parser._parseGenerics();
+            } else if (typeof parser.parseGenerics === 'function') {
+                generics = parser.parseGenerics();
+            }
+        }
+        // Parse params
+        let params = [];
+        if (typeof parser._parseFunctionParams === 'function') {
+            params = parser._parseFunctionParams();
+        } else if (typeof parser.parseFunctionParams === 'function') {
+            params = parser.parseFunctionParams();
+        }
+        // Optional return type
+        let returnType = null;
+        if (parser.current.type === parser.TokenType.COLON) {
+            parser.advance();
+            if (typeof parser.parseTypeAnnotation === 'function') {
+                returnType = parser.parseTypeAnnotation();
+            }
+        }
+        // Parse body
+        let body = null;
+        if (typeof parser.parseBlockStatement === 'function') {
+            body = parser.parseBlockStatement();
+        }
+        return {
+            type: 'FunctionExpression',
+            id,
+            params,
+            returnType,
+            isGenerator,
+            isAsync,
+            generics,
+            body
+        };
+    }
     parser.advance();
     return { type: 'Expression', stub: true };
 }

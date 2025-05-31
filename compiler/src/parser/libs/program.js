@@ -12,7 +12,9 @@ function parseProgram(parser) {
                 body.push(stmt);
             }
         } catch (e) {
-            // Error recovery: skip to next semicolon or block end
+            // Error recovery: add a stub node to AST
+            body.push({ type: 'ExpressionStatement', skipped: true, error: e.message });
+            // Skip to next semicolon or block end
             while (
                 parser.current.type !== parser.TokenType.SEMICOLON &&
                 parser.current.type !== parser.TokenType.RIGHT_BRACE &&
@@ -23,8 +25,10 @@ function parseProgram(parser) {
             // Only advance if at semicolon or right brace
             if (parser.current.type === parser.TokenType.SEMICOLON || parser.current.type === parser.TokenType.RIGHT_BRACE) {
                 parser.advance();
+            } else if (parser.current.type !== parser.TokenType.EOF) {
+                // If not at a recovery point, advance one token to avoid infinite loop
+                parser.advance();
             }
-            // Now continue loop (do not unconditionally advance)
         }
         // No unconditional advance here!
     }

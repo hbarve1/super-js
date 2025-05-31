@@ -1,6 +1,16 @@
 // Statement parsing helper for Parser
 
 function parseStatement(parser) {
+    // Support top-level 'async function' as a function declaration
+    if (
+        parser.current.type === parser.TokenType.KEYWORD &&
+        parser.current.value === 'async' &&
+        parser.peek().type === parser.TokenType.KEYWORD &&
+        parser.peek().value === 'function'
+    ) {
+        // Let parseFunctionDeclaration handle 'async function ...'
+        return parser.parseFunctionDeclaration();
+    }
     if (parser.current.type === parser.TokenType.LEFT_BRACE) {
         return parser.parseBlockStatement();
     }

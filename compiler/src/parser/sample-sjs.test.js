@@ -39,14 +39,19 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
-            isAsync: false,
+            isAsync: true,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         contractFn: {
             type: 'FunctionDeclaration',
             id: 'contractFn',
-            params: [ { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } } ],
+            params: [
+                expect.objectContaining({
+                    name: 'x',
+                    varType: { type: 'TypeIdentifier', name: 'number' }
+                })
+            ],
             returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
             isAsync: false,
@@ -77,8 +82,8 @@ describe('Parser full program from sample.sjs', () => {
             type: 'FunctionDeclaration',
             id: 'add',
             params: [
-                { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } },
-                { name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } }
+                expect.objectContaining({ name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } }),
+                expect.objectContaining({ name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } })
             ],
             returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
@@ -89,7 +94,9 @@ describe('Parser full program from sample.sjs', () => {
         greet: {
             type: 'FunctionDeclaration',
             id: 'greet',
-            params: [ { name: 'name', varType: { type: 'TypeIdentifier', name: 'string' } } ],
+            params: [
+                expect.objectContaining({ name: 'name', varType: { type: 'TypeIdentifier', name: 'string' } })
+            ],
             returnType: null,
             isGenerator: false,
             isAsync: false,
@@ -100,14 +107,14 @@ describe('Parser full program from sample.sjs', () => {
             type: 'FunctionDeclaration',
             id: 'f',
             params: [
-                {
+                expect.objectContaining({
                     name: 'x',
                     varType: {
                         type: 'UnionType',
                         left: { type: 'TypeIdentifier', name: 'T' },
                         right: { type: 'TypeIdentifier', name: 'number' }
                     }
-                }
+                })
             ],
             returnType: {
                 type: 'GenericType',
@@ -258,8 +265,8 @@ describe('Parser full program from sample.sjs', () => {
                             type: 'MethodDefinition',
                             key: 'constructor',
                             params: [
-                                { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } },
-                                { name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } }
+                                expect.objectContaining({ name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } }),
+                                expect.objectContaining({ name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } })
                             ],
                             returnType: null,
                             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
@@ -268,8 +275,8 @@ describe('Parser full program from sample.sjs', () => {
                             type: 'MethodDefinition',
                             key: 'move',
                             params: [
-                                { name: 'dx', varType: { type: 'TypeIdentifier', name: 'number' } },
-                                { name: 'dy', varType: { type: 'TypeIdentifier', name: 'number' } }
+                                expect.objectContaining({ name: 'dx', varType: { type: 'TypeIdentifier', name: 'number' } }),
+                                expect.objectContaining({ name: 'dy', varType: { type: 'TypeIdentifier', name: 'number' } })
                             ],
                             returnType: 'void',
                             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })

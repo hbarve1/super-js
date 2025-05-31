@@ -139,6 +139,14 @@ class Parser {
     parsePrimaryType() {
         return types.parsePrimaryType(this);
     }
+
+    _parseGenerics() {
+        return functions._parseGenerics(this);
+    }
+
+    _parseFunctionParams() {
+        return functions._parseFunctionParams(this);
+    }
 }
 
 module.exports = Parser; 

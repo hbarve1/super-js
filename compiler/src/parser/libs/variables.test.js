@@ -30,7 +30,7 @@ describe('Parser', () => {
         const ast = parser.parse();
         expect(ast).toEqual({
             type: 'Program',
-            body: []
+            body: [expect.objectContaining({ type: 'ExpressionStatement', skipped: true })]
         });
     });
 
@@ -247,7 +247,8 @@ describe('Parser', () => {
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        expect(ast.body.length).toBe(0);
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
 
     test('ignores type annotation (for now)', () => {
@@ -277,7 +278,8 @@ describe('Parser', () => {
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        expect(ast.body.length).toBe(0);
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
 
     test('parses a variable declaration with type annotation and initializer', () => {
@@ -308,7 +310,7 @@ describe('Parser', () => {
         const ast = parser.parse();
         expect(ast).toEqual({
             type: 'Program',
-            body: []
+            body: [expect.objectContaining({ type: 'ExpressionStatement', skipped: true })]
         });
     });
 
@@ -370,7 +372,8 @@ describe('Parser', () => {
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        expect(ast.body.length).toBe(0);
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
 
     test('throws on const without initializer', () => {
@@ -380,7 +383,8 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         // Should not allow const without initializer
-        expect(ast.body.length).toBe(0);
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
 
     test('parses array destructuring with rest element', () => {
@@ -560,6 +564,7 @@ describe('Parser - Enterprise Grade Variable Declarations', () => {
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        expect(ast.body.length).toBe(0);
+        expect(ast.body.length).toBe(1);
+        expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
 }); 
