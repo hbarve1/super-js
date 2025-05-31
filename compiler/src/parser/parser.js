@@ -2,6 +2,7 @@ const TokenType = require('../lexer/libs/token-types');
 const expressions = require('./libs/expressions');
 const functions = require('./libs/functions');
 const loops = require('./libs/loops');
+const tryStmts = require('./libs/try');
 
 class Parser {
     constructor(tokens) {
@@ -520,58 +521,7 @@ class Parser {
     }
 
     parseTryStatement() {
-        this.expect(TokenType.KEYWORD, 'try');
-        // Parse try block
-        let block = null;
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            block = this.parseBlockStatement();
-        } else {
-            block = { type: 'BlockStatement', body: [] };
-        }
-        // Parse catch clause
-        let handler = null;
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'catch') {
-            this.advance();
-            let param = null;
-            if (this.current.type === TokenType.LEFT_PAREN) {
-                this.advance();
-                if (this.current.type === TokenType.IDENTIFIER) {
-                    param = this.current.value;
-                    this.advance();
-                }
-                // Skip to RIGHT_PAREN
-                while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-                    this.advance();
-                }
-                if (this.current.type === TokenType.RIGHT_PAREN) this.advance();
-            }
-            // Parse catch block
-            let catchBlock = null;
-            if (this.current.type === TokenType.LEFT_BRACE) {
-                catchBlock = this.parseBlockStatement();
-            } else {
-                catchBlock = { type: 'BlockStatement', body: [] };
-            }
-            handler = { param, body: catchBlock };
-        }
-        // Parse finally block
-        let finalizer = null;
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'finally') {
-            this.advance();
-            let finallyBlock = null;
-            if (this.current.type === TokenType.LEFT_BRACE) {
-                finallyBlock = this.parseBlockStatement();
-            } else {
-                finallyBlock = { type: 'BlockStatement', body: [] };
-            }
-            finalizer = finallyBlock;
-        }
-        return {
-            type: 'TryStatement',
-            block,
-            handler,
-            finalizer
-        };
+        return tryStmts.parseTryStatement(this);
     }
 
     parseExpressionStatement() {
