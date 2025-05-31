@@ -1,5 +1,6 @@
 const TokenType = require('../lexer/libs/token-types');
 const expressions = require('./libs/expressions');
+const functions = require('./libs/functions');
 
 class Parser {
     constructor(tokens) {
@@ -276,91 +277,12 @@ class Parser {
         return { type: 'ObjectPattern', properties };
     }
 
-    // Helper: Parse generics after function name (e.g., <T, U>)
-    _parseGenerics() {
-        if (this.current.type !== this.TokenType.LEFT_ANGLE) return null;
-        this.advance();
-        const generics = [];
-        while (this.current.type !== this.TokenType.RIGHT_ANGLE && this.current.type !== this.TokenType.EOF) {
-            if (this.current.type === this.TokenType.IDENTIFIER) {
-                generics.push(this.current.value);
-                this.advance();
-            }
-            if (this.current.type === this.TokenType.COMMA) {
-                this.advance();
-            } else if (this.current.type !== this.TokenType.RIGHT_ANGLE) {
-                break;
-            }
-        }
-        this.expect(this.TokenType.RIGHT_ANGLE);
-        return generics;
-    }
-
-    // Helper: Parse function parameters (with type annotations)
-    _parseFunctionParams() {
-        this.expect(this.TokenType.LEFT_PAREN);
-        const params = [];
-        while (this.current.type !== this.TokenType.RIGHT_PAREN && this.current.type !== this.TokenType.EOF) {
-            if (this.current.type === this.TokenType.IDENTIFIER) {
-                const paramName = this.current.value;
-                this.advance();
-                let varType = null;
-                if (this.current.type === this.TokenType.COLON) {
-                    this.advance();
-                    varType = this.parseTypeAnnotation();
-                }
-                params.push({ name: paramName, varType });
-                if (this.current.type === this.TokenType.COMMA) {
-                    this.advance();
-                } else if (this.current.type !== this.TokenType.RIGHT_PAREN) {
-                    break;
-                }
-            } else {
-                // Skip unexpected tokens in params
-                this.advance();
-            }
-        }
-        this.expect(this.TokenType.RIGHT_PAREN);
-        return params;
-    }
-
     parseFunctionDeclaration() {
-        // Support async and generator functions
-        let isAsync = false;
-        if (this.current.type === this.TokenType.KEYWORD && this.current.value === 'async') {
-            isAsync = true;
-            this.advance();
-        }
-        this.expect(this.TokenType.KEYWORD, 'function');
-        let isGenerator = false;
-        if (this.current.type === this.TokenType.OPERATOR && this.current.value === '*') {
-            isGenerator = true;
-            this.advance();
-        }
-        // Parse function name
-        const idToken = this.expect(this.TokenType.IDENTIFIER);
-        // Parse generics
-        const generics = this._parseGenerics();
-        // Parse parameter list
-        const params = this._parseFunctionParams();
-        // Optional return type
-        let returnType = null;
-        if (this.current.type === this.TokenType.COLON) {
-            this.advance();
-            returnType = this.parseTypeAnnotation();
-        }
-        // Parse body
-        const body = this.parseBlockStatement();
-        return {
-            type: 'FunctionDeclaration',
-            id: idToken.value,
-            params,
-            returnType,
-            isGenerator,
-            isAsync,
-            generics,
-            body
-        };
+        return functions.parseFunctionDeclaration(this);
+    }
+
+    parseMethodDefinition(key) {
+        return functions.parseMethodDefinition(this, key);
     }
 
     parseClassDeclaration() {
@@ -420,29 +342,6 @@ class Parser {
             type: 'ClassDeclaration',
             id: idToken.value,
             superClass,
-            body
-        };
-    }
-
-    parseMethodDefinition(key) {
-        // Parse params
-        const params = this._parseFunctionParams();
-        // Optional return type
-        let returnType = null;
-        if (this.current.type === this.TokenType.COLON) {
-            this.advance();
-            if (this.current.type === this.TokenType.KEYWORD || this.current.type === this.TokenType.IDENTIFIER) {
-                returnType = this.current.value;
-                this.advance();
-            }
-        }
-        // Parse body
-        const body = this.parseBlockStatement();
-        return {
-            type: 'MethodDefinition',
-            key,
-            params,
-            returnType,
             body
         };
     }
