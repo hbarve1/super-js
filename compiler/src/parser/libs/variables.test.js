@@ -414,12 +414,136 @@ describe('Parser', () => {
     test('recovers from syntax error and continues parsing', () => {
         const code = 'let x = ; let y = 2;';
         const lexer = new Lexer(code);
-        const tokens = lexer.tokenize();
         // console.log(tokens.map(t => `${t.type}:${t.value}`).join(', '));
         const parser = new Parser(tokens);
         const ast = parser.parse();
         // console.log(JSON.stringify(ast, null, 2));
         // Should skip the first invalid declaration and parse the second
         expect(ast.body.some(d => d.id === 'y')).toBe(true);
+    });
+});
+
+describe('Parser - Enterprise Grade Variable Declarations', () => {
+    test('parses array destructuring with type annotation', () => {
+        const code = 'let [a, b]: [number, string] = [1, "x"];';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ArrayPattern');
+        expect(ast.body[0].varType).toEqual({
+            type: 'GenericType',
+            name: 'Array',
+            typeParams: [
+                { type: 'TypeIdentifier', name: 'number' },
+                { type: 'TypeIdentifier', name: 'string' }
+            ]
+        });
+    });
+
+    test('parses object destructuring with type annotation', () => {
+        const code = 'let {a, b}: {a: number, b: string} = {a: 1, b: "x"};';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ObjectPattern');
+        expect(ast.body[0].varType).toEqual({
+            type: 'ObjectType',
+            properties: [
+                { key: 'a', valueType: { type: 'TypeIdentifier', name: 'number' } },
+                { key: 'b', valueType: { type: 'TypeIdentifier', name: 'string' } }
+            ]
+        });
+    });
+
+    test('parses destructuring with defaults and type annotation', () => {
+        const code = 'let {a = 1, b}: {a?: number, b: string} = {};';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ObjectPattern');
+        expect(ast.body[0].varType).toEqual({
+            type: 'ObjectType',
+            properties: [
+                { key: 'a', valueType: { type: 'TypeIdentifier', name: 'number' } },
+                { key: 'b', valueType: { type: 'TypeIdentifier', name: 'string' } }
+            ]
+        });
+    });
+
+    test('parses variable with complex nested type annotation', () => {
+        const code = 'let x: Array<{a: number, b: string[]}> = [{a: 1, b: ["x"]}];';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].varType).toEqual({
+            type: 'GenericType',
+            name: 'Array',
+            typeParams: [
+                {
+                    type: 'ObjectType',
+                    properties: [
+                        { key: 'a', valueType: { type: 'TypeIdentifier', name: 'number' } },
+                        { key: 'b', valueType: { type: 'ArrayType', elementType: { type: 'TypeIdentifier', name: 'string' } } }
+                    ]
+                }
+            ]
+        });
+    });
+
+    test('parses variable declaration inside block', () => {
+        const code = '{ let x = 1; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].type).toBe('BlockStatement');
+        expect(ast.body[0].body[0].type).toBe('VariableDeclaration');
+    });
+
+    test('parses variable declaration inside for loop', () => {
+        const code = 'for (let i = 0; i < 10; i++) { let x = i; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const forStmt = ast.body.find(n => n.type === 'ForStatement');
+        expect(forStmt).toBeDefined();
+        expect(forStmt.body.type).toBe('BlockStatement');
+    });
+
+    test('parses many variable declarations (stress test)', () => {
+        let code = '';
+        for (let i = 0; i < 100; i++) {
+            code += `let v${i} = ${i};\n`;
+        }
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(100);
+        expect(ast.body[50].id).toBe('v50');
+    });
+
+    test('throws on malformed destructuring with type', () => {
+        const code = 'let [a,]: [number] = ;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should skip the invalid declaration
+        expect(ast.body.length).toBe(0);
+    });
+
+    test('throws on invalid type annotation in variable', () => {
+        const code = 'let x: = 1;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
     });
 }); 
