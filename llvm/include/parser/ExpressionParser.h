@@ -35,6 +35,9 @@ public:
     std::unique_ptr<Expression> parseClassExpression();
     std::unique_ptr<Expression> parseJSXExpression();
 
+    Token advance();
+    Token consume(TokenKind kind, const std::string& message);
+
 private:
     std::unique_ptr<Expression> finishCall(std::unique_ptr<Expression> callee);
 };

@@ -1,4 +1,4 @@
-#include "codegen/IRGenerator.h"
+#include "../../include/codegen/IRGenerator.h"
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <iostream>
 
 namespace superjs {
 
@@ -22,11 +23,14 @@ IRGenerator::IRGenerator()
 
 std::unique_ptr<llvm::Module> IRGenerator::generate(
     const std::vector<std::unique_ptr<Statement>>& statements) {
+    std::cout << "Starting IR generation..." << std::endl;
+    
     // Clear any previous state
     variables_.clear();
     errors_.clear();
     result_ = nullptr;
 
+    std::cout << "Creating main function..." << std::endl;
     // Create main function
     llvm::FunctionType* mainType = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(*context_),  // Return type
@@ -43,14 +47,22 @@ std::unique_ptr<llvm::Module> IRGenerator::generate(
     llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(*context_, "entry", mainFunction);
     builder_->SetInsertPoint(entryBlock);
 
+    std::cout << "Processing " << statements.size() << " statements..." << std::endl;
     // Process each statement
-    for (const auto& stmt : statements) {
-        stmt->accept(*this);
+    for (size_t i = 0; i < statements.size(); ++i) {
+        std::cout << "Processing statement " << (i + 1) << " of " << statements.size() << "..." << std::endl;
+        statements[i]->accept(*this);
+        if (!errors_.empty()) {
+            std::cout << "Error encountered while processing statement " << (i + 1) << std::endl;
+            break;
+        }
     }
 
+    std::cout << "Adding return statement to main..." << std::endl;
     // Add return 0 at the end of main
     builder_->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context_), 0));
 
+    std::cout << "Verifying module..." << std::endl;
     // Verify the module
     std::string error;
     llvm::raw_string_ostream errorStream(error);
@@ -59,9 +71,7 @@ std::unique_ptr<llvm::Module> IRGenerator::generate(
         return nullptr;
     }
 
-    // Print the module
-    module_->print(llvm::errs(), nullptr);
-
+    std::cout << "IR generation complete." << std::endl;
     return std::move(module_);
 }
 
@@ -331,22 +341,48 @@ void IRGenerator::visitContinueStatement(ContinueStatement* stmt) {
 }
 
 void IRGenerator::visitVariableDeclaration(VariableDeclaration* stmt) {
+    std::cout << "Processing variable declaration: " << stmt->name.text << std::endl;
+    
     // Get the variable type
     llvm::Type* varType = getLLVMType(stmt->typeAnnotation.get());
     if (!varType) {
         reportError("Invalid type for variable: " + stmt->name.text);
         return;
     }
+    std::cout << "Variable type determined" << std::endl;
 
     // Create alloca instruction for the variable
     llvm::Value* alloca = builder_->CreateAlloca(varType, nullptr, stmt->name.text);
+    std::cout << "Alloca instruction created" << std::endl;
     
     // If there's an initializer, generate code for it
     if (stmt->initializer) {
+        std::cout << "Processing initializer" << std::endl;
         stmt->initializer->accept(*this);
         if (result_) {
+            std::cout << "Initializer result type: " << (result_->getType()->isIntegerTy(1) ? "boolean" : 
+                                                       result_->getType()->isDoubleTy() ? "number" : 
+                                                       "other") << std::endl;
+            std::cout << "Variable type: " << (varType->isIntegerTy(1) ? "boolean" : 
+                                            varType->isDoubleTy() ? "number" : 
+                                            "other") << std::endl;
+            
+            // If the types don't match, try to convert
+            if (result_->getType() != varType) {
+                if (varType->isIntegerTy(1) && result_->getType()->isIntegerTy(1)) {
+                    // Boolean to boolean conversion
+                    result_ = builder_->CreateZExt(result_, varType);
+                } else if (varType->isDoubleTy() && result_->getType()->isIntegerTy(1)) {
+                    // Boolean to double conversion
+                    result_ = builder_->CreateUIToFP(result_, varType);
+                } else {
+                    reportError("Type mismatch in variable initialization: " + stmt->name.text);
+                    return;
+                }
+            }
             // Store the initializer value into the variable
             builder_->CreateStore(result_, alloca);
+            std::cout << "Initializer stored" << std::endl;
         } else {
             reportError("Invalid initializer for variable: " + stmt->name.text);
             return;
@@ -354,11 +390,13 @@ void IRGenerator::visitVariableDeclaration(VariableDeclaration* stmt) {
     } else {
         // Initialize with null/zero value if no initializer
         builder_->CreateStore(llvm::Constant::getNullValue(varType), alloca);
+        std::cout << "Null initializer stored" << std::endl;
     }
 
     // Store the variable in the current scope
     setVariableValue(stmt->name.text, alloca);
     result_ = alloca;
+    std::cout << "Variable declaration complete" << std::endl;
 }
 
 void IRGenerator::visitImportStatement(ImportStatement* stmt) {
@@ -420,10 +458,10 @@ void IRGenerator::visitLiteralExpression(LiteralExpression* expr) {
         // Convert string to double for number literals
         double value = std::stod(expr->value.text);
         result_ = llvm::ConstantFP::get(*context_, llvm::APFloat(value));
-    } else if (expr->value.kind == TokenKind::Boolean) {
+    } else if (expr->value.kind == TokenKind::True || expr->value.kind == TokenKind::False) {
         // Convert string to bool for boolean literals
-        bool value = expr->value.text == "true";
-        result_ = llvm::ConstantInt::get(*context_, llvm::APInt(1, value));
+        bool value = expr->value.kind == TokenKind::True;
+        result_ = llvm::ConstantInt::get(llvm::Type::getInt1Ty(*context_), value);
     } else if (expr->value.kind == TokenKind::String) {
         // Create a global string constant
         result_ = builder_->CreateGlobalString(expr->value.text);
@@ -442,44 +480,34 @@ void IRGenerator::visitAssignmentExpression(AssignmentExpression* expr) {
 }
 
 void IRGenerator::visitCallExpression(CallExpression* expr) {
-    // Only support print for now
-    // Check if callee is a VariableExpression with name 'print'
+    std::cout << "Processing call expression" << std::endl;
+    // Only support direct function calls by name for now
     VariableExpression* varExpr = dynamic_cast<VariableExpression*>(expr->callee.get());
-    if (varExpr && varExpr->name.text == "print") {
-        // Only support one argument for now
-        if (expr->arguments.size() != 1) {
-            reportError("print expects one argument");
-            result_ = nullptr;
-            return;
-        }
-        // Generate code for the argument
-        expr->arguments[0]->accept(*this);
-        llvm::Value* argVal = result_;
-        if (!argVal) {
-            reportError("Invalid argument to print");
-            result_ = nullptr;
-            return;
-        }
-        // Declare printf if not already declared
-        llvm::Function* printfFunc = module_->getFunction("printf");
-        if (!printfFunc) {
-            std::vector<llvm::Type*> printfArgs;
-            printfArgs.push_back(llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*context_)));
-            llvm::FunctionType* printfType = llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(*context_), printfArgs, true);
-            printfFunc = llvm::Function::Create(
-                printfType, llvm::Function::ExternalLinkage, "printf", module_.get());
-        }
-        // Create format string global
-        llvm::Value* formatStr = builder_->CreateGlobalString("%f\n");
-        // Call printf
-        builder_->CreateCall(printfFunc, {formatStr, argVal});
+    if (!varExpr) {
+        reportError("Only direct function calls by name are supported");
         result_ = nullptr;
         return;
     }
-    // TODO: Support other function calls
-    reportError("Only 'print' function is supported in this demo");
-    result_ = nullptr;
+    std::string funcName = varExpr->name.text;
+    llvm::Function* function = module_->getFunction(funcName);
+    if (!function) {
+        reportError("Function not found: " + funcName);
+        result_ = nullptr;
+        return;
+    }
+    std::vector<llvm::Value*> args;
+    for (const auto& arg : expr->arguments) {
+        std::cout << "Processing argument" << std::endl;
+        arg->accept(*this);
+        if (!result_) {
+            reportError("Invalid argument in function call");
+            return;
+        }
+        args.push_back(result_);
+    }
+    std::cout << "Arguments processed" << std::endl;
+    result_ = builder_->CreateCall(function, args);
+    std::cout << "Call instruction created" << std::endl;
 }
 
 void IRGenerator::visitGetExpression(GetExpression* expr) {

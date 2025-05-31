@@ -12,6 +12,13 @@ public:
     explicit ParserBase(std::vector<Token>& tokens, size_t& current)
         : tokens(tokens), current(current) {}
 
+    // Public forwarding methods for composition
+    Token publicPeek() const { return peek(); }
+    Token publicPrevious() const { return previous(); }
+    bool publicCheck(TokenKind kind) const { return check(kind); }
+    Token publicAdvance() { return advance(); }
+    ParseError publicError(const Token& token, const std::string& message) { return error(token, message); }
+
 protected:
     std::vector<Token>& tokens;
     size_t& current;

@@ -17,7 +17,7 @@ enum class TokenKind {
     Plus, Minus, Star, Slash, Percent, Equal, EqualEqual, BangEqual,
     Less, LessEqual, Greater, GreaterEqual, And, Or, Bang,
     PlusPlus, MinusMinus, PlusEqual, MinusEqual, StarEqual, SlashEqual,
-    Pipe, Ampersand,
+    BitwiseAnd, BitwiseOr, BitwiseXor, BitwiseNot,
     
     // JSX
     JSXOpen, JSXClose, JSXSelfClose, JSXIdentifier, JSXText,
@@ -31,7 +31,8 @@ enum class TokenKind {
     LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
     EndOfFile, Error,
     Boolean,
-    Any, Unknown, Never, Object, Array
+    Any, Unknown, Never, Object, Array,
+    At, Hash
 };
 
 // Token structure

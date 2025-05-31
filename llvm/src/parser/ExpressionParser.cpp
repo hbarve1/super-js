@@ -43,6 +43,7 @@ std::unique_ptr<Expression> ExpressionParser::parseAssignment() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseEquality() {
+    std::cerr << "ExpressionParser::parseEquality() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parseComparison();
 
     while (match(TokenKind::BangEqual) || match(TokenKind::EqualEqual)) {
@@ -55,6 +56,7 @@ std::unique_ptr<Expression> ExpressionParser::parseEquality() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseComparison() {
+    std::cerr << "ExpressionParser::parseComparison() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parseTerm();
 
     while (match(TokenKind::Greater) || match(TokenKind::GreaterEqual) ||
@@ -68,6 +70,7 @@ std::unique_ptr<Expression> ExpressionParser::parseComparison() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseTerm() {
+    std::cerr << "ExpressionParser::parseTerm() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parseFactor();
 
     while (match(TokenKind::Minus) || match(TokenKind::Plus)) {
@@ -80,6 +83,7 @@ std::unique_ptr<Expression> ExpressionParser::parseTerm() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseFactor() {
+    std::cerr << "ExpressionParser::parseFactor() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parseUnary();
 
     while (match(TokenKind::Slash) || match(TokenKind::Star)) {
@@ -92,16 +96,18 @@ std::unique_ptr<Expression> ExpressionParser::parseFactor() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseUnary() {
+    std::cerr << "parseUnary() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     if (match(TokenKind::Bang) || match(TokenKind::Minus)) {
         Token op = previous();
+        std::cerr << "Matched unary operator: " << op.text << " (kind: " << static_cast<int>(op.kind) << ")" << std::endl;
         auto right = parseUnary();
         return std::make_unique<UnaryExpression>(op, std::move(right));
     }
-
     return parseCall();
 }
 
 std::unique_ptr<Expression> ExpressionParser::parseCall() {
+    std::cerr << "ExpressionParser::parseCall() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
     auto expr = parsePrimary();
 
     while (true) {
@@ -125,6 +131,7 @@ std::unique_ptr<Expression> ExpressionParser::finishCall(std::unique_ptr<Express
             if (arguments.size() >= 255) {
                 error(peek(), "Cannot have more than 255 arguments.");
             }
+            std::cerr << "Parsing argument " << arguments.size() + 1 << " in finishCall" << std::endl;
             arguments.push_back(parseExpression());
         } while (match(TokenKind::Comma));
     }
@@ -134,26 +141,30 @@ std::unique_ptr<Expression> ExpressionParser::finishCall(std::unique_ptr<Express
 }
 
 std::unique_ptr<Expression> ExpressionParser::parsePrimary() {
-    if (match(TokenKind::False)) return std::make_unique<LiteralExpression>(previous());
-    if (match(TokenKind::True)) return std::make_unique<LiteralExpression>(previous());
-    if (match(TokenKind::Null)) return std::make_unique<LiteralExpression>(previous());
+    std::cerr << "parsePrimary() - Current token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
+    if (match(TokenKind::False)) { std::cerr << "Matched literal: false" << std::endl; return std::make_unique<LiteralExpression>(previous()); }
+    if (match(TokenKind::True)) { std::cerr << "Matched literal: true" << std::endl; return std::make_unique<LiteralExpression>(previous()); }
+    if (match(TokenKind::Null)) { std::cerr << "Matched literal: null" << std::endl; return std::make_unique<LiteralExpression>(previous()); }
 
     if (match(TokenKind::Number) || match(TokenKind::String)) {
+        std::cerr << "Matched literal: " << previous().text << std::endl;
         return std::make_unique<LiteralExpression>(previous());
     }
 
     if (match(TokenKind::Identifier)) {
+        std::cerr << "Matched identifier: " << previous().text << std::endl;
         return std::make_unique<VariableExpression>(previous());
     }
 
     if (match(TokenKind::LeftParen)) {
+        std::cerr << "Matched left paren, parsing grouping expression" << std::endl;
         auto expr = parseExpression();
         consume(TokenKind::RightParen, "Expect ')' after expression.");
         return std::make_unique<GroupingExpression>(std::move(expr));
     }
 
-    // If the current token is a semicolon, return nullptr to let the statement parser handle it
     if (check(TokenKind::Semicolon)) {
+        std::cerr << "Found semicolon, returning nullptr from parsePrimary" << std::endl;
         return nullptr;
     }
 
@@ -202,6 +213,22 @@ std::unique_ptr<Expression> ExpressionParser::parseClassExpression() {
 std::unique_ptr<Expression> ExpressionParser::parseJSXExpression() {
     // TODO: Implement JSX parsing
     throw error(peek(), "JSX parsing not implemented yet.");
+}
+
+Token ExpressionParser::advance() {
+    if (!isAtEnd()) {
+        std::cerr << "Advancing from token: " << tokens[current].text << " (kind: " << static_cast<int>(tokens[current].kind) << ")" << std::endl;
+        current++;
+    }
+    return previous();
+}
+
+Token ExpressionParser::consume(TokenKind kind, const std::string& message) {
+    if (check(kind)) {
+        std::cerr << "Consuming token: " << peek().text << " (kind: " << static_cast<int>(peek().kind) << ")" << std::endl;
+        return advance();
+    }
+    throw error(peek(), message);
 }
 
 } // namespace superjs 

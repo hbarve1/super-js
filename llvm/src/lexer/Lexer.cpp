@@ -61,19 +61,22 @@ Token Lexer::nextToken() {
             operatorKind == TokenKind::EqualEqual || operatorKind == TokenKind::BangEqual ||
             operatorKind == TokenKind::LessEqual || operatorKind == TokenKind::GreaterEqual ||
             operatorKind == TokenKind::And || operatorKind == TokenKind::Or) {
-            recognizer->advance(); // consume the second character
+            size_t start = recognizer->getStart();
             recognizer->advance(); // consume the first character
-            return Token(operatorKind, source.substr(recognizer->getStart(), 2), line, column);
+            recognizer->advance(); // consume the second character
+            return Token(operatorKind, source.substr(start, 2), line, column);
         }
+        size_t start = recognizer->getStart();
         recognizer->advance(); // consume the operator
-        return Token(operatorKind, std::string(1, c), line, column);
+        return Token(operatorKind, source.substr(start, 1), line, column);
     }
     
     // Handle punctuation
     TokenKind punctKind = classifier->classifyPunctuation(c);
     if (punctKind != TokenKind::Error) {
+        size_t start = recognizer->getStart();
         recognizer->advance();
-        return Token(punctKind, std::string(1, c), line, column);
+        return Token(punctKind, source.substr(start, 1), line, column);
     }
     
     return Token(TokenKind::Error, "Unexpected character", line, column);
@@ -84,7 +87,6 @@ std::vector<Token> Lexer::tokenize() {
     Token token;
     do {
         token = nextToken();
-        std::cerr << "Token: " << token.text << " (Kind: " << static_cast<int>(token.kind) << ")" << std::endl;
         tokens.push_back(token);
         if (token.kind == TokenKind::Error) {
             tokens.push_back(Token(TokenKind::EndOfFile, "", line, column));

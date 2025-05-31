@@ -93,10 +93,15 @@ TokenKind TokenClassifier::classifyOperator(char c, char next) const {
             return TokenKind::Greater;
         case '&':
             if (next == '&') return TokenKind::And;
-            return TokenKind::Error;
+            return TokenKind::BitwiseAnd;
         case '|':
             if (next == '|') return TokenKind::Or;
-            return TokenKind::Error;
+            return TokenKind::BitwiseOr;
+        case '^': return TokenKind::BitwiseXor;
+        case '~': return TokenKind::BitwiseNot;
+        case '?': return TokenKind::Question;
+        case '@': return TokenKind::At;
+        case '#': return TokenKind::Hash;
         default:
             return TokenKind::Error;
     }
@@ -114,7 +119,6 @@ TokenKind TokenClassifier::classifyPunctuation(char c) const {
         case ',': return TokenKind::Comma;
         case '.': return TokenKind::Dot;
         case ':': return TokenKind::Colon;
-        case '?': return TokenKind::Question;
         default: return TokenKind::Error;
     }
 }

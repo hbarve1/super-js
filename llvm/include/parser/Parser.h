@@ -20,7 +20,7 @@ public:
     Parser(std::vector<Token>& tokens, size_t& current)
         : ParserBase(tokens, current),
           expression_parser_(tokens, current),
-          type_parser_(tokens, current),
+          type_parser_(*this),
           statement_parser_(tokens, current) {}
 
     std::vector<std::unique_ptr<Statement>> parse();

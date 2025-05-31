@@ -85,11 +85,12 @@ char TokenRecognizer::currentChar() const {
 }
 
 char TokenRecognizer::peek() const {
-    if (isAtEnd()) return '\0';
+    if (current + 1 >= source.length()) return '\0';
     return source[current + 1];
 }
 
 char TokenRecognizer::advance() {
+    if (isAtEnd()) return '\0';
     char c = currentChar();
     current++;
     column++;
@@ -108,7 +109,7 @@ bool TokenRecognizer::match(char expected) {
 }
 
 void TokenRecognizer::skipWhitespace() {
-    while (true) {
+    while (!isAtEnd()) {
         char c = currentChar();
         switch (c) {
             case ' ':
@@ -126,23 +127,24 @@ void TokenRecognizer::skipWhitespace() {
                     // Single-line comment
                     advance(); // consume '/'
                     advance(); // consume second '/'
-                    while (currentChar() != '\n' && !isAtEnd()) {
+                    while (!isAtEnd() && currentChar() != '\n') {
                         advance();
                     }
                 } else if (peek() == '*') {
                     // Multi-line comment
                     advance(); // consume '/'
                     advance(); // consume '*'
-                    while (!(currentChar() == '*' && peek() == '/') && !isAtEnd()) {
+                    while (!isAtEnd()) {
+                        if (currentChar() == '*' && peek() == '/') {
+                            advance(); // consume '*'
+                            advance(); // consume '/'
+                            break;
+                        }
                         if (currentChar() == '\n') {
                             line++;
                             column = 1;
                         }
                         advance();
-                    }
-                    if (!isAtEnd()) {
-                        advance(); // consume '*'
-                        advance(); // consume '/'
                     }
                 } else {
                     return;
@@ -155,7 +157,11 @@ void TokenRecognizer::skipWhitespace() {
 }
 
 Token TokenRecognizer::makeToken(TokenKind kind) {
-    return Token(kind, source.substr(start, current - start), line, column);
+    size_t length = current - start;
+    if (length > source.length() - start) {
+        length = source.length() - start;
+    }
+    return Token(kind, source.substr(start, length), line, column);
 }
 
 Token TokenRecognizer::errorToken(const std::string& message) {

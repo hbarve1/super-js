@@ -17,7 +17,7 @@ public:
     StatementParser(std::vector<Token>& tokens, size_t& current)
         : ParserBase(tokens, current),
           exprParser(tokens, current),
-          typeParser(tokens, current) {}
+          typeParser(*this) {}
 
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<Statement> parseBlockStatement();

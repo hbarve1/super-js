@@ -31,7 +31,6 @@ Token ParserBase::peek() const {
     if (current >= tokens.size()) {
         return Token(TokenKind::EndOfFile, "", 0, 0);
     }
-    std::cerr << "Peeking at token: " << tokens[current].text << " (Kind: " << static_cast<int>(tokens[current].kind) << ")" << std::endl;
     return tokens[current];
 }
 
