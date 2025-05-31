@@ -756,6 +756,33 @@ class Parser {
                 };
                 continue;
             }
+            // --- Assignment Expression ---
+            if (this.current.type === TokenType.ASSIGNMENT || (this.current.type === TokenType.OPERATOR && ['+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>=', '>>>='].includes(this.current.value))) {
+                // Assignment has the lowest precedence
+                if (precedence > 0) break;
+                const operator = this.current.value;
+                this.advance();
+                const right = this.parseExpression(0);
+                left = {
+                    type: 'AssignmentExpression',
+                    operator,
+                    left,
+                    right
+                };
+                continue;
+            }
+            // --- Postfix Update Expression ---
+            if (this.current.type === TokenType.OPERATOR && (this.current.value === '++' || this.current.value === '--')) {
+                const operator = this.current.value;
+                this.advance();
+                left = {
+                    type: 'UpdateExpression',
+                    operator,
+                    argument: left,
+                    prefix: false
+                };
+                continue;
+            }
             // Binary operators
             if (this.isBinaryOperator(this.current) && this.getPrecedence(this.current) > precedence) {
                 const opToken = this.current;
@@ -776,6 +803,18 @@ class Parser {
     }
 
     parsePrimaryExpression() {
+        // --- Prefix Update Expression ---
+        if (this.current.type === TokenType.OPERATOR && (this.current.value === '++' || this.current.value === '--')) {
+            const operator = this.current.value;
+            this.advance();
+            const argument = this.parsePrimaryExpression();
+            return {
+                type: 'UpdateExpression',
+                operator,
+                argument,
+                prefix: true
+            };
+        }
         // --- Unary expressions ---
         if (
             (this.current.type === TokenType.OPERATOR && ['!', '+', '-', '~'].includes(this.current.value)) ||

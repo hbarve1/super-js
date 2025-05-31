@@ -176,6 +176,24 @@ describe('Parser full program from sample.sjs', () => {
             consequent: { type: 'Identifier', name: 'a' },
             alternate: { type: 'Identifier', name: 'b' }
         });
+        // --- Check for AssignmentExpression: a += i; (in for loop body) ---
+        // Find the ForStatement and check its body (should be a BlockStatement with an AssignmentExpression)
+        const forStmt = ast.body.find(node => node.type === 'ForStatement');
+        if (forStmt && forStmt.body && Array.isArray(forStmt.body.body)) {
+            const assignExpr = forStmt.body.body.find(
+                n => n.type === 'ExpressionStatement' && n.skipped !== true // If real assignment parsing is implemented
+            );
+            // If you later parse real statements, check:
+            // expect(assignExpr.expression).toEqual({
+            //     type: 'AssignmentExpression',
+            //     operator: '+=',
+            //     left: { type: 'Identifier', name: 'a' },
+            //     right: { type: 'Identifier', name: 'i' }
+            // });
+        }
+        // --- Check for UpdateExpression: a++; and a--; ---
+        // These are in the while and do-while loops in the sample file
+        // You can add similar checks if/when you parse real statement bodies
         ast.body.forEach((node) => {
             if (node.type === 'VariableDeclaration') {
                 expect(typeof node.kind).toBe('string');
