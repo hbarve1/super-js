@@ -6,6 +6,7 @@ const tryStmts = require('./libs/try');
 const conditionals = require('./libs/conditionals');
 const patterns = require('./libs/patterns');
 const controlflow = require('./libs/controlflow');
+const variables = require('./libs/variables');
 
 class Parser {
     constructor(tokens) {
@@ -140,85 +141,7 @@ class Parser {
     }
 
     parseVariableDeclaration() {
-        // Debug: print current token at start of variable declaration
-        // console.log('[Parser Debug] parseVariableDeclaration at token:', this.current);
-        // let|const|var IDENTIFIER [: TYPE] [= expr] [, ...] ;
-        if (
-            this.current.type !== TokenType.KEYWORD ||
-            !['let', 'const', 'var'].includes(this.current.value)
-        ) {
-            throw new Error('Expected variable declaration keyword');
-        }
-        const kindToken = this.current;
-        this.advance();
-        // console.log('[Parser Debug] after let/const/var, current token:', this.current);
-        const declarations = [];
-        let first = true;
-        while (true) {
-            let idNode = null;
-            let invalidDeclarator = false;
-            if (this.current.type === TokenType.LEFT_BRACKET) {
-                // Allow empty array pattern
-                idNode = this.parseArrayPattern();
-            } else if (this.current.type === TokenType.LEFT_BRACE) {
-                // Allow empty object pattern
-                idNode = this.parseObjectPattern();
-            } else {
-                if (this.current.type !== TokenType.IDENTIFIER) {
-                    invalidDeclarator = true;
-                } else {
-                    const idToken = this.expect(TokenType.IDENTIFIER);
-                    idNode = idToken.value;
-                }
-            }
-            let varType = null;
-            if (!invalidDeclarator && this.current.type === TokenType.COLON) {
-                this.advance();
-                varType = this.parseTypeAnnotation();
-            }
-            let init = null;
-            if (!invalidDeclarator && this.current.type === TokenType.ASSIGNMENT) {
-                this.advance();
-                try {
-                    init = this.parseExpression();
-                } catch (e) {
-                    init = { type: 'Expression', stub: true, error: e.message };
-                    // Attempt to recover: skip to comma or semicolon
-                    while (this.current.type !== TokenType.COMMA && this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
-                        this.advance();
-                    }
-                }
-            }
-            // Disallow const without initializer
-            if (!invalidDeclarator && kindToken.value === 'const' && init == null) {
-                invalidDeclarator = true;
-            }
-            if (!invalidDeclarator) {
-                declarations.push({
-                    type: 'VariableDeclaration',
-                    kind: kindToken.value,
-                    id: idNode,
-                    varType,
-                    init
-                });
-            } else if (first) {
-                // Do NOT consume or advance past the semicolon here; let parseProgram handle it
-                throw new Error('Invalid variable declarator');
-            }
-            first = false;
-            if (this.current.type === TokenType.SEMICOLON) {
-                this.advance();
-                return declarations.length === 1 ? declarations[0] : declarations;
-            }
-            if (this.current.type === TokenType.COMMA) {
-                this.advance();
-                continue;
-            } else {
-                break;
-            }
-        }
-        // If not at a semicolon, treat as invalid (do not add to AST)
-        return null;
+        return variables.parseVariableDeclaration(this);
     }
 
     parseArrayPattern() {
