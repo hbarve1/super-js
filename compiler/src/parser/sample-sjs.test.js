@@ -97,6 +97,36 @@ describe('Parser full program from sample.sjs', () => {
             } else if (node.type === 'FunctionDeclaration') {
                 // Check against expected function ASTs
                 expect(node).toEqual(expectedFunctions[node.id]);
+            } else if (node.type === 'ClassDeclaration' && node.id === 'Point') {
+                expect(node).toEqual({
+                    type: 'ClassDeclaration',
+                    id: 'Point',
+                    superClass: null,
+                    body: [
+                        { type: 'ClassProperty', key: 'x', varType: 'number' },
+                        { type: 'ClassProperty', key: 'y', varType: 'number' },
+                        {
+                            type: 'MethodDefinition',
+                            key: 'constructor',
+                            params: [
+                                { name: 'x', varType: 'number' },
+                                { name: 'y', varType: 'number' }
+                            ],
+                            returnType: null,
+                            body: { type: 'BlockStatement', body: [] }
+                        },
+                        {
+                            type: 'MethodDefinition',
+                            key: 'move',
+                            params: [
+                                { name: 'dx', varType: 'number' },
+                                { name: 'dy', varType: 'number' }
+                            ],
+                            returnType: 'void',
+                            body: { type: 'BlockStatement', body: [] }
+                        }
+                    ]
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),
