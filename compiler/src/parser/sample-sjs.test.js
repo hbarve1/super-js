@@ -154,6 +154,17 @@ describe('Parser full program from sample.sjs', () => {
                 { key: { type: 'Identifier', name: 'q' }, value: { type: 'Literal', value: 2 } }
             ]
         });
+        // --- Check for UnaryExpression: let isNot = !flag; ---
+        const isNotDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'isNot'
+        );
+        expect(isNotDecl).toBeDefined();
+        expect(isNotDecl.init).toEqual({
+            type: 'UnaryExpression',
+            operator: '!',
+            argument: { type: 'Identifier', name: 'flag' },
+            prefix: true
+        });
         ast.body.forEach((node) => {
             if (node.type === 'VariableDeclaration') {
                 expect(typeof node.kind).toBe('string');

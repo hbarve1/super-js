@@ -762,6 +762,21 @@ class Parser {
     }
 
     parsePrimaryExpression() {
+        // --- Unary expressions ---
+        if (
+            (this.current.type === TokenType.OPERATOR && ['!', '+', '-', '~'].includes(this.current.value)) ||
+            (this.current.type === TokenType.KEYWORD && ['typeof', 'void', 'delete'].includes(this.current.value))
+        ) {
+            const operator = this.current.value;
+            this.advance();
+            const argument = this.parsePrimaryExpression();
+            return {
+                type: 'UnaryExpression',
+                operator,
+                argument,
+                prefix: true
+            };
+        }
         if (this.current.type === TokenType.NUMBER) {
             const value = this.current.value;
             this.advance();
