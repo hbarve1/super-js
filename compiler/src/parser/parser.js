@@ -82,6 +82,15 @@ class Parser {
                 case 'try':
                 case 'with':
                     return this.parseControlFlow();
+                case 'return': {
+                    this.advance();
+                    let argument = null;
+                    if (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+                        argument = this.parseExpression();
+                    }
+                    if (this.current.type === TokenType.SEMICOLON) this.advance();
+                    return { type: 'ReturnStatement', argument };
+                }
                 default:
                     return this.parseExpressionStatement();
             }

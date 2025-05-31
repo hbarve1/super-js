@@ -330,5 +330,11 @@ describe('Parser full program from sample.sjs', () => {
                 }));
             }
         });
+        // --- Check for ReturnStatement in function 'ret' ---
+        const retFn = ast.body.find(node => node.type === 'FunctionDeclaration' && node.id === 'ret');
+        expect(retFn).toBeDefined();
+        expect(retFn.body.body.some(
+            stmt => stmt.type === 'ReturnStatement' && stmt.argument && stmt.argument.type === 'Literal' && stmt.argument.value === 42
+        )).toBe(true);
     });
 }); 
