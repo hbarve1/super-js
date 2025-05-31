@@ -392,6 +392,9 @@ class Parser {
         if (this.current.type === TokenType.KEYWORD && this.current.value === 'switch') {
             return this.parseSwitchStatement();
         }
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'try') {
+            return this.parseTryStatement();
+        }
         // For now, fallback to stub for other control flow
         while (
             this.current.type !== TokenType.RIGHT_BRACE &&
@@ -585,6 +588,74 @@ class Parser {
             type: 'SwitchStatement',
             discriminant,
             cases: []
+        };
+    }
+
+    parseTryStatement() {
+        this.expect(TokenType.KEYWORD, 'try');
+        // Parse try block (as stub block)
+        let block = { type: 'BlockStatement', body: [] };
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        }
+        // Parse catch clause
+        let handler = null;
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'catch') {
+            this.advance();
+            let param = null;
+            if (this.current.type === TokenType.LEFT_PAREN) {
+                this.advance();
+                if (this.current.type === TokenType.IDENTIFIER) {
+                    param = this.current.value;
+                    this.advance();
+                }
+                // Skip to RIGHT_PAREN
+                while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+                    this.advance();
+                }
+                if (this.current.type === TokenType.RIGHT_PAREN) this.advance();
+            }
+            // Parse catch block (as stub block)
+            let catchBlock = { type: 'BlockStatement', body: [] };
+            if (this.current.type === TokenType.LEFT_BRACE) {
+                this.advance();
+                let braceDepth = 1;
+                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                    this.advance();
+                }
+            }
+            handler = { param, body: catchBlock };
+        }
+        // Parse finally block
+        let finalizer = null;
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'finally') {
+            this.advance();
+            let finallyBlock = { type: 'BlockStatement', body: [] };
+            if (this.current.type === TokenType.LEFT_BRACE) {
+                this.advance();
+                let braceDepth = 1;
+                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                    this.advance();
+                }
+            }
+            finalizer = finallyBlock;
+        }
+        return {
+            type: 'TryStatement',
+            block,
+            handler,
+            finalizer
         };
     }
 

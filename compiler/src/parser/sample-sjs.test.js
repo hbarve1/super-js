@@ -196,6 +196,13 @@ describe('Parser full program from sample.sjs', () => {
                     discriminant: { type: 'Expression', stub: true },
                     cases: []
                 });
+            } else if (node.type === 'TryStatement') {
+                expect(node).toEqual({
+                    type: 'TryStatement',
+                    block: { type: 'BlockStatement', body: [] },
+                    handler: { param: 'e', body: { type: 'BlockStatement', body: [] } },
+                    finalizer: { type: 'BlockStatement', body: [] }
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),
