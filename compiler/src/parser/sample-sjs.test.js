@@ -17,8 +17,9 @@ describe('Parser full program from sample.sjs', () => {
             type: 'FunctionDeclaration',
             id: 'ret',
             params: [],
-            returnType: 'number',
+            returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         gen: {
@@ -27,6 +28,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: true,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         afn: {
@@ -35,14 +37,16 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         contractFn: {
             type: 'FunctionDeclaration',
             id: 'contractFn',
-            params: [ { name: 'x', varType: 'number' } ],
-            returnType: 'number',
+            params: [ { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } } ],
+            returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         g: {
@@ -51,6 +55,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         docFn: {
@@ -59,25 +64,50 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         add: {
             type: 'FunctionDeclaration',
             id: 'add',
             params: [
-                { name: 'x', varType: 'number' },
-                { name: 'y', varType: 'number' }
+                { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } },
+                { name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } }
             ],
-            returnType: 'number',
+            returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
+            generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         greet: {
             type: 'FunctionDeclaration',
             id: 'greet',
-            params: [ { name: 'name', varType: 'string' } ],
+            params: [ { name: 'name', varType: { type: 'TypeIdentifier', name: 'string' } } ],
             returnType: null,
             isGenerator: false,
+            generics: null,
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
+        },
+        f: {
+            type: 'FunctionDeclaration',
+            id: 'f',
+            params: [
+                {
+                    name: 'x',
+                    varType: {
+                        type: 'UnionType',
+                        left: { type: 'TypeIdentifier', name: 'T' },
+                        right: { type: 'TypeIdentifier', name: 'number' }
+                    }
+                }
+            ],
+            returnType: {
+                type: 'GenericType',
+                name: 'Array',
+                typeParams: [ { type: 'TypeIdentifier', name: 'T' } ]
+            },
+            isGenerator: false,
+            generics: ['T'],
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         }
     };

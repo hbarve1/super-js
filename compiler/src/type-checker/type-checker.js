@@ -37,9 +37,10 @@ class TypeChecker {
             // Check initializer type if present
             if (init) {
                 const initType = this.inferType(init);
-                if (varType && initType !== varType) {
+                const declaredType = this.getTypeName(varType);
+                if (declaredType && declaredType !== 'any' && initType !== declaredType) {
                     // TODO: Add better type compatibility checks
-                    throw new Error(`Type error: variable '${id}' declared as ${varType} but initialized with ${initType}`);
+                    throw new Error(`Type error: variable '${id}' declared as ${declaredType} but initialized with ${initType}`);
                 }
             }
         }
@@ -57,6 +58,14 @@ class TypeChecker {
             default:
                 return 'any';
         }
+    }
+
+    getTypeName(typeNode) {
+        if (!typeNode) return null;
+        if (typeof typeNode === 'string') return typeNode;
+        if (typeNode.type === 'TypeIdentifier') return typeNode.name;
+        // TODO: Handle UnionType, IntersectionType, GenericType, ArrayType, etc.
+        return 'any';
     }
 }
 

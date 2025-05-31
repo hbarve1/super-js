@@ -92,7 +92,8 @@ let message: string = `The value is ${a}`;
 function add(x: number, y: number): number { return x + y; }
 function greet(name: string) { return `Hello, ${name}`; }
 const arrow = (x: number): number => x * 2;
-const arrow = (x: number, y: number): number => { return x + y; };
+const arrow2 = (x: number, y: number): number => { return x + y; };
+function f<T>(x: T | number): Array<T> { return [x]; };
 
 // Class declaration
 class Point {

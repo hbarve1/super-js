@@ -156,29 +156,7 @@ class Parser {
         let varType = null;
         if (this.current.type === TokenType.COLON) {
             this.advance();
-            if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
-                varType = this.current.value;
-                this.advance();
-                // Support array type annotation: number[]
-                if (this.current.type === TokenType.LEFT_BRACKET) {
-                    this.advance();
-                    if (this.current.type === TokenType.RIGHT_BRACKET) {
-                        this.advance();
-                        varType += '[]';
-                    }
-                }
-            } else if (this.current.type === TokenType.LEFT_BRACE) {
-                // Skip object type literal
-                let depth = 1;
-                this.advance();
-                while (depth > 0 && this.current.type !== TokenType.EOF) {
-                    if (this.current.type === TokenType.LEFT_BRACE) depth++;
-                    if (this.current.type === TokenType.RIGHT_BRACE) depth--;
-                    this.advance();
-                }
-            } else {
-                throw new Error('Expected type after colon');
-            }
+            varType = this.parseTypeAnnotation();
         }
         let init = null;
         if (this.current.type === TokenType.ASSIGNMENT) {
@@ -208,7 +186,6 @@ class Parser {
     }
 
     parseFunctionDeclaration() {
-        // function [*] name (params) [: returnType] { body }
         this.expect(TokenType.KEYWORD, 'function');
         // Support generator functions: function* name ...
         let isGenerator = false;
@@ -216,9 +193,26 @@ class Parser {
             isGenerator = true;
             this.advance();
         }
-        // Support async functions: async function ...
-        // (Handled in parseStatement if you want to support async)
+        // Parse function name
         const idToken = this.expect(TokenType.IDENTIFIER);
+        // Parse generics: function f<T, U>(...)
+        let generics = null;
+        if (this.current.type === TokenType.LEFT_ANGLE) {
+            this.advance();
+            generics = [];
+            while (this.current.type !== TokenType.RIGHT_ANGLE && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.IDENTIFIER) {
+                    generics.push(this.current.value);
+                    this.advance();
+                }
+                if (this.current.type === TokenType.COMMA) {
+                    this.advance();
+                } else if (this.current.type !== TokenType.RIGHT_ANGLE) {
+                    break;
+                }
+            }
+            this.expect(TokenType.RIGHT_ANGLE);
+        }
         // Parse parameter list
         this.expect(TokenType.LEFT_PAREN);
         const params = [];
@@ -229,10 +223,7 @@ class Parser {
                 let varType = null;
                 if (this.current.type === TokenType.COLON) {
                     this.advance();
-                    if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
-                        varType = this.current.value;
-                        this.advance();
-                    }
+                    varType = this.parseTypeAnnotation();
                 }
                 params.push({ name: paramName, varType });
                 if (this.current.type === TokenType.COMMA) {
@@ -250,10 +241,7 @@ class Parser {
         let returnType = null;
         if (this.current.type === TokenType.COLON) {
             this.advance();
-            if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
-                returnType = this.current.value;
-                this.advance();
-            }
+            returnType = this.parseTypeAnnotation();
         }
         // Parse body
         const body = this.parseBlockStatement();
@@ -263,6 +251,7 @@ class Parser {
             params,
             returnType,
             isGenerator,
+            generics,
             body
         };
     }
@@ -1035,6 +1024,95 @@ class Parser {
         }
         this.expect(TokenType.RIGHT_BRACE);
         return { type: 'BlockStatement', body };
+    }
+
+    parseTypeAnnotation() {
+        // Parse union and intersection types
+        let type = this.parsePrimaryType();
+        // Array type: T[]
+        while (this.current.type === TokenType.LEFT_BRACKET && this.peek().type === TokenType.RIGHT_BRACKET) {
+            this.advance(); // [
+            this.advance(); // ]
+            type = { type: 'ArrayType', elementType: type };
+        }
+        while (this.current.type === TokenType.UNION || this.current.type === TokenType.INTERSECTION) {
+            const operator = this.current.type === TokenType.UNION ? '|' : '&';
+            this.advance();
+            const right = this.parsePrimaryType();
+            type = {
+                type: operator === '|' ? 'UnionType' : 'IntersectionType',
+                left: type,
+                right
+            };
+        }
+        return type;
+    }
+
+    parsePrimaryType() {
+        // Parse a single type: identifier, generic, object, or parenthesized type
+        if (this.current.type === TokenType.IDENTIFIER || this.current.type === TokenType.KEYWORD) {
+            const name = this.current.value;
+            this.advance();
+            // Generic type: Foo<Bar>
+            if (this.current.type === TokenType.LEFT_ANGLE) {
+                this.advance();
+                const typeParams = [];
+                while (this.current.type !== TokenType.RIGHT_ANGLE && this.current.type !== TokenType.EOF) {
+                    typeParams.push(this.parseTypeAnnotation());
+                    if (this.current.type === TokenType.COMMA) {
+                        this.advance();
+                    } else {
+                        break;
+                    }
+                }
+                this.expect(TokenType.RIGHT_ANGLE);
+                return {
+                    type: 'GenericType',
+                    name,
+                    typeParams
+                };
+            }
+            return { type: 'TypeIdentifier', name };
+        }
+        // Object type literal: { p: number, q: string }
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            this.advance();
+            const properties = [];
+            while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.IDENTIFIER) {
+                    const key = this.current.value;
+                    this.advance();
+                    this.expect(TokenType.COLON);
+                    const valueType = this.parseTypeAnnotation();
+                    properties.push({ key, valueType });
+                    if (this.current.type === TokenType.COMMA) {
+                        this.advance();
+                    } else if (this.current.type !== TokenType.RIGHT_BRACE) {
+                        break;
+                    }
+                } else {
+                    // Skip unexpected tokens
+                    this.advance();
+                }
+            }
+            this.expect(TokenType.RIGHT_BRACE);
+            return { type: 'ObjectType', properties };
+        }
+        // Parenthesized type
+        if (this.current.type === TokenType.LEFT_PAREN) {
+            this.advance();
+            const type = this.parseTypeAnnotation();
+            this.expect(TokenType.RIGHT_PAREN);
+            return type;
+        }
+        // Array type: T[]
+        if (this.current.type === TokenType.LEFT_BRACKET) {
+            this.advance();
+            this.expect(TokenType.RIGHT_BRACKET);
+            return { type: 'ArrayType', elementType: { type: 'TypeIdentifier', name: 'any' } };
+        }
+        // Fallback
+        return { type: 'TypeIdentifier', name: 'any' };
     }
 }
 
