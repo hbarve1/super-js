@@ -100,6 +100,26 @@ class Parser {
         }
         const kindToken = this.current;
         this.advance();
+        // --- Destructuring support ---
+        if (this.current.type === TokenType.LEFT_BRACKET) {
+            // Array destructuring pattern
+            // Skip to semicolon
+            while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                this.advance();
+            }
+            if (this.current.type === TokenType.SEMICOLON) this.advance();
+            return { type: 'VariableDeclaration', kind: kindToken.value, id: { type: 'ArrayPattern' }, varType: null, init: null, skipped: true };
+        }
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Object destructuring pattern
+            // Skip to semicolon
+            while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                this.advance();
+            }
+            if (this.current.type === TokenType.SEMICOLON) this.advance();
+            return { type: 'VariableDeclaration', kind: kindToken.value, id: { type: 'ObjectPattern' }, varType: null, init: null, skipped: true };
+        }
+        // --- Normal identifier ---
         const idToken = this.expect(TokenType.IDENTIFIER);
         let varType = null;
         if (this.current.type === TokenType.COLON) {
@@ -107,6 +127,23 @@ class Parser {
             if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
                 varType = this.current.value;
                 this.advance();
+                // Support array type annotation: number[]
+                if (this.current.type === TokenType.LEFT_BRACKET) {
+                    this.advance();
+                    if (this.current.type === TokenType.RIGHT_BRACKET) {
+                        this.advance();
+                        varType += '[]';
+                    }
+                }
+            } else if (this.current.type === TokenType.LEFT_BRACE) {
+                // Skip object type literal
+                let depth = 1;
+                this.advance();
+                while (depth > 0 && this.current.type !== TokenType.EOF) {
+                    if (this.current.type === TokenType.LEFT_BRACE) depth++;
+                    if (this.current.type === TokenType.RIGHT_BRACE) depth--;
+                    this.advance();
+                }
             } else {
                 throw new Error('Expected type after colon');
             }
@@ -660,17 +697,66 @@ class Parser {
     // --- Expression Parsing ---
     parseExpression(precedence = 0) {
         let left = this.parsePrimaryExpression();
-        while (this.isBinaryOperator(this.current) && this.getPrecedence(this.current) > precedence) {
-            const opToken = this.current;
-            const opPrecedence = this.getPrecedence(opToken);
-            this.advance();
-            const right = this.parseExpression(opPrecedence);
-            left = {
-                type: 'BinaryExpression',
-                operator: opToken.value,
-                left,
-                right
-            };
+        // Handle member and call expressions (postfix)
+        while (true) {
+            if (this.current.type === TokenType.DOT) {
+                this.advance();
+                if (this.current.type === TokenType.IDENTIFIER) {
+                    left = {
+                        type: 'MemberExpression',
+                        object: left,
+                        property: { type: 'Identifier', name: this.current.value },
+                        computed: false
+                    };
+                    this.advance();
+                    continue;
+                }
+            } else if (this.current.type === TokenType.LEFT_BRACKET) {
+                this.advance();
+                const property = this.parseExpression();
+                this.expect(TokenType.RIGHT_BRACKET);
+                left = {
+                    type: 'MemberExpression',
+                    object: left,
+                    property,
+                    computed: true
+                };
+                continue;
+            } else if (this.current.type === TokenType.LEFT_PAREN) {
+                // Function call
+                this.advance();
+                const args = [];
+                while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+                    args.push(this.parseExpression());
+                    if (this.current.type === TokenType.COMMA) {
+                        this.advance();
+                    } else {
+                        break;
+                    }
+                }
+                this.expect(TokenType.RIGHT_PAREN);
+                left = {
+                    type: 'CallExpression',
+                    callee: left,
+                    arguments: args
+                };
+                continue;
+            }
+            // Binary operators
+            if (this.isBinaryOperator(this.current) && this.getPrecedence(this.current) > precedence) {
+                const opToken = this.current;
+                const opPrecedence = this.getPrecedence(opToken);
+                this.advance();
+                const right = this.parseExpression(opPrecedence);
+                left = {
+                    type: 'BinaryExpression',
+                    operator: opToken.value,
+                    left,
+                    right
+                };
+                continue;
+            }
+            break;
         }
         return left;
     }
@@ -709,6 +795,55 @@ class Parser {
             const expr = this.parseExpression();
             this.expect(TokenType.RIGHT_PAREN);
             return expr;
+        }
+        // --- Array literal ---
+        if (this.current.type === TokenType.LEFT_BRACKET) {
+            this.advance();
+            const elements = [];
+            while (this.current.type !== TokenType.RIGHT_BRACKET && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.COMMA) {
+                    // Allow empty elements (e.g., [1,,2])
+                    elements.push(null);
+                    this.advance();
+                    continue;
+                }
+                elements.push(this.parseExpression());
+                if (this.current.type === TokenType.COMMA) {
+                    this.advance();
+                } else {
+                    break;
+                }
+            }
+            this.expect(TokenType.RIGHT_BRACKET);
+            return { type: 'ArrayExpression', elements };
+        }
+        // --- Object literal ---
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            this.advance();
+            const properties = [];
+            while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+                // Key: identifier or string
+                let key = null;
+                if (this.current.type === TokenType.IDENTIFIER) {
+                    key = { type: 'Identifier', name: this.current.value };
+                    this.advance();
+                } else if (this.current.type === TokenType.STRING) {
+                    key = { type: 'Literal', value: this.current.value };
+                    this.advance();
+                } else {
+                    break;
+                }
+                this.expect(TokenType.COLON);
+                const value = this.parseExpression();
+                properties.push({ key, value });
+                if (this.current.type === TokenType.COMMA) {
+                    this.advance();
+                } else {
+                    break;
+                }
+            }
+            this.expect(TokenType.RIGHT_BRACE);
+            return { type: 'ObjectExpression', properties };
         }
         // Fallback stub
         this.advance();

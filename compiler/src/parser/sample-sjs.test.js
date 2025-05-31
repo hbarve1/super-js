@@ -88,6 +88,12 @@ describe('Parser full program from sample.sjs', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.type).toBe('Program');
+        // Debug print: all variable declaration ids
+        const varDeclIds = ast.body
+            .filter(node => node.type === 'VariableDeclaration')
+            .map(node => node.id && typeof node.id === 'string' ? node.id : node.id && node.id.type);
+        // eslint-disable-next-line no-console
+        // console.log('VariableDeclaration ids:', varDeclIds);
         // --- Check for real expression AST for 'let sum = a + b;' ---
         const sumDecl = ast.body.find(
             node => node.type === 'VariableDeclaration' && node.id === 'sum'
@@ -99,10 +105,63 @@ describe('Parser full program from sample.sjs', () => {
             left: { type: 'Identifier', name: 'a' },
             right: { type: 'Identifier', name: 'b' }
         });
+        // --- Check for MemberExpression: let member = obj.p; ---
+        const memberDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'member'
+        );
+        expect(memberDecl).toBeDefined();
+        expect(memberDecl.init).toEqual({
+            type: 'MemberExpression',
+            object: { type: 'Identifier', name: 'obj' },
+            property: { type: 'Identifier', name: 'p' },
+            computed: false
+        });
+        // --- Check for CallExpression: let called = add(a, b); ---
+        const calledDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'called'
+        );
+        expect(calledDecl).toBeDefined();
+        expect(calledDecl.init).toEqual({
+            type: 'CallExpression',
+            callee: { type: 'Identifier', name: 'add' },
+            arguments: [
+                { type: 'Identifier', name: 'a' },
+                { type: 'Identifier', name: 'b' }
+            ]
+        });
+        // --- Check for ArrayExpression: let arr = [1, 2, 3]; ---
+        const arrDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'arr'
+        );
+        expect(arrDecl).toBeDefined();
+        expect(arrDecl.init).toEqual({
+            type: 'ArrayExpression',
+            elements: [
+                { type: 'Literal', value: 1 },
+                { type: 'Literal', value: 2 },
+                { type: 'Literal', value: 3 }
+            ]
+        });
+        // --- Check for ObjectExpression: let obj = { p: 1, q: 2 }; ---
+        const objDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'obj'
+        );
+        expect(objDecl).toBeDefined();
+        expect(objDecl.init).toEqual({
+            type: 'ObjectExpression',
+            properties: [
+                { key: { type: 'Identifier', name: 'p' }, value: { type: 'Literal', value: 1 } },
+                { key: { type: 'Identifier', name: 'q' }, value: { type: 'Literal', value: 2 } }
+            ]
+        });
         ast.body.forEach((node) => {
             if (node.type === 'VariableDeclaration') {
                 expect(typeof node.kind).toBe('string');
-                expect(typeof node.id).toBe('string');
+                if (typeof node.id === 'string') {
+                    expect(typeof node.id).toBe('string');
+                } else {
+                    expect(['ArrayPattern', 'ObjectPattern']).toContain(node.id.type);
+                }
                 expect(node).toHaveProperty('varType');
                 expect(node).toHaveProperty('init');
             } else if (node.type === 'FunctionDeclaration') {
