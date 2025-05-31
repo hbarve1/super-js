@@ -313,8 +313,23 @@ describe('Parser full program from sample.sjs', () => {
             } else if (node.type === 'SwitchStatement') {
                 expect(node).toEqual({
                     type: 'SwitchStatement',
-                    discriminant: { type: 'Expression', stub: true },
-                    cases: []
+                    discriminant: { type: 'Identifier', name: 'b' },
+                    cases: [
+                        {
+                            type: 'SwitchCase',
+                            test: { type: 'Literal', value: 1 },
+                            consequent: [
+                                { type: 'BreakStatement' }
+                            ]
+                        },
+                        {
+                            type: 'SwitchCase',
+                            test: null,
+                            consequent: [
+                                { type: 'ContinueStatement' }
+                            ]
+                        }
+                    ]
                 });
             } else if (node.type === 'TryStatement') {
                 expect(node).toEqual({
@@ -336,5 +351,14 @@ describe('Parser full program from sample.sjs', () => {
         expect(retFn.body.body.some(
             stmt => stmt.type === 'ReturnStatement' && stmt.argument && stmt.argument.type === 'Literal' && stmt.argument.value === 42
         )).toBe(true);
+        // --- Check for BreakStatement and ContinueStatement ---
+        // Find the SwitchStatement and check its cases (if implemented), or check for their presence in the AST
+        const hasBreak = JSON.stringify(ast).includes('BreakStatement');
+        const hasContinue = JSON.stringify(ast).includes('ContinueStatement');
+        expect(hasBreak).toBe(true);
+        expect(hasContinue).toBe(true);
+        // --- Check for ThrowStatement ---
+        const hasThrow = JSON.stringify(ast).includes('ThrowStatement');
+        expect(hasThrow).toBe(true);
     });
 }); 

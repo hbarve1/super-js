@@ -91,6 +91,25 @@ class Parser {
                     if (this.current.type === TokenType.SEMICOLON) this.advance();
                     return { type: 'ReturnStatement', argument };
                 }
+                case 'break': {
+                    this.advance();
+                    if (this.current.type === TokenType.SEMICOLON) this.advance();
+                    return { type: 'BreakStatement' };
+                }
+                case 'continue': {
+                    this.advance();
+                    if (this.current.type === TokenType.SEMICOLON) this.advance();
+                    return { type: 'ContinueStatement' };
+                }
+                case 'throw': {
+                    this.advance();
+                    let argument = null;
+                    if (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+                        argument = this.parseExpression();
+                    }
+                    if (this.current.type === TokenType.SEMICOLON) this.advance();
+                    return { type: 'ThrowStatement', argument };
+                }
                 default:
                     return this.parseExpressionStatement();
             }
@@ -548,28 +567,48 @@ class Parser {
     parseSwitchStatement() {
         this.expect(TokenType.KEYWORD, 'switch');
         this.expect(TokenType.LEFT_PAREN);
-        // For now, stub discriminant
-        let discriminant = { type: 'Expression', stub: true };
-        // Skip until RIGHT_PAREN
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            this.advance();
-        }
+        // Parse discriminant
+        let discriminant = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
-        // Parse cases (as empty array for now)
+        const cases = [];
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
             this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
+            while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.KEYWORD && this.current.value === 'case') {
+                    this.advance();
+                    const test = this.parseExpression();
+                    this.expect(TokenType.COLON);
+                    const consequent = [];
+                    while (
+                        (this.current.type !== TokenType.KEYWORD || (this.current.value !== 'case' && this.current.value !== 'default')) &&
+                        this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF
+                    ) {
+                        const stmt = this.parseStatement();
+                        if (stmt) consequent.push(stmt);
+                    }
+                    cases.push({ type: 'SwitchCase', test, consequent });
+                } else if (this.current.type === TokenType.KEYWORD && this.current.value === 'default') {
+                    this.advance();
+                    this.expect(TokenType.COLON);
+                    const consequent = [];
+                    while (
+                        (this.current.type !== TokenType.KEYWORD || (this.current.value !== 'case' && this.current.value !== 'default')) &&
+                        this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF
+                    ) {
+                        const stmt = this.parseStatement();
+                        if (stmt) consequent.push(stmt);
+                    }
+                    cases.push({ type: 'SwitchCase', test: null, consequent });
+                } else {
+                    this.advance();
+                }
             }
+            this.expect(TokenType.RIGHT_BRACE);
         }
         return {
             type: 'SwitchStatement',
             discriminant,
-            cases: []
+            cases
         };
     }
 
