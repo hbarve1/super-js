@@ -5,7 +5,18 @@ function parseForStatement(parser) {
     parser.expect(parser.TokenType.LEFT_PAREN);
     let init = null;
     if (parser.current.type === parser.TokenType.KEYWORD && ['let', 'const', 'var'].includes(parser.current.value)) {
-        init = parser.parseVariableDeclaration();
+        try {
+            init = parser.parseVariableDeclaration(true);
+            // If parseVariableDeclaration returns null (e.g., for empty declaration), treat as valid (init = null)
+        } catch (e) {
+            // If variable declaration is invalid, recover by setting init to null
+            init = null;
+            // Advance to next semicolon or right paren to recover
+            while (parser.current.type !== parser.TokenType.SEMICOLON && parser.current.type !== parser.TokenType.RIGHT_PAREN && parser.current.type !== parser.TokenType.EOF) {
+                parser.advance();
+            }
+        }
+        // Do not treat null init as an error; continue parsing
     } else if (parser.current.type !== parser.TokenType.SEMICOLON) {
         init = parser.parseExpression();
         if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();

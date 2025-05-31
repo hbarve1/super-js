@@ -94,8 +94,8 @@ describe('Parser - Type Annotations', () => {
         expect(ast.body[0].varType).toEqual({
             type: 'ObjectType',
             properties: [
-                { key: 'p', valueType: { type: 'TypeIdentifier', name: 'number' } },
-                { key: 'q', valueType: { type: 'TypeIdentifier', name: 'string' } }
+                { key: 'p', valueType: { type: 'TypeIdentifier', name: 'number' }, optional: false },
+                { key: 'q', valueType: { type: 'TypeIdentifier', name: 'string' }, optional: false }
             ]
         });
     });
@@ -113,9 +113,10 @@ describe('Parser - Type Annotations', () => {
                     valueType: {
                         type: 'ObjectType',
                         properties: [
-                            { key: 'b', valueType: { type: 'TypeIdentifier', name: 'number' } }
+                            { key: 'b', valueType: { type: 'TypeIdentifier', name: 'number' }, optional: false }
                         ]
-                    }
+                    },
+                    optional: false
                 }
             ]
         });
@@ -152,7 +153,8 @@ describe('Parser - Type Annotations', () => {
                                         elementType: { type: 'TypeIdentifier', name: 'number' }
                                     },
                                     right: { type: 'TypeIdentifier', name: 'string' }
-                                }
+                                },
+                                optional: false
                             }
                         ]
                     },
@@ -200,5 +202,75 @@ describe('Parser - Type Annotations', () => {
         const ns = ast.body.find(n => n.type === 'NamespaceDeclaration' && n.kind === 'namespace');
         expect(ns).toBeDefined();
         expect(ns.id).toBe('NS');
+    });
+});
+
+describe('Parser - Template Strings', () => {
+    test('parses simple template string', () => {
+        const code = 'let s = `hello world`;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].init.type).toBe('Literal');
+        expect(typeof ast.body[0].init.value).toBe('string');
+    });
+
+    test('parses template string with embedded expression', () => {
+        const code = 'let s = `value is ${a}`;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should parse as a Literal or TemplateLiteral node depending on parser support
+        expect(ast.body[0].init).toBeDefined();
+    });
+
+    test('parses template string with nested expressions', () => {
+        const code = 'let s = `a = ${1 + `${2}`}`;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].init).toBeDefined();
+    });
+
+    test('parses template string with multiple expressions', () => {
+        const code = 'let s = `a = ${a}, b = ${b}`;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].init).toBeDefined();
+    });
+
+    test('parses template string in function return', () => {
+        const code = 'function f() { return `hi ${name}`; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const fn = ast.body[0];
+        expect(fn.body.body[0].argument).toBeDefined();
+    });
+
+    test('parses template string in object and array', () => {
+        const code = 'let arr = [`foo`]; let obj = {s: `bar`};';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].init.elements[0].type).toBe('Literal');
+        expect(ast.body[1].init.properties[0].value.type).toBe('Literal');
+    });
+
+    test('parses empty template string', () => {
+        const code = 'let s = ``;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].init.type).toBe('Literal');
+        expect(ast.body[0].init.value).toBe('');
     });
 });

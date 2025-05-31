@@ -222,6 +222,37 @@ function parsePrimaryExpression(parser) {
         parser.advance();
         return { type: 'Literal', value };
     }
+    if (parser.current.type === parser.TokenType.TEMPLATE_STRING) {
+        // Start a template literal
+        const quasis = [];
+        const expressions = [];
+        // First quasi
+        quasis.push({ type: 'TemplateElement', value: parser.current.value });
+        parser.advance();
+        while (parser.current.type === parser.TokenType.TEMPLATE_EXPRESSION) {
+            // Skip the TEMPLATE_EXPRESSION marker
+            parser.advance();
+            // Parse the embedded expression
+            expressions.push(parser.parseExpression());
+            // After the expression, expect another TEMPLATE_STRING (or EOF)
+            if (parser.current.type === parser.TokenType.TEMPLATE_STRING) {
+                quasis.push({ type: 'TemplateElement', value: parser.current.value });
+                parser.advance();
+            } else {
+                // Unterminated template, error recovery: break
+                break;
+            }
+        }
+        // If only one quasi and no expressions, treat as Literal for backward compatibility
+        if (expressions.length === 0) {
+            return { type: 'Literal', value: quasis[0].value };
+        }
+        return {
+            type: 'TemplateLiteral',
+            quasis,
+            expressions
+        };
+    }
     if (parser.current.type === parser.TokenType.KEYWORD && ['true', 'false', 'null', 'undefined', 'NaN', 'Infinity'].includes(parser.current.value)) {
         let value;
         switch (parser.current.value) {

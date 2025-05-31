@@ -1,6 +1,6 @@
 // Variable declaration parsing helper for Parser
 
-function parseVariableDeclaration(parser) {
+function parseVariableDeclaration(parser, inForLoop = false) {
     // let|const|var IDENTIFIER [: TYPE] [= expr] [, ...] ;
     if (
         parser.current.type !== parser.TokenType.KEYWORD ||
@@ -14,25 +14,73 @@ function parseVariableDeclaration(parser) {
     let first = true;
     while (true) {
         let idNode = null;
+        let varType = null;
         let invalidDeclarator = false;
         if (parser.current.type === parser.TokenType.LEFT_BRACKET) {
-            // Allow empty array pattern
-            idNode = parser.parseArrayPattern();
+            try {
+                idNode = parser.parseArrayPattern();
+                if (parser.current.type === parser.TokenType.COLON) {
+                    parser.advance();
+                    if (
+                        parser.current.type !== parser.TokenType.IDENTIFIER &&
+                        parser.current.type !== parser.TokenType.KEYWORD &&
+                        parser.current.type !== parser.TokenType.LEFT_BRACE &&
+                        parser.current.type !== parser.TokenType.LEFT_BRACKET &&
+                        parser.current.type !== parser.TokenType.LEFT_PAREN
+                    ) {
+                        invalidDeclarator = true;
+                    } else {
+                        varType = parser.parseTypeAnnotation();
+                    }
+                }
+            } catch (e) {
+                invalidDeclarator = true;
+            }
         } else if (parser.current.type === parser.TokenType.LEFT_BRACE) {
-            // Allow empty object pattern
-            idNode = parser.parseObjectPattern();
+            try {
+                idNode = parser.parseObjectPattern();
+                if (parser.current.type === parser.TokenType.COLON) {
+                    parser.advance();
+                    if (
+                        parser.current.type !== parser.TokenType.IDENTIFIER &&
+                        parser.current.type !== parser.TokenType.KEYWORD &&
+                        parser.current.type !== parser.TokenType.LEFT_BRACE &&
+                        parser.current.type !== parser.TokenType.LEFT_BRACKET &&
+                        parser.current.type !== parser.TokenType.LEFT_PAREN
+                    ) {
+                        invalidDeclarator = true;
+                    } else {
+                        varType = parser.parseTypeAnnotation();
+                    }
+                }
+            } catch (e) {
+                invalidDeclarator = true;
+            }
         } else {
             if (parser.current.type !== parser.TokenType.IDENTIFIER) {
                 invalidDeclarator = true;
             } else {
-                const idToken = parser.expect(parser.TokenType.IDENTIFIER);
-                idNode = idToken.value;
+                try {
+                    const idToken = parser.expect(parser.TokenType.IDENTIFIER);
+                    idNode = idToken.value;
+                    if (parser.current.type === parser.TokenType.COLON) {
+                        parser.advance();
+                        if (
+                            parser.current.type !== parser.TokenType.IDENTIFIER &&
+                            parser.current.type !== parser.TokenType.KEYWORD &&
+                            parser.current.type !== parser.TokenType.LEFT_BRACE &&
+                            parser.current.type !== parser.TokenType.LEFT_BRACKET &&
+                            parser.current.type !== parser.TokenType.LEFT_PAREN
+                        ) {
+                            invalidDeclarator = true;
+                        } else {
+                            varType = parser.parseTypeAnnotation();
+                        }
+                    }
+                } catch (e) {
+                    invalidDeclarator = true;
+                }
             }
-        }
-        let varType = null;
-        if (!invalidDeclarator && parser.current.type === parser.TokenType.COLON) {
-            parser.advance();
-            varType = parser.parseTypeAnnotation();
         }
         let init = null;
         if (!invalidDeclarator && parser.current.type === parser.TokenType.ASSIGNMENT) {
@@ -72,10 +120,17 @@ function parseVariableDeclaration(parser) {
             parser.advance();
             continue;
         } else {
+            // In for-loop header, allow declaration without semicolon
+            if (inForLoop && (parser.current.type === parser.TokenType.RIGHT_PAREN || parser.current.type === parser.TokenType.SEMICOLON)) {
+                return declarations.length === 1 ? declarations[0] : declarations;
+            }
             break;
         }
     }
     // If not at a semicolon, treat as invalid (do not add to AST)
+    if (inForLoop && declarations.length > 0) {
+        return declarations.length === 1 ? declarations[0] : declarations;
+    }
     return null;
 }
 

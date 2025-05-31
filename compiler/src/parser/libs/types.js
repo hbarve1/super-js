@@ -58,6 +58,50 @@ function parseTypeAnnotation(parser) {
 }
 
 function parsePrimaryType(parser) {
+    // Tuple type: [T, U, ...]
+    if (parser.current.type === parser.TokenType.LEFT_BRACKET) {
+        parser.advance();
+        const elementTypes = [];
+        while (parser.current.type !== parser.TokenType.RIGHT_BRACKET && parser.current.type !== parser.TokenType.EOF) {
+            elementTypes.push(parseTypeAnnotation(parser));
+            if (parser.current.type === parser.TokenType.COMMA) {
+                parser.advance();
+            } else {
+                break;
+            }
+        }
+        parser.expect(parser.TokenType.RIGHT_BRACKET);
+        return { type: 'TupleType', elementTypes };
+    }
+    // Object type literal: { p: number, q?: string }
+    if (parser.current.type === parser.TokenType.LEFT_BRACE) {
+        parser.advance();
+        const properties = [];
+        while (parser.current.type !== parser.TokenType.RIGHT_BRACE && parser.current.type !== parser.TokenType.EOF) {
+            if (parser.current.type === parser.TokenType.IDENTIFIER) {
+                const key = parser.current.value;
+                parser.advance();
+                let optional = false;
+                if (parser.current.type === parser.TokenType.QUESTION_MARK) {
+                    optional = true;
+                    parser.advance();
+                }
+                parser.expect(parser.TokenType.COLON);
+                const valueType = parseTypeAnnotation(parser);
+                properties.push({ key, valueType, optional });
+                if (parser.current.type === parser.TokenType.COMMA) {
+                    parser.advance();
+                } else if (parser.current.type !== parser.TokenType.RIGHT_BRACE) {
+                    break;
+                }
+            } else {
+                // Skip unexpected tokens
+                parser.advance();
+            }
+        }
+        parser.expect(parser.TokenType.RIGHT_BRACE);
+        return { type: 'ObjectType', properties };
+    }
     // Parse a single type: identifier, generic, object, or parenthesized type
     if (parser.current.type === parser.TokenType.IDENTIFIER || parser.current.type === parser.TokenType.KEYWORD) {
         const name = parser.current.value;
@@ -82,30 +126,6 @@ function parsePrimaryType(parser) {
             };
         }
         return { type: 'TypeIdentifier', name };
-    }
-    // Object type literal: { p: number, q: string }
-    if (parser.current.type === parser.TokenType.LEFT_BRACE) {
-        parser.advance();
-        const properties = [];
-        while (parser.current.type !== parser.TokenType.RIGHT_BRACE && parser.current.type !== parser.TokenType.EOF) {
-            if (parser.current.type === parser.TokenType.IDENTIFIER) {
-                const key = parser.current.value;
-                parser.advance();
-                parser.expect(parser.TokenType.COLON);
-                const valueType = parseTypeAnnotation(parser);
-                properties.push({ key, valueType });
-                if (parser.current.type === parser.TokenType.COMMA) {
-                    parser.advance();
-                } else if (parser.current.type !== parser.TokenType.RIGHT_BRACE) {
-                    break;
-                }
-            } else {
-                // Skip unexpected tokens
-                parser.advance();
-            }
-        }
-        parser.expect(parser.TokenType.RIGHT_BRACE);
-        return { type: 'ObjectType', properties };
     }
     // Parenthesized type
     if (parser.current.type === parser.TokenType.LEFT_PAREN) {
