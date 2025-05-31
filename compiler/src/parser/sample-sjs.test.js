@@ -127,6 +127,42 @@ describe('Parser full program from sample.sjs', () => {
                         }
                     ]
                 });
+            } else if (
+                node.type === 'TypeDeclaration' && node.kind === 'type' && node.id === 'Bar'
+            ) {
+                expect(node).toEqual({
+                    type: 'TypeDeclaration',
+                    kind: 'type',
+                    id: 'Bar',
+                    body: []
+                });
+            } else if (
+                node.type === 'InterfaceDeclaration' && node.kind === 'interface' && node.id === 'Foo'
+            ) {
+                expect(node).toEqual({
+                    type: 'InterfaceDeclaration',
+                    kind: 'interface',
+                    id: 'Foo',
+                    body: []
+                });
+            } else if (
+                node.type === 'EnumDeclaration' && node.kind === 'enum' && node.id === 'Color'
+            ) {
+                expect(node).toEqual({
+                    type: 'EnumDeclaration',
+                    kind: 'enum',
+                    id: 'Color',
+                    body: []
+                });
+            } else if (
+                node.type === 'NamespaceDeclaration' && node.kind === 'namespace' && node.id === 'NS'
+            ) {
+                expect(node).toEqual({
+                    type: 'NamespaceDeclaration',
+                    kind: 'namespace',
+                    id: 'NS',
+                    body: []
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),

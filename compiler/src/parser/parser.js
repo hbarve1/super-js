@@ -342,15 +342,38 @@ class Parser {
     }
 
     parseTypeDeclaration() {
-        while (
-            this.current.type !== TokenType.SEMICOLON &&
-            this.current.type !== TokenType.RIGHT_BRACE &&
-            this.current.type !== TokenType.EOF
-        ) {
+        // type|interface|enum|namespace NAME ...
+        const kind = this.current.value;
+        this.advance();
+        const idToken = this.expect(TokenType.IDENTIFIER);
+        // For now, just skip to the next block or semicolon and stub the body
+        let body = [];
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
             this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        } else {
+            // Skip until semicolon
+            while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                this.advance();
+            }
+            if (this.current.type === TokenType.SEMICOLON) this.advance();
         }
-        if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
-        return { type: 'TypeDeclaration', skipped: true };
+        let nodeType = 'TypeDeclaration';
+        if (kind === 'interface') nodeType = 'InterfaceDeclaration';
+        if (kind === 'enum') nodeType = 'EnumDeclaration';
+        if (kind === 'namespace') nodeType = 'NamespaceDeclaration';
+        return {
+            type: nodeType,
+            kind,
+            id: idToken.value,
+            body
+        };
     }
 
     parseControlFlow() {
