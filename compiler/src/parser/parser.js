@@ -133,26 +133,18 @@ class Parser {
         const kindToken = this.current;
         this.advance();
         // --- Destructuring support ---
+        let idNode = null;
         if (this.current.type === TokenType.LEFT_BRACKET) {
             // Array destructuring pattern
-            // Skip to semicolon
-            while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
-                this.advance();
-            }
-            if (this.current.type === TokenType.SEMICOLON) this.advance();
-            return { type: 'VariableDeclaration', kind: kindToken.value, id: { type: 'ArrayPattern' }, varType: null, init: null, skipped: true };
-        }
-        if (this.current.type === TokenType.LEFT_BRACE) {
+            idNode = this.parseArrayPattern();
+        } else if (this.current.type === TokenType.LEFT_BRACE) {
             // Object destructuring pattern
-            // Skip to semicolon
-            while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
-                this.advance();
-            }
-            if (this.current.type === TokenType.SEMICOLON) this.advance();
-            return { type: 'VariableDeclaration', kind: kindToken.value, id: { type: 'ObjectPattern' }, varType: null, init: null, skipped: true };
+            idNode = this.parseObjectPattern();
+        } else {
+            // --- Normal identifier ---
+            const idToken = this.expect(TokenType.IDENTIFIER);
+            idNode = idToken.value;
         }
-        // --- Normal identifier ---
-        const idToken = this.expect(TokenType.IDENTIFIER);
         let varType = null;
         if (this.current.type === TokenType.COLON) {
             this.advance();
@@ -177,12 +169,66 @@ class Parser {
         const node = {
             type: 'VariableDeclaration',
             kind: kindToken.value,
-            id: idToken.value,
+            id: idNode,
             varType,
             init
         };
-        // console.log('parseVariableDeclaration:', JSON.stringify(node, null, 2));
         return node;
+    }
+
+    parseArrayPattern() {
+        // [x, y, ...rest]
+        this.expect(TokenType.LEFT_BRACKET);
+        const elements = [];
+        while (this.current.type !== TokenType.RIGHT_BRACKET && this.current.type !== TokenType.EOF) {
+            if (this.current.type === TokenType.IDENTIFIER) {
+                elements.push({ type: 'Identifier', name: this.current.value });
+                this.advance();
+            } else if (this.current.type === TokenType.COMMA) {
+                elements.push(null); // Allow holes
+                this.advance();
+            } else if (this.current.type === TokenType.RIGHT_BRACKET) {
+                break;
+            } else {
+                // For now, skip unsupported pattern elements
+                this.advance();
+            }
+            if (this.current.type === TokenType.COMMA) {
+                this.advance();
+            }
+        }
+        this.expect(TokenType.RIGHT_BRACKET);
+        return { type: 'ArrayPattern', elements };
+    }
+
+    parseObjectPattern() {
+        // {p, q: alias, ...rest}
+        this.expect(TokenType.LEFT_BRACE);
+        const properties = [];
+        while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+            if (this.current.type === TokenType.IDENTIFIER) {
+                const key = this.current.value;
+                this.advance();
+                let value = { type: 'Identifier', name: key };
+                if (this.current.type === TokenType.COLON) {
+                    this.advance();
+                    if (this.current.type === TokenType.IDENTIFIER) {
+                        value = { type: 'Identifier', name: this.current.value };
+                        this.advance();
+                    }
+                }
+                properties.push({ key, value });
+            } else if (this.current.type === TokenType.COMMA) {
+                this.advance();
+            } else if (this.current.type === TokenType.RIGHT_BRACE) {
+                break;
+            } else {
+                // For now, skip unsupported pattern elements
+                this.advance();
+            }
+        }
+        this.expect(TokenType.RIGHT_BRACE);
+        return { type: 'ObjectPattern', properties };
     }
 
     parseFunctionDeclaration() {
