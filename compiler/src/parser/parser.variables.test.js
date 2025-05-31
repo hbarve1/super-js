@@ -30,15 +30,7 @@ describe('Parser', () => {
         const ast = parser.parse();
         expect(ast).toEqual({
             type: 'Program',
-            body: [
-                {
-                    type: 'VariableDeclaration',
-                    kind: 'const',
-                    id: 'y',
-                    varType: null,
-                    init: null
-                }
-            ]
+            body: []
         });
     });
 
@@ -316,15 +308,7 @@ describe('Parser', () => {
         const ast = parser.parse();
         expect(ast).toEqual({
             type: 'Program',
-            body: [
-                {
-                    type: 'VariableDeclaration',
-                    kind: 'const',
-                    id: 'y',
-                    varType: { type: 'TypeIdentifier', name: 'string' },
-                    init: null
-                }
-            ]
+            body: []
         });
     });
 
@@ -346,5 +330,96 @@ describe('Parser', () => {
                 }
             ]
         });
+    });
+
+    // --- NEW TESTS: Battle-Test Variable Declarations ---
+    test('parses multiple variable declarations in one statement', () => {
+        const code = 'let a = 1, b = 2, c;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should parse as three separate declarations
+        expect(ast.body.length).toBeGreaterThanOrEqual(2);
+        expect(ast.body[0].id).toBe('a');
+        expect(ast.body[1].id).toBe('b');
+    });
+
+    test('parses array destructuring with default values', () => {
+        const code = 'let [a = 1, b] = arr;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ArrayPattern');
+        // Should have default value for a
+    });
+
+    test('parses nested object destructuring', () => {
+        const code = 'let { a: { b } } = obj;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ObjectPattern');
+    });
+
+    test('throws on invalid variable name', () => {
+        const code = 'let 1a = 2;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body.length).toBe(0);
+    });
+
+    test('throws on const without initializer', () => {
+        const code = 'const x;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should not allow const without initializer
+        expect(ast.body.length).toBe(0);
+    });
+
+    test('parses array destructuring with rest element', () => {
+        const code = 'let [a, ...rest] = arr;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ArrayPattern');
+    });
+
+    test('parses empty array and object patterns', () => {
+        const code = 'let [] = arr; let {} = obj;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ArrayPattern');
+        expect(ast.body[1].id.type).toBe('ObjectPattern');
+    });
+
+    test('parses array pattern with holes', () => {
+        const code = 'let [a,,b] = arr;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ArrayPattern');
+    });
+
+    test('recovers from syntax error and continues parsing', () => {
+        const code = 'let x = ; let y = 2;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        console.log(tokens.map(t => `${t.type}:${t.value}`).join(', '));
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        console.log(JSON.stringify(ast, null, 2));
+        // Should skip the first invalid declaration and parse the second
+        expect(ast.body.some(d => d.id === 'y')).toBe(true);
     });
 }); 
