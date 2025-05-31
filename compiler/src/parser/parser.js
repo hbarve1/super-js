@@ -276,50 +276,43 @@ class Parser {
         return { type: 'ObjectPattern', properties };
     }
 
-    parseFunctionDeclaration() {
-        this.expect(TokenType.KEYWORD, 'function');
-        // Support generator functions: function* name ...
-        let isGenerator = false;
-        if (this.current.type === TokenType.OPERATOR && this.current.value === '*') {
-            isGenerator = true;
-            this.advance();
-        }
-        // Parse function name
-        const idToken = this.expect(TokenType.IDENTIFIER);
-        // Parse generics: function f<T, U>(...)
-        let generics = null;
-        if (this.current.type === TokenType.LEFT_ANGLE) {
-            this.advance();
-            generics = [];
-            while (this.current.type !== TokenType.RIGHT_ANGLE && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.IDENTIFIER) {
-                    generics.push(this.current.value);
-                    this.advance();
-                }
-                if (this.current.type === TokenType.COMMA) {
-                    this.advance();
-                } else if (this.current.type !== TokenType.RIGHT_ANGLE) {
-                    break;
-                }
+    // Helper: Parse generics after function name (e.g., <T, U>)
+    _parseGenerics() {
+        if (this.current.type !== this.TokenType.LEFT_ANGLE) return null;
+        this.advance();
+        const generics = [];
+        while (this.current.type !== this.TokenType.RIGHT_ANGLE && this.current.type !== this.TokenType.EOF) {
+            if (this.current.type === this.TokenType.IDENTIFIER) {
+                generics.push(this.current.value);
+                this.advance();
             }
-            this.expect(TokenType.RIGHT_ANGLE);
+            if (this.current.type === this.TokenType.COMMA) {
+                this.advance();
+            } else if (this.current.type !== this.TokenType.RIGHT_ANGLE) {
+                break;
+            }
         }
-        // Parse parameter list
-        this.expect(TokenType.LEFT_PAREN);
+        this.expect(this.TokenType.RIGHT_ANGLE);
+        return generics;
+    }
+
+    // Helper: Parse function parameters (with type annotations)
+    _parseFunctionParams() {
+        this.expect(this.TokenType.LEFT_PAREN);
         const params = [];
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            if (this.current.type === TokenType.IDENTIFIER) {
+        while (this.current.type !== this.TokenType.RIGHT_PAREN && this.current.type !== this.TokenType.EOF) {
+            if (this.current.type === this.TokenType.IDENTIFIER) {
                 const paramName = this.current.value;
                 this.advance();
                 let varType = null;
-                if (this.current.type === TokenType.COLON) {
+                if (this.current.type === this.TokenType.COLON) {
                     this.advance();
                     varType = this.parseTypeAnnotation();
                 }
                 params.push({ name: paramName, varType });
-                if (this.current.type === TokenType.COMMA) {
+                if (this.current.type === this.TokenType.COMMA) {
                     this.advance();
-                } else if (this.current.type !== TokenType.RIGHT_PAREN) {
+                } else if (this.current.type !== this.TokenType.RIGHT_PAREN) {
                     break;
                 }
             } else {
@@ -327,10 +320,32 @@ class Parser {
                 this.advance();
             }
         }
-        this.expect(TokenType.RIGHT_PAREN);
+        this.expect(this.TokenType.RIGHT_PAREN);
+        return params;
+    }
+
+    parseFunctionDeclaration() {
+        // Support async and generator functions
+        let isAsync = false;
+        if (this.current.type === this.TokenType.KEYWORD && this.current.value === 'async') {
+            isAsync = true;
+            this.advance();
+        }
+        this.expect(this.TokenType.KEYWORD, 'function');
+        let isGenerator = false;
+        if (this.current.type === this.TokenType.OPERATOR && this.current.value === '*') {
+            isGenerator = true;
+            this.advance();
+        }
+        // Parse function name
+        const idToken = this.expect(this.TokenType.IDENTIFIER);
+        // Parse generics
+        const generics = this._parseGenerics();
+        // Parse parameter list
+        const params = this._parseFunctionParams();
         // Optional return type
         let returnType = null;
-        if (this.current.type === TokenType.COLON) {
+        if (this.current.type === this.TokenType.COLON) {
             this.advance();
             returnType = this.parseTypeAnnotation();
         }
@@ -342,6 +357,7 @@ class Parser {
             params,
             returnType,
             isGenerator,
+            isAsync,
             generics,
             body
         };
@@ -375,10 +391,7 @@ class Parser {
                 let varType = null;
                 if (this.current.type === TokenType.COLON) {
                     this.advance();
-                    if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
-                        varType = this.current.value;
-                        this.advance();
-                    }
+                    varType = this.parseTypeAnnotation();
                 }
                 // If next is LEFT_PAREN, it's a method
                 if (this.current.type === TokenType.LEFT_PAREN) {
@@ -413,37 +426,12 @@ class Parser {
 
     parseMethodDefinition(key) {
         // Parse params
-        this.expect(TokenType.LEFT_PAREN);
-        const params = [];
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            if (this.current.type === TokenType.IDENTIFIER) {
-                const paramName = this.current.value;
-                this.advance();
-                let varType = null;
-                if (this.current.type === TokenType.COLON) {
-                    this.advance();
-                    if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
-                        varType = this.current.value;
-                        this.advance();
-                    }
-                }
-                params.push({ name: paramName, varType });
-                if (this.current.type === TokenType.COMMA) {
-                    this.advance();
-                } else if (this.current.type !== TokenType.RIGHT_PAREN) {
-                    break;
-                }
-            } else {
-                // Skip unexpected tokens in params
-                this.advance();
-            }
-        }
-        this.expect(TokenType.RIGHT_PAREN);
+        const params = this._parseFunctionParams();
         // Optional return type
         let returnType = null;
-        if (this.current.type === TokenType.COLON) {
+        if (this.current.type === this.TokenType.COLON) {
             this.advance();
-            if (this.current.type === TokenType.KEYWORD || this.current.type === TokenType.IDENTIFIER) {
+            if (this.current.type === this.TokenType.KEYWORD || this.current.type === this.TokenType.IDENTIFIER) {
                 returnType = this.current.value;
                 this.advance();
             }

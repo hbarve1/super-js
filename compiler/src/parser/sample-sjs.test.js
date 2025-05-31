@@ -18,6 +18,7 @@ describe('Parser full program from sample.sjs', () => {
             id: 'ret',
             params: [],
             returnType: { type: 'TypeIdentifier', name: 'number' },
+            isAsync: false,
             isGenerator: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
@@ -28,6 +29,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: true,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -37,6 +39,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -46,6 +49,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [ { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } } ],
             returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -55,6 +59,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -64,6 +69,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -76,6 +82,7 @@ describe('Parser full program from sample.sjs', () => {
             ],
             returnType: { type: 'TypeIdentifier', name: 'number' },
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -85,6 +92,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [ { name: 'name', varType: { type: 'TypeIdentifier', name: 'string' } } ],
             returnType: null,
             isGenerator: false,
+            isAsync: false,
             generics: null,
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
@@ -107,6 +115,7 @@ describe('Parser full program from sample.sjs', () => {
                 typeParams: [ { type: 'TypeIdentifier', name: 'T' } ]
             },
             isGenerator: false,
+            isAsync: false,
             generics: ['T'],
             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         }
@@ -243,28 +252,28 @@ describe('Parser full program from sample.sjs', () => {
                     id: 'Point',
                     superClass: null,
                     body: [
-                        { type: 'ClassProperty', key: 'x', varType: 'number' },
-                        { type: 'ClassProperty', key: 'y', varType: 'number' },
-                        expect.objectContaining({
+                        { type: 'ClassProperty', key: 'x', varType: { type: 'TypeIdentifier', name: 'number' } },
+                        { type: 'ClassProperty', key: 'y', varType: { type: 'TypeIdentifier', name: 'number' } },
+                        {
                             type: 'MethodDefinition',
                             key: 'constructor',
                             params: [
-                                { name: 'x', varType: 'number' },
-                                { name: 'y', varType: 'number' }
+                                { name: 'x', varType: { type: 'TypeIdentifier', name: 'number' } },
+                                { name: 'y', varType: { type: 'TypeIdentifier', name: 'number' } }
                             ],
                             returnType: null,
                             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
-                        }),
-                        expect.objectContaining({
+                        },
+                        {
                             type: 'MethodDefinition',
                             key: 'move',
                             params: [
-                                { name: 'dx', varType: 'number' },
-                                { name: 'dy', varType: 'number' }
+                                { name: 'dx', varType: { type: 'TypeIdentifier', name: 'number' } },
+                                { name: 'dy', varType: { type: 'TypeIdentifier', name: 'number' } }
                             ],
                             returnType: 'void',
                             body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
-                        })
+                        }
                     ]
                 });
             } else if (node.type === 'ForStatement') {
