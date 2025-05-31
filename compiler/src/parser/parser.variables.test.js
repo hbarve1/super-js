@@ -415,10 +415,10 @@ describe('Parser', () => {
         const code = 'let x = ; let y = 2;';
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
-        console.log(tokens.map(t => `${t.type}:${t.value}`).join(', '));
+        // console.log(tokens.map(t => `${t.type}:${t.value}`).join(', '));
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        console.log(JSON.stringify(ast, null, 2));
+        // console.log(JSON.stringify(ast, null, 2));
         // Should skip the first invalid declaration and parse the second
         expect(ast.body.some(d => d.id === 'y')).toBe(true);
     });
