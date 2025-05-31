@@ -35,7 +35,8 @@ class Lexer {
         let result = '';
         const startColumn = this.column;
 
-        while (this.currentChar && /[a-zA-Z0-9_]/.test(this.currentChar)) {
+        // Unicode-aware identifier: letter, number, underscore
+        while (this.currentChar && /[\p{L}\p{N}_]/u.test(this.currentChar)) {
             result += this.currentChar;
             this.advance();
         }
@@ -233,7 +234,8 @@ class Lexer {
                 skipComment(this);
                 continue;
             }
-            if (/[a-zA-Z_]/.test(this.currentChar)) {
+            // Unicode-aware identifier start: letter or _
+            if (/[\p{L}_]/u.test(this.currentChar)) {
                 return this.getIdentifierOrKeyword();
             }
             if (

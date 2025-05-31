@@ -16,7 +16,11 @@ function readNumber(lexer) {
             result += lexer.currentChar;
             lexer.advance();
         }
-        return new Token(TokenType.NUMBER, parseInt(result, 16), lexer.line, startColumn);
+        const value = parseInt(result, 16);
+        if (isNaN(value)) {
+            return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
+        }
+        return new Token(TokenType.NUMBER, value, lexer.line, startColumn);
     }
     // Binary
     if (lexer.currentChar === '0' && (lexer.peek() === 'b' || lexer.peek() === 'B')) {
@@ -28,7 +32,11 @@ function readNumber(lexer) {
             result += lexer.currentChar;
             lexer.advance();
         }
-        return new Token(TokenType.NUMBER, parseInt(result, 2), lexer.line, startColumn);
+        const value = parseInt(result, 2);
+        if (isNaN(value)) {
+            return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
+        }
+        return new Token(TokenType.NUMBER, value, lexer.line, startColumn);
     }
     // Octal
     if (lexer.currentChar === '0' && (lexer.peek() === 'o' || lexer.peek() === 'O')) {
@@ -40,7 +48,11 @@ function readNumber(lexer) {
             result += lexer.currentChar;
             lexer.advance();
         }
-        return new Token(TokenType.NUMBER, parseInt(result, 8), lexer.line, startColumn);
+        const value = parseInt(result, 8);
+        if (isNaN(value)) {
+            return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
+        }
+        return new Token(TokenType.NUMBER, value, lexer.line, startColumn);
     }
 
     // Manual parse for decimal, float, exponent
@@ -90,7 +102,11 @@ function readNumber(lexer) {
             result = result.replace(/[eE][+-]?$/, '');
         }
     }
-    return new Token(TokenType.NUMBER, parseFloat(result), lexer.line, startColumn);
+    const value = parseFloat(result);
+    if (isNaN(value)) {
+        return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
+    }
+    return new Token(TokenType.NUMBER, value, lexer.line, startColumn);
 }
 
 module.exports = { readNumber }; 

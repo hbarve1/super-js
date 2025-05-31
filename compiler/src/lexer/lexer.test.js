@@ -173,7 +173,7 @@ describe('Lexer - edge and missing cases', () => {
     it('tokenizes numbers in exponential notation', () => {
         const lexer = new Lexer('1e10 2.5e-3');
         const tokens = lexer.tokenize();
-        console.log(tokens);
+        // console.log(tokens);
         expect(tokens.filter(t => t.type === TokenType.NUMBER).length).toBe(2);
     });
 
@@ -210,5 +210,59 @@ describe('Lexer - edge and missing cases', () => {
         const lexer = new Lexer(code);
         const tokens = lexer.tokenize();
         expect(tokens.length).toBeGreaterThan(10000);
+    });
+});
+
+// --- Additional edge case tests ---
+describe('Lexer - additional edge cases', () => {
+    it('tokenizes unicode identifiers', () => {
+        const lexer = new Lexer('const π = 3.14; let 变量 = 42;');
+        const tokens = lexer.tokenize();
+        expect(tokens.some(t => t.value === 'π')).toBe(true);
+        expect(tokens.some(t => t.value === '变量')).toBe(true);
+    });
+
+    it('tokenizes strings with escaped line breaks', () => {
+        const lexer = new Lexer('"foo\\\nbar"');
+        const tokens = lexer.tokenize();
+        expect(tokens[0].type).toBe(TokenType.STRING);
+    });
+
+    it('tokenizes empty template literal', () => {
+        const lexer = new Lexer('const t = ``;');
+        const tokens = lexer.tokenize();
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_STRING)).toBe(true);
+    });
+
+    it('tokenizes template literal with only expression', () => {
+        const lexer = new Lexer('const t = `${foo}`;');
+        const tokens = lexer.tokenize();
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_STRING)).toBe(true);
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_EXPRESSION)).toBe(true);
+    });
+
+    it('tokenizes numbers with leading zeros', () => {
+        const lexer = new Lexer('0123');
+        const tokens = lexer.tokenize();
+        expect(tokens[0].type).toBe(TokenType.NUMBER);
+    });
+
+    it('handles invalid numeric literals gracefully', () => {
+        const lexer = new Lexer('0xGHI 0b102 0o89 1e 1e+ 1e-');
+        // Should throw an error for invalid numbers
+        expect(() => lexer.tokenize()).toThrow();
+    });
+
+    it('handles backslash at end of string', () => {
+        const lexer = new Lexer('"foo\\\\"');
+        const tokens = lexer.tokenize();
+        expect(tokens[0].type).toBe(TokenType.STRING);
+    });
+
+    it('skips non-ASCII whitespace', () => {
+        const lexer = new Lexer('\u00A0let\u2003x = 1;');
+        const tokens = lexer.tokenize();
+        expect(tokens.map(t => t.type)).toContain(TokenType.KEYWORD);
+        expect(tokens.map(t => t.type)).toContain(TokenType.IDENTIFIER);
     });
 }); 
