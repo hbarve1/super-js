@@ -10,6 +10,9 @@ const variables = require('./libs/variables');
 const classes = require('./libs/classes');
 const types = require('./libs/types');
 const block = require('./libs/block');
+const importexport = require('./libs/importexport');
+const statements = require('./libs/statements');
+const program = require('./libs/program');
 
 class Parser {
     constructor(tokens) {
@@ -48,99 +51,11 @@ class Parser {
     }
 
     parseProgram() {
-        // Parse as many statements as possible
-        const body = [];
-        while (this.current.type !== TokenType.EOF) {
-            // console.log('[Parser Debug] At loop start, current token:', this.current);
-            if (this.current.type === TokenType.EOF) break;
-            try {
-                const stmt = this.parseStatement();
-                if (Array.isArray(stmt)) {
-                    body.push(...stmt);
-                } else if (stmt) {
-                    body.push(stmt);
-                }
-            } catch (e) {
-                // Error recovery: skip to next semicolon or block end
-                while (
-                    this.current.type !== TokenType.SEMICOLON &&
-                    this.current.type !== TokenType.RIGHT_BRACE &&
-                    this.current.type !== TokenType.EOF
-                ) {
-                    this.advance();
-                }
-                // Only advance if at semicolon or right brace
-                if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) {
-                    this.advance();
-                }
-                // Now continue loop (do not unconditionally advance)
-            }
-            // No unconditional advance here!
-        }
-        return { type: 'Program', body };
+        return program.parseProgram(this);
     }
 
     parseStatement() {
-        if (this.current.type === TokenType.KEYWORD) {
-            switch (this.current.value) {
-                case 'let':
-                case 'const':
-                case 'var':
-                    return this.parseVariableDeclaration();
-                case 'function':
-                    return this.parseFunctionDeclaration();
-                case 'class':
-                    return this.parseClassDeclaration();
-                case 'import':
-                case 'export':
-                    return this.parseImportExport();
-                case 'type':
-                case 'interface':
-                case 'enum':
-                case 'namespace':
-                    return this.parseTypeDeclaration();
-                case 'if':
-                case 'for':
-                case 'while':
-                case 'do':
-                case 'switch':
-                case 'try':
-                case 'with':
-                    return this.parseControlFlow();
-                case 'return': {
-                    this.advance();
-                    let argument = null;
-                    if (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-                        argument = this.parseExpression();
-                    }
-                    if (this.current.type === TokenType.SEMICOLON) this.advance();
-                    return { type: 'ReturnStatement', argument };
-                }
-                case 'break': {
-                    this.advance();
-                    if (this.current.type === TokenType.SEMICOLON) this.advance();
-                    return { type: 'BreakStatement' };
-                }
-                case 'continue': {
-                    this.advance();
-                    if (this.current.type === TokenType.SEMICOLON) this.advance();
-                    return { type: 'ContinueStatement' };
-                }
-                case 'throw': {
-                    this.advance();
-                    let argument = null;
-                    if (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-                        argument = this.parseExpression();
-                    }
-                    if (this.current.type === TokenType.SEMICOLON) this.advance();
-                    return { type: 'ThrowStatement', argument };
-                }
-                default:
-                    return this.parseExpressionStatement();
-            }
-        }
-        // Fallback: parse as expression statement
-        return this.parseExpressionStatement();
+        return statements.parseStatement(this);
     }
 
     parseVariableDeclaration() {
@@ -168,14 +83,7 @@ class Parser {
     }
 
     parseImportExport() {
-        while (
-            this.current.type !== TokenType.SEMICOLON &&
-            this.current.type !== TokenType.EOF
-        ) {
-            this.advance();
-        }
-        if (this.current.type === TokenType.SEMICOLON) this.advance();
-        return { type: 'ImportExportDeclaration', skipped: true };
+        return importexport.parseImportExport(this);
     }
 
     parseTypeDeclaration() {
@@ -225,92 +133,11 @@ class Parser {
     }
 
     parseTypeAnnotation() {
-        // Parse union and intersection types
-        let type = this.parsePrimaryType();
-        // Array type: T[]
-        while (this.current.type === TokenType.LEFT_BRACKET && this.peek().type === TokenType.RIGHT_BRACKET) {
-            this.advance(); // [
-            this.advance(); // ]
-            type = { type: 'ArrayType', elementType: type };
-        }
-        while (this.current.type === TokenType.UNION || this.current.type === TokenType.INTERSECTION) {
-            const operator = this.current.type === TokenType.UNION ? '|' : '&';
-            this.advance();
-            const right = this.parsePrimaryType();
-            type = {
-                type: operator === '|' ? 'UnionType' : 'IntersectionType',
-                left: type,
-                right
-            };
-        }
-        return type;
+        return types.parseTypeAnnotation(this);
     }
 
     parsePrimaryType() {
-        // Parse a single type: identifier, generic, object, or parenthesized type
-        if (this.current.type === TokenType.IDENTIFIER || this.current.type === TokenType.KEYWORD) {
-            const name = this.current.value;
-            this.advance();
-            // Generic type: Foo<Bar>
-            if (this.current.type === TokenType.LEFT_ANGLE) {
-                this.advance();
-                const typeParams = [];
-                while (this.current.type !== TokenType.RIGHT_ANGLE && this.current.type !== TokenType.EOF) {
-                    typeParams.push(this.parseTypeAnnotation());
-                    if (this.current.type === TokenType.COMMA) {
-                        this.advance();
-                    } else {
-                        break;
-                    }
-                }
-                this.expect(TokenType.RIGHT_ANGLE);
-                return {
-                    type: 'GenericType',
-                    name,
-                    typeParams
-                };
-            }
-            return { type: 'TypeIdentifier', name };
-        }
-        // Object type literal: { p: number, q: string }
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            this.advance();
-            const properties = [];
-            while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.IDENTIFIER) {
-                    const key = this.current.value;
-                    this.advance();
-                    this.expect(TokenType.COLON);
-                    const valueType = this.parseTypeAnnotation();
-                    properties.push({ key, valueType });
-                    if (this.current.type === TokenType.COMMA) {
-                        this.advance();
-                    } else if (this.current.type !== TokenType.RIGHT_BRACE) {
-                        break;
-                    }
-                } else {
-                    // Skip unexpected tokens
-                    this.advance();
-                }
-            }
-            this.expect(TokenType.RIGHT_BRACE);
-            return { type: 'ObjectType', properties };
-        }
-        // Parenthesized type
-        if (this.current.type === TokenType.LEFT_PAREN) {
-            this.advance();
-            const type = this.parseTypeAnnotation();
-            this.expect(TokenType.RIGHT_PAREN);
-            return type;
-        }
-        // Array type: T[]
-        if (this.current.type === TokenType.LEFT_BRACKET) {
-            this.advance();
-            this.expect(TokenType.RIGHT_BRACKET);
-            return { type: 'ArrayType', elementType: { type: 'TypeIdentifier', name: 'any' } };
-        }
-        // Fallback
-        return { type: 'TypeIdentifier', name: 'any' };
+        return types.parsePrimaryType(this);
     }
 }
 

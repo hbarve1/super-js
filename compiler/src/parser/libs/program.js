@@ -1,0 +1,36 @@
+// Program parsing helper for Parser
+
+function parseProgram(parser) {
+    // Parse as many statements as possible
+    const body = [];
+    while (parser.current.type !== parser.TokenType.EOF) {
+        try {
+            const stmt = parser.parseStatement();
+            if (Array.isArray(stmt)) {
+                body.push(...stmt);
+            } else if (stmt) {
+                body.push(stmt);
+            }
+        } catch (e) {
+            // Error recovery: skip to next semicolon or block end
+            while (
+                parser.current.type !== parser.TokenType.SEMICOLON &&
+                parser.current.type !== parser.TokenType.RIGHT_BRACE &&
+                parser.current.type !== parser.TokenType.EOF
+            ) {
+                parser.advance();
+            }
+            // Only advance if at semicolon or right brace
+            if (parser.current.type === parser.TokenType.SEMICOLON || parser.current.type === parser.TokenType.RIGHT_BRACE) {
+                parser.advance();
+            }
+            // Now continue loop (do not unconditionally advance)
+        }
+        // No unconditional advance here!
+    }
+    return { type: 'Program', body };
+}
+
+module.exports = {
+    parseProgram
+}; 
