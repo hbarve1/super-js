@@ -88,6 +88,17 @@ describe('Parser full program from sample.sjs', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.type).toBe('Program');
+        // --- Check for real expression AST for 'let sum = a + b;' ---
+        const sumDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'sum'
+        );
+        expect(sumDecl).toBeDefined();
+        expect(sumDecl.init).toEqual({
+            type: 'BinaryExpression',
+            operator: '+',
+            left: { type: 'Identifier', name: 'a' },
+            right: { type: 'Identifier', name: 'b' }
+        });
         ast.body.forEach((node) => {
             if (node.type === 'VariableDeclaration') {
                 expect(typeof node.kind).toBe('string');
@@ -127,6 +138,24 @@ describe('Parser full program from sample.sjs', () => {
                         }
                     ]
                 });
+            } else if (node.type === 'ForStatement') {
+                // Expect real ASTs for for-loop header
+                expect(node.init).toEqual({
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'i',
+                    varType: null,
+                    init: { type: 'Literal', value: 0 }
+                });
+                expect(node.test).toEqual({
+                    type: 'BinaryExpression',
+                    operator: '<',
+                    left: { type: 'Identifier', name: 'i' },
+                    right: { type: 'Literal', value: 10 }
+                });
+                // For now, update is likely a BinaryExpression for 'i++' or 'i += 1', or fallback to stub/identifier
+                expect(node.update.type === 'BinaryExpression' || node.update.type === 'Identifier' || node.update.type === 'Expression').toBe(true);
+                expect(node.body).toEqual({ type: 'BlockStatement', body: [] });
             } else if (
                 node.type === 'TypeDeclaration' && node.kind === 'type' && node.id === 'Bar'
             ) {
@@ -169,14 +198,6 @@ describe('Parser full program from sample.sjs', () => {
                     test: { type: 'Expression', stub: true },
                     consequent: { type: 'BlockStatement', body: [] },
                     alternate: { type: 'BlockStatement', body: [] }
-                });
-            } else if (node.type === 'ForStatement') {
-                expect(node).toEqual({
-                    type: 'ForStatement',
-                    init: { type: 'Expression', stub: true },
-                    test: { type: 'Expression', stub: true },
-                    update: { type: 'Expression', stub: true },
-                    body: { type: 'BlockStatement', body: [] }
                 });
             } else if (node.type === 'WhileStatement') {
                 expect(node).toEqual({

@@ -16,7 +16,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'x',
                     varType: null,
-                    init: 42
+                    init: { type: 'Literal', value: 42 }
                 }
             ]
         });
@@ -67,7 +67,7 @@ describe('Parser', () => {
                     kind: 'var',
                     id: 'z',
                     varType: null,
-                    init: 100
+                    init: { type: 'Literal', value: 100 }
                 }
             ]
         });
@@ -87,7 +87,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 's',
                     varType: null,
-                    init: 'hello'
+                    init: { type: 'Literal', value: 'hello' }
                 }
             ]
         });
@@ -107,7 +107,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'π',
                     varType: null,
-                    init: 3.14
+                    init: { type: 'Literal', value: 3.14 }
                 }
             ]
         });
@@ -127,7 +127,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'f',
                     varType: null,
-                    init: 2.5
+                    init: { type: 'Literal', value: 2.5 }
                 }
             ]
         });
@@ -147,7 +147,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'h',
                     varType: null,
-                    init: 26
+                    init: { type: 'Literal', value: 26 }
                 }
             ]
         });
@@ -167,7 +167,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'b',
                     varType: null,
-                    init: 5
+                    init: { type: 'Literal', value: 5 }
                 }
             ]
         });
@@ -187,7 +187,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'o',
                     varType: null,
-                    init: 63
+                    init: { type: 'Literal', value: 63 }
                 }
             ]
         });
@@ -208,7 +208,18 @@ describe('Parser', () => {
         const tokens = lexer.tokenize();
         const parser = new Parser(tokens);
         const ast = parser.parse();
-        expect(ast.body.length).toBe(0);
+        expect(ast).toEqual({
+            type: 'Program',
+            body: [
+                {
+                    type: 'VariableDeclaration',
+                    kind: 'let',
+                    id: 'x',
+                    varType: null,
+                    init: { type: 'Identifier', name: 'foo' }
+                }
+            ]
+        });
     });
 
     test('parses only the first declaration in multiple', () => {
@@ -225,14 +236,14 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'x',
                     varType: null,
-                    init: 1
+                    init: { type: 'Literal', value: 1 }
                 },
                 {
                     type: 'VariableDeclaration',
                     kind: 'let',
                     id: 'y',
                     varType: null,
-                    init: 2
+                    init: { type: 'Literal', value: 2 }
                 }
             ]
         });
@@ -262,7 +273,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'x',
                     varType: null,
-                    init: 5
+                    init: { type: 'Literal', value: 5 }
                 }
             ]
         });
@@ -291,7 +302,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'x',
                     varType: 'number',
-                    init: 5
+                    init: { type: 'Literal', value: 5 }
                 }
             ]
         });
@@ -331,7 +342,7 @@ describe('Parser', () => {
                     kind: 'let',
                     id: 'z',
                     varType: null,
-                    init: 10
+                    init: { type: 'Literal', value: 10 }
                 }
             ]
         });

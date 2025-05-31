@@ -114,26 +114,8 @@ class Parser {
         let init = null;
         if (this.current.type === TokenType.ASSIGNMENT) {
             this.advance();
-            // --- FIX: assign init before advancing ---
-            if (this.current.type === TokenType.NUMBER || this.current.type === TokenType.STRING) {
-                init = this.current.value;
-                this.advance();
-            } else if (
-                this.current.type === TokenType.KEYWORD &&
-                ['true', 'false', 'null', 'undefined', 'NaN', 'Infinity'].includes(this.current.value)
-            ) {
-                switch (this.current.value) {
-                    case 'true': init = true; break;
-                    case 'false': init = false; break;
-                    case 'null': init = null; break;
-                    case 'undefined': init = undefined; break;
-                    case 'NaN': init = NaN; break;
-                    case 'Infinity': init = Infinity; break;
-                }
-                this.advance();
-            } else {
-                throw new Error('Expected literal initializer');
-            }
+            // Use parseExpression for initializer
+            init = this.parseExpression();
         }
         this.expect(TokenType.SEMICOLON);
         return {
@@ -410,12 +392,8 @@ class Parser {
     parseIfStatement() {
         this.expect(TokenType.KEYWORD, 'if');
         this.expect(TokenType.LEFT_PAREN);
-        // For now, stub the test (condition)
-        let test = { type: 'Expression', stub: true };
-        // Skip until RIGHT_PAREN
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            this.advance();
-        }
+        // Use parseExpression for test
+        let test = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
         // Parse consequent (then branch)
         let consequent = { type: 'BlockStatement', body: [] };
@@ -463,13 +441,24 @@ class Parser {
     parseForStatement() {
         this.expect(TokenType.KEYWORD, 'for');
         this.expect(TokenType.LEFT_PAREN);
-        // For now, stub init, test, update
-        let init = { type: 'Expression', stub: true };
-        let test = { type: 'Expression', stub: true };
-        let update = { type: 'Expression', stub: true };
-        // Skip until RIGHT_PAREN
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+        let init = null;
+        if (this.current.type === TokenType.KEYWORD && ['let', 'const', 'var'].includes(this.current.value)) {
+            init = this.parseVariableDeclaration();
+        } else if (this.current.type !== TokenType.SEMICOLON) {
+            init = this.parseExpression();
+            if (this.current.type === TokenType.SEMICOLON) this.advance();
+        } else {
+            // No init
             this.advance();
+        }
+        let test = null;
+        if (this.current.type !== TokenType.SEMICOLON) {
+            test = this.parseExpression();
+        }
+        this.expect(TokenType.SEMICOLON);
+        let update = null;
+        if (this.current.type !== TokenType.RIGHT_PAREN) {
+            update = this.parseExpression();
         }
         this.expect(TokenType.RIGHT_PAREN);
         // Parse body (as stub block)
@@ -499,12 +488,8 @@ class Parser {
     parseWhileStatement() {
         this.expect(TokenType.KEYWORD, 'while');
         this.expect(TokenType.LEFT_PAREN);
-        // For now, stub test
-        let test = { type: 'Expression', stub: true };
-        // Skip until RIGHT_PAREN
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            this.advance();
-        }
+        // Use parseExpression for test
+        let test = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
         // Parse body (as stub block)
         let body = { type: 'BlockStatement', body: [] };
@@ -670,6 +655,78 @@ class Parser {
         }
         if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
         return { type: 'ExpressionStatement', skipped: true };
+    }
+
+    // --- Expression Parsing ---
+    parseExpression(precedence = 0) {
+        let left = this.parsePrimaryExpression();
+        while (this.isBinaryOperator(this.current) && this.getPrecedence(this.current) > precedence) {
+            const opToken = this.current;
+            const opPrecedence = this.getPrecedence(opToken);
+            this.advance();
+            const right = this.parseExpression(opPrecedence);
+            left = {
+                type: 'BinaryExpression',
+                operator: opToken.value,
+                left,
+                right
+            };
+        }
+        return left;
+    }
+
+    parsePrimaryExpression() {
+        if (this.current.type === TokenType.NUMBER) {
+            const value = this.current.value;
+            this.advance();
+            return { type: 'Literal', value };
+        }
+        if (this.current.type === TokenType.STRING) {
+            const value = this.current.value;
+            this.advance();
+            return { type: 'Literal', value };
+        }
+        if (this.current.type === TokenType.KEYWORD && ['true', 'false', 'null', 'undefined', 'NaN', 'Infinity'].includes(this.current.value)) {
+            let value;
+            switch (this.current.value) {
+                case 'true': value = true; break;
+                case 'false': value = false; break;
+                case 'null': value = null; break;
+                case 'undefined': value = undefined; break;
+                case 'NaN': value = NaN; break;
+                case 'Infinity': value = Infinity; break;
+            }
+            this.advance();
+            return { type: 'Literal', value };
+        }
+        if (this.current.type === TokenType.IDENTIFIER) {
+            const name = this.current.value;
+            this.advance();
+            return { type: 'Identifier', name };
+        }
+        if (this.current.type === TokenType.LEFT_PAREN) {
+            this.advance();
+            const expr = this.parseExpression();
+            this.expect(TokenType.RIGHT_PAREN);
+            return expr;
+        }
+        // Fallback stub
+        this.advance();
+        return { type: 'Expression', stub: true };
+    }
+
+    isBinaryOperator(token) {
+        return token.type === TokenType.OPERATOR || token.type === TokenType.ASSIGNMENT;
+    }
+
+    getPrecedence(token) {
+        // Very basic precedence for demo
+        const op = token.value;
+        if (op === '===' || op === '!==') return 3;
+        if (op === '+' || op === '-') return 2;
+        if (op === '*' || op === '/') return 4;
+        if (op === '=') return 1;
+        return 0;
     }
 }
 
