@@ -1,10 +1,10 @@
-const Token = require('./token');
-const TokenType = require('./token-types');
+const Token = require('./libs/token');
+const TokenType = require('./libs/token-types');
 const { allKeywords } = require('../keywords');
-const { readTemplateStringSegment } = require('./template');
-const { matchOperatorOrPunctuator } = require('./operators');
-const CharStream = require('./char-stream');
-const { skipComment } = require('./comments');
+const { readTemplateStringSegment } = require('./libs/template');
+const { matchOperatorOrPunctuator } = require('./libs/operators');
+const CharStream = require('./libs/char-stream');
+const { skipComment } = require('./libs/comments');
 
 class Lexer {
     constructor(source) {

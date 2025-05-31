@@ -1,6 +1,6 @@
 const Lexer = require('./lexer');
-const Token = require('./token');
-const TokenType = require('./token-types');
+const Token = require('./libs/token');
+const TokenType = require('./libs/token-types');
 
 module.exports = {
     Lexer,

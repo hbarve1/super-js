@@ -1,5 +1,5 @@
 const Lexer = require('./lexer');
-const TokenType = require('./token-types');
+const TokenType = require('./libs/token-types');
 
 describe('Lexer', () => {
     it('tokenizes identifiers and keywords', () => {
