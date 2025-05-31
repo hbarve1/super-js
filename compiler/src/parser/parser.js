@@ -3,6 +3,7 @@ const expressions = require('./libs/expressions');
 const functions = require('./libs/functions');
 const loops = require('./libs/loops');
 const tryStmts = require('./libs/try');
+const conditionals = require('./libs/conditionals');
 
 class Parser {
     constructor(tokens) {
@@ -426,38 +427,7 @@ class Parser {
     }
 
     parseIfStatement() {
-        this.expect(TokenType.KEYWORD, 'if');
-        this.expect(TokenType.LEFT_PAREN);
-        // Use parseExpression for test
-        let test = this.parseExpression();
-        this.expect(TokenType.RIGHT_PAREN);
-        // Parse consequent (then branch)
-        let consequent = null;
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            consequent = this.parseBlockStatement();
-        } else {
-            // Skip single statement
-            if (this.current.type !== TokenType.EOF) this.advance();
-            consequent = { type: 'BlockStatement', body: [] };
-        }
-        // Parse alternate (else branch)
-        let alternate = null;
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'else') {
-            this.advance();
-            if (this.current.type === TokenType.LEFT_BRACE) {
-                alternate = this.parseBlockStatement();
-            } else {
-                // Skip single statement
-                if (this.current.type !== TokenType.EOF) this.advance();
-                alternate = { type: 'BlockStatement', body: [] };
-            }
-        }
-        return {
-            type: 'IfStatement',
-            test,
-            consequent,
-            alternate
-        };
+        return conditionals.parseIfStatement(this);
     }
 
     parseForStatement() {
@@ -473,51 +443,7 @@ class Parser {
     }
 
     parseSwitchStatement() {
-        this.expect(TokenType.KEYWORD, 'switch');
-        this.expect(TokenType.LEFT_PAREN);
-        // Parse discriminant
-        let discriminant = this.parseExpression();
-        this.expect(TokenType.RIGHT_PAREN);
-        const cases = [];
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            this.advance();
-            while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.KEYWORD && this.current.value === 'case') {
-                    this.advance();
-                    const test = this.parseExpression();
-                    this.expect(TokenType.COLON);
-                    const consequent = [];
-                    while (
-                        (this.current.type !== TokenType.KEYWORD || (this.current.value !== 'case' && this.current.value !== 'default')) &&
-                        this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF
-                    ) {
-                        const stmt = this.parseStatement();
-                        if (stmt) consequent.push(stmt);
-                    }
-                    cases.push({ type: 'SwitchCase', test, consequent });
-                } else if (this.current.type === TokenType.KEYWORD && this.current.value === 'default') {
-                    this.advance();
-                    this.expect(TokenType.COLON);
-                    const consequent = [];
-                    while (
-                        (this.current.type !== TokenType.KEYWORD || (this.current.value !== 'case' && this.current.value !== 'default')) &&
-                        this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF
-                    ) {
-                        const stmt = this.parseStatement();
-                        if (stmt) consequent.push(stmt);
-                    }
-                    cases.push({ type: 'SwitchCase', test: null, consequent });
-                } else {
-                    this.advance();
-                }
-            }
-            this.expect(TokenType.RIGHT_BRACE);
-        }
-        return {
-            type: 'SwitchStatement',
-            discriminant,
-            cases
-        };
+        return conditionals.parseSwitchStatement(this);
     }
 
     parseTryStatement() {
