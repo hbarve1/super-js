@@ -10,6 +10,10 @@ class Parser {
         return this.tokens[this.position];
     }
 
+    peek(offset = 1) {
+        return this.tokens[this.position + offset] || { type: 'EOF' };
+    }
+
     advance() {
         if (this.position < this.tokens.length - 1) {
             this.position++;
@@ -180,16 +184,27 @@ class Parser {
         if (this.current.type === TokenType.ASSIGNMENT) {
             this.advance();
             // Use parseExpression for initializer
-            init = this.parseExpression();
+            try {
+                init = this.parseExpression();
+            } catch (e) {
+                // If the initializer is invalid, use a stub node
+                init = { type: 'Expression', stub: true, error: e.message };
+                // Attempt to recover: skip to semicolon
+                while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                    this.advance();
+                }
+            }
         }
         this.expect(TokenType.SEMICOLON);
-        return {
+        const node = {
             type: 'VariableDeclaration',
             kind: kindToken.value,
             id: idToken.value,
             varType,
             init
         };
+        // console.log('parseVariableDeclaration:', JSON.stringify(node, null, 2));
+        return node;
     }
 
     parseFunctionDeclaration() {
@@ -814,6 +829,99 @@ class Parser {
                 operator,
                 argument,
                 prefix: true
+            };
+        }
+        // --- Arrow function (parenthesized params) ---
+        if (this.current.type === TokenType.LEFT_PAREN) {
+            // Lookahead for arrow: parse params, check for '=>'
+            const startPos = this.position;
+            const startToken = this.current;
+            let pos = this.position + 1;
+            let params = [];
+            let validParams = true;
+            let paramTokens = [];
+            let parenDepth = 1;
+            while (pos < this.tokens.length && parenDepth > 0) {
+                const token = this.tokens[pos];
+                if (token.type === TokenType.LEFT_PAREN) parenDepth++;
+                if (token.type === TokenType.RIGHT_PAREN) parenDepth--;
+                if (parenDepth === 1 && token.type === TokenType.IDENTIFIER) {
+                    let paramName = token.value;
+                    let varType = null;
+                    let next = this.tokens[pos + 1];
+                    if (next && next.type === TokenType.COLON) {
+                        let typeToken = this.tokens[pos + 2];
+                        if (typeToken && (typeToken.type === TokenType.KEYWORD || typeToken.type === TokenType.IDENTIFIER)) {
+                            varType = typeToken.value;
+                            pos += 2;
+                        }
+                    }
+                    params.push({ name: paramName, varType });
+                }
+                paramTokens.push(token);
+                pos++;
+            }
+            // After params, check for return type and '=>'
+            let afterParen = this.tokens[pos];
+            let returnType = null;
+            let arrowPos = pos;
+            if (afterParen && afterParen.type === TokenType.COLON) {
+                let typeToken = this.tokens[pos + 1];
+                if (typeToken && (typeToken.type === TokenType.KEYWORD || typeToken.type === TokenType.IDENTIFIER)) {
+                    returnType = typeToken.value;
+                    arrowPos = pos + 2;
+                    afterParen = this.tokens[arrowPos];
+                }
+            }
+            if (afterParen && afterParen.type === TokenType.OPERATOR && afterParen.value === '=>') {
+                // It's an arrow function! Now actually consume tokens
+                this.advance(); // (
+                while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+                    this.advance();
+                }
+                this.expect(TokenType.RIGHT_PAREN);
+                if (returnType !== null) {
+                    this.expect(TokenType.COLON);
+                    this.advance(); // type
+                }
+                this.expect(TokenType.OPERATOR, '=>');
+                // Arrow function body: expression or block
+                let body;
+                if (this.current.type === TokenType.LEFT_BRACE) {
+                    body = this.parseBlockStatement();
+                } else {
+                    body = this.parseExpression();
+                }
+                return {
+                    type: 'ArrowFunctionExpression',
+                    params,
+                    returnType,
+                    body
+                };
+            } else {
+                // Not an arrow function, parse as grouped expression
+                this.advance(); // (
+                const expr = this.parseExpression();
+                this.expect(TokenType.RIGHT_PAREN);
+                return expr;
+            }
+        }
+        // --- Arrow function (single param) ---
+        if (this.current.type === TokenType.IDENTIFIER && this.peek().type === TokenType.OPERATOR && this.peek().value === '=>') {
+            const paramName = this.current.value;
+            this.advance();
+            this.expect(TokenType.OPERATOR, '=>');
+            let body;
+            if (this.current.type === TokenType.LEFT_BRACE) {
+                body = this.parseBlockStatement();
+            } else {
+                body = this.parseExpression();
+            }
+            return {
+                type: 'ArrowFunctionExpression',
+                params: [{ name: paramName, varType: null }],
+                returnType: null,
+                body
             };
         }
         if (this.current.type === TokenType.NUMBER) {

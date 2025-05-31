@@ -9,7 +9,7 @@ let bin: number = 0b101;
 let oct: number = 0o77;
 let hex: number = 0x1A;
 let s: string = 'hello';
-let f = 2.5;
+let float = 2.5;
 let flag: boolean = true;
 let nothing: null = null;
 let undef: undefined = undefined;
@@ -92,6 +92,7 @@ let message: string = `The value is ${a}`;
 function add(x: number, y: number): number { return x + y; }
 function greet(name: string) { return `Hello, ${name}`; }
 const arrow = (x: number): number => x * 2;
+const arrow = (x: number, y: number): number => { return x + y; };
 
 // Class declaration
 class Point {

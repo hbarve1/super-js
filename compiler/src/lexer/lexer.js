@@ -144,6 +144,7 @@ class Lexer {
                 case '&': return new Token(TokenType.INTERSECTION, op, this.line, startColumn);
                 case '?.': return new Token(TokenType.OPTIONAL_CHAINING, op, this.line, startColumn);
                 case '??': return new Token(TokenType.NULLISH_COALESCING, op, this.line, startColumn);
+                case '=>': return new Token(TokenType.OPERATOR, op, this.line, startColumn);
                 case '=': return new Token(TokenType.ASSIGNMENT, op, this.line, startColumn);
                 case '==':
                 case '===':
