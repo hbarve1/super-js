@@ -32,7 +32,7 @@ function readNumber(lexer) {
             result += lexer.currentChar;
             lexer.advance();
         }
-        const value = parseInt(result, 2);
+        const value = parseInt(result.slice(2), 2);
         if (isNaN(value)) {
             return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
         }
@@ -48,7 +48,7 @@ function readNumber(lexer) {
             result += lexer.currentChar;
             lexer.advance();
         }
-        const value = parseInt(result, 8);
+        const value = parseInt(result.slice(2), 8);
         if (isNaN(value)) {
             return new Token(TokenType.ERROR, 'Invalid number literal', lexer.line, startColumn);
         }

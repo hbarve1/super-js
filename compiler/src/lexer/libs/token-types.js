@@ -39,4 +39,4 @@ const TokenType = {
     ERROR: 'ERROR'
 };
 
-module.exports = TokenType; 
+module.exports = TokenType;

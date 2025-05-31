@@ -9,7 +9,9 @@
     "build": "babel src -d dist",
     "test:lexer": "jest src/lexer/lexer.test.js",
     "test:lexer:sample": "jest src/lexer/sample-sjs.test.js",
-    "test-all": "npm run test:lexer && npm run test:lexer:sample"
+    "test:parser": "jest src/parser/parser.test.js",
+    "test:parser:sample": "jest src/parser/sample-sjs.test.js",
+    "test-all": "npm run test:lexer && npm run test:lexer:sample && npm run test:parser && npm run test:parser:sample"
   },
   "keywords": [
     "compiler",
