@@ -380,6 +380,12 @@ class Parser {
         if (this.current.type === TokenType.KEYWORD && this.current.value === 'if') {
             return this.parseIfStatement();
         }
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'for') {
+            return this.parseForStatement();
+        }
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'while') {
+            return this.parseWhileStatement();
+        }
         // For now, fallback to stub for other control flow
         while (
             this.current.type !== TokenType.RIGHT_BRACE &&
@@ -442,6 +448,74 @@ class Parser {
             test,
             consequent,
             alternate
+        };
+    }
+
+    parseForStatement() {
+        this.expect(TokenType.KEYWORD, 'for');
+        this.expect(TokenType.LEFT_PAREN);
+        // For now, stub init, test, update
+        let init = { type: 'Expression', stub: true };
+        let test = { type: 'Expression', stub: true };
+        let update = { type: 'Expression', stub: true };
+        // Skip until RIGHT_PAREN
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            this.advance();
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Parse body (as stub block)
+        let body = { type: 'BlockStatement', body: [] };
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        } else {
+            // Skip single statement
+            if (this.current.type !== TokenType.EOF) this.advance();
+        }
+        return {
+            type: 'ForStatement',
+            init,
+            test,
+            update,
+            body
+        };
+    }
+
+    parseWhileStatement() {
+        this.expect(TokenType.KEYWORD, 'while');
+        this.expect(TokenType.LEFT_PAREN);
+        // For now, stub test
+        let test = { type: 'Expression', stub: true };
+        // Skip until RIGHT_PAREN
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            this.advance();
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Parse body (as stub block)
+        let body = { type: 'BlockStatement', body: [] };
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        } else {
+            // Skip single statement
+            if (this.current.type !== TokenType.EOF) this.advance();
+        }
+        return {
+            type: 'WhileStatement',
+            test,
+            body
         };
     }
 

@@ -170,6 +170,20 @@ describe('Parser full program from sample.sjs', () => {
                     consequent: { type: 'BlockStatement', body: [] },
                     alternate: { type: 'BlockStatement', body: [] }
                 });
+            } else if (node.type === 'ForStatement') {
+                expect(node).toEqual({
+                    type: 'ForStatement',
+                    init: { type: 'Expression', stub: true },
+                    test: { type: 'Expression', stub: true },
+                    update: { type: 'Expression', stub: true },
+                    body: { type: 'BlockStatement', body: [] }
+                });
+            } else if (node.type === 'WhileStatement') {
+                expect(node).toEqual({
+                    type: 'WhileStatement',
+                    test: { type: 'Expression', stub: true },
+                    body: { type: 'BlockStatement', body: [] }
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),
