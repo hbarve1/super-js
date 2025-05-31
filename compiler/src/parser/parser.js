@@ -210,16 +210,7 @@ class Parser {
     }
 
     parseExpressionStatement() {
-        // Skip until semicolon or block end
-        while (
-            this.current.type !== TokenType.SEMICOLON &&
-            this.current.type !== TokenType.RIGHT_BRACE &&
-            this.current.type !== TokenType.EOF
-        ) {
-            this.advance();
-        }
-        if (this.current.type === TokenType.SEMICOLON || this.current.type === TokenType.RIGHT_BRACE) this.advance();
-        return { type: 'ExpressionStatement', skipped: true };
+        return expressions.parseExpressionStatement(this);
     }
 
     // --- Expression Parsing ---
