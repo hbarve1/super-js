@@ -7,6 +7,7 @@ const conditionals = require('./libs/conditionals');
 const patterns = require('./libs/patterns');
 const controlflow = require('./libs/controlflow');
 const variables = require('./libs/variables');
+const classes = require('./libs/classes');
 
 class Parser {
     constructor(tokens) {
@@ -156,69 +157,12 @@ class Parser {
         return functions.parseFunctionDeclaration(this);
     }
 
-    parseMethodDefinition(key) {
-        return functions.parseMethodDefinition(this, key);
+    parseClassDeclaration() {
+        return classes.parseClassDeclaration(this);
     }
 
-    parseClassDeclaration() {
-        this.expect(TokenType.KEYWORD, 'class');
-        const idToken = this.expect(TokenType.IDENTIFIER);
-        // Optionally parse 'extends' and superclass
-        let superClass = null;
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'extends') {
-            this.advance();
-            if (this.current.type === TokenType.IDENTIFIER) {
-                superClass = this.current.value;
-                this.advance();
-            }
-        }
-        // Optionally parse 'implements' (skip for now)
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'implements') {
-            while (this.current.type !== TokenType.LEFT_BRACE && this.current.type !== TokenType.EOF) {
-                this.advance();
-            }
-        }
-        this.expect(TokenType.LEFT_BRACE);
-        const body = [];
-        while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-            // Property: IDENTIFIER [: TYPE] ;
-            if (this.current.type === TokenType.IDENTIFIER) {
-                const key = this.current.value;
-                this.advance();
-                let varType = null;
-                if (this.current.type === TokenType.COLON) {
-                    this.advance();
-                    varType = this.parseTypeAnnotation();
-                }
-                // If next is LEFT_PAREN, it's a method
-                if (this.current.type === TokenType.LEFT_PAREN) {
-                    // Method
-                    const method = this.parseMethodDefinition(key);
-                    body.push(method);
-                } else {
-                    // Property
-                    // Optionally expect SEMICOLON
-                    if (this.current.type === TokenType.SEMICOLON) this.advance();
-                    body.push({ type: 'ClassProperty', key, varType });
-                }
-            } else if (this.current.type === TokenType.KEYWORD && this.current.value === 'constructor') {
-                // Parse constructor as a method
-                const key = 'constructor';
-                this.advance();
-                const method = this.parseMethodDefinition(key);
-                body.push(method);
-            } else {
-                // Skip unknown tokens in class body
-                this.advance();
-            }
-        }
-        this.expect(TokenType.RIGHT_BRACE);
-        return {
-            type: 'ClassDeclaration',
-            id: idToken.value,
-            superClass,
-            body
-        };
+    parseMethodDefinition(key) {
+        return classes.parseMethodDefinition(this, key);
     }
 
     parseImportExport() {
