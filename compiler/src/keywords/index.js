@@ -6,26 +6,14 @@ const keywordCategories = {
     ],
     controlFlow: [
         'if', 'else', 'switch', 'case', 'default', 'for', 'while', 'do', 'break', 'continue',
-        'return', 'yield', 'async', 'await',
-    ],
-    patternMatching: [
-        'match', 'when',
-    ],
-    immutability: [
-        'immutable', 'freeze',
-    ],
-    contract: [
-        'requires', 'ensures', 'invariant',
+        'return', 'yield', 'async', 'await', 
     ],
     errorHandling: [
-        'try', 'catch', 'finally', 'throw', 'throws', 'raises',
-    ],
-    documentation: [
-        'doc', 'deprecated',
+        'try', 'catch', 'finally', 'throw',
     ],
     type: [
         'string', 'number', 'boolean', 'any', 'void', 'null', 'undefined', 'never', 'unknown',
-        'readonly', 'private', 'protected', 'public', 'keyof', 'typeof', 'as', 'is', 'generic', 'infer',
+        'readonly', 'keyof', 'typeof', 'as', 'is', 'infer',
     ],
     module: [
         'import', 'export', 'from', 'as',
@@ -36,11 +24,11 @@ const keywordCategories = {
     operators: [
         'in', 'of', 'instanceof', 'typeof', 'delete', 'void',
     ],
-    misc: [
-        'with', 'debugger',
-    ],
     literals: [
         'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+    ],
+    misc: [
+        'with', 'debugger',
     ],
 };
 

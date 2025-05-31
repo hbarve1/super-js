@@ -112,7 +112,7 @@ describe('Lexer - Literals and Numbers', () => {
 describe('Lexer - Keywords and Identifiers', () => {
     test('all keyword categories', () => {
         const code = [
-            'let', 'if', 'match', 'immutable', 'requires', 'try', 'doc', 'string', 'import', 'this', 'in', 'with'
+            'let', 'if', 'immutable', 'requires', 'try', 'doc', 'string', 'import', 'this', 'in', 'with'
         ].join(' ');
         const tokens = getTokens(code);
         expect(tokens.every(t => t.type === TokenType.KEYWORD || t.type === TokenType.EOF)).toBe(true);

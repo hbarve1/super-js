@@ -43,9 +43,6 @@ type Bar = string | number;
 enum Color { Red, Green, Blue }
 namespace NS { export const z = 1; }
 
-// Pattern matching (not native JS/TS, so as comment)
-// match (a) { when 1: b = 2; when 2: b = 3; }
-
 // Control flow
 if (a > 0) { b = 1; } else { b = 2; }
 for (let i = 0; i < 10; i++) { a += i; }

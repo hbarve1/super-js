@@ -22,8 +22,6 @@ return;
 yield 5;
 async function afn() { await Promise.resolve(1); }
 
-// Pattern matching
-match (a) { when 1: b = 2; }
 
 // Immutability
 immutable let d = freeze({ x: 1 });
