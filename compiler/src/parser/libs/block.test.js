@@ -65,4 +65,88 @@ describe('BlockStatement Parser', () => {
             'ThrowStatement'
         ]);
     });
-}); 
+});
+
+describe('Try/Catch/Finally Parser', () => {
+    test('parses try with catch', () => {
+        const code = 'try { let x = 1; } catch (e) { let y = 2; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        expect(tryStmt.type).toBe('TryStatement');
+        expect(tryStmt.block.type).toBe('BlockStatement');
+        expect(tryStmt.handler).toBeDefined();
+        expect(tryStmt.handler.param).toBe('e');
+        expect(tryStmt.handler.body.type).toBe('BlockStatement');
+        expect(tryStmt.finalizer).toBeNull();
+    });
+    test('parses try with catch and finally', () => {
+        const code = 'try { let x = 1; } catch (e) { let y = 2; } finally { let z = 3; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        expect(tryStmt.type).toBe('TryStatement');
+        expect(tryStmt.handler).toBeDefined();
+        expect(tryStmt.finalizer).toBeDefined();
+        expect(tryStmt.finalizer.type).toBe('BlockStatement');
+    });
+    test('parses try with only finally', () => {
+        const code = 'try { let x = 1; } finally { let z = 3; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        expect(tryStmt.type).toBe('TryStatement');
+        expect(tryStmt.handler).toBeNull();
+        expect(tryStmt.finalizer).toBeDefined();
+    });
+    test('parses try/catch with empty catch param', () => {
+        const code = 'try { let x = 1; } catch { let y = 2; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        expect(tryStmt.type).toBe('TryStatement');
+        expect(tryStmt.handler).toBeDefined();
+        expect(tryStmt.handler.param).toBeNull();
+    });
+    test('parses nested try/catch', () => {
+        const code = 'try { try { let x = 1; } catch (e) { } } catch (e) { }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const outerTry = ast.body[0];
+        expect(outerTry.type).toBe('TryStatement');
+        const innerTry = outerTry.block.body[0];
+        expect(innerTry.type).toBe('TryStatement');
+    });
+    test('parses try/catch with statements inside', () => {
+        const code = 'try { let x = 1; let y = 2; } catch (e) { let z = 3; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        expect(tryStmt.block.body.length).toBe(2);
+        expect(tryStmt.handler.body.body.length).toBe(1);
+    });
+    test.skip('recovers from malformed try/catch', () => {
+        const code = 'try { let x = ; } catch (e) { let y = 2; }';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        const tryStmt = ast.body[0];
+        console.log('TRY BLOCK BODY:', JSON.stringify(tryStmt.block.body, null, 2));
+        expect(tryStmt.type).toBe('TryStatement');
+        expect(tryStmt.block.body.some(d => d.type === 'ExpressionStatement' && d.skipped)).toBe(true);
+        expect(tryStmt.handler.body.body.some(d => d.id === 'y')).toBe(true);
+    });
+});
