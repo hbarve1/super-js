@@ -8,7 +8,8 @@
     "lint": "eslint src/**/*.js",
     "build": "babel src -d dist",
     "test:lexer": "jest src/lexer/lexer.test.js",
-    "test-all": "npm run test:lexer"
+    "test:lexer:sample": "jest src/lexer/sample-sjs.test.js",
+    "test-all": "npm run test:lexer && npm run test:lexer:sample"
   },
   "keywords": [
     "compiler",
