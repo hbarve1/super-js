@@ -9,6 +9,7 @@ const controlflow = require('./libs/controlflow');
 const variables = require('./libs/variables');
 const classes = require('./libs/classes');
 const types = require('./libs/types');
+const block = require('./libs/block');
 
 class Parser {
     constructor(tokens) {
@@ -220,14 +221,7 @@ class Parser {
     getPrecedence(token) { return expressions.getPrecedence(token); }
 
     parseBlockStatement() {
-        this.expect(TokenType.LEFT_BRACE);
-        const body = [];
-        while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
-            const stmt = this.parseStatement();
-            if (stmt) body.push(stmt);
-        }
-        this.expect(TokenType.RIGHT_BRACE);
-        return { type: 'BlockStatement', body };
+        return block.parseBlockStatement(this);
     }
 
     parseTypeAnnotation() {
