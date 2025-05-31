@@ -27,8 +27,27 @@ class Parser {
     }
 
     parse() {
-        // For now, just parse a single variable declaration
-        return this.parseVariableDeclaration();
+        // Parse a sequence of statements (for now, only variable declarations)
+        return this.parseProgram();
+    }
+
+    parseProgram() {
+        // Parse as many variable declarations as possible, skip unsupported statements
+        const body = [];
+        while (this.current.type !== TokenType.EOF) {
+            // Skip empty tokens (shouldn't happen, but for safety)
+            if (this.current.type === TokenType.EOF) break;
+            try {
+                body.push(this.parseVariableDeclaration());
+            } catch (e) {
+                // Skip tokens until next semicolon if not a variable declaration
+                while (this.current.type !== TokenType.SEMICOLON && this.current.type !== TokenType.EOF) {
+                    this.advance();
+                }
+                if (this.current.type === TokenType.SEMICOLON) this.advance();
+            }
+        }
+        return { type: 'Program', body };
     }
 
     parseVariableDeclaration() {
