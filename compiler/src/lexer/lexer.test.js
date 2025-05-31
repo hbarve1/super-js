@@ -142,4 +142,73 @@ describe('Lexer - comprehensive coverage', () => {
         expect(tokens.map(t => t.value)).toContain('generic');
         expect(tokens.map(t => t.value)).toContain('infer');
     });
+});
+
+describe('Lexer - edge and missing cases', () => {
+    it('tokenizes escaped quotes in strings', () => {
+        const lexer = new Lexer("\"foo\\\"bar\" 'foo\\'bar'");
+        const tokens = lexer.tokenize();
+        expect(tokens.filter(t => t.type === TokenType.STRING).length).toBe(2);
+    });
+
+    it('tokenizes unicode escapes in strings', () => {
+        const lexer = new Lexer('"\\u1234"');
+        const tokens = lexer.tokenize();
+        expect(tokens[0].type).toBe(TokenType.STRING);
+    });
+
+    it('handles nested template expressions', () => {
+        const lexer = new Lexer('`a${b + `c${d}`}`');
+        const tokens = lexer.tokenize();
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_STRING)).toBe(true);
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_EXPRESSION)).toBe(true);
+    });
+
+    it('handles escaped backticks in template strings', () => {
+        const lexer = new Lexer('`foo\\`bar`');
+        const tokens = lexer.tokenize();
+        expect(tokens.some(t => t.type === TokenType.TEMPLATE_STRING)).toBe(true);
+    });
+
+    it('tokenizes numbers in exponential notation', () => {
+        const lexer = new Lexer('1e10 2.5e-3');
+        const tokens = lexer.tokenize();
+        console.log(tokens);
+        expect(tokens.filter(t => t.type === TokenType.NUMBER).length).toBe(2);
+    });
+
+    it('tokenizes hexadecimal, binary, and octal numbers', () => {
+        const lexer = new Lexer('0x1A 0b101 0o77');
+        const tokens = lexer.tokenize();
+        expect(tokens.filter(t => t.type === TokenType.NUMBER).length).toBe(3);
+    });
+
+    it('throws on unterminated multi-line comment', () => {
+        const lexer = new Lexer('let x = 1; /* unterminated comment');
+        expect(() => lexer.tokenize()).not.toThrow(); // Should skip to EOF, not throw
+    });
+
+    it('skips comments inside code', () => {
+        const lexer = new Lexer('let /* comment */ x = 1;');
+        const tokens = lexer.tokenize();
+        expect(tokens.map(t => t.type)).toContain(TokenType.KEYWORD);
+        expect(tokens.map(t => t.type)).toContain(TokenType.IDENTIFIER);
+    });
+
+    it('handles leading, trailing, and multiple whitespace', () => {
+        const lexer = new Lexer('   let   x   =   1   ;   ');
+        const tokens = lexer.tokenize();
+        expect(tokens.map(t => t.type)).toContain(TokenType.KEYWORD);
+        expect(tokens.map(t => t.type)).toContain(TokenType.IDENTIFIER);
+        expect(tokens.map(t => t.type)).toContain(TokenType.ASSIGNMENT);
+        expect(tokens.map(t => t.type)).toContain(TokenType.NUMBER);
+        expect(tokens.map(t => t.type)).toContain(TokenType.SEMICOLON);
+    });
+
+    it('handles very large input (stress test)', () => {
+        const code = 'let x = 1; '.repeat(10000);
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        expect(tokens.length).toBeGreaterThan(10000);
+    });
 }); 

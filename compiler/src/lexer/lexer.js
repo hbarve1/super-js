@@ -5,6 +5,7 @@ const { readTemplateStringSegment } = require('./libs/template');
 const { matchOperatorOrPunctuator } = require('./libs/operators');
 const CharStream = require('./libs/char-stream');
 const { skipComment } = require('./libs/comments');
+const { readNumber } = require('./libs/number');
 
 class Lexer {
     constructor(source) {
@@ -12,6 +13,7 @@ class Lexer {
         this._templateStack = [];
         this._templateBuffer = '';
         this._inTemplate = false;
+        this._templateNesting = 0;
     }
 
     // Proxy CharStream properties for compatibility
@@ -44,37 +46,6 @@ class Lexer {
         }
 
         return new Token(TokenType.IDENTIFIER, result, this.line, startColumn);
-    }
-
-    readNumber() {
-        let result = '';
-        const startColumn = this.column;
-        let hasDecimal = false;
-
-        // Allow numbers starting with a dot
-        if (this.currentChar === '.') {
-            hasDecimal = true;
-            result += '.';
-            this.advance();
-        }
-
-        while (this.currentChar && /[0-9]/.test(this.currentChar)) {
-            result += this.currentChar;
-            this.advance();
-        }
-
-        // Allow numbers with a decimal point (e.g., 6.)
-        if (this.currentChar === '.' && !hasDecimal) {
-            hasDecimal = true;
-            result += '.';
-            this.advance();
-            while (this.currentChar && /[0-9]/.test(this.currentChar)) {
-                result += this.currentChar;
-                this.advance();
-            }
-        }
-
-        return new Token(TokenType.NUMBER, parseFloat(result), this.line, startColumn);
     }
 
     readString() {
@@ -112,7 +83,7 @@ class Lexer {
     }
 
     getNumber() {
-        return this.readNumber();
+        return readNumber(this);
     }
 
     getString() {
@@ -196,36 +167,60 @@ class Lexer {
     getNextToken() {
         // Handle template mode
         if (this._inTemplate) {
-            if (this.currentChar === '}') {
-                this.advance();
-            }
-            if (this.currentChar === '`') {
-                this.advance();
-                this._inTemplate = false;
-                return new Token(TokenType.TEMPLATE_STRING, this._templateBuffer, this.line, this.column - 1);
-            }
-            if (this.currentChar === '$' && this.peek() === '{') {
-                const segment = this._templateBuffer;
-                this._templateBuffer = '';
-                this.advance();
-                this.advance();
-                return new Token(TokenType.TEMPLATE_EXPRESSION, segment, this.line, this.column - 2);
-            }
-            const { value, startColumn } = readTemplateStringSegment(this);
-            this._templateBuffer += value;
-            if (this.currentChar === '$' && this.peek() === '{') {
-                const segment = this._templateBuffer;
-                this._templateBuffer = '';
-                return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
-            }
-            if (this.currentChar === '`') {
-                const segment = this._templateBuffer;
-                this._templateBuffer = '';
-                return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
-            }
-            if (!this.currentChar) {
-                this._inTemplate = false;
-                return new Token(TokenType.ERROR, 'Unterminated template string', this.line, this.column);
+            // Handle nested template expressions
+            if (this._templateNesting > 0) {
+                // Inside a template expression
+                if (this.currentChar === '$' && this.peek() === '{') {
+                    this._templateNesting++;
+                    this.advance(); // Skip $
+                    this.advance(); // Skip {
+                    return new Token(TokenType.TEMPLATE_EXPRESSION, '', this.line, this.column - 2);
+                }
+                if (this.currentChar === '}') {
+                    this._templateNesting--;
+                    this.advance();
+                    if (this._templateNesting === 0) {
+                        // Resume template string segment
+                        return this.getNextToken();
+                    }
+                    // Still inside nested template expression
+                    return this.getNextToken();
+                }
+                // Normal lexing inside template expression
+                // Fall through to normal lexing below
+            } else {
+                if (this.currentChar === '}') {
+                    this.advance();
+                }
+                if (this.currentChar === '`') {
+                    this.advance();
+                    this._inTemplate = false;
+                    return new Token(TokenType.TEMPLATE_STRING, this._templateBuffer, this.line, this.column - 1);
+                }
+                if (this.currentChar === '$' && this.peek() === '{') {
+                    const segment = this._templateBuffer;
+                    this._templateBuffer = '';
+                    this.advance();
+                    this.advance();
+                    this._templateNesting = 1;
+                    return new Token(TokenType.TEMPLATE_EXPRESSION, segment, this.line, this.column - 2);
+                }
+                const { value, startColumn } = readTemplateStringSegment(this);
+                this._templateBuffer += value;
+                if (this.currentChar === '$' && this.peek() === '{') {
+                    const segment = this._templateBuffer;
+                    this._templateBuffer = '';
+                    return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
+                }
+                if (this.currentChar === '`') {
+                    const segment = this._templateBuffer;
+                    this._templateBuffer = '';
+                    return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
+                }
+                if (!this.currentChar) {
+                    this._inTemplate = false;
+                    return new Token(TokenType.ERROR, 'Unterminated template string', this.line, this.column);
+                }
             }
         }
 
@@ -241,7 +236,10 @@ class Lexer {
             if (/[a-zA-Z_]/.test(this.currentChar)) {
                 return this.getIdentifierOrKeyword();
             }
-            if (/[0-9]/.test(this.currentChar) || (this.currentChar === '.' && /[0-9]/.test(this.peek()))) {
+            if (
+                /[0-9]/.test(this.currentChar) ||
+                (this.currentChar === '.' && /[0-9]/.test(this.peek()))
+            ) {
                 return this.getNumber();
             }
             if (this.currentChar === '"' || this.currentChar === "'") {
