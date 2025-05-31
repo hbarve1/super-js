@@ -165,6 +165,17 @@ describe('Parser full program from sample.sjs', () => {
             argument: { type: 'Identifier', name: 'flag' },
             prefix: true
         });
+        // --- Check for ConditionalExpression: let tern = flag ? a : b; ---
+        const ternDecl = ast.body.find(
+            node => node.type === 'VariableDeclaration' && node.id === 'tern'
+        );
+        expect(ternDecl).toBeDefined();
+        expect(ternDecl.init).toEqual({
+            type: 'ConditionalExpression',
+            test: { type: 'Identifier', name: 'flag' },
+            consequent: { type: 'Identifier', name: 'a' },
+            alternate: { type: 'Identifier', name: 'b' }
+        });
         ast.body.forEach((node) => {
             if (node.type === 'VariableDeclaration') {
                 expect(typeof node.kind).toBe('string');

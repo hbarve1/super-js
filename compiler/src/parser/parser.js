@@ -742,6 +742,20 @@ class Parser {
                 };
                 continue;
             }
+            // --- Ternary/Conditional Expression ---
+            if (this.current.type === TokenType.QUESTION_MARK && precedence <= 1) {
+                this.advance();
+                const consequent = this.parseExpression();
+                this.expect(TokenType.COLON);
+                const alternate = this.parseExpression();
+                left = {
+                    type: 'ConditionalExpression',
+                    test: left,
+                    consequent,
+                    alternate
+                };
+                continue;
+            }
             // Binary operators
             if (this.isBinaryOperator(this.current) && this.getPrecedence(this.current) > precedence) {
                 const opToken = this.current;
