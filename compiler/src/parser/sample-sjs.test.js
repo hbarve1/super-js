@@ -184,6 +184,18 @@ describe('Parser full program from sample.sjs', () => {
                     test: { type: 'Expression', stub: true },
                     body: { type: 'BlockStatement', body: [] }
                 });
+            } else if (node.type === 'DoWhileStatement') {
+                expect(node).toEqual({
+                    type: 'DoWhileStatement',
+                    body: { type: 'BlockStatement', body: [] },
+                    test: { type: 'Expression', stub: true }
+                });
+            } else if (node.type === 'SwitchStatement') {
+                expect(node).toEqual({
+                    type: 'SwitchStatement',
+                    discriminant: { type: 'Expression', stub: true },
+                    cases: []
+                });
             } else {
                 expect(node).toEqual(expect.objectContaining({
                     type: expect.any(String),

@@ -386,6 +386,12 @@ class Parser {
         if (this.current.type === TokenType.KEYWORD && this.current.value === 'while') {
             return this.parseWhileStatement();
         }
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'do') {
+            return this.parseDoWhileStatement();
+        }
+        if (this.current.type === TokenType.KEYWORD && this.current.value === 'switch') {
+            return this.parseSwitchStatement();
+        }
         // For now, fallback to stub for other control flow
         while (
             this.current.type !== TokenType.RIGHT_BRACE &&
@@ -516,6 +522,69 @@ class Parser {
             type: 'WhileStatement',
             test,
             body
+        };
+    }
+
+    parseDoWhileStatement() {
+        this.expect(TokenType.KEYWORD, 'do');
+        // Parse body (as stub block)
+        let body = { type: 'BlockStatement', body: [] };
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        } else {
+            // Skip single statement
+            if (this.current.type !== TokenType.EOF) this.advance();
+        }
+        this.expect(TokenType.KEYWORD, 'while');
+        this.expect(TokenType.LEFT_PAREN);
+        // For now, stub test
+        let test = { type: 'Expression', stub: true };
+        // Skip until RIGHT_PAREN
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            this.advance();
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Optionally expect SEMICOLON
+        if (this.current.type === TokenType.SEMICOLON) this.advance();
+        return {
+            type: 'DoWhileStatement',
+            body,
+            test
+        };
+    }
+
+    parseSwitchStatement() {
+        this.expect(TokenType.KEYWORD, 'switch');
+        this.expect(TokenType.LEFT_PAREN);
+        // For now, stub discriminant
+        let discriminant = { type: 'Expression', stub: true };
+        // Skip until RIGHT_PAREN
+        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
+            this.advance();
+        }
+        this.expect(TokenType.RIGHT_PAREN);
+        // Parse cases (as empty array for now)
+        if (this.current.type === TokenType.LEFT_BRACE) {
+            // Skip block
+            this.advance();
+            let braceDepth = 1;
+            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
+                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
+                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
+                this.advance();
+            }
+        }
+        return {
+            type: 'SwitchStatement',
+            discriminant,
+            cases: []
         };
     }
 
