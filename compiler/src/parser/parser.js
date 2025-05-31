@@ -5,6 +5,7 @@ const loops = require('./libs/loops');
 const tryStmts = require('./libs/try');
 const conditionals = require('./libs/conditionals');
 const patterns = require('./libs/patterns');
+const controlflow = require('./libs/controlflow');
 
 class Parser {
     constructor(tokens) {
@@ -344,34 +345,7 @@ class Parser {
     }
 
     parseControlFlow() {
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'if') {
-            return this.parseIfStatement();
-        }
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'for') {
-            return this.parseForStatement();
-        }
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'while') {
-            return this.parseWhileStatement();
-        }
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'do') {
-            return this.parseDoWhileStatement();
-        }
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'switch') {
-            return this.parseSwitchStatement();
-        }
-        if (this.current.type === TokenType.KEYWORD && this.current.value === 'try') {
-            return this.parseTryStatement();
-        }
-        // For now, fallback to stub for other control flow
-        while (
-            this.current.type !== TokenType.RIGHT_BRACE &&
-            this.current.type !== TokenType.SEMICOLON &&
-            this.current.type !== TokenType.EOF
-        ) {
-            this.advance();
-        }
-        if (this.current.type === TokenType.RIGHT_BRACE || this.current.type === TokenType.SEMICOLON) this.advance();
-        return { type: 'ControlFlowStatement', skipped: true };
+        return controlflow.parseControlFlow(this);
     }
 
     parseIfStatement() {
