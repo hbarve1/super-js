@@ -1,6 +1,9 @@
 // Statement parsing helper for Parser
 
 function parseStatement(parser) {
+    if (parser.current.type === parser.TokenType.LEFT_BRACE) {
+        return parser.parseBlockStatement();
+    }
     if (parser.current.type === parser.TokenType.KEYWORD) {
         switch (parser.current.value) {
             case 'let':
