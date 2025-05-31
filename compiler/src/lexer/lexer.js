@@ -1,59 +1,31 @@
 const Token = require('./token');
 const TokenType = require('./token-types');
 const { allKeywords } = require('../keywords');
+const { readTemplateStringSegment } = require('./template');
+const { matchOperatorOrPunctuator } = require('./operators');
+const CharStream = require('./char-stream');
+const { skipComment } = require('./comments');
 
 class Lexer {
     constructor(source) {
-        this.source = source;
-        this.position = 0;
-        this.line = 1;
-        this.column = 1;
-        this.currentChar = this.source[0];
+        this.charStream = new CharStream(source);
         this._templateStack = [];
         this._templateBuffer = '';
         this._inTemplate = false;
     }
 
-    advance() {
-        this.position++;
-        this.column++;
-        this.currentChar = this.position < this.source.length ? this.source[this.position] : null;
-    }
-
-    peek() {
-        const peekPos = this.position + 1;
-        return peekPos < this.source.length ? this.source[peekPos] : null;
-    }
+    // Proxy CharStream properties for compatibility
+    get source() { return this.charStream.source; }
+    get position() { return this.charStream.position; }
+    get line() { return this.charStream.line; }
+    get column() { return this.charStream.column; }
+    get currentChar() { return this.charStream.currentChar; }
+    advance() { this.charStream.advance(); }
+    peek() { return this.charStream.peek(); }
 
     skipWhitespace() {
         while (this.currentChar && /\s/.test(this.currentChar)) {
-            if (this.currentChar === '\n') {
-                this.line++;
-                this.column = 1;
-            }
             this.advance();
-        }
-    }
-
-    skipComment() {
-        if (this.currentChar === '/' && this.peek() === '/') {
-            while (this.currentChar && this.currentChar !== '\n') {
-                this.advance();
-            }
-        } else if (this.currentChar === '/' && this.peek() === '*') {
-            this.advance(); // Skip /
-            this.advance(); // Skip *
-            while (this.currentChar && !(this.currentChar === '*' && this.peek() === '/')) {
-                if (this.currentChar === '\n') {
-                    this.line++;
-                    this.column = 1;
-                }
-                this.advance();
-            }
-            if (this.currentChar) {
-                this.advance(); // Skip *
-                this.advance(); // Skip /
-            }
         }
     }
 
@@ -134,75 +106,123 @@ class Lexer {
         return new Token(TokenType.ERROR, 'Unterminated string', this.line, startColumn);
     }
 
-    readTemplateStringSegment() {
-        // Reads until ${ or `, returns the string segment (may be empty)
-        let result = '';
-        const startColumn = this.column;
-        while (this.currentChar && this.currentChar !== '`') {
-            if (this.currentChar === '\\') {
-                this.advance();
-                switch (this.currentChar) {
-                    case 'n': result += '\n'; break;
-                    case 't': result += '\t'; break;
-                    case 'r': result += '\r'; break;
-                    case '`': result += '`'; break;
-                    case '$': result += '$'; break;
-                    case '\\': result += '\\'; break;
-                    default: result += this.currentChar;
-                }
-            } else if (this.currentChar === '$' && this.peek() === '{') {
-                // End of this segment, but not end of template
-                break;
-            } else {
-                result += this.currentChar;
-            }
-            this.advance();
-        }
-        return { value: result, startColumn };
+    // --- Token methods ---
+    getIdentifierOrKeyword() {
+        return this.readIdentifier();
     }
 
+    getNumber() {
+        return this.readNumber();
+    }
+
+    getString() {
+        return this.readString();
+    }
+
+    getTemplateToken() {
+        // Template mode handled in getNextToken
+        // This is just a dispatcher for the initial backtick
+        this.advance();
+        this._inTemplate = true;
+        this._templateBuffer = '';
+        const { value, startColumn } = readTemplateStringSegment(this);
+        this._templateBuffer += value;
+        if (this.currentChar === '$' && this.peek() === '{') {
+            const segment = this._templateBuffer;
+            this._templateBuffer = '';
+            return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
+        }
+        if (this.currentChar === '`') {
+            const segment = this._templateBuffer;
+            this._templateBuffer = '';
+            this._inTemplate = false;
+            this.advance();
+            return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
+        }
+        if (!this.currentChar) {
+            this._inTemplate = false;
+            return new Token(TokenType.ERROR, 'Unterminated template string', this.line, this.column);
+        }
+    }
+
+    getOperatorOrPunctuation() {
+        // Use the helper to match the longest operator or punctuator
+        const op = matchOperatorOrPunctuator(this);
+        if (op) {
+            const startColumn = this.column;
+            for (let i = 0; i < op.length; i++) {
+                this.advance();
+            }
+            // Map operator string to token type
+            switch (op) {
+                case ';': return new Token(TokenType.SEMICOLON, op, this.line, startColumn);
+                case ',': return new Token(TokenType.COMMA, op, this.line, startColumn);
+                case '.': return new Token(TokenType.DOT, op, this.line, startColumn);
+                case ':': return new Token(TokenType.COLON, op, this.line, startColumn);
+                case '?': return new Token(TokenType.QUESTION_MARK, op, this.line, startColumn);
+                case '(': return new Token(TokenType.LEFT_PAREN, op, this.line, startColumn);
+                case ')': return new Token(TokenType.RIGHT_PAREN, op, this.line, startColumn);
+                case '{': return new Token(TokenType.LEFT_BRACE, op, this.line, startColumn);
+                case '}': return new Token(TokenType.RIGHT_BRACE, op, this.line, startColumn);
+                case '[': return new Token(TokenType.LEFT_BRACKET, op, this.line, startColumn);
+                case ']': return new Token(TokenType.RIGHT_BRACKET, op, this.line, startColumn);
+                case '<': return new Token(TokenType.LEFT_ANGLE, op, this.line, startColumn);
+                case '>': return new Token(TokenType.RIGHT_ANGLE, op, this.line, startColumn);
+                case '|': return new Token(TokenType.UNION, op, this.line, startColumn);
+                case '&': return new Token(TokenType.INTERSECTION, op, this.line, startColumn);
+                case '?.': return new Token(TokenType.OPTIONAL_CHAINING, op, this.line, startColumn);
+                case '??': return new Token(TokenType.NULLISH_COALESCING, op, this.line, startColumn);
+                case '=': return new Token(TokenType.ASSIGNMENT, op, this.line, startColumn);
+                case '==':
+                case '===':
+                case '!=':
+                case '!==':
+                case '||':
+                case '&&':
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '%':
+                case '!':
+                    return new Token(TokenType.OPERATOR, op, this.line, startColumn);
+            }
+        }
+        // If we get here, we have an invalid character
+        return new Token(TokenType.ERROR, `Invalid character: ${this.currentChar}`, this.line, this.column);
+    }
+
+    // --- Main dispatcher ---
     getNextToken() {
         // Handle template mode
         if (this._inTemplate) {
-            // If we just finished a template expression, resume template string
             if (this.currentChar === '}') {
                 this.advance();
-                // Resume template string segment
             }
-            // If at end of template
             if (this.currentChar === '`') {
                 this.advance();
                 this._inTemplate = false;
                 return new Token(TokenType.TEMPLATE_STRING, this._templateBuffer, this.line, this.column - 1);
             }
-            // If at start of embedded expression
             if (this.currentChar === '$' && this.peek() === '{') {
-                // Emit the string segment so far
                 const segment = this._templateBuffer;
                 this._templateBuffer = '';
-                this.advance(); // Skip $
-                this.advance(); // Skip {
-                // Stay in template mode, but let parser know to parse an expression
+                this.advance();
+                this.advance();
                 return new Token(TokenType.TEMPLATE_EXPRESSION, segment, this.line, this.column - 2);
             }
-            // Otherwise, read until next ${ or `
-            const { value, startColumn } = this.readTemplateStringSegment();
+            const { value, startColumn } = readTemplateStringSegment(this);
             this._templateBuffer += value;
-            // If we stopped at ${, emit the string segment (next call will emit TEMPLATE_EXPRESSION)
             if (this.currentChar === '$' && this.peek() === '{') {
-                // Do not advance here, handled above
                 const segment = this._templateBuffer;
                 this._templateBuffer = '';
                 return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
             }
-            // If we stopped at `, emit the string segment (next call will emit TEMPLATE_STRING and exit template mode)
             if (this.currentChar === '`') {
-                // Do not advance here, handled above
                 const segment = this._templateBuffer;
                 this._templateBuffer = '';
                 return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
             }
-            // If we hit EOF
             if (!this.currentChar) {
                 this._inTemplate = false;
                 return new Token(TokenType.ERROR, 'Unterminated template string', this.line, this.column);
@@ -210,149 +230,29 @@ class Lexer {
         }
 
         while (this.currentChar) {
-            // Skip whitespace
             if (/\s/.test(this.currentChar)) {
                 this.skipWhitespace();
                 continue;
             }
-
-            // Skip comments
             if (this.currentChar === '/' && (this.peek() === '/' || this.peek() === '*')) {
-                this.skipComment();
+                skipComment(this);
                 continue;
             }
-
-            // Identifiers and keywords
             if (/[a-zA-Z_]/.test(this.currentChar)) {
-                return this.readIdentifier();
+                return this.getIdentifierOrKeyword();
             }
-
-            // Numbers (including .5, 6.)
             if (/[0-9]/.test(this.currentChar) || (this.currentChar === '.' && /[0-9]/.test(this.peek()))) {
-                return this.readNumber();
+                return this.getNumber();
             }
-
-            // Strings
             if (this.currentChar === '"' || this.currentChar === "'") {
-                return this.readString();
+                return this.getString();
             }
-            // Template literals
             if (this.currentChar === '`') {
-                this.advance();
-                this._inTemplate = true;
-                this._templateBuffer = '';
-                // Start reading the first segment
-                const { value, startColumn } = this.readTemplateStringSegment();
-                this._templateBuffer += value;
-                // If we stopped at ${, emit the string segment (next call will emit TEMPLATE_EXPRESSION)
-                if (this.currentChar === '$' && this.peek() === '{') {
-                    const segment = this._templateBuffer;
-                    this._templateBuffer = '';
-                    return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
-                }
-                // If we stopped at `, emit the string segment (next call will emit TEMPLATE_STRING and exit template mode)
-                if (this.currentChar === '`') {
-                    const segment = this._templateBuffer;
-                    this._templateBuffer = '';
-                    this._inTemplate = false;
-                    this.advance();
-                    return new Token(TokenType.TEMPLATE_STRING, segment, this.line, startColumn);
-                }
-                // If we hit EOF
-                if (!this.currentChar) {
-                    this._inTemplate = false;
-                    return new Token(TokenType.ERROR, 'Unterminated template string', this.line, this.column);
-                }
+                return this.getTemplateToken();
             }
-
             // Operators and punctuation
-            switch (this.currentChar) {
-                case ';': this.advance(); return new Token(TokenType.SEMICOLON, ';', this.line, this.column - 1);
-                case ',': this.advance(); return new Token(TokenType.COMMA, ',', this.line, this.column - 1);
-                case '.': 
-                    // Only a dot if not followed by a digit (otherwise handled by number logic above)
-                    this.advance();
-                    if (this.currentChar === '?') {
-                        this.advance();
-                        return new Token(TokenType.OPTIONAL_CHAINING, '?.', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.DOT, '.', this.line, this.column - 1);
-                case ':': this.advance(); return new Token(TokenType.COLON, ':', this.line, this.column - 1);
-                case '?': 
-                    // Check for optional chaining (?.)
-                    if (this.peek() === '.') {
-                        this.advance(); // consume ?
-                        this.advance(); // consume .
-                        return new Token(TokenType.OPTIONAL_CHAINING, '?.', this.line, this.column - 2);
-                    }
-                    this.advance();
-                    if (this.currentChar === '?') {
-                        this.advance();
-                        return new Token(TokenType.NULLISH_COALESCING, '??', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.QUESTION_MARK, '?', this.line, this.column - 1);
-                case '(': this.advance(); return new Token(TokenType.LEFT_PAREN, '(', this.line, this.column - 1);
-                case ')': this.advance(); return new Token(TokenType.RIGHT_PAREN, ')', this.line, this.column - 1);
-                case '{': this.advance(); return new Token(TokenType.LEFT_BRACE, '{', this.line, this.column - 1);
-                case '}': this.advance(); return new Token(TokenType.RIGHT_BRACE, '}', this.line, this.column - 1);
-                case '[': this.advance(); return new Token(TokenType.LEFT_BRACKET, '[', this.line, this.column - 1);
-                case ']': this.advance(); return new Token(TokenType.RIGHT_BRACKET, ']', this.line, this.column - 1);
-                case '<': this.advance(); return new Token(TokenType.LEFT_ANGLE, '<', this.line, this.column - 1);
-                case '>': this.advance(); return new Token(TokenType.RIGHT_ANGLE, '>', this.line, this.column - 1);
-                case '|': 
-                    this.advance();
-                    if (this.currentChar === '|') {
-                        this.advance();
-                        return new Token(TokenType.OPERATOR, '||', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.UNION, '|', this.line, this.column - 1);
-                case '&': 
-                    this.advance();
-                    if (this.currentChar === '&') {
-                        this.advance();
-                        return new Token(TokenType.OPERATOR, '&&', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.INTERSECTION, '&', this.line, this.column - 1);
-                case '=': 
-                    this.advance();
-                    if (this.currentChar === '=') {
-                        this.advance();
-                        if (this.currentChar === '=') {
-                            this.advance();
-                            return new Token(TokenType.OPERATOR, '===', this.line, this.column - 3);
-                        }
-                        return new Token(TokenType.OPERATOR, '==', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.ASSIGNMENT, '=', this.line, this.column - 1);
-                case '+': this.advance(); return new Token(TokenType.OPERATOR, '+', this.line, this.column - 1);
-                case '-': this.advance(); return new Token(TokenType.OPERATOR, '-', this.line, this.column - 1);
-                case '*': this.advance(); return new Token(TokenType.OPERATOR, '*', this.line, this.column - 1);
-                case '/': this.advance(); return new Token(TokenType.OPERATOR, '/', this.line, this.column - 1);
-                case '%': this.advance(); return new Token(TokenType.OPERATOR, '%', this.line, this.column - 1);
-                case '!': 
-                    this.advance();
-                    if (this.currentChar === '=') {
-                        this.advance();
-                        if (this.currentChar === '=') {
-                            this.advance();
-                            return new Token(TokenType.OPERATOR, '!==', this.line, this.column - 3);
-                        }
-                        return new Token(TokenType.OPERATOR, '!=', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.OPERATOR, '!', this.line, this.column - 1);
-                case '$': 
-                    this.advance();
-                    if (this.currentChar === '{') {
-                        this.advance();
-                        return new Token(TokenType.TEMPLATE_EXPRESSION, '', this.line, this.column - 2);
-                    }
-                    return new Token(TokenType.ERROR, 'Invalid character: $', this.line, this.column - 1);
-            }
-
-            // If we get here, we have an invalid character
-            return new Token(TokenType.ERROR, `Invalid character: ${this.currentChar}`, this.line, this.column);
+            return this.getOperatorOrPunctuation();
         }
-
         return new Token(TokenType.EOF, null, this.line, this.column);
     }
 
