@@ -1,6 +1,7 @@
 const TokenType = require('../lexer/libs/token-types');
 const expressions = require('./libs/expressions');
 const functions = require('./libs/functions');
+const loops = require('./libs/loops');
 
 class Parser {
     constructor(tokens) {
@@ -459,91 +460,15 @@ class Parser {
     }
 
     parseForStatement() {
-        this.expect(TokenType.KEYWORD, 'for');
-        this.expect(TokenType.LEFT_PAREN);
-        let init = null;
-        if (this.current.type === TokenType.KEYWORD && ['let', 'const', 'var'].includes(this.current.value)) {
-            init = this.parseVariableDeclaration();
-        } else if (this.current.type !== TokenType.SEMICOLON) {
-            init = this.parseExpression();
-            if (this.current.type === TokenType.SEMICOLON) this.advance();
-        } else {
-            // No init
-            this.advance();
-        }
-        let test = null;
-        if (this.current.type !== TokenType.SEMICOLON) {
-            test = this.parseExpression();
-        }
-        this.expect(TokenType.SEMICOLON);
-        let update = null;
-        if (this.current.type !== TokenType.RIGHT_PAREN) {
-            update = this.parseExpression();
-        }
-        this.expect(TokenType.RIGHT_PAREN);
-        // Parse body
-        let body = null;
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            body = this.parseBlockStatement();
-        } else {
-            // Skip single statement
-            if (this.current.type !== TokenType.EOF) this.advance();
-            body = { type: 'BlockStatement', body: [] };
-        }
-        return {
-            type: 'ForStatement',
-            init,
-            test,
-            update,
-            body
-        };
+        return loops.parseForStatement(this);
     }
 
     parseWhileStatement() {
-        this.expect(TokenType.KEYWORD, 'while');
-        this.expect(TokenType.LEFT_PAREN);
-        // Use parseExpression for test
-        let test = this.parseExpression();
-        this.expect(TokenType.RIGHT_PAREN);
-        // Parse body
-        let body = null;
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            body = this.parseBlockStatement();
-        } else {
-            // Skip single statement
-            if (this.current.type !== TokenType.EOF) this.advance();
-            body = { type: 'BlockStatement', body: [] };
-        }
-        return {
-            type: 'WhileStatement',
-            test,
-            body
-        };
+        return loops.parseWhileStatement(this);
     }
 
     parseDoWhileStatement() {
-        this.expect(TokenType.KEYWORD, 'do');
-        // Parse body
-        let body = null;
-        if (this.current.type === TokenType.LEFT_BRACE) {
-            body = this.parseBlockStatement();
-        } else {
-            // Skip single statement
-            if (this.current.type !== TokenType.EOF) this.advance();
-            body = { type: 'BlockStatement', body: [] };
-        }
-        this.expect(TokenType.KEYWORD, 'while');
-        this.expect(TokenType.LEFT_PAREN);
-        // Use parseExpression for test
-        let test = this.parseExpression();
-        this.expect(TokenType.RIGHT_PAREN);
-        // Optionally expect SEMICOLON
-        if (this.current.type === TokenType.SEMICOLON) this.advance();
-        return {
-            type: 'DoWhileStatement',
-            body,
-            test
-        };
+        return loops.parseDoWhileStatement(this);
     }
 
     parseSwitchStatement() {
