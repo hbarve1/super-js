@@ -19,7 +19,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: 'number',
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         gen: {
             type: 'FunctionDeclaration',
@@ -27,7 +27,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: true,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         afn: {
             type: 'FunctionDeclaration',
@@ -35,7 +35,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         contractFn: {
             type: 'FunctionDeclaration',
@@ -43,7 +43,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [ { name: 'x', varType: 'number' } ],
             returnType: 'number',
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         g: {
             type: 'FunctionDeclaration',
@@ -51,7 +51,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         docFn: {
             type: 'FunctionDeclaration',
@@ -59,7 +59,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [],
             returnType: null,
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         add: {
             type: 'FunctionDeclaration',
@@ -70,7 +70,7 @@ describe('Parser full program from sample.sjs', () => {
             ],
             returnType: 'number',
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         },
         greet: {
             type: 'FunctionDeclaration',
@@ -78,7 +78,7 @@ describe('Parser full program from sample.sjs', () => {
             params: [ { name: 'name', varType: 'string' } ],
             returnType: null,
             isGenerator: false,
-            body: { type: 'BlockStatement', body: [] }
+            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
         }
     };
 
@@ -215,7 +215,7 @@ describe('Parser full program from sample.sjs', () => {
                     body: [
                         { type: 'ClassProperty', key: 'x', varType: 'number' },
                         { type: 'ClassProperty', key: 'y', varType: 'number' },
-                        {
+                        expect.objectContaining({
                             type: 'MethodDefinition',
                             key: 'constructor',
                             params: [
@@ -223,9 +223,9 @@ describe('Parser full program from sample.sjs', () => {
                                 { name: 'y', varType: 'number' }
                             ],
                             returnType: null,
-                            body: { type: 'BlockStatement', body: [] }
-                        },
-                        {
+                            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
+                        }),
+                        expect.objectContaining({
                             type: 'MethodDefinition',
                             key: 'move',
                             params: [
@@ -233,8 +233,8 @@ describe('Parser full program from sample.sjs', () => {
                                 { name: 'dy', varType: 'number' }
                             ],
                             returnType: 'void',
-                            body: { type: 'BlockStatement', body: [] }
-                        }
+                            body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
+                        })
                     ]
                 });
             } else if (node.type === 'ForStatement') {
@@ -319,9 +319,9 @@ describe('Parser full program from sample.sjs', () => {
             } else if (node.type === 'TryStatement') {
                 expect(node).toEqual({
                     type: 'TryStatement',
-                    block: { type: 'BlockStatement', body: [] },
-                    handler: { param: 'e', body: { type: 'BlockStatement', body: [] } },
-                    finalizer: { type: 'BlockStatement', body: [] }
+                    block: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) }),
+                    handler: { param: 'e', body: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) }) },
+                    finalizer: expect.objectContaining({ type: 'BlockStatement', body: expect.any(Array) })
                 });
             } else {
                 expect(node).toEqual(expect.objectContaining({

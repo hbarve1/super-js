@@ -212,22 +212,15 @@ class Parser {
                 this.advance();
             }
         }
-        // Parse body (for now, just skip to matching RIGHT_BRACE)
-        this.expect(TokenType.LEFT_BRACE);
-        let braceDepth = 1;
-        // Optionally, collect body tokens for future expansion
-        while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-            if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-            if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-            this.advance();
-        }
+        // Parse body
+        const body = this.parseBlockStatement();
         return {
             type: 'FunctionDeclaration',
             id: idToken.value,
             params,
             returnType,
             isGenerator,
-            body: { type: 'BlockStatement', body: [] } // stub for now
+            body
         };
     }
 
@@ -332,20 +325,14 @@ class Parser {
                 this.advance();
             }
         }
-        // Parse body (for now, just skip to matching RIGHT_BRACE)
-        this.expect(TokenType.LEFT_BRACE);
-        let braceDepth = 1;
-        while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-            if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-            if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-            this.advance();
-        }
+        // Parse body
+        const body = this.parseBlockStatement();
         return {
             type: 'MethodDefinition',
             key,
             params,
             returnType,
-            body: { type: 'BlockStatement', body: [] }
+            body
         };
     }
 
@@ -433,34 +420,20 @@ class Parser {
         let test = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
         // Parse consequent (then branch)
-        let consequent = { type: 'BlockStatement', body: [] };
+        let consequent = null;
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
-            this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
-            }
+            consequent = this.parseBlockStatement();
         } else {
             // Skip single statement
             if (this.current.type !== TokenType.EOF) this.advance();
+            consequent = { type: 'BlockStatement', body: [] };
         }
         // Parse alternate (else branch)
         let alternate = null;
         if (this.current.type === TokenType.KEYWORD && this.current.value === 'else') {
             this.advance();
             if (this.current.type === TokenType.LEFT_BRACE) {
-                // Skip block
-                this.advance();
-                let braceDepth = 1;
-                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                    this.advance();
-                }
-                alternate = { type: 'BlockStatement', body: [] };
+                alternate = this.parseBlockStatement();
             } else {
                 // Skip single statement
                 if (this.current.type !== TokenType.EOF) this.advance();
@@ -498,20 +471,14 @@ class Parser {
             update = this.parseExpression();
         }
         this.expect(TokenType.RIGHT_PAREN);
-        // Parse body (as stub block)
-        let body = { type: 'BlockStatement', body: [] };
+        // Parse body
+        let body = null;
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
-            this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
-            }
+            body = this.parseBlockStatement();
         } else {
             // Skip single statement
             if (this.current.type !== TokenType.EOF) this.advance();
+            body = { type: 'BlockStatement', body: [] };
         }
         return {
             type: 'ForStatement',
@@ -528,20 +495,14 @@ class Parser {
         // Use parseExpression for test
         let test = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
-        // Parse body (as stub block)
-        let body = { type: 'BlockStatement', body: [] };
+        // Parse body
+        let body = null;
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
-            this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
-            }
+            body = this.parseBlockStatement();
         } else {
             // Skip single statement
             if (this.current.type !== TokenType.EOF) this.advance();
+            body = { type: 'BlockStatement', body: [] };
         }
         return {
             type: 'WhileStatement',
@@ -552,29 +513,19 @@ class Parser {
 
     parseDoWhileStatement() {
         this.expect(TokenType.KEYWORD, 'do');
-        // Parse body (as stub block)
-        let body = { type: 'BlockStatement', body: [] };
+        // Parse body
+        let body = null;
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
-            this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
-            }
+            body = this.parseBlockStatement();
         } else {
             // Skip single statement
             if (this.current.type !== TokenType.EOF) this.advance();
+            body = { type: 'BlockStatement', body: [] };
         }
         this.expect(TokenType.KEYWORD, 'while');
         this.expect(TokenType.LEFT_PAREN);
-        // For now, stub test
-        let test = { type: 'Expression', stub: true };
-        // Skip until RIGHT_PAREN
-        while (this.current.type !== TokenType.RIGHT_PAREN && this.current.type !== TokenType.EOF) {
-            this.advance();
-        }
+        // Use parseExpression for test
+        let test = this.parseExpression();
         this.expect(TokenType.RIGHT_PAREN);
         // Optionally expect SEMICOLON
         if (this.current.type === TokenType.SEMICOLON) this.advance();
@@ -615,17 +566,12 @@ class Parser {
 
     parseTryStatement() {
         this.expect(TokenType.KEYWORD, 'try');
-        // Parse try block (as stub block)
-        let block = { type: 'BlockStatement', body: [] };
+        // Parse try block
+        let block = null;
         if (this.current.type === TokenType.LEFT_BRACE) {
-            // Skip block
-            this.advance();
-            let braceDepth = 1;
-            while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                this.advance();
-            }
+            block = this.parseBlockStatement();
+        } else {
+            block = { type: 'BlockStatement', body: [] };
         }
         // Parse catch clause
         let handler = null;
@@ -644,16 +590,12 @@ class Parser {
                 }
                 if (this.current.type === TokenType.RIGHT_PAREN) this.advance();
             }
-            // Parse catch block (as stub block)
-            let catchBlock = { type: 'BlockStatement', body: [] };
+            // Parse catch block
+            let catchBlock = null;
             if (this.current.type === TokenType.LEFT_BRACE) {
-                this.advance();
-                let braceDepth = 1;
-                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                    this.advance();
-                }
+                catchBlock = this.parseBlockStatement();
+            } else {
+                catchBlock = { type: 'BlockStatement', body: [] };
             }
             handler = { param, body: catchBlock };
         }
@@ -661,15 +603,11 @@ class Parser {
         let finalizer = null;
         if (this.current.type === TokenType.KEYWORD && this.current.value === 'finally') {
             this.advance();
-            let finallyBlock = { type: 'BlockStatement', body: [] };
+            let finallyBlock = null;
             if (this.current.type === TokenType.LEFT_BRACE) {
-                this.advance();
-                let braceDepth = 1;
-                while (braceDepth > 0 && this.current.type !== TokenType.EOF) {
-                    if (this.current.type === TokenType.LEFT_BRACE) braceDepth++;
-                    if (this.current.type === TokenType.RIGHT_BRACE) braceDepth--;
-                    this.advance();
-                }
+                finallyBlock = this.parseBlockStatement();
+            } else {
+                finallyBlock = { type: 'BlockStatement', body: [] };
             }
             finalizer = finallyBlock;
         }
@@ -930,6 +868,17 @@ class Parser {
         if (op === '*' || op === '/') return 4;
         if (op === '=') return 1;
         return 0;
+    }
+
+    parseBlockStatement() {
+        this.expect(TokenType.LEFT_BRACE);
+        const body = [];
+        while (this.current.type !== TokenType.RIGHT_BRACE && this.current.type !== TokenType.EOF) {
+            const stmt = this.parseStatement();
+            if (stmt) body.push(stmt);
+        }
+        this.expect(TokenType.RIGHT_BRACE);
+        return { type: 'BlockStatement', body };
     }
 }
 
