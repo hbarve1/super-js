@@ -1,5 +1,7 @@
 // Conditional statement parsing helpers for Parser
 
+const { IF_STATEMENT, SWITCH_CASE, SWITCH_STATEMENT, BLOCK_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseIfStatement(parser) {
     parser.expect(parser.TokenType.KEYWORD, 'if');
     parser.expect(parser.TokenType.LEFT_PAREN);
@@ -13,7 +15,7 @@ function parseIfStatement(parser) {
     } else {
         // Skip single statement
         if (parser.current.type !== parser.TokenType.EOF) parser.advance();
-        consequent = { type: 'BlockStatement', body: [] };
+        consequent = { type: BLOCK_STATEMENT, body: [] };
     }
     // Parse alternate (else branch)
     let alternate = null;
@@ -24,11 +26,11 @@ function parseIfStatement(parser) {
         } else {
             // Skip single statement
             if (parser.current.type !== parser.TokenType.EOF) parser.advance();
-            alternate = { type: 'BlockStatement', body: [] };
+            alternate = { type: BLOCK_STATEMENT, body: [] };
         }
     }
     return {
-        type: 'IfStatement',
+        type: IF_STATEMENT,
         test,
         consequent,
         alternate
@@ -77,7 +79,7 @@ function parseSwitchStatement(parser) {
         parser.expect(parser.TokenType.RIGHT_BRACE);
     }
     return {
-        type: 'SwitchStatement',
+        type: SWITCH_STATEMENT,
         discriminant,
         cases
     };

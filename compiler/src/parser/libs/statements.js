@@ -1,5 +1,7 @@
 // Statement parsing helper for Parser
 
+const { RETURN_STATEMENT, BREAK_STATEMENT, CONTINUE_STATEMENT, THROW_STATEMENT, EXPRESSION_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseStatement(parser) {
     // Support top-level 'async function' as a function declaration
     if (
@@ -47,17 +49,17 @@ function parseStatement(parser) {
                     argument = parser.parseExpression();
                 }
                 if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-                return { type: 'ReturnStatement', argument };
+                return { type: RETURN_STATEMENT, argument };
             }
             case 'break': {
                 parser.advance();
                 if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-                return { type: 'BreakStatement' };
+                return { type: BREAK_STATEMENT };
             }
             case 'continue': {
                 parser.advance();
                 if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-                return { type: 'ContinueStatement' };
+                return { type: CONTINUE_STATEMENT };
             }
             case 'throw': {
                 parser.advance();
@@ -66,7 +68,7 @@ function parseStatement(parser) {
                     argument = parser.parseExpression();
                 }
                 if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-                return { type: 'ThrowStatement', argument };
+                return { type: THROW_STATEMENT, argument };
             }
             default:
                 return parser.parseExpressionStatement();

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Lexer = require('../lexer/lexer');
 const Parser = require('./parser');
+const { ARRAY_EXPRESSION, OBJECT_EXPRESSION, VARIABLE_DECLARATION } = require('../utils/ast-node-types');
 
 describe('Parser full program from sample.sjs', () => {
     const sampleFile = path.join(__dirname, 'sample.sjs');
@@ -136,13 +137,13 @@ describe('Parser full program from sample.sjs', () => {
         expect(ast.type).toBe('Program');
         // Debug print: all variable declaration ids
         const varDeclIds = ast.body
-            .filter(node => node.type === 'VariableDeclaration')
+            .filter(node => node.type === VARIABLE_DECLARATION)
             .map(node => node.id && typeof node.id === 'string' ? node.id : node.id && node.id.type);
         // eslint-disable-next-line no-console
         // console.log('VariableDeclaration ids:', varDeclIds);
         // --- Check for real expression AST for 'let sum = a + b;' ---
         const sumDecl = ast.body.find(
-            node => node.type === 'VariableDeclaration' && node.id === 'sum'
+            node => node.type === VARIABLE_DECLARATION && node.id === 'sum'
         );
         expect(sumDecl).toBeDefined();
         expect(sumDecl.init).toEqual({
@@ -153,7 +154,7 @@ describe('Parser full program from sample.sjs', () => {
         });
         // --- Check for MemberExpression: let member = obj.p; ---
         const memberDecl = ast.body.find(
-            node => node.type === 'VariableDeclaration' && node.id === 'member'
+            node => node.type === VARIABLE_DECLARATION && node.id === 'member'
         );
         expect(memberDecl).toBeDefined();
         expect(memberDecl.init).toEqual({
@@ -164,7 +165,7 @@ describe('Parser full program from sample.sjs', () => {
         });
         // --- Check for CallExpression: let called = add(a, b); ---
         const calledDecl = ast.body.find(
-            node => node.type === 'VariableDeclaration' && node.id === 'called'
+            node => node.type === VARIABLE_DECLARATION && node.id === 'called'
         );
         expect(calledDecl).toBeDefined();
         expect(calledDecl.init).toEqual({
@@ -177,11 +178,11 @@ describe('Parser full program from sample.sjs', () => {
         });
         // --- Check for ArrayExpression: let arr = [1, 2, 3]; ---
         const arrDecl = ast.body.find(
-            node => node.type === 'VariableDeclaration' && node.id === 'arr'
+            node => node.type === VARIABLE_DECLARATION && node.id === 'arr'
         );
         expect(arrDecl).toBeDefined();
         expect(arrDecl.init).toEqual({
-            type: 'ArrayExpression',
+            type: ARRAY_EXPRESSION,
             elements: [
                 { type: 'Literal', value: 1 },
                 { type: 'Literal', value: 2 },
@@ -190,11 +191,11 @@ describe('Parser full program from sample.sjs', () => {
         });
         // --- Check for ObjectExpression: let obj = { p: 1, q: 2 }; ---
         const objDecl = ast.body.find(
-            node => node.type === 'VariableDeclaration' && node.id === 'obj'
+            node => node.type === VARIABLE_DECLARATION && node.id === 'obj'
         );
         expect(objDecl).toBeDefined();
         expect(objDecl.init).toEqual({
-            type: 'ObjectExpression',
+            type: OBJECT_EXPRESSION,
             properties: [
                 { key: { type: 'Identifier', name: 'p' }, value: { type: 'Literal', value: 1 } },
                 { key: { type: 'Identifier', name: 'q' }, value: { type: 'Literal', value: 2 } }

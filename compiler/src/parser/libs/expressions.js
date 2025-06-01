@@ -1,5 +1,20 @@
 // Expression parsing helpers for Parser
 
+const {
+    ARRAY_EXPRESSION,
+    OBJECT_EXPRESSION,
+    VARIABLE_DECLARATION,
+    FUNCTION_DECLARATION,
+    MEMBER_EXPRESSION,
+    CALL_EXPRESSION,
+    BINARY_EXPRESSION,
+    IDENTIFIER,
+    LITERAL,
+    CONDITIONAL_EXPRESSION,
+    ASSIGNMENT_EXPRESSION,
+    UNARY_EXPRESSION
+} = require('../../utils/ast-node-types');
+
 function parseExpression(parser, precedence = 0) {
     let left = parsePrimaryExpression(parser);
     while (true) {
@@ -294,7 +309,7 @@ function parsePrimaryExpression(parser) {
             }
         }
         parser.expect(parser.TokenType.RIGHT_BRACKET);
-        return { type: 'ArrayExpression', elements };
+        return { type: ARRAY_EXPRESSION, elements };
     }
     if (parser.current.type === parser.TokenType.LEFT_BRACE) {
         parser.advance();
@@ -320,7 +335,7 @@ function parsePrimaryExpression(parser) {
             }
         }
         parser.expect(parser.TokenType.RIGHT_BRACE);
-        return { type: 'ObjectExpression', properties };
+        return { type: OBJECT_EXPRESSION, properties };
     }
     if (
         (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'async' && parser.peek().type === parser.TokenType.KEYWORD && parser.peek().value === 'function') ||

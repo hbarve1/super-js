@@ -1,5 +1,7 @@
 // Class declaration parsing helpers for Parser
 
+const { CLASS_DECLARATION, CLASS_PROPERTY, METHOD_DEFINITION } = require('../../utils/ast-node-types');
+
 function parseClassDeclaration(parser) {
     parser.expect(parser.TokenType.KEYWORD, 'class');
     const idToken = parser.expect(parser.TokenType.IDENTIFIER);
@@ -39,7 +41,7 @@ function parseClassDeclaration(parser) {
                 // Property
                 // Optionally expect SEMICOLON
                 if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-                body.push({ type: 'ClassProperty', key, varType });
+                body.push({ type: CLASS_PROPERTY, key, varType });
             }
         } else if (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'constructor') {
             // Parse constructor as a method
@@ -54,7 +56,7 @@ function parseClassDeclaration(parser) {
     }
     parser.expect(parser.TokenType.RIGHT_BRACE);
     return {
-        type: 'ClassDeclaration',
+        type: CLASS_DECLARATION,
         id: idToken.value,
         superClass,
         body
@@ -76,7 +78,7 @@ function parseMethodDefinition(parser, key) {
     // Parse body
     const body = parser.parseBlockStatement();
     return {
-        type: 'MethodDefinition',
+        type: METHOD_DEFINITION,
         key,
         params,
         returnType,

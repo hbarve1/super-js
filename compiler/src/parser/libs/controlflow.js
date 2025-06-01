@@ -1,5 +1,7 @@
 // Control flow statement parsing helper for Parser
 
+const { CONTROL_FLOW_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseControlFlow(parser) {
     if (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'if') {
         return parser.parseIfStatement();
@@ -28,7 +30,7 @@ function parseControlFlow(parser) {
         parser.advance();
     }
     if (parser.current.type === parser.TokenType.RIGHT_BRACE || parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-    return { type: 'ControlFlowStatement', skipped: true };
+    return { type: CONTROL_FLOW_STATEMENT, skipped: true };
 }
 
 module.exports = {

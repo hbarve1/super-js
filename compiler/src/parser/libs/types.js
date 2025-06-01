@@ -1,5 +1,18 @@
 // Type declaration parsing helper for Parser
 
+const {
+  TYPE_DECLARATION,
+  INTERFACE_DECLARATION,
+  ENUM_DECLARATION,
+  NAMESPACE_DECLARATION,
+  UNION_TYPE,
+  INTERSECTION_TYPE,
+  GENERIC_TYPE,
+  ARRAY_TYPE,
+  OBJECT_TYPE,
+  TYPE_IDENTIFIER
+} = require('../../utils/ast-node-types');
+
 function parseTypeDeclaration(parser) {
     // type|interface|enum|namespace NAME ...
     const kind = parser.current.value;
@@ -23,10 +36,10 @@ function parseTypeDeclaration(parser) {
         }
         if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
     }
-    let nodeType = 'TypeDeclaration';
-    if (kind === 'interface') nodeType = 'InterfaceDeclaration';
-    if (kind === 'enum') nodeType = 'EnumDeclaration';
-    if (kind === 'namespace') nodeType = 'NamespaceDeclaration';
+    let nodeType = TYPE_DECLARATION;
+    if (kind === 'interface') nodeType = INTERFACE_DECLARATION;
+    if (kind === 'enum') nodeType = ENUM_DECLARATION;
+    if (kind === 'namespace') nodeType = NAMESPACE_DECLARATION;
     return {
         type: nodeType,
         kind,
@@ -42,14 +55,14 @@ function parseTypeAnnotation(parser) {
     while (parser.current.type === parser.TokenType.LEFT_BRACKET && parser.peek().type === parser.TokenType.RIGHT_BRACKET) {
         parser.advance(); // [
         parser.advance(); // ]
-        type = { type: 'ArrayType', elementType: type };
+        type = { type: ARRAY_TYPE, elementType: type };
     }
     while (parser.current.type === parser.TokenType.UNION || parser.current.type === parser.TokenType.INTERSECTION) {
         const operator = parser.current.type === parser.TokenType.UNION ? '|' : '&';
         parser.advance();
         const right = parsePrimaryType(parser);
         type = {
-            type: operator === '|' ? 'UnionType' : 'IntersectionType',
+            type: operator === '|' ? UNION_TYPE : INTERSECTION_TYPE,
             left: type,
             right
         };
@@ -100,7 +113,7 @@ function parsePrimaryType(parser) {
             }
         }
         parser.expect(parser.TokenType.RIGHT_BRACE);
-        return { type: 'ObjectType', properties };
+        return { type: OBJECT_TYPE, properties };
     }
     // Parse a single type: identifier, generic, object, or parenthesized type
     if (parser.current.type === parser.TokenType.IDENTIFIER || parser.current.type === parser.TokenType.KEYWORD) {
@@ -120,12 +133,12 @@ function parsePrimaryType(parser) {
             }
             parser.expect(parser.TokenType.RIGHT_ANGLE);
             return {
-                type: 'GenericType',
+                type: GENERIC_TYPE,
                 name,
                 typeParams
             };
         }
-        return { type: 'TypeIdentifier', name };
+        return { type: TYPE_IDENTIFIER, name };
     }
     // Parenthesized type
     if (parser.current.type === parser.TokenType.LEFT_PAREN) {
@@ -138,10 +151,10 @@ function parsePrimaryType(parser) {
     if (parser.current.type === parser.TokenType.LEFT_BRACKET) {
         parser.advance();
         parser.expect(parser.TokenType.RIGHT_BRACKET);
-        return { type: 'ArrayType', elementType: { type: 'TypeIdentifier', name: 'any' } };
+        return { type: ARRAY_TYPE, elementType: { type: TYPE_IDENTIFIER, name: 'any' } };
     }
     // Fallback
-    return { type: 'TypeIdentifier', name: 'any' };
+    return { type: TYPE_IDENTIFIER, name: 'any' };
 }
 
 module.exports = {

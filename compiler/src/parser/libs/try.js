@@ -1,5 +1,7 @@
 // Try/catch/finally statement parsing helper for Parser
 
+const { TRY_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseTryStatement(parser) {
     parser.expect(parser.TokenType.KEYWORD, 'try');
     // Parse try block
@@ -48,7 +50,7 @@ function parseTryStatement(parser) {
         finalizer = finallyBlock;
     }
     return {
-        type: 'TryStatement',
+        type: TRY_STATEMENT,
         block,
         handler,
         finalizer

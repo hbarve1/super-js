@@ -1,5 +1,7 @@
 // Loop parsing helpers for Parser
 
+const { FOR_STATEMENT, WHILE_STATEMENT, DO_WHILE_STATEMENT, BLOCK_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseForStatement(parser) {
     parser.expect(parser.TokenType.KEYWORD, 'for');
     parser.expect(parser.TokenType.LEFT_PAREN);
@@ -41,10 +43,10 @@ function parseForStatement(parser) {
     } else {
         // Skip single statement
         if (parser.current.type !== parser.TokenType.EOF) parser.advance();
-        body = { type: 'BlockStatement', body: [] };
+        body = { type: BLOCK_STATEMENT, body: [] };
     }
     return {
-        type: 'ForStatement',
+        type: FOR_STATEMENT,
         init,
         test,
         update,
@@ -65,10 +67,10 @@ function parseWhileStatement(parser) {
     } else {
         // Skip single statement
         if (parser.current.type !== parser.TokenType.EOF) parser.advance();
-        body = { type: 'BlockStatement', body: [] };
+        body = { type: BLOCK_STATEMENT, body: [] };
     }
     return {
-        type: 'WhileStatement',
+        type: WHILE_STATEMENT,
         test,
         body
     };
@@ -83,7 +85,7 @@ function parseDoWhileStatement(parser) {
     } else {
         // Skip single statement
         if (parser.current.type !== parser.TokenType.EOF) parser.advance();
-        body = { type: 'BlockStatement', body: [] };
+        body = { type: BLOCK_STATEMENT, body: [] };
     }
     parser.expect(parser.TokenType.KEYWORD, 'while');
     parser.expect(parser.TokenType.LEFT_PAREN);
@@ -93,7 +95,7 @@ function parseDoWhileStatement(parser) {
     // Optionally expect SEMICOLON
     if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
     return {
-        type: 'DoWhileStatement',
+        type: DO_WHILE_STATEMENT,
         body,
         test
     };

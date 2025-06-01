@@ -1,5 +1,6 @@
 const Lexer = require('../../lexer/lexer');
 const Parser = require('../parser');
+const { ARRAY_EXPRESSION, VARIABLE_DECLARATION, OBJECT_EXPRESSION } = require('../../utils/ast-node-types');
 
 describe('Parser - Destructuring Patterns', () => {
     test('parses array destructuring pattern', () => {
@@ -9,7 +10,7 @@ describe('Parser - Destructuring Patterns', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.body[0]).toEqual({
-            type: 'VariableDeclaration',
+            type: VARIABLE_DECLARATION,
             kind: 'let',
             id: {
                 type: 'ArrayPattern',
@@ -20,7 +21,7 @@ describe('Parser - Destructuring Patterns', () => {
             },
             varType: null,
             init: {
-                type: 'ArrayExpression',
+                type: ARRAY_EXPRESSION,
                 elements: [
                     { type: 'Literal', value: 1 },
                     { type: 'Literal', value: 2 }
@@ -35,7 +36,7 @@ describe('Parser - Destructuring Patterns', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.body[0]).toEqual({
-            type: 'VariableDeclaration',
+            type: VARIABLE_DECLARATION,
             kind: 'let',
             id: {
                 type: 'ObjectPattern',

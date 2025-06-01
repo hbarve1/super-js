@@ -1,5 +1,7 @@
 // Block statement parsing helper for Parser
 
+const { BLOCK_STATEMENT } = require('../../utils/ast-node-types');
+
 function parseBlockStatement(parser) {
     parser.expect(parser.TokenType.LEFT_BRACE);
     const body = [];
@@ -26,7 +28,7 @@ function parseBlockStatement(parser) {
         }
     }
     parser.expect(parser.TokenType.RIGHT_BRACE);
-    return { type: 'BlockStatement', body };
+    return { type: BLOCK_STATEMENT, body };
 }
 
 module.exports = {

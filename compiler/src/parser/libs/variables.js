@@ -1,5 +1,7 @@
 // Variable declaration parsing helper for Parser
 
+const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
+
 function parseVariableDeclaration(parser, inForLoop = false) {
     // let|const|var IDENTIFIER [: TYPE] [= expr] [, ...] ;
     if (
@@ -101,7 +103,7 @@ function parseVariableDeclaration(parser, inForLoop = false) {
         }
         if (!invalidDeclarator) {
             declarations.push({
-                type: 'VariableDeclaration',
+                type: VARIABLE_DECLARATION,
                 kind: kindToken.value,
                 id: idNode,
                 varType,

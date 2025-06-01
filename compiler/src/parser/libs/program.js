@@ -1,5 +1,7 @@
 // Program parsing helper for Parser
 
+const { EXPRESSION_STATEMENT, PROGRAM } = require('../../utils/ast-node-types');
+
 function parseProgram(parser) {
     // Parse as many statements as possible
     const body = [];
@@ -13,7 +15,7 @@ function parseProgram(parser) {
             }
         } catch (e) {
             // Error recovery: add a stub node to AST
-            body.push({ type: 'ExpressionStatement', skipped: true, error: e.message });
+            body.push({ type: EXPRESSION_STATEMENT, skipped: true, error: e.message });
             // Skip to next semicolon or block end
             while (
                 parser.current.type !== parser.TokenType.SEMICOLON &&
@@ -32,7 +34,7 @@ function parseProgram(parser) {
         }
         // No unconditional advance here!
     }
-    return { type: 'Program', body };
+    return { type: PROGRAM, body };
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 const Lexer = require('../../lexer/lexer');
 const Parser = require('../parser');
+const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
 
 describe('Parser', () => {
     test('parses a simple variable declaration', () => {
@@ -12,7 +13,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'x',
                     varType: null,
@@ -55,7 +56,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'var',
                     id: 'z',
                     varType: null,
@@ -75,7 +76,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 's',
                     varType: null,
@@ -95,7 +96,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'π',
                     varType: null,
@@ -115,7 +116,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'f',
                     varType: null,
@@ -135,7 +136,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'h',
                     varType: null,
@@ -155,7 +156,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'b',
                     varType: null,
@@ -175,7 +176,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'o',
                     varType: null,
@@ -204,7 +205,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'x',
                     varType: null,
@@ -224,14 +225,14 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'x',
                     varType: null,
                     init: { type: 'Literal', value: 1 }
                 },
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'y',
                     varType: null,
@@ -262,7 +263,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'x',
                     varType: null,
@@ -292,7 +293,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'x',
                     varType: { type: 'TypeIdentifier', name: 'number' },
@@ -324,7 +325,7 @@ describe('Parser', () => {
             type: 'Program',
             body: [
                 {
-                    type: 'VariableDeclaration',
+                    type: VARIABLE_DECLARATION,
                     kind: 'let',
                     id: 'z',
                     varType: null,
@@ -432,7 +433,7 @@ describe('Parser', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.body.length).toBe(1);
-        expect(ast.body[0].type).toBe('VariableDeclaration');
+        expect(ast.body[0].type).toBe(VARIABLE_DECLARATION);
         expect(ast.body[0].id).toBe('i');
         expect(ast.body[0].varType).toEqual({ type: 'TypeIdentifier', name: 'number' });
         expect(ast.body[0].init).toEqual({ type: 'Literal', value: 0 });
@@ -516,7 +517,7 @@ describe('Parser - Enterprise Grade Variable Declarations', () => {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         expect(ast.body[0].type).toBe('BlockStatement');
-        expect(ast.body[0].body[0].type).toBe('VariableDeclaration');
+        expect(ast.body[0].body[0].type).toBe(VARIABLE_DECLARATION);
     });
 
     test.skip('parses variable declaration inside for loop', () => {

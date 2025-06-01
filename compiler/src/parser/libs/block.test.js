@@ -1,5 +1,6 @@
 const Lexer = require('../../lexer/lexer');
 const Parser = require('../parser');
+const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
 
 function parseBlockFromCode(code) {
     const lexer = new Lexer(code);
@@ -21,7 +22,7 @@ describe('BlockStatement Parser', () => {
     test('parses block with one statement', () => {
         const ast = parseBlockFromCode('{ let x = 1; }');
         expect(ast.body.length).toBe(1);
-        expect(ast.body[0].type).toBe('VariableDeclaration');
+        expect(ast.body[0].type).toBe(VARIABLE_DECLARATION);
         expect(ast.body[0].id).toBe('x');
     });
 

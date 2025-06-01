@@ -1,5 +1,7 @@
 // Function parsing helpers for Parser
 
+const { FUNCTION_DECLARATION, METHOD_DEFINITION } = require('../../utils/ast-node-types');
+
 function _parseGenerics(parser) {
     if (parser.current.type !== parser.TokenType.LEFT_ANGLE) return null;
     parser.advance();
@@ -108,7 +110,7 @@ function parseFunctionDeclaration(parser) {
     // Parse body
     const body = parser.parseBlockStatement();
     return {
-        type: 'FunctionDeclaration',
+        type: FUNCTION_DECLARATION,
         id: idToken.value,
         params,
         returnType,
@@ -134,7 +136,7 @@ function parseMethodDefinition(parser, key) {
     // Parse body
     const body = parser.parseBlockStatement();
     return {
-        type: 'MethodDefinition',
+        type: METHOD_DEFINITION,
         key,
         params,
         returnType,
