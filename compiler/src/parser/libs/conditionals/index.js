@@ -1,5 +1,5 @@
-const parseIfStatement = require('./if');
-const parseSwitchStatement = require('./switch');
+const { parseIfStatement } = require('./parse-if');
+const { parseSwitchStatement } = require('./parse-switch');
 
 module.exports = {
     parseIfStatement,
