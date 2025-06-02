@@ -13,6 +13,7 @@ const block = require('./libs/block');
 const importexport = require('./libs/export');
 const statements = require('./libs/statements');
 const program = require('./libs/program');
+const parserUtils = require('./libs/parser-utils');
 
 class Parser {
     constructor(tokens) {
@@ -22,27 +23,19 @@ class Parser {
     }
 
     get current() {
-        return this.tokens[this.position];
+        return parserUtils.getCurrent(this);
     }
 
     peek(offset = 1) {
-        return this.tokens[this.position + offset] || { type: 'EOF' };
+        return parserUtils.peek(this, offset);
     }
 
     advance() {
-        if (this.position < this.tokens.length - 1) {
-            this.position++;
-        }
-        return this.current;
+        return parserUtils.advance(this);
     }
 
     expect(type, value) {
-        if (this.current.type !== type || (value !== undefined && this.current.value !== value)) {
-            throw new Error(`Expected ${type}${value ? ' ' + value : ''} but got ${this.current.type} ${this.current.value}`);
-        }
-        const token = this.current;
-        this.advance();
-        return token;
+        return parserUtils.expect(this, type, value);
     }
 
     parse() {
