@@ -13,7 +13,11 @@ const {
     CONDITIONAL_EXPRESSION,
     ASSIGNMENT_EXPRESSION,
     UNARY_EXPRESSION
-} = require('../../utils/ast-node-types');
+} = require('../../../utils/ast-node-types');
+// const {parsePrimaryExpression} = require('./parsePrimaryExpression');
+const {isBinaryOperator} = require('./isBinaryOperator');
+const {getPrecedence} = require('./getPrecedence');
+const {parseExpressionStatement} = require('./parseExpressionStatement');
 
 function parseExpression(parser, precedence = 0) {
     let left = parsePrimaryExpression(parser);
@@ -404,37 +408,10 @@ function parsePrimaryExpression(parser) {
     return { type: 'Expression', stub: true };
 }
 
-function isBinaryOperator(token) {
-    return token.type === 'OPERATOR' || token.type === 'ASSIGNMENT';
-}
-
-function getPrecedence(token) {
-    const op = token.value;
-    if (op === '===') return 3;
-    if (op === '!==') return 3;
-    if (op === '+' || op === '-') return 2;
-    if (op === '*' || op === '/') return 4;
-    if (op === '=') return 1;
-    return 0;
-}
-
-function parseExpressionStatement(parser) {
-    // Skip until semicolon or block end
-    while (
-        parser.current.type !== parser.TokenType.SEMICOLON &&
-        parser.current.type !== parser.TokenType.RIGHT_BRACE &&
-        parser.current.type !== parser.TokenType.EOF
-    ) {
-        parser.advance();
-    }
-    if (parser.current.type === parser.TokenType.SEMICOLON || parser.current.type === parser.TokenType.RIGHT_BRACE) parser.advance();
-    return { type: 'ExpressionStatement', skipped: true };
-}
-
 module.exports = {
     parseExpression,
     parsePrimaryExpression,
     isBinaryOperator,
     getPrecedence,
     parseExpressionStatement
-}; 
+};
