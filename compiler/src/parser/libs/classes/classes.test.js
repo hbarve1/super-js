@@ -1,6 +1,6 @@
-const Lexer = require('../../lexer/lexer');
-const Parser = require('../parser');
-const { CLASS_DECLARATION, CLASS_PROPERTY, METHOD_DEFINITION } = require('../../utils/ast-node-types');
+const Lexer = require('../../../lexer/lexer');
+const Parser = require('../../parser');
+const { CLASS_DECLARATION, CLASS_PROPERTY, METHOD_DEFINITION } = require('../../../utils/ast-node-types');
 
 describe('Parser - Class Declarations (Enterprise Grade)', () => {
     test('parses simple class with no members', () => {

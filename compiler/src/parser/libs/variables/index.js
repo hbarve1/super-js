@@ -1,6 +1,6 @@
 // Variable declaration parsing helper for Parser
 
-const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
+const { VARIABLE_DECLARATION } = require('../../../utils/ast-node-types');
 
 function parseVariableDeclaration(parser, inForLoop = false) {
     // let|const|var IDENTIFIER [: TYPE] [= expr] [, ...] ;

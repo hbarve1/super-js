@@ -1,6 +1,6 @@
-const Lexer = require('../../lexer/lexer');
-const Parser = require('../parser');
-const { ARRAY_EXPRESSION, VARIABLE_DECLARATION, OBJECT_EXPRESSION } = require('../../utils/ast-node-types');
+const Lexer = require('../../../lexer/lexer');
+const Parser = require('../../parser');
+const { ARRAY_EXPRESSION, VARIABLE_DECLARATION, OBJECT_EXPRESSION } = require('../../../utils/ast-node-types');
 
 describe('Parser - Destructuring Patterns', () => {
     test('parses array destructuring pattern', () => {

@@ -1,6 +1,6 @@
-const Lexer = require('../../lexer/lexer');
-const Parser = require('../parser');
-const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
+const Lexer = require('../../../lexer/lexer');
+const Parser = require('../../parser');
+const { VARIABLE_DECLARATION } = require('../../../utils/ast-node-types');
 
 function parseBlockFromCode(code) {
     const lexer = new Lexer(code);

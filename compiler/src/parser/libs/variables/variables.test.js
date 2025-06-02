@@ -1,6 +1,6 @@
-const Lexer = require('../../lexer/lexer');
-const Parser = require('../parser');
-const { VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
+const Lexer = require('../../../lexer/lexer');
+const Parser = require('../../parser');
+const { VARIABLE_DECLARATION } = require('../../../utils/ast-node-types');
 
 describe('Parser', () => {
     test('parses a simple variable declaration', () => {

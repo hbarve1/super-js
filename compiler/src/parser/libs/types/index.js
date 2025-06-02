@@ -11,7 +11,7 @@ const {
   ARRAY_TYPE,
   OBJECT_TYPE,
   TYPE_IDENTIFIER
-} = require('../../utils/ast-node-types');
+} = require('../../../utils/ast-node-types');
 
 function parseTypeDeclaration(parser) {
     // type|interface|enum|namespace NAME ...

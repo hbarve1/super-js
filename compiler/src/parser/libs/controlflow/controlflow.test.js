@@ -1,5 +1,5 @@
-const Lexer = require('../../lexer/lexer');
-const Parser = require('../parser');
+const Lexer = require('../../../lexer/lexer');
+const Parser = require('../../parser');
 
 describe('Parser - Control Flow Statements (Enterprise Grade)', () => {
     test('parses return statement', () => {
