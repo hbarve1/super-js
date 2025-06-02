@@ -1,0 +1,1207 @@
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "a",
+      "varType": null,
+      "init": {
+        "type": "Literal",
+        "value": 1
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "const",
+      "id": "b",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": 2
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "var",
+      "id": "c",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "string"
+      },
+      "init": {
+        "type": "Literal",
+        "value": "test"
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "π",
+      "varType": null,
+      "init": {
+        "type": "Literal",
+        "value": 3.14
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "bin",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": 5
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "oct",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": 63
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "hex",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": 26
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "s",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "string"
+      },
+      "init": {
+        "type": "Literal",
+        "value": "hello"
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "float",
+      "varType": null,
+      "init": {
+        "type": "Literal",
+        "value": 2.5
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "flag",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "boolean"
+      },
+      "init": {
+        "type": "Literal",
+        "value": true
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "nothing",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "null"
+      },
+      "init": {
+        "type": "Literal",
+        "value": null
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "undef",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "undefined"
+      },
+      "init": {
+        "type": "Literal"
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "nan",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": null
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "inf",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "init": {
+        "type": "Literal",
+        "value": null
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "变量",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "string"
+      },
+      "init": {
+        "type": "Literal",
+        "value": "unicode"
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "arr",
+      "varType": {
+        "type": "ArrayType",
+        "elementType": {
+          "type": "TypeIdentifier",
+          "name": "number"
+        }
+      },
+      "init": {
+        "type": "ArrayExpression",
+        "elements": [
+          {
+            "type": "Literal",
+            "value": 1
+          },
+          {
+            "type": "Literal",
+            "value": 2
+          },
+          {
+            "type": "Literal",
+            "value": 3
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "obj",
+      "varType": {
+        "type": "ObjectType",
+        "properties": [
+          {
+            "key": "p",
+            "valueType": {
+              "type": "TypeIdentifier",
+              "name": "number"
+            },
+            "optional": false
+          },
+          {
+            "key": "q",
+            "valueType": {
+              "type": "TypeIdentifier",
+              "name": "number"
+            },
+            "optional": false
+          }
+        ]
+      },
+      "init": {
+        "type": "ObjectExpression",
+        "properties": [
+          {
+            "key": {
+              "type": "Identifier",
+              "name": "p"
+            },
+            "value": {
+              "type": "Literal",
+              "value": 1
+            }
+          },
+          {
+            "key": {
+              "type": "Identifier",
+              "name": "q"
+            },
+            "value": {
+              "type": "Literal",
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "union",
+      "varType": {
+        "type": "UnionType",
+        "left": {
+          "type": "TypeIdentifier",
+          "name": "string"
+        },
+        "right": {
+          "type": "TypeIdentifier",
+          "name": "number"
+        }
+      },
+      "init": {
+        "type": "Literal",
+        "value": "foo"
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "complex",
+      "varType": {
+        "type": "ObjectType",
+        "properties": [
+          {
+            "key": "x",
+            "valueType": {
+              "type": "TypeIdentifier",
+              "name": "number"
+            },
+            "optional": false
+          },
+          {
+            "key": "y",
+            "valueType": {
+              "type": "TypeIdentifier",
+              "name": "string"
+            },
+            "optional": false
+          }
+        ]
+      },
+      "init": {
+        "type": "ObjectExpression",
+        "properties": [
+          {
+            "key": {
+              "type": "Identifier",
+              "name": "x"
+            },
+            "value": {
+              "type": "Literal",
+              "value": 1
+            }
+          },
+          {
+            "key": {
+              "type": "Identifier",
+              "name": "y"
+            },
+            "value": {
+              "type": "Literal",
+              "value": "bar"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "sum",
+      "varType": null,
+      "init": {
+        "type": "BinaryExpression",
+        "operator": "+",
+        "left": {
+          "type": "Identifier",
+          "name": "a"
+        },
+        "right": {
+          "type": "Identifier",
+          "name": "b"
+        }
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "isEqual",
+      "varType": null,
+      "init": {
+        "type": "BinaryExpression",
+        "operator": "===",
+        "left": {
+          "type": "Identifier",
+          "name": "a"
+        },
+        "right": {
+          "type": "Identifier",
+          "name": "b"
+        }
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "isNot",
+      "varType": null,
+      "init": {
+        "type": "UnaryExpression",
+        "operator": "!",
+        "argument": {
+          "type": "Identifier",
+          "name": "flag"
+        },
+        "prefix": true
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "tern",
+      "varType": null,
+      "init": {
+        "type": "ConditionalExpression",
+        "test": {
+          "type": "Identifier",
+          "name": "flag"
+        },
+        "consequent": {
+          "type": "Identifier",
+          "name": "a"
+        },
+        "alternate": {
+          "type": "Identifier",
+          "name": "b"
+        }
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "called",
+      "varType": null,
+      "init": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "Identifier",
+          "name": "add"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "name": "a"
+          },
+          {
+            "type": "Identifier",
+            "name": "b"
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "member",
+      "varType": null,
+      "init": {
+        "type": "MemberExpression",
+        "object": {
+          "type": "Identifier",
+          "name": "obj"
+        },
+        "property": {
+          "type": "Identifier",
+          "name": "p"
+        },
+        "computed": false
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": {
+        "type": "ArrayPattern",
+        "elements": [
+          {
+            "type": "Identifier",
+            "name": "x"
+          },
+          {
+            "type": "Identifier",
+            "name": "y"
+          }
+        ]
+      },
+      "varType": null,
+      "init": {
+        "type": "ArrayExpression",
+        "elements": [
+          {
+            "type": "Literal",
+            "value": 1
+          },
+          {
+            "type": "Literal",
+            "value": 2
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": {
+        "type": "ObjectPattern",
+        "properties": [
+          {
+            "key": "p",
+            "value": {
+              "type": "Identifier",
+              "name": "p"
+            }
+          },
+          {
+            "key": "q",
+            "value": {
+              "type": "Identifier",
+              "name": "q"
+            }
+          }
+        ]
+      },
+      "varType": null,
+      "init": {
+        "type": "Identifier",
+        "name": "obj"
+      }
+    },
+    {
+      "type": "InterfaceDeclaration",
+      "kind": "interface",
+      "id": "Foo",
+      "body": []
+    },
+    {
+      "type": "TypeDeclaration",
+      "kind": "type",
+      "id": "Bar",
+      "body": []
+    },
+    {
+      "type": "EnumDeclaration",
+      "kind": "enum",
+      "id": "Color",
+      "body": []
+    },
+    {
+      "type": "NamespaceDeclaration",
+      "kind": "namespace",
+      "id": "NS",
+      "body": []
+    },
+    {
+      "type": "IfStatement",
+      "test": null,
+      "consequent": {
+        "type": "BlockStatement",
+        "body": []
+      },
+      "alternate": null,
+      "error": "Malformed if statement"
+    },
+    {
+      "type": "BlockStatement",
+      "body": [
+        {
+          "type": "ExpressionStatement",
+          "skipped": true
+        }
+      ]
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true,
+      "error": "Expected SEMICOLON but got LEFT_ANGLE <"
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true,
+      "error": "Expected RIGHT_PAREN but got LEFT_ANGLE <"
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true,
+      "error": "Expected RIGHT_PAREN but got RIGHT_ANGLE >"
+    },
+    {
+      "type": "SwitchStatement",
+      "discriminant": {
+        "type": "Identifier",
+        "name": "b"
+      },
+      "cases": [
+        {
+          "type": "SwitchCase",
+          "test": {
+            "type": "Literal",
+            "value": 1
+          },
+          "consequent": [
+            {
+              "type": "BreakStatement"
+            }
+          ]
+        },
+        {
+          "type": "SwitchCase",
+          "test": null,
+          "consequent": [
+            {
+              "type": "ContinueStatement"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "ret",
+      "params": [],
+      "returnType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "argument": {
+              "type": "Literal",
+              "value": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "gen",
+      "params": [],
+      "returnType": null,
+      "isGenerator": true,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "skipped": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "afn",
+      "params": [],
+      "returnType": null,
+      "isGenerator": false,
+      "isAsync": true,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "skipped": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "const",
+      "id": "d",
+      "varType": null,
+      "init": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "MemberExpression",
+          "object": {
+            "type": "Identifier",
+            "name": "Object"
+          },
+          "property": {
+            "type": "Identifier",
+            "name": "freeze"
+          },
+          "computed": false
+        },
+        "arguments": [
+          {
+            "type": "ObjectExpression",
+            "properties": [
+              {
+                "key": {
+                  "type": "Identifier",
+                  "name": "x"
+                },
+                "value": {
+                  "type": "Literal",
+                  "value": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "contractFn",
+      "params": [
+        {
+          "name": "x",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "number"
+          },
+          "defaultValue": null,
+          "isRest": false
+        }
+      ],
+      "returnType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "argument": {
+              "type": "Identifier",
+              "name": "x"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "TryStatement",
+      "block": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ThrowStatement",
+            "argument": {
+              "type": "Expression",
+              "stub": true
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "skipped": true
+          }
+        ]
+      },
+      "handler": {
+        "param": "e",
+        "body": {
+          "type": "BlockStatement",
+          "body": []
+        }
+      },
+      "finalizer": {
+        "type": "BlockStatement",
+        "body": []
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "g",
+      "params": [],
+      "returnType": null,
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ThrowStatement",
+            "argument": {
+              "type": "Expression",
+              "stub": true
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "skipped": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "docFn",
+      "params": [],
+      "returnType": null,
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": []
+      }
+    },
+    {
+      "type": "ControlFlowStatement",
+      "skipped": true
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "message",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "string"
+      },
+      "init": {
+        "type": "TemplateLiteral",
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "value": "The value is "
+          },
+          {
+            "type": "TemplateElement",
+            "value": ""
+          }
+        ],
+        "expressions": [
+          {
+            "type": "Identifier",
+            "name": "a"
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "add",
+      "params": [
+        {
+          "name": "x",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "number"
+          },
+          "defaultValue": null,
+          "isRest": false
+        },
+        {
+          "name": "y",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "number"
+          },
+          "defaultValue": null,
+          "isRest": false
+        }
+      ],
+      "returnType": {
+        "type": "TypeIdentifier",
+        "name": "number"
+      },
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "argument": {
+              "type": "BinaryExpression",
+              "operator": "+",
+              "left": {
+                "type": "Identifier",
+                "name": "x"
+              },
+              "right": {
+                "type": "Identifier",
+                "name": "y"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "greet",
+      "params": [
+        {
+          "name": "name",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "string"
+          },
+          "defaultValue": null,
+          "isRest": false
+        }
+      ],
+      "returnType": null,
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": null,
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "argument": {
+              "type": "TemplateLiteral",
+              "quasis": [
+                {
+                  "type": "TemplateElement",
+                  "value": "Hello, "
+                },
+                {
+                  "type": "TemplateElement",
+                  "value": ""
+                }
+              ],
+              "expressions": [
+                {
+                  "type": "Identifier",
+                  "name": "name"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "const",
+      "id": "arrow",
+      "varType": null,
+      "init": {
+        "type": "ArrowFunctionExpression",
+        "params": [
+          {
+            "name": "x",
+            "varType": "number"
+          }
+        ],
+        "returnType": "number",
+        "body": {
+          "type": "BinaryExpression",
+          "operator": "*",
+          "left": {
+            "type": "Identifier",
+            "name": "x"
+          },
+          "right": {
+            "type": "Literal",
+            "value": 2
+          }
+        }
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "const",
+      "id": "arrow2",
+      "varType": null,
+      "init": {
+        "type": "ArrowFunctionExpression",
+        "params": [
+          {
+            "name": "x",
+            "varType": "number"
+          },
+          {
+            "name": "y",
+            "varType": "number"
+          }
+        ],
+        "returnType": "number",
+        "body": {
+          "type": "BlockStatement",
+          "body": [
+            {
+              "type": "ReturnStatement",
+              "argument": {
+                "type": "BinaryExpression",
+                "operator": "+",
+                "left": {
+                  "type": "Identifier",
+                  "name": "x"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "name": "y"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": "f",
+      "params": [
+        {
+          "name": "x",
+          "varType": {
+            "type": "UnionType",
+            "left": {
+              "type": "TypeIdentifier",
+              "name": "T"
+            },
+            "right": {
+              "type": "TypeIdentifier",
+              "name": "number"
+            }
+          },
+          "defaultValue": null,
+          "isRest": false
+        }
+      ],
+      "returnType": {
+        "type": "GenericType",
+        "name": "Array",
+        "typeParams": [
+          {
+            "type": "TypeIdentifier",
+            "name": "T"
+          }
+        ]
+      },
+      "isGenerator": false,
+      "isAsync": false,
+      "generics": [
+        "T"
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "argument": {
+              "type": "ArrayExpression",
+              "elements": [
+                {
+                  "type": "Identifier",
+                  "name": "x"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "skipped": true
+    },
+    {
+      "type": "ClassDeclaration",
+      "id": "Point",
+      "superClass": null,
+      "body": [
+        {
+          "type": "ClassProperty",
+          "key": "x",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "number"
+          }
+        },
+        {
+          "type": "ClassProperty",
+          "key": "y",
+          "varType": {
+            "type": "TypeIdentifier",
+            "name": "number"
+          }
+        },
+        {
+          "type": "MethodDefinition",
+          "key": "constructor",
+          "params": [
+            {
+              "name": "x",
+              "varType": {
+                "type": "TypeIdentifier",
+                "name": "number"
+              },
+              "defaultValue": null,
+              "isRest": false
+            },
+            {
+              "name": "y",
+              "varType": {
+                "type": "TypeIdentifier",
+                "name": "number"
+              },
+              "defaultValue": null,
+              "isRest": false
+            }
+          ],
+          "returnType": null,
+          "body": {
+            "type": "BlockStatement",
+            "body": [
+              {
+                "type": "ExpressionStatement",
+                "skipped": true
+              },
+              {
+                "type": "ExpressionStatement",
+                "skipped": true
+              }
+            ]
+          }
+        },
+        {
+          "type": "MethodDefinition",
+          "key": "move",
+          "params": [
+            {
+              "name": "dx",
+              "varType": {
+                "type": "TypeIdentifier",
+                "name": "number"
+              },
+              "defaultValue": null,
+              "isRest": false
+            },
+            {
+              "name": "dy",
+              "varType": {
+                "type": "TypeIdentifier",
+                "name": "number"
+              },
+              "defaultValue": null,
+              "isRest": false
+            }
+          ],
+          "returnType": "void",
+          "body": {
+            "type": "BlockStatement",
+            "body": [
+              {
+                "type": "ExpressionStatement",
+                "skipped": true
+              },
+              {
+                "type": "ExpressionStatement",
+                "skipped": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "VariableDeclaration",
+      "kind": "let",
+      "id": "message",
+      "varType": {
+        "type": "TypeIdentifier",
+        "name": "string"
+      },
+      "init": {
+        "type": "TemplateLiteral",
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "value": "The value is "
+          },
+          {
+            "type": "TemplateElement",
+            "value": ""
+          }
+        ],
+        "expressions": [
+          {
+            "type": "Identifier",
+            "name": "a"
+          }
+        ]
+      }
+    }
+  ]
+}
