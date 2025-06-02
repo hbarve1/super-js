@@ -1,29 +1,3 @@
-// Pattern parsing helpers for Parser
-
-function parseArrayPattern(parser) {
-    parser.expect(parser.TokenType.LEFT_BRACKET);
-    const elements = [];
-    while (parser.current.type !== parser.TokenType.RIGHT_BRACKET && parser.current.type !== parser.TokenType.EOF) {
-        if (parser.current.type === parser.TokenType.IDENTIFIER) {
-            elements.push({ type: 'Identifier', name: parser.current.value });
-            parser.advance();
-        } else if (parser.current.type === parser.TokenType.COMMA) {
-            elements.push(null); // Allow holes
-            parser.advance();
-        } else if (parser.current.type === parser.TokenType.RIGHT_BRACKET) {
-            break;
-        } else {
-            // For now, skip unsupported pattern elements
-            parser.advance();
-        }
-        if (parser.current.type === parser.TokenType.COMMA) {
-            parser.advance();
-        }
-    }
-    parser.expect(parser.TokenType.RIGHT_BRACKET);
-    return { type: 'ArrayPattern', elements };
-}
-
 function parseObjectPattern(parser) {
     parser.expect(parser.TokenType.LEFT_BRACE);
     const properties = [];
@@ -38,10 +12,8 @@ function parseObjectPattern(parser) {
                     value = { type: 'Identifier', name: parser.current.value };
                     parser.advance();
                 } else if (parser.current.type === parser.TokenType.LEFT_BRACE) {
-                    // Nested object pattern
                     value = parseObjectPattern(parser);
                 } else if (parser.current.type === parser.TokenType.LEFT_BRACKET) {
-                    // Nested array pattern
                     value = parseArrayPattern(parser);
                 }
             }
@@ -51,7 +23,6 @@ function parseObjectPattern(parser) {
         } else if (parser.current.type === parser.TokenType.RIGHT_BRACE) {
             break;
         } else {
-            // For now, skip unsupported pattern elements
             parser.advance();
         }
     }
@@ -59,7 +30,5 @@ function parseObjectPattern(parser) {
     return { type: 'ObjectPattern', properties };
 }
 
-module.exports = {
-    parseArrayPattern,
-    parseObjectPattern
-}; 
+const parseArrayPattern = require('./array-pattern');
+module.exports = parseObjectPattern;
