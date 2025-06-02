@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const Lexer = require('../lexer/lexer');
-const Parser = require('./parser');
-const { ARRAY_EXPRESSION, OBJECT_EXPRESSION, VARIABLE_DECLARATION } = require('../utils/ast-node-types');
+const Lexer = require('../../lexer/lexer');
+const Parser = require('../parser');
+const { ARRAY_EXPRESSION, OBJECT_EXPRESSION, VARIABLE_DECLARATION } = require('../../utils/ast-node-types');
 
 describe('Parser full program from sample.sjs', () => {
     const sampleFile = path.join(__dirname, 'sample.sjs');
