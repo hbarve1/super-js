@@ -10,10 +10,10 @@ const variables = require('./libs/variables');
 const classes = require('./libs/classes');
 const types = require('./libs/types');
 const block = require('./libs/block');
-const importexport = require('./libs/export');
+const importexport = require('./libs/export/export');
 const statements = require('./libs/statements');
 const program = require('./libs/program');
-const parserUtils = require('./libs/parser-utils');
+const parserUtils = require('../utils/parser');
 
 class Parser {
     constructor(tokens) {
@@ -142,10 +142,10 @@ class Parser {
     }
 
     parseImport() {
-        return require('./libs/export').parseImport(this);
+        return require('./libs/export/export').parseImport(this);
     }
     parseExport() {
-        return require('./libs/export').parseExport(this);
+        return require('./libs/export/export').parseExport(this);
     }
 }
 
