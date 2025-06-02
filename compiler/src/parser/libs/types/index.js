@@ -13,6 +13,8 @@ const {
   TYPE_IDENTIFIER
 } = require('../../../utils/ast-node-types');
 
+const parseTypeAnnotation = require('./primary-type').parseTypeAnnotation;
+
 function parseTypeDeclaration(parser) {
     // type|interface|enum|namespace NAME ...
     const kind = parser.current.value;
@@ -46,28 +48,6 @@ function parseTypeDeclaration(parser) {
         id: idToken.value,
         body
     };
-}
-
-function parseTypeAnnotation(parser) {
-    // Parse union and intersection types
-    let type = parsePrimaryType(parser);
-    // Array type: T[]
-    while (parser.current.type === parser.TokenType.LEFT_BRACKET && parser.peek().type === parser.TokenType.RIGHT_BRACKET) {
-        parser.advance(); // [
-        parser.advance(); // ]
-        type = { type: ARRAY_TYPE, elementType: type };
-    }
-    while (parser.current.type === parser.TokenType.UNION || parser.current.type === parser.TokenType.INTERSECTION) {
-        const operator = parser.current.type === parser.TokenType.UNION ? '|' : '&';
-        parser.advance();
-        const right = parsePrimaryType(parser);
-        type = {
-            type: operator === '|' ? UNION_TYPE : INTERSECTION_TYPE,
-            left: type,
-            right
-        };
-    }
-    return type;
 }
 
 function parsePrimaryType(parser) {
@@ -161,4 +141,4 @@ module.exports = {
     parseTypeDeclaration,
     parseTypeAnnotation,
     parsePrimaryType
-}; 
+};

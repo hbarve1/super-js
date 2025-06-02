@@ -106,12 +106,20 @@ function parseVariableDeclaration(parser, inForLoop = false) {
                 type: VARIABLE_DECLARATION,
                 kind: kindToken.value,
                 id: idNode,
-                varType,
+                varType: varType === undefined ? null : varType,
                 init
             });
         } else if (first) {
             // Do NOT consume or advance past the semicolon here; let parseProgram handle it
-            throw new Error('Invalid variable declarator');
+            declarations.push({
+                type: VARIABLE_DECLARATION,
+                kind: kindToken.value,
+                id: idNode,
+                varType: null,
+                init: null,
+                error: 'Invalid variable declarator'
+            });
+            break;
         }
         first = false;
         if (parser.current.type === parser.TokenType.SEMICOLON) {
@@ -138,4 +146,4 @@ function parseVariableDeclaration(parser, inForLoop = false) {
 
 module.exports = {
     parseVariableDeclaration
-}; 
+};

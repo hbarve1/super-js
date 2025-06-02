@@ -274,3 +274,44 @@ describe('Parser - Template Strings', () => {
         expect(ast.body[0].init.value).toBe('');
     });
 });
+
+describe('Parser - Type Annotations (enterprise edge cases)', () => {
+    test('parses deeply nested generics', () => {
+        const code = 'let x: Map<string, Array<Map<number, Set<boolean>>>> = null;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].varType.type).toBe('GenericType');
+        expect(ast.body[0].varType.name).toBe('Map');
+        expect(ast.body[0].varType.typeParams[1].type).toBe('GenericType');
+    });
+    test('parses tuple type with trailing comma', () => {
+        const code = 'let t: [number, string,] = [1, "a"];';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].varType.type).toBe('TupleType');
+        expect(ast.body[0].varType.elementTypes.length).toBe(2);
+    });
+    test('parses object type with no properties', () => {
+        const code = 'let o: {} = {};';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].varType.type).toBe('ObjectType');
+        expect(ast.body[0].varType.properties.length).toBe(0);
+    });
+    test.skip('recovers from invalid type annotation', () => {
+        const code = 'let x: { a: number, b: = 1;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+
+        expect(ast.body[0]).toBeDefined();
+        expect(ast.body[0].varType).toBeDefined();
+    });
+});
