@@ -10,7 +10,7 @@ const variables = require('./libs/variables');
 const classes = require('./libs/classes');
 const types = require('./libs/types');
 const block = require('./libs/block');
-const importexport = require('./libs/importexport');
+const importexport = require('./libs/export');
 const statements = require('./libs/statements');
 const program = require('./libs/program');
 
@@ -147,6 +147,13 @@ class Parser {
     _parseFunctionParams() {
         return functions._parseFunctionParams(this);
     }
+
+    parseImport() {
+        return require('./libs/export').parseImport(this);
+    }
+    parseExport() {
+        return require('./libs/export').parseExport(this);
+    }
 }
 
-module.exports = Parser; 
+module.exports = Parser;

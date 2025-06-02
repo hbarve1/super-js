@@ -27,8 +27,9 @@ function parseStatement(parser) {
             case 'class':
                 return parser.parseClassDeclaration();
             case 'import':
+                return parser.parseImport();
             case 'export':
-                return parser.parseImportExport();
+                return parser.parseExport();
             case 'type':
             case 'interface':
             case 'enum':
@@ -80,4 +81,4 @@ function parseStatement(parser) {
 
 module.exports = {
     parseStatement
-}; 
+};

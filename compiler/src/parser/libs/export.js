@@ -1,6 +1,6 @@
-// Import/export statement parsing helper for Parser
 
-function parseImportExport(parser) {
+function parseExport(parser) {
+    // Parse export statement (export ...)
     while (
         parser.current.type !== parser.TokenType.SEMICOLON &&
         parser.current.type !== parser.TokenType.EOF
@@ -8,9 +8,9 @@ function parseImportExport(parser) {
         parser.advance();
     }
     if (parser.current.type === parser.TokenType.SEMICOLON) parser.advance();
-    return { type: 'ImportExportDeclaration', skipped: true };
+    return { type: 'ExportDeclaration', skipped: true };
 }
 
 module.exports = {
-    parseImportExport
-}; 
+    parseExport
+};
