@@ -1,17 +1,13 @@
-// Try/catch/finally statement parsing helper for Parser
-
-const { TRY_STATEMENT } = require('../../utils/ast-node-types');
+const { TRY_STATEMENT } = require('../../../utils/ast-node-types');
 
 function parseTryStatement(parser) {
     parser.expect(parser.TokenType.KEYWORD, 'try');
-    // Parse try block
     let block = null;
     if (parser.current.type === parser.TokenType.LEFT_BRACE) {
         block = parser.parseBlockStatement();
     } else {
         block = { type: 'BlockStatement', body: [] };
     }
-    // Parse catch clause
     let handler = null;
     if (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'catch') {
         parser.advance();
@@ -22,13 +18,11 @@ function parseTryStatement(parser) {
                 param = parser.current.value;
                 parser.advance();
             }
-            // Skip to RIGHT_PAREN
             while (parser.current.type !== parser.TokenType.RIGHT_PAREN && parser.current.type !== parser.TokenType.EOF) {
                 parser.advance();
             }
             if (parser.current.type === parser.TokenType.RIGHT_PAREN) parser.advance();
         }
-        // Parse catch block
         let catchBlock = null;
         if (parser.current.type === parser.TokenType.LEFT_BRACE) {
             catchBlock = parser.parseBlockStatement();
@@ -37,7 +31,6 @@ function parseTryStatement(parser) {
         }
         handler = { param, body: catchBlock };
     }
-    // Parse finally block
     let finalizer = null;
     if (parser.current.type === parser.TokenType.KEYWORD && parser.current.value === 'finally') {
         parser.advance();
@@ -57,6 +50,4 @@ function parseTryStatement(parser) {
     };
 }
 
-module.exports = {
-    parseTryStatement
-}; 
+module.exports = parseTryStatement;
