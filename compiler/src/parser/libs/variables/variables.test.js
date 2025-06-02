@@ -568,4 +568,70 @@ describe('Parser - Enterprise Grade Variable Declarations', () => {
         expect(ast.body.length).toBe(1);
         expect(ast.body[0]).toMatchObject({ type: 'ExpressionStatement', skipped: true });
     });
-}); 
+
+    test.skip('parses multiple variable declarations with mixed valid/invalid entries', () => {
+        const code = 'let a = 1, 2b = 2, c: number = 3, d: = 4;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Find the first valid declaration
+        const firstValid = ast.body.find(d => d.id === 'a');
+        expect(firstValid).toBeDefined();
+        // Should skip or error on invalid ones
+        expect(ast.body.some(d => d.error || d.type === 'ExpressionStatement')).toBe(true);
+    });
+
+    test('parses deeply nested destructuring with type annotations', () => {
+        const code = 'let { a: [b, {c: d}]}: { a: [number, {c: string}] } = obj;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ObjectPattern');
+        expect(ast.body[0].varType).toBeDefined();
+    });
+
+    test('recovers from multiple consecutive errors in declarations', () => {
+        const code = 'let = 1; let x: = ; let y = 2;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should skip first two, parse y
+        expect(ast.body.some(d => d.id === 'y')).toBe(true);
+    });
+
+    test('parses variable declarations with comments and whitespace', () => {
+        const code = 'let /*comment*/ x /*: number*/ = 5;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id).toBe('x');
+    });
+
+    test('parses destructuring with unicode and reserved words', () => {
+        const code = 'let {π, if: value} = obj;';
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        expect(ast.body[0].id.type).toBe('ObjectPattern');
+    });
+
+    test('stress test: hundreds of mixed valid/invalid declarations', () => {
+        let code = '';
+        for (let i = 0; i < 200; i++) {
+            if (i % 10 === 0) code += `let = ${i};\n`;
+            else if (i % 15 === 0) code += `let x: = ;\n`;
+            else code += `let v${i} = ${i};\n`;
+        }
+        const lexer = new Lexer(code);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+        // Should parse most valid ones
+        expect(ast.body.filter(d => d.id && d.id.startsWith && d.id.startsWith('v')).length).toBeGreaterThan(150);
+    });
+});
