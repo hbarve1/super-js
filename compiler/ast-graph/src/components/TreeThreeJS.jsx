@@ -64,8 +64,8 @@ function LinkLine({ source, target }) {
   );
   return (
     <line>
-      <bufferGeometry attach="geometry" setFromPoints={points} />
-      <lineBasicMaterial attach="material" color="#888" linewidth={2} />
+      <bufferGeometry setFromPoints={points} />
+      <lineBasicMaterial color="#888" linewidth={2} />
     </line>
   );
 }
