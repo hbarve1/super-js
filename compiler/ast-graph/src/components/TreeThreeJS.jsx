@@ -9,9 +9,8 @@ function astToGraph(ast) {
   const nodes = [];
   const links = [];
   const isNode = (obj) => obj && typeof obj === "object" && typeof obj.type === "string";
-  function traverse(node, id, parentId, depth = 0, siblingIdx = 0) {
-    if (!isNode(node)) return;
-    // Generate a UUID for each node with a type
+  function traverse(node, depth = 0, siblingIdx = 0, parentId = null) {
+    if (!isNode(node)) return null;
     const nodeId = uuidv4();
     nodes.push({
       id: nodeId,
@@ -29,17 +28,18 @@ function astToGraph(ast) {
       if (Array.isArray(v)) {
         v.forEach((child) => {
           if (isNode(child)) {
-            traverse(child, undefined, nodeId, depth + 1, childIdx);
+            traverse(child, depth + 1, childIdx, nodeId);
             childIdx++;
           }
         });
       } else if (isNode(v)) {
-        traverse(v, undefined, nodeId, depth + 1, childIdx);
+        traverse(v, depth + 1, childIdx, nodeId);
         childIdx++;
       }
     }
+    return nodeId;
   }
-  if (isNode(ast)) traverse(ast, undefined, null, 0, 0);
+  if (isNode(ast)) traverse(ast, 0, 0, null);
   return { nodes, links };
 }
 

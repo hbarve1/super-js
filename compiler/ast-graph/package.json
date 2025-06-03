@@ -13,6 +13,7 @@
     "@react-three/drei": "^10.1.2",
     "@react-three/fiber": "^9.1.2",
     "cytoscape": "^3.32.0",
+    "dagre": "^0.8.5",
     "graphology": "^0.26.0",
     "graphology-layout-forceatlas2": "^0.10.1",
     "react": "^19.1.0",
