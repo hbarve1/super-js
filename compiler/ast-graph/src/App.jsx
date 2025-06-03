@@ -49,7 +49,7 @@ function App() {
             <Route path="*" element={<div>Select a visualization from above.</div>} />
           </Routes>
         </div>
-        <NodeDetails node={selectedNode} />
+        {/* <NodeDetails node={selectedNode} /> */}
       </div>
     </Router>
   );
