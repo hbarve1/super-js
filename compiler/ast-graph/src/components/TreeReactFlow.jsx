@@ -5,73 +5,64 @@ import { v4 as uuidv4 } from 'uuid';
 import dagre from 'dagre';
 
 // --- AST to React Flow nodes/edges ---
-function astToReactFlow(ast) {
-  const nodes = [];
-  const edges = [];
-  const nodeMap = new Map(); // Map from object reference to UUID
-
-  // Helper to assign/get UUID for each node
-  function getNodeUUID(node) {
-    if (!node || typeof node !== 'object') return undefined;
-    if (!nodeMap.has(node)) {
-      nodeMap.set(node, uuidv4());
-    }
-    return nodeMap.get(node);
+function getNodeUUID(node, nodeMap) {
+  if (!node || typeof node !== 'object') return undefined;
+  if (!nodeMap.has(node)) {
+    nodeMap.set(node, uuidv4());
   }
+  return nodeMap.get(node);
+}
 
-  // Traverse and build nodes/edges (no manual position)
-  function traverse(node, parentId = null) {
-    if (node && typeof node === 'object' && node.type) {
-      const uuid = getNodeUUID(node);
-      const label = node.type;
-      nodes.push({
-        id: uuid,
-        data: { label, uuid },
-        type: 'default',
-        style: {
-          border: '2px solid #4f8cff',
-          borderRadius: 8,
-          background: '#fff',
-          color: '#222',
-          fontWeight: 600,
-          boxShadow: '0 2px 8px #0002',
-          padding: 8,
-        },
+function traverseAST(node, parentId, nodes, edges, nodeMap) {
+  if (node && typeof node === 'object' && node.type) {
+    const uuid = getNodeUUID(node, nodeMap);
+    const label = node.type;
+    nodes.push({
+      id: uuid,
+      data: { label, uuid },
+      type: 'default',
+      style: {
+        border: '2px solid #4f8cff',
+        borderRadius: 8,
+        background: '#fff',
+        color: '#222',
+        fontWeight: 600,
+        boxShadow: '0 2px 8px #0002',
+        padding: 8,
+      },
+    });
+    if (parentId) {
+      edges.push({
+        id: `${parentId}->${uuid}`,
+        source: parentId,
+        target: uuid,
+        animated: true,
+        style: { stroke: '#4f8cff', strokeWidth: 2 },
+        type: 'smoothstep',
       });
-      if (parentId) {
-        edges.push({
-          id: `${parentId}->${uuid}`,
-          source: parentId,
-          target: uuid,
-          animated: true,
-          style: { stroke: '#4f8cff', strokeWidth: 2 },
-          type: 'smoothstep',
+    }
+    for (const v of Object.values(node)) {
+      if (Array.isArray(v)) {
+        v.forEach((child) => {
+          traverseAST(child, uuid, nodes, edges, nodeMap);
         });
-      }
-      for (const v of Object.values(node)) {
-        if (Array.isArray(v)) {
-          v.forEach((child) => {
-            traverse(child, uuid);
-          });
-        } else {
-          traverse(v, uuid);
-        }
-      }
-    } else if (Array.isArray(node)) {
-      node.forEach((child) => {
-        traverse(child, parentId);
-      });
-    } else if (typeof node === 'object' && node !== null) {
-      for (const v of Object.values(node)) {
-        traverse(v, parentId);
+      } else {
+        traverseAST(v, uuid, nodes, edges, nodeMap);
       }
     }
-    // Primitives: do nothing
+  } else if (Array.isArray(node)) {
+    node.forEach((child) => {
+      traverseAST(child, parentId, nodes, edges, nodeMap);
+    });
+  } else if (typeof node === 'object' && node !== null) {
+    for (const v of Object.values(node)) {
+      traverseAST(v, parentId, nodes, edges, nodeMap);
+    }
   }
+  // Primitives: do nothing
+}
 
-  if (ast) traverse(ast, null);
-
-  // Layout with dagre
+function layoutWithDagre(nodes, edges) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: 'TB' });
@@ -89,8 +80,15 @@ function astToReactFlow(ast) {
     node.targetPosition = 'top';
     node.sourcePosition = 'bottom';
   });
-
   return { nodes, edges };
+}
+
+function astToReactFlow(ast) {
+  const nodes = [];
+  const edges = [];
+  const nodeMap = new Map();
+  if (ast) traverseAST(ast, null, nodes, edges, nodeMap);
+  return layoutWithDagre(nodes, edges);
 }
 
 // Custom node for better appearance
