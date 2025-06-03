@@ -17,29 +17,36 @@ function traverseAST(node, parentId, nodes, edges, nodeMap) {
   if (node && typeof node === 'object' && node.type) {
     const uuid = getNodeUUID(node, nodeMap);
     const label = node.type;
-    nodes.push({
-      id: uuid,
-      data: { label, uuid },
-      type: 'default',
-      style: {
-        border: '2px solid #4f8cff',
-        borderRadius: 8,
-        background: '#fff',
-        color: '#222',
-        fontWeight: 600,
-        boxShadow: '0 2px 8px #0002',
-        padding: 8,
-      },
-    });
-    if (parentId) {
-      edges.push({
-        id: `${parentId}->${uuid}`,
-        source: parentId,
-        target: uuid,
-        animated: true,
-        style: { stroke: '#4f8cff', strokeWidth: 2 },
-        type: 'smoothstep',
+    // Only add node if not already present (avoid duplicates)
+    if (!nodes.some(n => n.id === uuid)) {
+      nodes.push({
+        id: uuid,
+        data: { label, uuid },
+        type: 'default',
+        style: {
+          border: '2px solid #4f8cff',
+          borderRadius: 8,
+          background: '#fff',
+          color: '#222',
+          fontWeight: 600,
+          boxShadow: '0 2px 8px #0002',
+          padding: 8,
+        },
       });
+    }
+    if (parentId && parentId !== uuid) {
+      // Only add edge if not already present (avoid duplicates)
+      const edgeId = `${parentId}->${uuid}`;
+      if (!edges.some(e => e.id === edgeId)) {
+        edges.push({
+          id: edgeId,
+          source: parentId,
+          target: uuid,
+          // animated: true,
+          // style: { stroke: '#4f8cff', strokeWidth: 2 },
+          // type: 'smoothstep',
+        });
+      }
     }
     for (const v of Object.values(node)) {
       if (Array.isArray(v)) {
@@ -68,19 +75,36 @@ function layoutWithDagre(nodes, edges) {
   g.setGraph({ rankdir: 'TB' });
 
   nodes.forEach((node) => {
-    g.setNode(node.id, { width: 120, height: 40 });
+    g.setNode(String(node.id), { width: 120, height: 40 });
   });
   edges.forEach((edge) => {
-    g.setEdge(edge.source, edge.target);
+    g.setEdge(String(edge.source), String(edge.target));
   });
   dagre.layout(g);
   nodes.forEach((node) => {
-    const pos = g.node(node.id);
+    const pos = g.node(String(node.id));
     node.position = { x: pos.x, y: pos.y };
     node.targetPosition = 'top';
     node.sourcePosition = 'bottom';
+    node.id = String(node.id);
   });
-  return { nodes, edges };
+  // --- FIX: React Flow expects edges to have source/target handles as undefined or 'default' ---
+  // Also filter out edges with missing nodes
+  const nodeIds = new Set(nodes.map(n => n.id));
+  const validEdges = edges.filter(edge => {
+    const valid = nodeIds.has(String(edge.source)) && nodeIds.has(String(edge.target));
+    if (!valid) {
+      // eslint-disable-next-line no-console
+      console.warn('Dropping invalid edge:', edge);
+    }
+    edge.source = String(edge.source);
+    edge.target = String(edge.target);
+    edge.id = String(edge.id);
+    edge.sourceHandle = null;
+    edge.targetHandle = null;
+    return valid;
+  });
+  return { nodes, edges: validEdges };
 }
 
 function astToReactFlow(ast) {
@@ -122,6 +146,7 @@ export default function TreeReactFlow({ ast, onNodeSelect }) {
       edges,
     };
   }, [ast]);
+  console.log({nodes, edges});
 
   const handleNodeClick = useCallback((_, node) => {
     if (onNodeSelect) onNodeSelect(node.data);
