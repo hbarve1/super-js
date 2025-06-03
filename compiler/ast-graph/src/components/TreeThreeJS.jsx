@@ -2,41 +2,44 @@ import React, { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper: Convert AST to nodes/links for 3D rendering
 function astToGraph(ast) {
   const nodes = [];
   const links = [];
   const isNode = (obj) => obj && typeof obj === "object" && typeof obj.type === "string";
-  let idx = 0;
   function traverse(node, id, parentId, depth = 0, siblingIdx = 0) {
     if (!isNode(node)) return;
+    // Generate a UUID for each node with a type
+    const nodeId = uuidv4();
     nodes.push({
-      id,
+      id: nodeId,
       label: node.type,
       depth,
       siblingIdx,
       position: [siblingIdx * 3, -depth * 3, 0],
+      raw: node,
     });
-    if (parentId && parentId !== id) {
-      links.push({ source: parentId, target: id });
+    if (parentId) {
+      links.push({ source: parentId, target: nodeId });
     }
     let childIdx = 0;
-    for (const [k, v] of Object.entries(node)) {
+    for (const v of Object.values(node)) {
       if (Array.isArray(v)) {
         v.forEach((child) => {
           if (isNode(child)) {
-            traverse(child, `${id}-${k}-${childIdx}`, id, depth + 1, childIdx);
+            traverse(child, undefined, nodeId, depth + 1, childIdx);
             childIdx++;
           }
         });
       } else if (isNode(v)) {
-        traverse(v, `${id}-${k}`, id, depth + 1, childIdx);
+        traverse(v, undefined, nodeId, depth + 1, childIdx);
         childIdx++;
       }
     }
   }
-  if (isNode(ast)) traverse(ast, "root", null, 0, 0);
+  if (isNode(ast)) traverse(ast, undefined, null, 0, 0);
   return { nodes, links };
 }
 

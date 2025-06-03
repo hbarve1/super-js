@@ -33,12 +33,21 @@ function astToReactFlow(ast) {
         padding: 8,
       },
     });
-    nodeIds.add(id);
-    if (parentId && parentId !== id && nodeIds.has(parentId)) {
+    // Ensure ID is a string
+    const nodeIdStr = String(id);
+    if (nodeIds.has(nodeIdStr)) {
+      console.warn('[RF-DEBUG] Duplicate node ID detected:', nodeIdStr);
+      return;
+    }
+    // DEBUG: Log node creation and edge creation
+    console.log('[RF-DEBUG] Creating node:', { id: nodeIdStr, label, node });
+    nodeIds.add(nodeIdStr);
+    if (parentId && parentId !== nodeIdStr && nodeIds.has(String(parentId))) {
+      console.log('[RF-DEBUG] Creating edge:', { from: parentId, to: nodeIdStr });
       edges.push({
-        id: `${parentId}->${id}`,
-        source: parentId,
-        target: id,
+        id: `${parentId}->${nodeIdStr}`,
+        source: String(parentId),
+        target: nodeIdStr,
         animated: true,
         style: { stroke: '#4f8cff', strokeWidth: 2 },
         type: 'smoothstep',
@@ -47,7 +56,8 @@ function astToReactFlow(ast) {
     let children = [];
     if (Array.isArray(node)) {
       node.forEach((child, idx) => {
-        const childId = `${id}-${idx}`;
+        const childId = `${nodeIdStr}-${idx}`;
+        console.log('[RF-DEBUG] Array child:', { parent: nodeIdStr, childId, child });
         children.push([child, childId]);
       });
     } else if (
@@ -56,19 +66,32 @@ function astToReactFlow(ast) {
       Object.prototype.toString.call(node) === '[object Object]'
     ) {
       for (const [k, v] of Object.entries(node)) {
-        const childId = `${id}-${k}`;
+        const childId = `${nodeIdStr}-${k}`;
+        console.log('[RF-DEBUG] Object child:', { parent: nodeIdStr, childId, key: k, value: v });
         children.push([v, childId]);
       }
     }
-    // Only traverse children if node is array or plain object
     if (children.length > 0) {
       children.forEach(([child, childId], idx) => {
-        traverse(child, childId, id, depth + 1, idx, children.length);
+        traverse(child, childId, nodeIdStr, depth + 1, idx, children.length);
       });
     }
   }
 
   if (ast) traverse(ast, "root", null, 0, 0, 1);
+  // Log all node and edge IDs for final check
+  console.log('[RF-DEBUG] Final nodes:', nodes.map(n => n.id));
+  console.log('[RF-DEBUG] Final edges:', edges.map(e => ({ id: e.id, source: e.source, target: e.target })));
+  // Check for missing node IDs referenced by edges
+  const nodeIdSet = new Set(nodes.map(n => n.id));
+  edges.forEach(e => {
+    if (!nodeIdSet.has(e.source)) {
+      console.error('[RF-DEBUG] Edge source missing node:', e);
+    }
+    if (!nodeIdSet.has(e.target)) {
+      console.error('[RF-DEBUG] Edge target missing node:', e);
+    }
+  });
   return { nodes, edges };
 }
 
