@@ -21,7 +21,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+            Get Started - 5min ⏱️
           </Link>
         </div>
       </div>
@@ -33,8 +33,8 @@ export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title={`${siteConfig.title} - Type-safe JavaScript Superset`}
+      description="A strict, clean, and efficient superset of JavaScript that enforces ECMA standards with built-in type safety, formatting, linting, and testing.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
