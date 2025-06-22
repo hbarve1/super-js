@@ -30,6 +30,7 @@ const sidebars: SidebarsConfig = {
         'changelog/0.0.1',
       ],
     },
+    'roadmap',
     {
       type: 'category',
       label: 'Tutorial',
