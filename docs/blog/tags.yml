@@ -22,6 +22,10 @@ announcement:
   label: Announcement
   permalink: /blog/tags/announcement
 
+release:
+  label: Release
+  permalink: /blog/tags/release
+
 typescript:
   label: TypeScript
   permalink: /blog/tags/typescript

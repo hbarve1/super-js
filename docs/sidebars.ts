@@ -22,6 +22,16 @@ const sidebars: SidebarsConfig = {
     'tooling',
     {
       type: 'category',
+      label: 'Changelog',
+      items: [
+        'changelog',
+        'changelog/0.2.0',
+        'changelog/0.1.0',
+        'changelog/0.0.1',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Tutorial',
       items: ['tutorial-basics/create-a-document'],
     },
