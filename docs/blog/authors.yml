@@ -1,25 +1,17 @@
-yangshun:
-  name: Yangshun Tay
-  title: Ex-Meta Staff Engineer, Co-founder GreatFrontEnd
-  url: https://linkedin.com/in/yangshun
-  image_url: https://github.com/yangshun.png
+hbarve1:
+  name: Himank Barve
+  title: Co-founder Mayash Foundation
+  url: https://linkedin.com/in/hbarve1
+  image_url: https://github.com/hbarve1.png
   page: true
   socials:
-    x: yangshunz
-    linkedin: yangshun
-    github: yangshun
-    newsletter: https://www.greatfrontend.com
+    x: hbarve1
+    linkedin: hbarve1
+    github: hbarve1
 
-slorber:
-  name: Sébastien Lorber
-  title: Docusaurus maintainer
-  url: https://sebastienlorber.com
-  image_url: https://github.com/slorber.png
-  page:
-    # customize the url of the author page at /blog/authors/<permalink>
-    permalink: '/all-sebastien-lorber-articles'
-  socials:
-    x: sebastienlorber
-    linkedin: sebastienlorber
-    github: slorber
-    newsletter: https://thisweekinreact.com
+# Super.js Team
+superjs-team:
+  name: Super.js Team
+  title: Core Team
+  url: https://github.com/super-js
+  image_url: https://github.com/super-js.png
