@@ -39,6 +39,32 @@ const sidebars: SidebarsConfig = {
     },
   ],
 
+  // Current version sidebar (when versioning is enabled)
+  'version-0.2.0-docs': [
+    'intro',
+    'language-reference',
+    'examples',
+    'type-system',
+    'tooling',
+    {
+      type: 'category',
+      label: 'Changelog',
+      items: [
+        'changelog',
+        'changelog/0.2.0',
+        'changelog/0.1.0',
+        'changelog/0.0.1',
+      ],
+    },
+    'roadmap',
+    'specification',
+    {
+      type: 'category',
+      label: 'Tutorial',
+      items: ['tutorial-basics/create-a-document'],
+    },
+  ],
+
   // But you can create a sidebar manually
   /*
   tutorialSidebar: [

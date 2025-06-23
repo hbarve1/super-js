@@ -46,6 +46,24 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/hbarve1/superjs/tree/main/docs/',
+          // Versioning configuration
+          versions: {
+            current: {
+              label: '0.2.0',
+              path: '0.2.0',
+              banner: 'unreleased',
+            },
+            '0.1.0': {
+              label: '0.1.0',
+              path: '0.1.0',
+              banner: 'unmaintained',
+            },
+            '0.0.1': {
+              label: '0.0.1',
+              path: '0.0.1',
+              banner: 'unmaintained',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -81,11 +99,16 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          sidebarId: 'version-0.2.0-docs',
           position: 'left',
           label: 'Documentation',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
         {
           href: 'https://github.com/hbarve1/superjs',
           label: 'GitHub',

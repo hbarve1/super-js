@@ -6,8 +6,6 @@ sidebar_position: 1
 
 **Super.js** is a strict, clean, and efficient superset of JavaScript that enforces ECMA standards with built-in type safety, formatting, linting, and testing capabilities.
 
-> 🚀 **Latest Version**: This documentation is for the current development version (0.2.0+). For stable releases, see [version 0.2.0](/docs/0.2.0/intro) or [version 0.1.0](/docs/0.1.0/intro).
-
 ## What is Super.js?
 
 Super.js extends JavaScript with static type checking while maintaining pure JavaScript semantics. It provides TypeScript-like type safety with a focus on ECMA compliance and zero-configuration development experience.
@@ -22,8 +20,6 @@ Super.js extends JavaScript with static type checking while maintaining pure Jav
 - **Fast Compilation**: Optimized compilation process for quick development cycles
 - **JavaScript Version Selection**: Target specific JavaScript versions (ES5 to ES2022)
 - **Native JSX Support**: First-class JSX syntax support without external dependencies
-- **Advanced Type System**: Conditional types, mapped types, and type guards
-- **Performance Optimizations**: Incremental compilation and parallel processing
 
 ## Quick Start
 
@@ -153,21 +149,3 @@ superjs lint
 - [Examples](/docs/examples) - See practical examples and use cases
 - [Type System](/docs/type-system) - Deep dive into the type system
 - [Tooling](/docs/tooling) - Learn about built-in tools and configuration
-
-## Version Information
-
-This documentation covers the **latest development version** of Super.js. For specific version documentation:
-
-- **[0.2.0](/docs/0.2.0/intro)** - Enhanced type system and tooling (stable)
-- **[0.1.0](/docs/0.1.0/intro)** - Initial stable release
-- **[0.0.1](/docs/0.0.1/intro)** - Initial alpha release
-
-## Latest Features
-
-The current version includes the latest enhancements:
-
-- **Advanced Type System**: Conditional types, mapped types, and type guards
-- **Performance Improvements**: Incremental compilation and parallel processing
-- **Enhanced Tooling**: Better error messages and development experience
-- **Source Map Support**: Full debugging capabilities
-- **Decorator Support**: Experimental decorator implementation
