@@ -31,6 +31,7 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'roadmap',
+    'specification',
     {
       type: 'category',
       label: 'Tutorial',
