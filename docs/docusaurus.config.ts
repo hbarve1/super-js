@@ -45,7 +45,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/hbarve1/superjs/tree/main/docs/',
+            'https://github.com/hbarve1/super-js/tree/main/docs/',
           // Versioning configuration
           versions: {
             current: {
@@ -74,7 +74,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/hbarve1/superjs/tree/main/docs/',
+            'https://github.com/hbarve1/super-js/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -110,7 +110,7 @@ const config: Config = {
           dropdownActiveClassDisabled: true,
         },
         {
-          href: 'https://github.com/hbarve1/superjs',
+          href: 'https://github.com/hbarve1/super-js',
           label: 'GitHub',
           position: 'right',
         },
@@ -141,7 +141,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/hbarve1/superjs/discussions',
+              href: 'https://github.com/hbarve1/super-js/discussions',
             },
             {
               label: 'Discord',
@@ -162,11 +162,11 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/hbarve1/superjs',
+              href: 'https://github.com/hbarve1/super-js',
             },
             {
               label: 'Examples',
-              href: 'https://github.com/hbarve1/superjs/tree/main/examples',
+              href: 'https://github.com/hbarve1/super-js/tree/main/examples',
             },
           ],
         },

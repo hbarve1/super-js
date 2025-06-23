@@ -207,9 +207,9 @@ We believe in building Super.js as a community-driven project. Here's how you ca
 ## Resources
 
 - **Documentation**: [superjs.org](https://superjs.org)
-- **GitHub**: [github.com/hbarve1/superjs](https://github.com/hbarve1/superjs)
-- **Examples**: [github.com/hbarve1/superjs/tree/main/examples](https://github.com/hbarve1/superjs/tree/main/examples)
-- **Discussions**: [github.com/hbarve1/superjs/discussions](https://github.com/hbarve1/superjs/discussions)
+- **GitHub**: [github.com/hbarve1/super-js](https://github.com/hbarve1/super-js)
+- **Examples**: [github.com/hbarve1/super-js/tree/main/examples](https://github.com/hbarve1/super-js/tree/main/examples)
+- **Discussions**: [github.com/hbarve1/super-js/discussions](https://github.com/hbarve1/super-js/discussions)
 
 ## Conclusion
 
