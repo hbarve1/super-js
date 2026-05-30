@@ -1,6 +1,6 @@
 export type ModuleId = string;
 
-export interface Symbol {
+export interface SJSSymbol {
   readonly id: number;
   readonly name: string;
   readonly moduleId: ModuleId;
