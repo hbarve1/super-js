@@ -1,9 +1,15 @@
+> **SUPERSEDED — DO NOT EXECUTE FROM THIS FILE.**
+> This monolith has been split into per-stage documents. Use [`superjs-production-roadmap/README.md`](superjs-production-roadmap/README.md) as the entry point; each stage lives in its own file in that directory.
+> This file is kept for historical context only. Round-2 critique at [`2026-05-30-critique-round2.md`](2026-05-30-critique-round2.md).
+
+---
+
 # SuperJS — Production Readiness Roadmap (v2)
 
 **Version:** 0.1.0 → 1.0.0
 **Date:** 2026-05-30
 **Owner:** Himank Barve (solo maintainer; explicit goal to recruit 1–2 co-maintainers in the first 8 weeks)
-**Status:** Living document; supersedes `2026-05-30-superjs-production-roadmap.md` round 1 and `2026-05-30-critique-round1.md`.
+**Status:** Superseded by `superjs-production-roadmap/` directory. See README.md there.
 **Reading time:** ~45 min. Skim §0, §1, §3, §14, §15, §16 first.
 
 > This is a complete rewrite. Round 1 was an aspirational table of contents that was 200–400% optimistic on timeline, demoted JS/TS interop to Sprint 12, never named the bootstrapping problem, and never identified a target user. This revision fixes all of that. It is shorter than round 1 because scope was cut, not because detail was removed.
