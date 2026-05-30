@@ -1,3 +1,5 @@
+> **Legacy:** This is the Phase 1 Babel-based prototype. It is feature-complete and serves as a reference implementation. Active development has moved to `packages/` (Phase 2 custom compiler). See the top-level README for details.
+
 # super.js
 
 > A strict, clean, and efficient superset of JavaScript that enforces ECMA standards with built-in type safety.
