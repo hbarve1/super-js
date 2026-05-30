@@ -27,3 +27,27 @@ describe('Demo projects compile end-to-end', () => {
     })
   }
 })
+
+describe('Preprocessor integration', () => {
+  const tmpDir = '/tmp/sjs-preproc-test'
+  const outDir = '/tmp/sjs-preproc-out'
+
+  afterAll(() => {
+    const { rmSync } = require('fs')
+    rmSync(tmpDir, { recursive: true, force: true })
+    rmSync(outDir, { recursive: true, force: true })
+  })
+
+  it('compiles SJS sum type syntax without errors', async () => {
+    const { writeFileSync, mkdirSync } = require('fs')
+    const { join } = require('path')
+    mkdirSync(tmpDir, { recursive: true })
+    writeFileSync(join(tmpDir, 'test.sjs'), `
+type Result<T, E> = Ok(T) | Err(E)
+const r = Ok(42)
+`)
+    await expect(
+      compile({ sourceFile: join(tmpDir, 'test.sjs'), outDir, silent: true })
+    ).resolves.not.toThrow()
+  })
+})
