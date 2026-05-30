@@ -105,15 +105,14 @@ export type Type =
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 
 /**
- * A compiler diagnostic (error or warning).
+ * Prototype-internal diagnostic shape.
  *
- * Follows the Rust-inspired model from research.md §3:
- *   - stable `SJS-Exxx` codes
- *   - precise source location
- *   - `specUrl` linking to the ECMAScript (or TypeScript) specification section
- *     that defines the rule being violated
+ * Uses flat `line`/`column` fields (Babel AST coordinates) for Phase 1
+ * compatibility.  The public `Diagnostic` type is the canonical shape from
+ * `@superjs/compiler-types`; this local alias is intentionally kept until
+ * Stage 1 wires up the full `SourceSpan`-based pipeline.
  */
-export interface Diagnostic {
+export interface PrototypeDiagnostic {
   code: string          // e.g. "SJS-E001"
   severity: 'error' | 'warning' | 'note'
   message: string       // plain-English, names both types
@@ -124,6 +123,9 @@ export interface Diagnostic {
   endColumn?: number
   specUrl: string       // authoritative spec anchor for this rule
 }
+
+// Re-export the canonical Diagnostic type from the shared package.
+export type { Diagnostic, Severity, SourceSpan, SJSType } from '@superjs/compiler-types';
 
 // ── Type environment ──────────────────────────────────────────────────────────
 
