@@ -4,517 +4,275 @@ sidebar_position: 5
 
 # Tooling
 
-Super.js comes with a comprehensive set of built-in tools designed to enhance your development experience. All tools work out of the box with zero configuration while providing extensive customization options.
+SuperJS ships a unified CLI that covers every stage of the development workflow: compilation, linting, formatting, and testing. There are no separate packages to install or plugins to configure.
 
-## Command Line Interface
+## Installation
 
-The Super.js CLI provides a unified interface for all development tasks:
+SuperJS is currently built from source:
 
 ```bash
-# Install Super.js globally
-npm install -g superjs
-
-# Get help
-superjs --help
-
-# Show version
-superjs --version
+git clone https://github.com/hbarve1/super-js.git
+cd super-js/prototype
+npm install
+npm run build
+npm link
 ```
 
-## Compiler
+After `npm link`, the `superjs` command is available globally.
 
-The Super.js compiler transforms `.sjs` files into standard JavaScript with type checking and optimization.
+## CLI Reference
 
-### Basic Usage
+### `superjs build`
+
+Compiles `.sjs` files to JavaScript.
+
+```bash
+superjs build --source <file>
+superjs build --dir <dir> [--outDir <dir>]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--source <file>` | Compile a single `.sjs` file |
+| `--dir <dir>` | Compile all `.sjs` files in a directory |
+| `--outDir <dir>` | Output directory (default: `./dist`) |
+| `--target <version>` | JS target version (see below) |
+| `--watch` | Watch mode — recompile on file change |
+| `--strict` | Enable strict mode (SJS-W001 implicit-any warnings) |
+| `--no-emit` | Type-check only, no output files written |
+| `--sourcemap` | Emit `.js.map` source maps alongside output |
+| `--json` | Output diagnostics as ndjson (one JSON object per line) |
+
+**Supported `--target` values:**
+
+`es5`, `es2015`, `es2016`, `es2017`, `es2018`, `es2019`, `es2020`, `es2021`, `es2022` (default)
+
+**Examples:**
 
 ```bash
 # Compile a single file
-superjs build --source file.sjs
+superjs build --source src/main.sjs
 
-# Compile with output directory
-superjs build --source file.sjs --outDir dist
+# Compile a directory to ./dist
+superjs build --dir src --outDir dist
 
-# Compile with specific target
-superjs build --source file.sjs --target es2020
+# Type-check without emitting output
+superjs build --dir src --no-emit
 
-# Compile with source maps
-superjs build --source file.sjs --sourcemap
+# Watch mode with source maps
+superjs build --dir src --outDir dist --watch --sourcemap
+
+# Compile to ES2019 with strict mode
+superjs build --dir src --target es2019 --strict
+
+# Machine-readable diagnostics
+superjs build --dir src --json
 ```
 
-### Advanced Compilation
+### `superjs lint`
+
+Runs the SJS linter against your source files.
 
 ```bash
-# Compile entire directory
-superjs build --dir ./src --outDir ./dist
-
-# Compile with watch mode
-superjs build --source file.sjs --watch
-
-# Compile with specific configuration
-superjs build --source file.sjs --config super.config.js
-
-# Compile with custom output format
-superjs build --source file.sjs --format esm
+superjs lint --source <file>
+superjs lint --dir <dir> [--fix] [--json]
 ```
 
-### JavaScript Version Targeting
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--source <file>` | Lint a single `.sjs` file |
+| `--dir <dir>` | Lint all `.sjs` files in a directory |
+| `--fix` | Auto-fix fixable issues in place |
+| `--json` | Output diagnostics as ndjson |
+
+**Examples:**
 
 ```bash
-# Target ES5 (for older browsers)
-superjs build --source file.sjs --target es5
+# Lint all files in src/
+superjs lint --dir src
 
-# Target ES2015 (ES6)
-superjs build --source file.sjs --target es2015
+# Auto-fix fixable issues
+superjs lint --dir src --fix
 
-# Target ES2020
-superjs build --source file.sjs --target es2020
-
-# Target ES2022 (default)
-superjs build --source file.sjs --target es2022
+# Lint a single file with JSON output
+superjs lint --source src/main.sjs --json
 ```
 
-## Formatter
+### `superjs format`
 
-The built-in formatter ensures consistent code style across your project.
-
-### Basic Formatting
+Formats `.sjs` source files using the built-in formatter.
 
 ```bash
-# Format a single file
-superjs format file.sjs
-
-# Format entire directory
-superjs format --dir ./src
-
-# Format with specific options
-superjs format file.sjs --indent 4 --semicolons
+superjs format --source <file>
+superjs format --dir <dir> [--check]
 ```
 
-### Formatting Options
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--source <file>` | Format a single `.sjs` file |
+| `--dir <dir>` | Format all `.sjs` files in a directory |
+| `--check` | Check formatting only — exit non-zero if any file would change |
+
+**Examples:**
 
 ```bash
-# Set indentation
-superjs format file.sjs --indent 2
+# Format all files in src/
+superjs format --dir src
 
-# Configure semicolons
-superjs format file.sjs --semicolons always
-
-# Set line length
-superjs format file.sjs --lineLength 80
-
-# Configure quotes
-superjs format file.sjs --quotes single
-
-# Configure trailing commas
-superjs format file.sjs --trailingComma es5
+# Check formatting in CI (no writes)
+superjs format --dir src --check
 ```
 
-### Formatting Configuration
+### `superjs test`
 
-Create a `.superjsrc` file for project-wide formatting rules:
-
-```json
-{
-  "format": {
-    "indent": 2,
-    "semicolons": "always",
-    "quotes": "single",
-    "trailingComma": "es5",
-    "lineLength": 80,
-    "bracketSpacing": true,
-    "arrowParens": "avoid"
-  }
-}
-```
-
-## Linter
-
-The integrated linter provides static analysis and enforces coding standards.
-
-### Basic Linting
+Runs the test suite for your SJS project.
 
 ```bash
-# Lint a single file
-superjs lint file.sjs
-
-# Lint entire directory
-superjs lint --dir ./src
-
-# Lint with auto-fix
-superjs lint file.sjs --fix
-
-# Lint with specific rules
-superjs lint file.sjs --rules strict
+superjs test [--source <file>] [--watch] [--coverage]
 ```
 
-### Linting Rules
+**Flags:**
 
-```bash
-# Enable all rules
-superjs lint file.sjs --rules all
+| Flag | Description |
+|------|-------------|
+| `--source <file>` | Run a specific test file |
+| `--watch` | Watch mode — re-run tests on file change |
+| `--coverage` | Collect and report coverage |
 
-# Enable specific rule set
-superjs lint file.sjs --rules ecma
-
-# Disable specific rules
-superjs lint file.sjs --disable no-unused-vars
-
-# Set error level
-superjs lint file.sjs --error-level error
-```
-
-### Linting Configuration
-
-Configure linting rules in `.superjsrc`:
-
-```json
-{
-  "lint": {
-    "rules": {
-      "no-unused-vars": "error",
-      "no-console": "warn",
-      "prefer-const": "error",
-      "no-var": "error"
-    },
-    "ecmaVersion": 2022,
-    "sourceType": "module"
-  }
-}
-```
-
-## Testing Framework
-
-Super.js includes a built-in testing framework similar to Jest.
-
-### Basic Testing
+**Examples:**
 
 ```bash
 # Run all tests
 superjs test
 
-# Run tests in specific directory
-superjs test --dir ./tests
+# Run a specific test file
+superjs test --source tests/typecheck.test.sjs
 
-# Run tests matching pattern
-superjs test --pattern "*.test.sjs"
-
-# Run tests with coverage
-superjs test --coverage
-
-# Run tests in watch mode
+# Watch mode during development
 superjs test --watch
+
+# Run with coverage report
+superjs test --coverage
 ```
 
-### Writing Tests
+## Project Configuration
 
-```javascript
-// math.test.sjs
-import { describe, it, expect } from 'superjs/test';
-import { add, multiply } from './math.sjs';
-
-describe('Math functions', () => {
-  it('should add two numbers correctly', () => {
-    expect(add(2, 3)).toBe(5);
-    expect(add(-1, 1)).toBe(0);
-  });
-
-  it('should multiply two numbers correctly', () => {
-    expect(multiply(2, 3)).toBe(6);
-    expect(multiply(0, 5)).toBe(0);
-  });
-
-  it('should handle edge cases', () => {
-    expect(add(Number.MAX_SAFE_INTEGER, 1)).toBeGreaterThan(Number.MAX_SAFE_INTEGER);
-  });
-});
-```
-
-### Test Configuration
-
-Configure testing in `.superjsrc`:
+SuperJS looks for a `superjs.config.json` file in the project root. All fields are optional and have defaults.
 
 ```json
 {
-  "test": {
-    "coverage": {
-      "enabled": true,
-      "threshold": 80,
-      "exclude": ["node_modules/**", "dist/**"]
-    },
-    "timeout": 5000,
-    "setupFiles": ["./test-setup.sjs"]
-  }
+  "target": "es2022",
+  "outDir": "./dist",
+  "jsxFactory": "React.createElement",
+  "jsxFragment": "React.Fragment",
+  "strict": false
 }
 ```
 
-## Development Server
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `target` | string | `"es2022"` | JavaScript output target version |
+| `outDir` | string | `"./dist"` | Output directory for compiled files |
+| `jsxFactory` | string | `"React.createElement"` | JSX factory function |
+| `jsxFragment` | string | `"React.Fragment"` | JSX fragment component |
+| `strict` | boolean | `false` | Enable strict mode (SJS-W001 warnings) |
 
-The development server provides hot reloading and fast compilation for development.
+**CLI flags always override config file values.**
 
-### Starting the Server
+## Error Output
 
-```bash
-# Start development server
-superjs dev
+### Terminal Output (default)
 
-# Start with specific port
-superjs dev --port 3000
+By default, `superjs build` and `superjs lint` print colored diagnostics to the terminal:
 
-# Start with custom host
-superjs dev --host 0.0.0.0
+```
+error SJS-E001  src/main.sjs:12:5
+  Null/undefined assigned to non-nullable type 'string'.
 
-# Start with specific entry point
-superjs dev --entry src/index.sjs
+warning SJS-W001  src/utils.sjs:8:10
+  Implicit 'any' type — use '--strict' to enforce annotations.
 ```
 
-### Development Features
+Each diagnostic includes:
+- Severity (`error` / `warning`)
+- Diagnostic code (e.g., `SJS-E001`)
+- File path and line/column position
+- Human-readable message
 
-- **Hot Reloading**: Automatic recompilation on file changes
-- **Source Maps**: Full debugging support
-- **Error Overlay**: In-browser error display
-- **Fast Refresh**: Preserve component state during updates
-- **Live Reload**: Automatic browser refresh
+### JSON / ndjson Mode (`--json`)
 
-## Configuration
+Pass `--json` to receive one JSON object per line (ndjson), suitable for editor integrations, CI pipelines, and automated tooling:
 
-### Project Configuration
-
-Create a `super.config.js` file in your project root:
-
-```javascript
-module.exports = {
-  // Compiler options
-  compiler: {
-    target: 'es2022',
-    module: 'esnext',
-    sourcemap: true,
-    outDir: './dist',
-    rootDir: './src'
-  },
-
-  // Formatter options
-  format: {
-    indent: 2,
-    semicolons: 'always',
-    quotes: 'single',
-    trailingComma: 'es5',
-    lineLength: 80
-  },
-
-  // Linter options
-  lint: {
-    rules: {
-      'no-unused-vars': 'error',
-      'no-console': 'warn',
-      'prefer-const': 'error'
-    },
-    ecmaVersion: 2022
-  },
-
-  // Test options
-  test: {
-    coverage: {
-      enabled: true,
-      threshold: 80
-    },
-    timeout: 5000
-  },
-
-  // Development server options
-  dev: {
-    port: 3000,
-    host: 'localhost',
-    open: true
-  }
-};
+```jsonl
+{"severity":"error","code":"SJS-E001","file":"src/main.sjs","line":12,"col":5,"message":"Null/undefined assigned to non-nullable type 'string'."}
+{"severity":"warning","code":"SJS-W001","file":"src/utils.sjs","line":8,"col":10,"message":"Implicit 'any' type."}
 ```
 
-### Environment-Specific Configuration
+## Diagnostic Codes
 
-```javascript
-module.exports = {
-  // Base configuration
-  ...require('./super.config.base.js'),
+| Code | Severity | Description |
+|------|----------|-------------|
+| SJS-E001 | error | Null or undefined assigned to a non-nullable type |
+| SJS-E002 | error | Type mismatch on assignment or return |
+| SJS-W001 | warning | Implicit `any` type (strict mode only, `--strict`) |
+| SJS-E007 | error | Non-exhaustive match — a sum type variant is not handled |
 
-  // Environment-specific overrides
-  ...(process.env.NODE_ENV === 'production' && {
-    compiler: {
-      target: 'es2015',
-      sourcemap: false,
-      minify: true
-    }
-  }),
+### SJS-E001 — Null Safety
 
-  ...(process.env.NODE_ENV === 'development' && {
-    compiler: {
-      sourcemap: true,
-      watch: true
-    },
-    dev: {
-      port: 3001
-    }
-  })
-};
+SJS types are non-nullable by default. Use `T?` to declare a nullable type:
+
+```sjs
+// error: 'string' is not nullable
+const name: string = null  // SJS-E001
+
+// correct: use T? for nullable
+const name: string? = null
 ```
 
-## IDE Integration
+### SJS-E002 — Type Mismatch
 
-### VS Code Extension
-
-Install the Super.js VS Code extension for enhanced development experience:
-
-```bash
-code --install-extension superjs.superjs-vscode
+```sjs
+const count: number = "hello"  // SJS-E002: expected number, got string
 ```
 
-Features:
-- Syntax highlighting for `.sjs` files
-- IntelliSense and autocompletion
-- Error highlighting and quick fixes
-- Format on save
-- Integrated terminal commands
+### SJS-W001 — Implicit Any (strict mode)
 
-### Configuration Files
+```sjs
+// with --strict, this emits SJS-W001
+function process(data) {
+  return data
+}
 
-Create `.vscode/settings.json` for workspace-specific settings:
-
-```json
-{
-  "superjs.formatOnSave": true,
-  "superjs.lintOnSave": true,
-  "superjs.defaultTarget": "es2022",
-  "superjs.showErrors": true
+// fix: annotate the parameter
+function process(data: string): string {
+  return data
 }
 ```
 
-## Build Tools Integration
+### SJS-E007 — Non-Exhaustive Match
 
-### Webpack Integration
+```sjs
+type Status = Active | Inactive | Pending
 
-```javascript
-// webpack.config.js
-const SuperJsPlugin = require('superjs-webpack-plugin');
+const s: Status = Active
 
-module.exports = {
-  entry: './src/index.sjs',
-  module: {
-    rules: [
-      {
-        test: /\.sjs$/,
-        use: 'superjs-loader'
-      }
-    ]
-  },
-  plugins: [
-    new SuperJsPlugin({
-      target: 'es2020',
-      sourcemap: true
-    })
-  ]
-};
-```
-
-### Rollup Integration
-
-```javascript
-// rollup.config.js
-import superjs from 'rollup-plugin-superjs';
-
-export default {
-  input: 'src/index.sjs',
-  output: {
-    file: 'dist/bundle.js',
-    format: 'esm'
-  },
-  plugins: [
-    superjs({
-      target: 'es2020',
-      sourcemap: true
-    })
-  ]
-};
-```
-
-### Vite Integration
-
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite';
-import superjs from 'vite-plugin-superjs';
-
-export default defineConfig({
-  plugins: [
-    superjs({
-      target: 'es2020',
-      sourcemap: true
-    })
-  ]
-});
-```
-
-## Performance Optimization
-
-### Compilation Optimization
-
-```bash
-# Enable incremental compilation
-superjs build --incremental
-
-# Enable parallel compilation
-superjs build --parallel
-
-# Enable caching
-superjs build --cache
-
-# Optimize for production
-superjs build --optimize
-```
-
-### Development Optimization
-
-```bash
-# Fast development mode
-superjs dev --fast
-
-# Skip type checking in development
-superjs dev --skip-type-check
-
-# Enable hot module replacement
-superjs dev --hmr
-```
-
-## Debugging
-
-### Source Maps
-
-```bash
-# Generate source maps
-superjs build --sourcemap
-
-# Generate inline source maps
-superjs build --sourcemap inline
-
-# Generate external source maps
-superjs build --sourcemap external
-```
-
-### Debug Configuration
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Super.js",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/index.sjs",
-      "runtimeArgs": ["--require", "superjs/register"],
-      "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
-    }
-  ]
+// SJS-E007: 'Pending' variant not handled
+const label = match s {
+  Active   => "active",
+  Inactive => "inactive",
 }
 ```
 
-This comprehensive tooling suite provides everything you need for productive Super.js development, from compilation to testing, with zero configuration required to get started. 
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — no errors |
+| `1` | One or more errors found |
+| `2` | CLI usage error (bad flags, missing arguments) |

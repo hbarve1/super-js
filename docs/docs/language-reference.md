@@ -4,379 +4,426 @@ sidebar_position: 2
 
 # Language Reference
 
-Super.js extends JavaScript with type annotations while maintaining full ECMA compliance. This reference covers the syntax and features available in Super.js.
+SuperJS (SJS) is a new programming language that compiles to JavaScript. It is a strict superset of JavaScript — every valid `.js` file is valid `.sjs` — with a sound static type system, null safety, sum types, match expressions, and JSX on by default. It is **not** TypeScript with a different extension.
+
+---
 
 ## Basic Types
 
-Super.js supports all JavaScript types with additional type safety:
+SJS has exactly 10 built-in types. There is no `any`.
 
-```javascript
-// Primitive types
-let str: string = "hello";
-let num: number = 42;
-let bool: boolean = true;
-let n: null = null;
-let u: undefined = undefined;
-let sym: symbol = Symbol("key");
+| Type | Description |
+|------|-------------|
+| `number` | Floating-point number (IEEE 754) |
+| `string` | UTF-16 string |
+| `boolean` | `true` or `false` |
+| `bigint` | Arbitrary-precision integer |
+| `symbol` | Unique symbol |
+| `void` | No return value |
+| `null` | Explicit null |
+| `never` | Unreachable code path |
+| `dynamic` | Runtime-checked escape hatch — use instead of `any` |
+| `object T` | Heap-allocated typed object |
 
-// Type inference
-let inferredString = "hello"; // type: string
-let inferredNumber = 42; // type: number
-let inferredArray = [1, 2, 3]; // type: number[]
+```sjs
+const message: string = "Hello, World!"
+const count: number = 42
+const active: boolean = true
+const big: bigint = 9007199254740993n
+
+function greet(name: string): string {
+  return `Hello, ${name}!`
+}
 ```
+
+---
 
 ## Type Annotations
 
-### Function Parameters and Return Types
+Type annotations are optional. When omitted, SJS infers the type from context. In `--strict` mode, missing annotations on public API boundaries emit `SJS-W001`.
 
-```javascript
+```sjs
+// annotated
+const x: number = 10
+
+// inferred — x is still typed as number
+const y = 10
+
+// function with full annotations
 function add(a: number, b: number): number {
-  return a + b;
+  return a + b
 }
 
-const multiply = (x: number, y: number): number => x * y;
-
-function greet(name: string, greeting: string = "Hello"): string {
-  return `${greeting}, ${name}!`;
-}
-```
-
-### Variable Declarations
-
-```javascript
-let message: string = "Hello World";
-const PI: number = 3.14159;
-var count: number = 0;
-```
-
-## Interfaces
-
-Define object shapes and contracts:
-
-```javascript
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  age?: number; // Optional property
-  readonly createdAt: Date; // Read-only property
-}
-
-interface Config {
-  [key: string]: any; // Index signature
-}
-
-// Interface extension
-interface AdminUser extends User {
-  permissions: string[];
-  isActive: boolean;
+// inferred return type
+function addInferred(a: number, b: number) {
+  return a + b  // inferred: number
 }
 ```
 
-## Classes
+---
 
-Object-oriented programming with type safety:
+## Null Safety
 
-```javascript
-class Person {
-  // Public properties
-  name: string;
-  age: number;
-  
-  // Private properties
-  #email: string;
-  
-  // Protected properties
-  protected id: number;
-  
-  constructor(name: string, age: number, email: string) {
-    this.name = name;
-    this.age = age;
-    this.#email = email;
-    this.id = Math.random();
-  }
-  
-  // Public method
-  greet(): string {
-    return `Hello, I'm ${this.name}`;
-  }
-  
-  // Private method
-  #validateEmail(email: string): boolean {
-    return email.includes('@');
-  }
-  
-  // Static method
-  static create(name: string, age: number, email: string): Person {
-    return new Person(name, age, email);
-  }
+Non-nullable by default. A variable of type `string` cannot hold `null` or `undefined`. This is enforced at compile time.
+
+```sjs
+const name: string = null  // SJS-E001: null not assignable to string
+```
+
+To allow null, use `T?` (nullable):
+
+```sjs
+function findUser(id: number): string? {
+  if (id === 1) return "Alice"
+  return null  // OK — return type is string?
 }
 
-// Class inheritance
-class Employee extends Person {
-  department: string;
-  
-  constructor(name: string, age: number, email: string, department: string) {
-    super(name, age, email);
-    this.department = department;
-  }
-  
-  getInfo(): string {
-    return `${this.greet()} from ${this.department}`;
-  }
+const user: string? = findUser(42)
+```
+
+Use `??` (nullish coalescing) and `?.` (optional chaining) to work with nullable values. Both are type-checked against `T?`.
+
+```sjs
+const display: string = user ?? "Unknown"
+const length: number? = user?.length
+```
+
+**There is no `!` non-null assertion operator.** Use narrowing instead:
+
+```sjs
+if (user !== null) {
+  // user is narrowed to string here
+  console.log(user.toUpperCase())
 }
 ```
+
+---
+
+## Sum Types
+
+Sum types (tagged unions / variant types) are a first-class SJS feature. They use a syntax distinct from TypeScript discriminated unions.
+
+```sjs
+type Result<T, E> = Ok(T) | Err(E)
+type Shape = Circle({ radius: number }) | Rect({ w: number, h: number })
+type Option<T> = Some(T) | None
+```
+
+Constructors are callable as functions:
+
+```sjs
+const success: Result<number, string> = Ok(42)
+const failure: Result<number, string> = Err("something went wrong")
+```
+
+At runtime, sum type values compile to `{ _tag: "Ok", _0: 42 }` discriminated objects. SJS code never accesses `_tag` or `_0` directly — use match expressions instead.
+
+---
+
+## Match Expressions
+
+`match` is an expression (it returns a value) used to destructure sum types. The compiler enforces exhaustiveness — if a variant is missing and there is no `default` branch, `SJS-E007` is emitted.
+
+```sjs
+function divide(a: number, b: number): Result<number, string> {
+  if (b === 0) return Err("division by zero")
+  return Ok(a / b)
+}
+
+const r = divide(10, 2)
+
+const msg = match r {
+  Ok(val) => `Result: ${val}`,
+  Err(e)  => `Error: ${e}`,
+}
+```
+
+Destructuring works for variants with payload objects:
+
+```sjs
+type Shape = Circle({ radius: number }) | Rect({ w: number, h: number })
+
+const area = match shape {
+  Circle({ radius }) => Math.PI * radius * radius,
+  Rect({ w, h })     => w * h,
+}
+```
+
+Use `default` for partial matches:
+
+```sjs
+const label = match status {
+  Ok(_)   => "success",
+  default => "failure",
+}
+```
+
+---
+
+## Structural Interfaces
+
+SJS interfaces are satisfied implicitly — Go-style. A type satisfies an interface if it has all the required members. No `implements` keyword is needed or supported.
+
+```sjs
+interface Shape {
+  area(): number
+  perimeter(): number
+}
+
+class Circle {
+  constructor(public radius: number) {}
+  area(): number { return Math.PI * this.radius ** 2 }
+  perimeter(): number { return 2 * Math.PI * this.radius }
+}
+
+class Rect {
+  constructor(public w: number, public h: number) {}
+  area(): number { return this.w * this.h }
+  perimeter(): number { return 2 * (this.w + this.h) }
+}
+
+// Both Circle and Rect satisfy Shape — no declaration needed
+function printShape(s: Shape): void {
+  console.log(`Area: ${s.area()}, Perimeter: ${s.perimeter()}`)
+}
+
+printShape(new Circle(5))
+printShape(new Rect(4, 6))
+```
+
+Interfaces can extend other interfaces:
+
+```sjs
+interface Printable {
+  toString(): string
+}
+
+interface Serializable extends Printable {
+  serialize(): string
+}
+```
+
+**Intersection types (`A & B`) are banned.** Extend interfaces instead.
+
+---
 
 ## Generics
 
-Type-safe reusable components:
+Generics use angle-bracket syntax and are monomorphized at compile time.
 
-```javascript
-// Generic function
-function identity<T>(arg: T): T {
-  return arg;
+```sjs
+function identity<T>(x: T): T {
+  return x
 }
 
-// Generic interface
-interface Container<T> {
-  value: T;
-  getValue(): T;
-  setValue(value: T): void;
+function max<T: Comparable>(a: T, b: T): T {
+  return a.compareTo(b) > 0 ? a : b
 }
+```
 
-// Generic class
+Generic classes:
+
+```sjs
 class Stack<T> {
-  private items: T[] = [];
-  
+  private items: T[] = []
+
   push(item: T): void {
-    this.items.push(item);
+    this.items.push(item)
   }
-  
-  pop(): T | undefined {
-    return this.items.pop();
+
+  pop(): T? {
+    return this.items.pop() ?? null
   }
-  
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
+
+  peek(): T? {
+    return this.items[this.items.length - 1] ?? null
   }
-  
-  isEmpty(): boolean {
-    return this.items.length === 0;
+
+  get size(): number {
+    return this.items.length
   }
 }
 
-// Usage
-const numberStack = new Stack<number>();
-const stringStack = new Stack<string>();
+const s = new Stack<number>()
+s.push(1)
+s.push(2)
+const top: number? = s.pop()  // number?
 ```
 
-## Union and Intersection Types
+Generic interfaces:
 
-```javascript
-// Union types
-type StringOrNumber = string | number;
-type Status = "pending" | "success" | "error";
+```sjs
+interface Container<T> {
+  get(): T?
+  set(value: T): void
+}
+```
 
-function processValue(value: StringOrNumber): string {
-  if (typeof value === "string") {
-    return value.toUpperCase();
-  } else {
-    return value.toString();
+**Banned generic features:** conditional types (`T extends U ? A : B`), `infer`, mapped types (`{ [K in keyof T]: ... }`), and template literal types are not part of SJS.
+
+---
+
+## Classes
+
+SJS classes are standard JavaScript classes with type annotations. Constructor parameter shorthand is supported.
+
+```sjs
+class Point {
+  constructor(
+    public x: number,
+    public y: number
+  ) {}
+
+  distanceTo(other: Point): number {
+    return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2)
+  }
+
+  toString(): string {
+    return `Point(${this.x}, ${this.y})`
   }
 }
 
-// Intersection types
-interface HasName {
-  name: string;
-}
-
-interface HasAge {
-  age: number;
-}
-
-type Person = HasName & HasAge;
-
-const person: Person = {
-  name: "John",
-  age: 30
-};
+const p1 = new Point(0, 0)
+const p2 = new Point(3, 4)
+console.log(p1.distanceTo(p2))  // 5
 ```
 
-## Type Aliases
+Inheritance uses standard `extends`:
 
-Create custom type names:
+```sjs
+class Animal {
+  constructor(public name: string) {}
+  speak(): string { return `${this.name} makes a sound` }
+}
 
-```javascript
-type Point = {
-  x: number;
-  y: number;
-};
-
-type ID = string | number;
-
-type Callback<T> = (value: T) => void;
-
-type AsyncFunction<T> = () => Promise<T>;
+class Dog extends Animal {
+  speak(): string { return `${this.name} barks` }
+}
 ```
 
-## Modules and Imports
+---
 
-```javascript
+## JSX
+
+JSX is on by default in SJS — no pragma or config needed.
+
+```sjs
+interface ButtonProps {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}
+
+function Button({ label, onClick, disabled = false }: ButtonProps) {
+  return <button onClick={onClick} disabled={disabled}>{label}</button>
+}
+
+function App() {
+  return (
+    <div>
+      <h1>Hello</h1>
+      <Button label="Click me" onClick={() => console.log("clicked")} />
+    </div>
+  )
+}
+```
+
+The JSX transform targets the React 17+ automatic runtime by default. Configure the runtime in `superjs.config.json`.
+
+---
+
+## Modules
+
+SJS uses standard ES module syntax:
+
+```sjs
 // Named exports
 export function add(a: number, b: number): number {
-  return a + b;
+  return a + b
 }
 
-export const PI = 3.14159;
-
-export interface User {
-  name: string;
-  email: string;
+export class Calculator {
+  // ...
 }
 
 // Default export
-export default class Calculator {
-  add(a: number, b: number): number {
-    return a + b;
-  }
+export default class App {
+  // ...
 }
 
-// Import statements
-import { add, PI, User } from './math';
-import Calculator from './calculator';
-import * as Utils from './utils';
+// Type-only import (erased at compile time)
+import type { UserRecord } from './types'
+
+// Value imports
+import { readFileSync } from 'fs'
+import { add, Calculator } from './math'
+import App from './app'
 ```
 
-## JSX Support
+Re-exports:
 
-Native JSX without external dependencies:
-
-```javascript
-interface Props {
-  name: string;
-  children?: React.ReactNode;
-}
-
-function Greeting({ name, children }: Props) {
-  return (
-    <div className="greeting">
-      <h1>Hello, {name}!</h1>
-      {children}
-    </div>
-  );
-}
-
-// Usage
-const element = <Greeting name="World">Welcome!</Greeting>;
+```sjs
+export { add } from './math'
+export type { UserRecord } from './types'
+export * from './utils'
 ```
 
-## Template Literals
+---
 
-Type-safe template literals:
+## The `dynamic` Type
 
-```javascript
-type EventType = "click" | "hover" | "focus";
+`dynamic` is the runtime-checked escape hatch. Use it when interfacing with untyped external data (JSON responses, third-party libraries without types). It is **not** `any` — accesses on `dynamic` values are checked at runtime and do not silently propagate through the type system.
 
-function createHandler(event: EventType) {
-  return `on${event.charAt(0).toUpperCase() + event.slice(1)}`;
+```sjs
+function parseConfig(raw: string): dynamic {
+  return JSON.parse(raw)
 }
 
-const clickHandler = createHandler("click"); // "onClick"
+const config: dynamic = parseConfig('{"port": 3000}')
+const port = config.port  // runtime-checked
 ```
 
-## Async/Await
+Assigning a `dynamic` value to a typed variable requires an explicit narrowing check. Unlike `any`, `dynamic` never silently widens the types of surrounding expressions.
 
-Full support for asynchronous programming:
+---
 
-```javascript
-async function fetchUser(id: number): Promise<User> {
-  const response = await fetch(`/api/users/${id}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user: ${response.status}`);
-  }
-  return response.json();
-}
+## What Is Banned (and Why)
 
-async function processUsers(ids: number[]): Promise<User[]> {
-  const promises = ids.map(id => fetchUser(id));
-  return Promise.all(promises);
-}
+These features from TypeScript are **permanently excluded** from SJS to keep the type system sound and simple:
+
+| Banned Feature | Use Instead |
+|----------------|-------------|
+| `any` | `dynamic` |
+| `T extends U ? A : B` (conditional types) | Sum types + match |
+| `{ [K in keyof T]: ... }` (mapped types) | Explicit interfaces |
+| Template literal types | — |
+| `infer` | — |
+| `namespace` | ES modules |
+| TypeScript `enum` | Sum types |
+| `A & B` (intersection types) | Interface extension |
+| `!` non-null assertion | Narrowing (`if (x !== null)`) |
+
+These are not missing features — they are deliberate omissions. SJS prioritizes a sound, predictable type system over maximum expressiveness.
+
+---
+
+## Diagnostic Codes
+
+| Code | Severity | Meaning |
+|------|----------|---------|
+| `SJS-E001` | Error | Null/undefined assigned to non-nullable type |
+| `SJS-E002` | Error | Type mismatch on assignment or return |
+| `SJS-E007` | Error | Non-exhaustive match on sum type |
+| `SJS-W001` | Warning | Implicit `dynamic` — only in `--strict` mode |
+
+---
+
+## CLI Quick Reference
+
+```sh
+superjs build src/index.sjs      # compile to JS
+superjs build --watch            # watch mode
+superjs lint src/                # lint
+superjs format src/              # format
+superjs test                     # run tests
 ```
-
-## Type Guards
-
-Runtime type checking:
-
-```javascript
-function isString(value: unknown): value is string {
-  return typeof value === "string";
-}
-
-function isNumber(value: unknown): value is number {
-  return typeof value === "number";
-}
-
-function processValue(value: unknown): string {
-  if (isString(value)) {
-    return value.toUpperCase();
-  } else if (isNumber(value)) {
-    return value.toString();
-  } else {
-    return "unknown";
-  }
-}
-```
-
-## Utility Types
-
-Built-in utility types for common transformations:
-
-```javascript
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  age?: number;
-}
-
-// Partial - makes all properties optional
-type PartialUser = Partial<User>;
-
-// Required - makes all properties required
-type RequiredUser = Required<User>;
-
-// Pick - select specific properties
-type UserBasic = Pick<User, "name" | "email">;
-
-// Omit - exclude specific properties
-type UserWithoutId = Omit<User, "id">;
-
-// Record - create object type with specific keys
-type UserMap = Record<string, User>;
-```
-
-## Error Handling
-
-Type-safe error handling:
-
-```javascript
-class ValidationError extends Error {
-  constructor(message: string, public field: string) {
-    super(message);
-    this.name = "ValidationError";
-  }
-}
-
-function validateUser(user: unknown): user is User {
-  if (typeof user !== "object" || user === null) {
-    throw new ValidationError("User must be an object", "user");
-  }
-  
-  const u = user as any;
-  if (typeof u.name !== "string") {
-    throw new ValidationError("Name must be a string", "name");
-  }
-  
-  return true;
-}
-``` 

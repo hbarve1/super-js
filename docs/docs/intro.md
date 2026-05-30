@@ -2,172 +2,127 @@
 sidebar_position: 1
 ---
 
-# Welcome to Super.js
+# Introduction to SuperJS
 
-**Super.js** is a strict, clean, and efficient superset of JavaScript that enforces ECMA standards with built-in type safety, formatting, linting, and testing capabilities.
+SuperJS (SJS) is a new programming language that compiles `.sjs` files to JavaScript. It is a strict superset of JavaScript — every valid `.js` file is also valid `.sjs` — extended with a sound, Go-inspired type system designed for clarity and safety.
 
-> 🚀 **Latest Version**: This documentation is for the current development version (0.2.0+). For stable releases, see [version 0.2.0](/docs/0.2.0/intro) or [version 0.1.0](/docs/0.1.0/intro).
+SuperJS is **not** TypeScript. It deliberately discards the parts of TypeScript that make reasoning about types difficult (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs: sum types, match expressions, and non-nullable types by default.
 
-## What is Super.js?
+---
 
-Super.js extends JavaScript with static type checking while maintaining pure JavaScript semantics. It provides TypeScript-like type safety with a focus on ECMA compliance and zero-configuration development experience.
+## How SJS Differs from TypeScript
 
-### Key Features
+| Feature | TypeScript | SuperJS |
+|---------|-----------|---------|
+| `any` | Allowed (soundness hole) | Banned — use `dynamic` instead |
+| Null safety | Opt-in (`strictNullChecks`) | On by default; `T?` is the nullable form |
+| Mapped types | Supported | Banned — use interfaces |
+| Conditional types | Supported | Banned — use sum types |
+| Algebraic sum types | Not supported | First-class: `type R<T,E> = Ok(T) \| Err(E)` |
+| Match expressions | Not supported | Built-in with exhaustiveness checking |
+| `!` non-null assertion | Supported | Banned — use narrowing |
+| JSX | Requires config | On by default |
+| Type philosophy | Structural + escape hatches | Sound, gradual, Go-inspired |
 
-- **Type Safety**: Static type checking with JavaScript-first approach
-- **Type Inference**: Smart type inference based on ECMA standard patterns
-- **Built-in Tooling**: Integrated formatter, linter, and testing framework
-- **Universal Compilation**: Supports both frontend and backend environments
-- **Zero Configuration**: Works out of the box with sensible defaults
-- **Fast Compilation**: Optimized compilation process for quick development cycles
-- **JavaScript Version Selection**: Target specific JavaScript versions (ES5 to ES2022)
-- **Native JSX Support**: First-class JSX syntax support without external dependencies
-- **Advanced Type System**: Conditional types, mapped types, and type guards
-- **Performance Optimizations**: Incremental compilation and parallel processing
+---
+
+## The 10 SJS Types
+
+`number` `string` `boolean` `bigint` `symbol` `void` `null` `never` `dynamic` `object T`
+
+Types are **non-nullable by default**. A `string` cannot hold `null`. Use `string?` to declare a nullable string.
+
+---
 
 ## Quick Start
 
-### Installation
+SJS 0.1.0 is a prototype — install from source:
 
 ```bash
-npm install -g superjs
+git clone https://github.com/hbarve1/super-js.git
+cd super-js/prototype
+npm install
+npm run build
+npm link          # makes `superjs` available globally
 ```
 
-### Creating a new project
+Compile your first file:
 
 ```bash
-superjs init my-project
-cd my-project
-```
-
-### Your first Super.js file
-
-Create a file with the `.sjs` extension:
-
-```javascript
-// hello.sjs
-function greet(name: string): string {
-  return `Hello, ${name}!`;
-}
-
-const message = greet("World");
-console.log(message);
-```
-
-### Compiling and running
-
-```bash
-# Compile the file
 superjs build --source hello.sjs
-
-# Run the compiled JavaScript
-node hello.js
 ```
 
-## File Extension
+---
 
-Super.js files use the `.sjs` extension and support type annotations:
+## Your First SJS File
 
-```javascript
-// example.sjs
-interface User {
-  name: string;
-  age: number;
-  email?: string; // Optional property
+```sjs
+// hello.sjs
+const message: string = "Hello, World!"
+console.log(message)
+
+function greet(name: string): string {
+  return `Hello, ${name}!`
 }
 
-class UserAccount {
-  constructor(public user: User) {}
-  
-  updateEmail(newEmail: string): void {
-    this.user.email = newEmail;
-  }
+console.log(greet("SuperJS"))
+```
+
+### Null Safety
+
+Types are non-nullable by default. Use `T?` to opt into nullability:
+
+```sjs
+function findUser(id: number): string? {
+  if (id === 1) return "Alice"
+  return null
 }
 
-// Type inference
-const numbers = [1, 2, 3]; // inferred as number[]
-const user = {
-  name: "John",
-  age: 30
-}; // inferred as { name: string, age: number }
+const name = findUser(42)            // type: string?
+const display = name ?? "Unknown"    // ?? is type-checked against string?
+console.log(display)
 ```
 
-## JavaScript Version Targeting
+### Sum Types and Match
 
-You can target specific JavaScript versions using the `--target` option:
+```sjs
+type Result<T, E> = Ok(T) | Err(E)
+
+function divide(a: number, b: number): Result<number, string> {
+  if (b === 0) return Err("division by zero")
+  return Ok(a / b)
+}
+
+const result = divide(10, 2)
+const msg = match result {
+  Ok(val) => `Result: ${val}`,
+  Err(e)  => `Error: ${e}`,   // compiler enforces all variants are covered
+}
+console.log(msg)
+```
+
+---
+
+## CLI at a Glance
 
 ```bash
-# Target ES5
-superjs build --source file.sjs --target es5
-
-# Target ES2015 (ES6)
-superjs build --source file.sjs --target es2015
-
-# Target ES2020
-superjs build --source file.sjs --target es2020
-
-# Default (ES2022)
-superjs build --source file.sjs
+superjs build  --source <file>   # compile .sjs → .js
+superjs lint   --source <file>   # lint with SJS rules
+superjs format --source <file>   # format code
+superjs test                     # run tests
 ```
 
-Supported JavaScript versions:
-- es5
-- es2015 (ES6)
-- es2016
-- es2017
-- es2018
-- es2019
-- es2020
-- es2021
-- es2022 (default)
+Config lives in `superjs.config.json`:
 
-## Development Workflow
-
-### Development mode with watch
-
-```bash
-superjs dev
+```json
+{ "target": "es2022", "outDir": "./dist", "strict": false }
 ```
 
-### Running tests
+---
 
-```bash
-superjs test
-```
+## What's Next
 
-### Formatting code
-
-```bash
-superjs format
-```
-
-### Linting code
-
-```bash
-superjs lint
-```
-
-## What's Next?
-
-- [Language Reference](/docs/language-reference) - Learn about Super.js syntax and features
-- [Examples](/docs/examples) - See practical examples and use cases
-- [Type System](/docs/type-system) - Deep dive into the type system
-- [Tooling](/docs/tooling) - Learn about built-in tools and configuration
-
-## Version Information
-
-This documentation covers the **latest development version** of Super.js. For specific version documentation:
-
-- **[0.2.0](/docs/0.2.0/intro)** - Enhanced type system and tooling (stable)
-- **[0.1.0](/docs/0.1.0/intro)** - Initial stable release
-- **[0.0.1](/docs/0.0.1/intro)** - Initial alpha release
-
-## Latest Features
-
-The current version includes the latest enhancements:
-
-- **Advanced Type System**: Conditional types, mapped types, and type guards
-- **Performance Improvements**: Incremental compilation and parallel processing
-- **Enhanced Tooling**: Better error messages and development experience
-- **Source Map Support**: Full debugging capabilities
-- **Decorator Support**: Experimental decorator implementation
+- [Language Reference](./language-reference) — full syntax and type system documentation
+- [Type System](./type-system) — null safety, sum types, generics, and structural interfaces
+- [Tooling](./tooling) — CLI options, config schema, and diagnostic codes
+- [Examples](./examples) — practical SJS code samples

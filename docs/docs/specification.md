@@ -4,592 +4,468 @@ sidebar_position: 8
 
 # Language Specification
 
-This document outlines the technical specifications of Super.js, a JavaScript superset that strictly adheres to ECMA standards while providing integrated development tools and type safety.
-
-## 1. Introduction
-
-Super.js is a JavaScript superset that extends the language with static type checking while maintaining full ECMA compliance. The language is designed to provide a TypeScript-like developer experience with zero configuration and built-in tooling.
-
-### Design Principles
-
-- **ECMA Compliance**: Full adherence to ECMAScript standards
-- **Type Safety**: Static type checking with JavaScript-first approach
-- **Zero Configuration**: Works out of the box with sensible defaults
-- **Performance**: Fast compilation and type checking
-- **Universal Support**: Frontend, backend, and edge computing environments
-
-## 2. Language Features
-
-### 2.1 JavaScript Compatibility
-
-Super.js maintains full compatibility with the latest ECMAScript specification:
-
-- **ECMAScript 2022** as the baseline
-- **Backward Compatibility** with ES5+ targets
-- **Type Annotations** that compile away to standard JavaScript
-- **Strict Mode** enforced by default
-- **All JavaScript Features** supported without modification
-
-### 2.2 Type System
-
-Super.js provides a comprehensive type system that extends JavaScript with static type checking:
-
-#### 2.2.1 Basic Types
-
-```javascript
-// Primitive types
-let str: string = "hello";
-let num: number = 42;
-let bool: boolean = true;
-let nul: null = null;
-let undef: undefined = undefined;
-let sym: symbol = Symbol("key");
-let big: bigint = 42n;
-
-// Complex types
-let arr: number[] = [1, 2, 3];
-let tup: [string, number] = ["hello", 42];
-let obj: object = { key: "value" };
-let func: Function = () => {};
-let any: any = "anything";
-let unknown: unknown = "unknown";
-let never: never = (() => { throw new Error(); })();
-```
-
-#### 2.2.2 Interfaces and Types
-
-```javascript
-// Interface declaration
-interface User {
-  name: string;
-  age: number;
-  email?: string; // Optional property
-  readonly id: number; // Read-only property
-  [key: string]: any; // Index signature
-}
-
-// Type aliases
-type StringOrNumber = string | number;
-type UserCallback = (user: User) => void;
-type Point = { x: number; y: number };
-
-// Generic interfaces
-interface List<T> {
-  items: T[];
-  add(item: T): void;
-  remove(item: T): boolean;
-  get(index: number): T | undefined;
-}
-
-// Interface extension
-interface AdminUser extends User {
-  permissions: string[];
-  isActive: boolean;
-}
-```
-
-#### 2.2.3 Type Inference
-
-```javascript
-// Automatic type inference
-let name = "John"; // inferred as string
-let age = 30; // inferred as number
-let items = [1, "two", true]; // inferred as (string | number | boolean)[]
-let user = { name: "John", age: 30 }; // inferred as { name: string, age: number }
-
-// Function return type inference
-function double(x: number) { // return type inferred as number
-  return x * 2;
-}
-
-// Contextual type inference
-const numbers = [1, 2, 3];
-const doubled = numbers.map(n => n * 2); // inferred as number[]
-```
-
-#### 2.2.4 Advanced Types
-
-```javascript
-// Union types
-type Status = "pending" | "success" | "error";
-type Shape = Circle | Square | Triangle;
-
-// Intersection types
-type Person = HasName & HasAge & HasEmail;
-
-// Conditional types
-type NonNullable<T> = T extends null | undefined ? never : T;
-type ReturnType<T> = T extends (...args: any[]) => infer R ? R : any;
-
-// Mapped types
-type Partial<T> = {
-  [P in keyof T]?: T[P];
-};
-
-type Required<T> = {
-  [P in keyof T]-?: T[P];
-};
-
-type Readonly<T> = {
-  readonly [P in keyof T]: T[P];
-};
-```
-
-#### 2.2.5 Generics
-
-```javascript
-// Generic functions
-function identity<T>(arg: T): T {
-  return arg;
-}
-
-function firstElement<T>(arr: T[]): T | undefined {
-  return arr[0];
-}
-
-// Generic constraints
-interface Lengthwise {
-  length: number;
-}
-
-function loggingIdentity<T extends Lengthwise>(arg: T): T {
-  console.log(arg.length);
-  return arg;
-}
-
-// Generic classes
-class Stack<T> {
-  private items: T[] = [];
-  
-  push(item: T): void {
-    this.items.push(item);
-  }
-  
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-  
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-}
-```
-
-### 2.3 File Format
-
-- **Extension**: `.sjs` (Super JavaScript)
-- **Encoding**: UTF-8
-- **Line Endings**: LF (Unix-style) preferred
-- **Comments**: Standard JavaScript comment syntax
-- **Shebang**: Supported for executable scripts
-
-### 2.4 Module System
-
-Super.js supports multiple module systems:
-
-#### 2.4.1 ES Modules (Default)
-
-```javascript
-// Named exports
-export function add(a: number, b: number): number {
-  return a + b;
-}
-
-export const PI = 3.14159;
-
-export interface User {
-  name: string;
-  email: string;
-}
-
-// Default export
-export default class Calculator {
-  add(a: number, b: number): number {
-    return a + b;
-  }
-}
-
-// Import statements
-import { add, PI, User } from './math';
-import Calculator from './calculator';
-import * as Utils from './utils';
-```
-
-#### 2.4.2 CommonJS Support
-
-```javascript
-// CommonJS exports
-module.exports = {
-  add: function(a, b) { return a + b; },
-  PI: 3.14159
-};
-
-// CommonJS imports
-const { add, PI } = require('./math');
-```
-
-#### 2.4.3 Dynamic Imports
-
-```javascript
-// Dynamic import support
-async function loadModule() {
-  const module = await import('./dynamic-module');
-  return module.default;
-}
-```
-
-### 2.5 JSX Support
-
-Native JSX support without external dependencies:
-
-```javascript
-interface Props {
-  name: string;
-  children?: React.ReactNode;
-}
-
-function Greeting({ name, children }: Props) {
-  return (
-    <div className="greeting">
-      <h1>Hello, {name}!</h1>
-      {children}
-    </div>
-  );
-}
-
-// Usage
-const element = <Greeting name="World">Welcome!</Greeting>;
-```
-
-## 3. Built-in Tools
-
-### 3.1 Formatter
-
-The Super.js formatter ensures consistent code style:
-
-#### 3.1.1 Default Rules
-
-- **Line Length**: 80 characters
-- **Indentation**: 2 spaces
-- **Semicolons**: Required
-- **Quotes**: Single quotes for strings
-- **Trailing Commas**: ES5 compatible
-- **Bracket Spacing**: Enabled
-- **Arrow Function Parentheses**: Avoid when possible
-
-#### 3.1.2 Configuration
-
-```javascript
-// super.config.js
-module.exports = {
-  format: {
-    printWidth: 80,
-    tabWidth: 2,
-    semi: true,
-    singleQuote: true,
-    trailingComma: 'es5',
-    bracketSpacing: true,
-    arrowParens: 'avoid'
-  }
-};
-```
-
-### 3.2 Linter
-
-Static code analysis with ECMA standards enforcement:
-
-#### 3.2.1 Built-in Rules
-
-- **ECMA Standards**: Enforce ECMAScript compliance
-- **No Unused Variables**: Detect unused variables and imports
-- **No Implicit Globals**: Prevent accidental global variable creation
-- **No Undefined References**: Catch undefined variable usage
-- **Proper Error Handling**: Ensure errors are handled appropriately
-- **Consistent Return Statements**: Enforce consistent return patterns
-- **Array Method Callbacks**: Validate array method usage
-- **Promise Handling**: Ensure proper promise error handling
-
-#### 3.2.2 Configuration
-
-```javascript
-// super.config.js
-module.exports = {
-  lint: {
-    rules: {
-      'no-unused-vars': 'error',
-      'no-console': 'warn',
-      'prefer-const': 'error',
-      'no-var': 'error',
-      'ecma-version': 2022,
-      'source-type': 'module'
-    }
-  }
-};
-```
-
-### 3.3 Testing Framework
-
-Jest-compatible testing framework:
-
-#### 3.3.1 Features
-
-- **Describe/It Syntax**: Familiar testing structure
-- **Async Testing**: Full async/await support
-- **Mocking Capabilities**: Built-in mocking utilities
-- **Code Coverage**: Integrated coverage reporting
-- **Snapshot Testing**: Component snapshot validation
-- **Watch Mode**: Continuous testing during development
-
-#### 3.3.2 Example
-
-```javascript
-// math.test.sjs
-import { describe, it, expect, beforeEach } from 'superjs/test';
-import { Calculator } from './math.sjs';
-
-describe('Calculator', () => {
-  let calculator: Calculator;
-
-  beforeEach(() => {
-    calculator = new Calculator();
-  });
-
-  it('should add two numbers correctly', () => {
-    expect(calculator.add(2, 3)).toBe(5);
-    expect(calculator.add(-1, 1)).toBe(0);
-  });
-
-  it('should handle edge cases', () => {
-    expect(calculator.add(Number.MAX_SAFE_INTEGER, 1))
-      .toBeGreaterThan(Number.MAX_SAFE_INTEGER);
-  });
-});
-```
-
-## 4. Compilation
-
-### 4.1 Compilation Targets
-
-Super.js supports multiple compilation targets:
-
-- **Browser**: ES5, ES2015, ES2016, ES2017, ES2018, ES2019, ES2020, ES2021, ES2022
-- **Node.js**: All Node.js versions
-- **WebWorkers**: Browser worker environments
-- **Service Workers**: Progressive web app support
-
-### 4.2 Compilation Process
-
-1. **Parse**: Parse source files into AST
-2. **Type Check**: Perform static type checking
-3. **Lint**: Apply linting rules
-4. **Format**: Apply formatting rules
-5. **Transform**: Apply target-specific transformations
-6. **Generate**: Output compiled JavaScript
-7. **Source Maps**: Generate source maps for debugging
-
-### 4.3 Build Optimization
-
-- **Dead Code Elimination**: Remove unused code
-- **Module Concatenation**: Combine modules for smaller bundles
-- **Minification**: Optional code minification
-- **Source Map Generation**: Full debugging support
-- **Asset Optimization**: Optimize imported assets
-
-## 5. Project Structure
-
-Standard Super.js project structure:
-
-```
-project/
-├── src/
-│   ├── index.sjs
-│   ├── components/
-│   │   └── *.sjs
-│   └── utils/
-│       └── *.sjs
-├── tests/
-│   └── *.test.sjs
-├── dist/
-│   └── compiled output
-├── super.config.js
-├── package.json
-└── README.md
-```
-
-## 6. Configuration
-
-### 6.1 super.config.js Options
-
-```javascript
-module.exports = {
-  // Compiler options
-  compiler: {
-    target: 'es2022',
-    module: 'esnext',
-    sourcemap: true,
-    outDir: './dist',
-    rootDir: './src',
-    declaration: false,
-    declarationMap: false
-  },
-
-  // Type checking options
-  types: {
-    strict: true,
-    noImplicitAny: true,
-    strictNullChecks: true,
-    strictFunctionTypes: true,
-    strictBindCallApply: true,
-    strictPropertyInitialization: true,
-    noImplicitThis: true,
-    alwaysStrict: true,
-    checkJs: false,
-    allowJs: false
-  },
-
-  // Formatting options
-  format: {
-    printWidth: 80,
-    tabWidth: 2,
-    semi: true,
-    singleQuote: true,
-    trailingComma: 'es5',
-    bracketSpacing: true,
-    arrowParens: 'avoid'
-  },
-
-  // Linting options
-  lint: {
-    rules: {
-      'no-unused-vars': 'error',
-      'no-console': 'warn',
-      'prefer-const': 'error',
-      'no-var': 'error'
-    },
-    ecmaVersion: 2022,
-    sourceType: 'module'
-  },
-
-  // Testing options
-  test: {
-    coverage: {
-      enabled: true,
-      threshold: 80,
-      exclude: ['node_modules/**', 'dist/**']
-    },
-    timeout: 5000,
-    setupFiles: ['./test-setup.sjs']
-  },
-
-  // Build options
-  build: {
-    outDir: './dist',
-    sourceMaps: true,
-    minify: false,
-    declaration: false
-  }
-};
-```
-
-## 7. Error Handling
-
-### 7.1 Compilation Errors
-
-- **Syntax Errors**: Invalid Super.js syntax
-- **Type Errors**: Type checking violations
-- **ECMA Standard Violations**: Non-compliant JavaScript
-- **Module Resolution Errors**: Import/export issues
-- **Configuration Errors**: Invalid configuration
-
-### 7.2 Runtime Errors
-
-- **Standard JavaScript Errors**: All native JavaScript errors
-- **Enhanced Stack Traces**: Improved error reporting
-- **Source Map Integration**: Accurate error locations
-- **Type Assertion Errors**: Runtime type validation failures
-
-## 8. Performance
-
-### 8.1 Compilation Performance
-
-- **Incremental Compilation**: Only recompile changed files
-- **Caching Mechanisms**: Persistent compilation cache
-- **Parallel Processing**: Multi-threaded compilation
-- **Memory Efficient**: Optimized memory usage
-
-### 8.2 Runtime Performance
-
-- **No Runtime Overhead**: Compiled to native JavaScript
-- **Native JavaScript Performance**: Same performance as hand-written JS
-- **Optimized Output**: Efficient compiled code
-- **Tree Shaking**: Dead code elimination
-
-## 9. Security
-
-### 9.1 Security Features
-
-- **No eval() by Default**: Secure by default
-- **Strict CSP Compatibility**: Content Security Policy support
-- **Secure by Default**: Security-first design
-- **Dependencies Audit**: Automatic security scanning
-
-### 9.2 Best Practices
-
-- **Input Validation**: Type-safe input handling
-- **Error Handling**: Proper error management
-- **Resource Management**: Automatic resource cleanup
-- **Access Control**: Type-based access control
-
-## 10. Future Considerations
-
-### 10.1 Planned Features
-
-- **WebAssembly Integration**: Direct WASM compilation
-- **TypeScript Definition Generation**: .d.ts file generation
-- **Enhanced IDE Integration**: Advanced language server
-- **Plugin System**: Extensible architecture
-- **Performance Profiling Tools**: Built-in profiling
-
-### 10.2 Research Areas
-
-- **Advanced Type Inference**: Machine learning-based inference
-- **Cross-Platform Compilation**: Universal compilation targets
-- **Real-time Collaboration**: Multi-user development
-- **AI-Powered Assistance**: Intelligent code suggestions
-
-## 11. Version Strategy
-
-### 11.1 Semantic Versioning
-
-Super.js follows [Semantic Versioning](https://semver.org/):
-
-- **Major Releases (X.0.0)**: Breaking changes
-- **Minor Releases (0.X.0)**: New features, backward compatible
-- **Patch Releases (0.0.X)**: Bug fixes, backward compatible
-
-### 11.2 Support Policy
-
-- **LTS Support**: Long-term support for stable versions
-- **Deprecation Policy**: Clear deprecation timelines
-- **Migration Tools**: Automated migration assistance
-- **Backward Compatibility**: Maintained where possible
-
-## 12. Compliance and Standards
-
-### 12.1 ECMAScript Compliance
-
-- **Full ECMAScript 2022 Support**: Complete feature set
-- **Proposal Tracking**: Monitor upcoming ECMAScript proposals
-- **Standards Alignment**: Regular updates for new standards
-- **Compatibility Testing**: Comprehensive test suite
-
-### 12.2 Web Standards
-
-- **Web Platform APIs**: Full browser API support
-- **Node.js Compatibility**: Complete Node.js ecosystem support
-- **Module Standards**: ES Modules and CommonJS support
-- **Security Standards**: CSP and security best practices
+This document is the technical specification for SuperJS (SJS). It defines the type system semantics, syntax forms, compilation pipeline, and diagnostic codes. It is authoritative over the language reference for matters of precision.
 
 ---
 
-This specification defines the complete technical foundation of Super.js, ensuring a robust, performant, and standards-compliant JavaScript superset for modern development. 
+## 1. Design Philosophy
+
+SJS is designed around four convictions:
+
+**Sound type system.** Every type error caught at compile time is a guarantee. SJS does not include escape hatches that silently undermine soundness (no `any`, no `!` assertion). The `dynamic` type is the only opt-out, and it is explicit and runtime-checked.
+
+**Go-inspired simplicity.** The type system has a fixed, small surface area. There are exactly 10 types. Interfaces are structural and satisfied implicitly. There are no mapped types, conditional types, or `infer` — features that make TypeScript's type system Turing-complete but also opaque.
+
+**Dart 2.12-style null safety.** Non-nullable by default. `T?` is the only way to express nullability. The compiler tracks null flow through `?.`, `??`, and narrowing. There is no non-null assertion operator.
+
+**Rust-inspired sum types.** Variant types are a first-class construct, not a convention over discriminated union objects. `match` is an expression with compiler-enforced exhaustiveness.
+
+---
+
+## 2. The 10 Types
+
+SJS has exactly 10 built-in types. The set is closed — new built-in types cannot be added by user code.
+
+| SJS Type | Description | Runtime representation |
+|----------|-------------|------------------------|
+| `number` | IEEE 754 double-precision float | JS `number` |
+| `string` | UTF-16 string | JS `string` |
+| `boolean` | `true` or `false` | JS `boolean` |
+| `bigint` | Arbitrary-precision integer | JS `bigint` |
+| `symbol` | Unique opaque symbol | JS `symbol` |
+| `void` | Absence of a return value | JS `undefined` |
+| `null` | Explicit null | JS `null` |
+| `never` | Unreachable / bottom type | — (no value reaches this) |
+| `dynamic` | Runtime-checked escape hatch | JS value, checked at use sites |
+| `object T` | Heap-allocated typed object | JS object |
+
+`any` does not exist in SJS. Using `any` in an `.sjs` file is a parse error.
+
+---
+
+## 3. Null Safety Semantics
+
+### 3.1 Non-nullable by default
+
+Every type `T` is non-nullable unless explicitly declared `T?`. This includes all 10 built-in types and all user-defined classes and interfaces.
+
+```sjs
+const x: string = null        // SJS-E001
+const y: string = undefined   // SJS-E001
+const z: string? = null       // OK
+```
+
+### 3.2 Nullable types
+
+`T?` desugars to `T | null | undefined` in the type algebra, but SJS surfaces it only as `T?`. The distinction matters: `T | null` is not valid SJS syntax — write `T?` instead.
+
+### 3.3 Null-safe operators
+
+`?.` (optional chaining) and `??` (nullish coalescing) are both type-checked. The operand on the left of `?.` must be `T?`; the result is `U?` where `U` is the property type.
+
+```sjs
+const len: number? = user?.length   // user must be string?
+const name: string = user ?? "Anon" // result is string (non-nullable)
+```
+
+### 3.4 Narrowing
+
+The compiler tracks null flow through `if`/`else` and `typeof` guards. After a null check, the type is narrowed to the non-nullable variant.
+
+```sjs
+const user: string? = findUser(id)
+
+if (user !== null) {
+  console.log(user.toUpperCase())  // user: string here
+}
+```
+
+### 3.5 No non-null assertion
+
+`!` is not a postfix type operator in SJS. There is no way to tell the compiler "trust me, this is not null" without an actual runtime check. This is intentional — `!` is a common source of null pointer exceptions in TypeScript codebases.
+
+---
+
+## 4. Sum Type Syntax and Runtime Representation
+
+### 4.1 Declaration syntax
+
+```sjs
+type Result<T, E> = Ok(T) | Err(E)
+type Shape = Circle({ radius: number }) | Rect({ w: number, h: number })
+type Option<T> = Some(T) | None
+```
+
+Each variant is either:
+- A unit variant: `None` (no payload)
+- A tuple variant: `Ok(T)` (single positional payload)
+- A record variant: `Circle({ radius: number })` (named payload fields)
+
+### 4.2 Constructor functions
+
+Each variant name is a constructor function at runtime:
+
+```sjs
+const r: Result<number, string> = Ok(42)
+const e: Result<number, string> = Err("bad input")
+const s: Shape = Circle({ radius: 5 })
+const n: Option<string> = None
+```
+
+### 4.3 Runtime representation
+
+The compiler emits discriminated union objects. The `_tag` field holds the variant name as a string literal. The payload is placed in `_0` (tuple variants) or spread into the object (record variants):
+
+| SJS expression | Emitted JS object |
+|----------------|-------------------|
+| `Ok(42)` | `{ _tag: "Ok", _0: 42 }` |
+| `Err("bad")` | `{ _tag: "Err", _0: "bad" }` |
+| `Circle({ radius: 5 })` | `{ _tag: "Circle", radius: 5 }` |
+| `None` | `{ _tag: "None" }` |
+
+SJS code never references `_tag` or `_0` directly. These are internal to the compilation target. Use `match` to destructure.
+
+---
+
+## 5. Match Expression Semantics and Exhaustiveness
+
+### 5.1 Syntax
+
+`match` is an expression, not a statement. It always produces a value.
+
+```sjs
+const result = match expr {
+  Variant1(x)        => expression1,
+  Variant2({ a, b }) => expression2,
+  default            => expressionDefault,
+}
+```
+
+### 5.2 Compilation target
+
+Match expressions compile to IIFE switch statements on `._tag`:
+
+```js
+// SJS:
+const msg = match r { Ok(val) => `Got ${val}`, Err(e) => `Failed: ${e}` }
+
+// Compiled JS:
+const msg = (() => {
+  switch (r._tag) {
+    case "Ok":  { const val = r._0; return `Got ${val}`; }
+    case "Err": { const e = r._0;   return `Failed: ${e}`; }
+  }
+})()
+```
+
+### 5.3 Exhaustiveness
+
+When the matched expression has a sum type, the compiler verifies that every variant is covered. If any variant is missing and there is no `default` branch, `SJS-E007` is emitted at compile time.
+
+```sjs
+type Color = Red | Green | Blue
+
+const label = match color {
+  Red   => "red",
+  Green => "green",
+  // SJS-E007: match is not exhaustive — missing variant: Blue
+}
+```
+
+Adding `default` suppresses the check:
+
+```sjs
+const label = match color {
+  Red     => "red",
+  default => "other",
+}
+```
+
+### 5.4 Destructuring in arms
+
+Tuple payload: `Ok(val)` binds `val` to `r._0`.
+Record payload: `Circle({ radius })` destructures the record fields from the variant object.
+Unit variants: `None` matches when `_tag === "None"` with no binding.
+
+---
+
+## 6. Structural Interfaces
+
+### 6.1 Definition
+
+```sjs
+interface Printable {
+  toString(): string
+}
+```
+
+### 6.2 Implicit satisfaction
+
+A value of type `C` satisfies interface `I` if and only if `C` exposes every member declared in `I` with a compatible type. No `implements` declaration is required or supported.
+
+```sjs
+class Celsius {
+  constructor(public value: number) {}
+  toString(): string { return `${this.value}°C` }
+}
+
+function print(p: Printable): void {
+  console.log(p.toString())
+}
+
+print(new Celsius(100))  // OK — Celsius satisfies Printable structurally
+```
+
+### 6.3 Interface extension
+
+Interfaces may extend one or more other interfaces. The extending interface inherits all member requirements.
+
+```sjs
+interface Serializable extends Printable {
+  serialize(): string
+}
+```
+
+### 6.4 No intersection types
+
+`A & B` is not valid SJS syntax. Use interface extension to compose contracts:
+
+```sjs
+// Wrong (banned):
+type Named = HasName & HasAge
+
+// Correct:
+interface Named extends HasName, HasAge {}
+```
+
+---
+
+## 7. Generics
+
+### 7.1 Syntax
+
+Generic type parameters use angle brackets on functions, classes, and interfaces:
+
+```sjs
+function identity<T>(x: T): T { return x }
+
+class Stack<T> {
+  private items: T[] = []
+  push(item: T): void { this.items.push(item) }
+  pop(): T? { return this.items.pop() ?? null }
+}
+
+interface Container<T> {
+  get(): T?
+  set(value: T): void
+}
+```
+
+### 7.2 Constraints
+
+Use `: InterfaceName` to constrain a type parameter:
+
+```sjs
+function max<T: Comparable>(a: T, b: T): T {
+  return a.compareTo(b) > 0 ? a : b
+}
+```
+
+The constraint is checked structurally — `T` must satisfy the `Comparable` interface.
+
+### 7.3 Monomorphization
+
+SJS generics are monomorphized at compile time, not type-erased. Each instantiation of a generic at a distinct type produces a distinct specialization. This means:
+
+- Generic code has no runtime type-erasure cost.
+- Type parameters are not available at runtime (no `T.name`, no `instanceof T`).
+- The compiled output is larger than a type-erased equivalent for many distinct instantiations.
+
+### 7.4 Banned generic features
+
+The following TypeScript generic features are not in SJS:
+
+- Conditional types: `T extends U ? A : B`
+- `infer` keyword
+- Mapped types: `{ [K in keyof T]: ... }`
+- Template literal types: `` `prefix_${T}` ``
+
+---
+
+## 8. The `dynamic` Type
+
+### 8.1 Purpose
+
+`dynamic` is the opt-out from the static type system. It exists for interoperability with untyped external data: JSON responses, third-party libraries without type definitions, and runtime-constructed objects.
+
+### 8.2 Semantics
+
+- A `dynamic` value may hold any JavaScript value at runtime.
+- Accessing a property or calling a method on `dynamic` succeeds at compile time but is checked at runtime.
+- `dynamic` does not propagate silently. Assigning a `dynamic` to a statically typed variable requires a runtime narrowing check.
+- In `--strict` mode, positions that would implicitly receive `dynamic` emit `SJS-W001`.
+
+```sjs
+function parseJSON(raw: string): dynamic {
+  return JSON.parse(raw)
+}
+
+const data: dynamic = parseJSON('{"count": 3}')
+const count = data.count   // dynamic — runtime-checked
+
+// To use as a typed value, narrow explicitly:
+if (typeof count === "number") {
+  const n: number = count  // OK
+}
+```
+
+### 8.3 Difference from `any`
+
+`any` in TypeScript is unsound — it silently opts out of type checking for all downstream expressions. `dynamic` in SJS is explicitly runtime-checked: the compiler inserts guards at use sites and the type does not widen surrounding expressions.
+
+---
+
+## 9. Compilation Pipeline
+
+SJS compiles `.sjs` → `.js` in five ordered phases:
+
+### Phase 1: Read
+
+The source file is read as UTF-8. The SJS parser produces an AST that is a superset of the JavaScript AST.
+
+### Phase 2: Preprocess (SJS syntax lowering)
+
+SJS-specific constructs are transformed to valid TypeScript-compatible AST nodes:
+
+- **Sum type declarations** → TypeScript discriminated union type aliases + constructor arrow functions that produce `{ _tag, _0 }` objects.
+- **Match expressions** → IIFE switch statements on `._tag` with destructuring in each case arm.
+
+After this phase the AST contains no SJS-specific nodes — only constructs that Babel and the TypeScript type checker can process.
+
+### Phase 3: Type check
+
+The type checker runs over the preprocessed AST and emits diagnostics:
+
+- `SJS-E001` — null/undefined assigned to non-nullable type
+- `SJS-E002` — type mismatch on assignment or return
+- `SJS-E007` — non-exhaustive match on sum type
+- `SJS-W001` — implicit `dynamic` (strict mode only)
+
+Type errors in this phase do not block emission by default. Pass `--no-emit-on-error` to halt compilation on any error.
+
+### Phase 4: Babel transform
+
+Babel strips all type annotations and applies:
+
+- JSX transform (React 17+ automatic runtime by default)
+- Target ES version downleveling (configurable via `superjs.config.json`)
+- Source map generation
+
+### Phase 5: Emit
+
+The compiler writes `.js` and `.js.map` files to the output directory. One output file is produced per input file, preserving the directory structure under `outDir`.
+
+---
+
+## 10. Diagnostic Code Reference
+
+All SJS diagnostics have stable, permanent codes. Codes are never reused after retirement.
+
+### Error codes (SJS-E)
+
+| Code | Name | Description |
+|------|------|-------------|
+| `SJS-E001` | Null safety violation | A value of type `null`, `undefined`, or `T?` was assigned to a non-nullable binding. |
+| `SJS-E002` | Type mismatch | The type of an expression is not compatible with the declared type at an assignment, return site, or call argument position. |
+| `SJS-E007` | Non-exhaustive match | A `match` expression on a sum type is missing one or more variants and has no `default` arm. |
+
+**SJS-E001 example:**
+
+```sjs
+const name: string = null
+// error[SJS-E001]: cannot assign null to non-nullable type 'string'
+//  --> app.sjs:1:22
+// hint: use 'string?' to allow null, or assign a non-null value
+```
+
+**SJS-E002 example:**
+
+```sjs
+function double(n: number): number {
+  return "oops"
+}
+// error[SJS-E002]: expected return type 'number', found 'string'
+//  --> app.sjs:2:10
+```
+
+**SJS-E007 example:**
+
+```sjs
+type Color = Red | Green | Blue
+const label = match color {
+  Red   => "red",
+  Green => "green",
+}
+// error[SJS-E007]: match is not exhaustive — missing variant: Blue
+//  --> app.sjs:2:15
+// hint: add an arm for 'Blue', or add a 'default' arm
+```
+
+### Warning codes (SJS-W)
+
+| Code | Name | Activated by | Description |
+|------|------|--------------|-------------|
+| `SJS-W001` | Implicit dynamic | `--strict` flag | A variable or parameter has no type annotation and would implicitly receive type `dynamic`. |
+
+**SJS-W001 example:**
+
+```sjs
+// superjs build --strict
+function add(a, b) { return a + b }
+// warning[SJS-W001]: parameter 'a' has implicit type 'dynamic'
+// warning[SJS-W001]: parameter 'b' has implicit type 'dynamic'
+```
+
+### Diagnostic output format
+
+Default (human-readable):
+
+```
+error[SJS-E001]: cannot assign null to non-nullable type 'string'
+ --> src/app.sjs:3:22
+```
+
+JSON mode (`--json` flag, one object per line):
+
+```json
+{"code":"SJS-E001","severity":"error","message":"cannot assign null to non-nullable type 'string'","file":"src/app.sjs","line":3,"column":22}
+```
+
+---
+
+## 11. Permanently Banned Features
+
+The following features are not part of SJS and will not be added. They are excluded by design, not omission.
+
+| Feature | Reason for exclusion |
+|---------|----------------------|
+| `any` | Unsound. Use `dynamic` — it is explicit and runtime-checked. |
+| `T extends U ? A : B` (conditional types) | Makes the type system Turing-complete; produces inscrutable error messages. Use sum types and match instead. |
+| `{ [K in keyof T]: ... }` (mapped types) | Produces types that are correct by construction but hard to read and diagnose. Use explicit interfaces. |
+| Template literal types | Expressive but adds significant type checker complexity for marginal practical benefit. |
+| `infer` | Tied to conditional types; removed along with them. |
+| `namespace` | Superseded by ES modules. |
+| TypeScript `enum` | Enums have confusing runtime semantics. Use sum types — they are explicit, exhaustively matchable, and compile cleanly. |
+| `A & B` (intersection types) | Intersection of two object types is rarely what the author intends and is unsound in several positions. Use interface extension. |
+| `!` (non-null assertion) | Allows bypassing null safety without a runtime check. Use narrowing — it is both safe and readable. |
+
+---
+
+## 12. File Format
+
+- **Extension**: `.sjs`
+- **Encoding**: UTF-8
+- **Line endings**: LF preferred
+- **Comments**: Standard JavaScript `//` and `/* */`
+- **Shebang**: Supported (`#!/usr/bin/env superjs`)
+- **JSX**: Enabled in all `.sjs` files — no opt-in required

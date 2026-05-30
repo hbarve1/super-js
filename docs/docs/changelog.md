@@ -4,101 +4,62 @@ sidebar_position: 6
 
 # Changelog
 
-This page tracks all releases and updates for Super.js. We follow [Semantic Versioning](https://semver.org/) for our releases.
+## v0.1.0 — 2026-05-30 (Phase 1 Prototype)
 
-## Recent Releases
+The first release of SuperJS. Phase 1 delivers a complete, working language and toolchain built on Babel.
 
-- **[0.2.0](/docs/changelog/0.2.0)** - Enhanced type system and tooling (2024-01-15)
-- **[0.1.0](/docs/changelog/0.1.0)** - Initial stable release (2024-01-01)
-- **[0.0.1](/docs/changelog/0.0.1)** - Initial alpha release (2023-12-15)
+### CLI
 
-## Release Types
+- `superjs build` — compile `.sjs` files to JavaScript
+  - `--source <file>` / `--dir <dir>` — single file or directory input
+  - `--outDir <dir>` — output directory (default `./dist`)
+  - `--target` — JS version target: es5, es2015–es2022 (default: es2022)
+  - `--watch` — file-system watch mode, recompiles on change
+  - `--strict` — enable strict mode (SJS-W001 implicit-any warnings)
+  - `--no-emit` — type-check only, no output files
+  - `--sourcemap` — emit `.js.map` alongside output
+  - `--json` — diagnostics as ndjson (one JSON object per line)
+- `superjs lint` — static analysis with `--fix` and `--json` flags
+- `superjs format` — code formatting with `--check` flag for CI
+- `superjs test` — test runner with `--watch` and `--coverage` flags
 
-### Major Releases (X.0.0)
-Major releases include breaking changes and significant new features. These may require code updates to maintain compatibility.
+### Type Checker
 
-### Minor Releases (0.X.0)
-Minor releases add new features in a backward-compatible manner. Existing code should continue to work without changes.
+- **Sound null safety** (SJS-E001): all types are non-nullable by default; `T?` syntax opts a type into nullability
+- **Type mismatch detection** (SJS-E002): errors on mismatched assignment and return types
+- **Implicit-any warnings** (SJS-W001): reported in strict mode (`--strict`)
 
-### Patch Releases (0.0.X)
-Patch releases include bug fixes and minor improvements. These are always backward-compatible.
+### Preprocessor
 
-## Release Schedule
+- **Sum type declarations**: `type Result<T, E> = Ok(T) | Err(E)` syntax compiled to discriminated union objects
+- **Match expressions**: `match expr { Variant(v) => ... }` syntax compiled to exhaustive switch IIFEs
+- **Exhaustiveness checking** (SJS-E007): compile-time error when a match does not cover all sum type variants
 
-We aim to release updates on a regular schedule:
+### Configuration
 
-- **Major releases**: Every 6 months
-- **Minor releases**: Every 2-4 weeks
-- **Patch releases**: As needed for critical fixes
+- `superjs.config.json` project configuration file: `target`, `outDir`, `jsxFactory`, `jsxFragment`, `strict`
+- CLI flags always override config file values
 
-## Contributing to Releases
+### JSX
 
-### Before a Release
-- [ ] Update version numbers
-- [ ] Create new changelog file
-- [ ] Run full test suite
-- [ ] Update documentation
-- [ ] Create release notes
+- JSX enabled by default in `.sjs` files
+- Configurable `jsxFactory` and `jsxFragment` via config or CLI
 
-### Release Process
-1. Create release branch from main
-2. Update version in `package.json`
-3. Create new changelog file for the release
-4. Run tests and build verification
-5. Create GitHub release
-6. Publish to npm
-7. Update documentation
+### Demo Projects
 
-## Version History
+- **Algorithms**: data structures (stack, queue, linked list, binary tree)
+- **Web**: todo application
+- **JSX/React**: markdown editor
+- **Node.js**: code stats analyzer
 
-| Version | Release Date | Status | Notes |
-|---------|-------------|--------|-------|
-| 0.2.0 | 2024-01-15 | Released | Enhanced type system and tooling |
-| 0.1.0 | 2024-01-01 | Released | Initial stable release |
-| 0.0.1 | 2023-12-15 | Released | Initial alpha release |
+### Test Suite
 
-## Future Roadmap
+- 202 tests passing across 18 suites
 
-### Planned for 0.3.0
-- **Advanced Type Features**
-  - Higher-kinded types
-  - Dependent types
-  - Type-level programming
-  - Advanced pattern matching
+---
 
-- **Performance Improvements**
-  - Incremental type checking
-  - Parallel compilation
-  - Memory optimization
-  - Faster startup times
+## What's Next
 
-- **Developer Experience**
-  - Enhanced IDE support
-  - Better error messages
-  - Code completion improvements
-  - Refactoring tools
+Phase 2 (v1.0) will replace the Babel/TypeScript parser with a hand-written recursive-descent parser, add cross-file type inference, improve error messages with source spans, and ship an LSP server for editor integration.
 
-### Planned for 1.0.0
-- **Production Ready**
-  - Stable API
-  - Comprehensive documentation
-  - Migration tools from TypeScript
-  - Ecosystem integration
-
-- **Enterprise Features**
-  - Team collaboration tools
-  - Code review integration
-  - Performance monitoring
-  - Security analysis
-
-## Support and Feedback
-
-For questions about releases or to report issues:
-
-- **GitHub Issues**: [github.com/super-js/super-js/issues](https://github.com/super-js/super-js/issues)
-- **Discussions**: [github.com/super-js/super-js/discussions](https://github.com/super-js/super-js/discussions)
-- **Documentation**: [docs.super-js.dev](https://docs.super-js.dev)
-
-## Release Notes Archive
-
-Detailed release notes for each version are available in our [GitHub releases](https://github.com/super-js/super-js/releases). 
+See the [Roadmap](/docs/roadmap) for the full plan.

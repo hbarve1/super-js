@@ -4,450 +4,453 @@ sidebar_position: 3
 
 # Examples
 
-This page showcases practical examples of Super.js usage, from basic syntax to advanced patterns.
+Practical SJS examples organized by category. Every example uses valid SJS syntax and can be compiled with `superjs build`.
 
-## Basic Examples
+## 1. Basics
 
 ### Hello World
 
-```javascript
-// hello.sjs
+```sjs
+// hello-world.sjs
+const message: string = "Hello, World!"
+console.log(message)
+
 function greet(name: string): string {
-  return `Hello, ${name}!`;
+  return `Hello, ${name}!`
 }
-
-const message = greet("World");
-console.log(message);
+console.log(greet("Super.js"))
 ```
 
-### Type Inference
+### Variables and Type Annotations
 
-```javascript
-// types.sjs
-// Super.js automatically infers types
-const numbers = [1, 2, 3, 4, 5]; // number[]
-const names = ["Alice", "Bob", "Charlie"]; // string[]
-const mixed = [1, "hello", true]; // (number | string | boolean)[]
+```sjs
+// variables.sjs
+const count: number = 42
+const label: string = "items"
+const active: boolean = true
 
-// Object type inference
-const user = {
-  name: "John",
-  age: 30,
-  email: "john@example.com"
-}; // { name: string, age: number, email: string }
+// Type inference — annotation optional when value is clear
+const ratio = 0.75       // inferred: number
+const title = "SuperJS"  // inferred: string
 
-// Function type inference
-const add = (a: number, b: number) => a + b; // (a: number, b: number) => number
+console.log(`${count} ${label}`)
 ```
 
-### Classes and Interfaces
+### Functions
 
-```javascript
-// classes.sjs
-interface Vehicle {
-  brand: string;
-  model: string;
-  year: number;
-  start(): void;
+```sjs
+// functions.sjs
+function add(a: number, b: number): number {
+  return a + b
 }
 
-class Car implements Vehicle {
-  constructor(
-    public brand: string,
-    public model: string,
-    public year: number
-  ) {}
-
-  start(): void {
-    console.log(`${this.brand} ${this.model} is starting...`);
-  }
-
-  getInfo(): string {
-    return `${this.year} ${this.brand} ${this.model}`;
-  }
+function repeat(text: string, times: number): string {
+  return text.repeat(times)
 }
 
-const myCar = new Car("Toyota", "Camry", 2020);
-myCar.start();
-console.log(myCar.getInfo());
+const double = (n: number): number => n * 2
+
+console.log(add(3, 4))         // 7
+console.log(repeat("ha", 3))   // hahaha
+console.log(double(10))        // 20
 ```
 
-## Advanced Examples
+## 2. Null Safety
 
-### Generics
+SJS types are non-nullable by default. Append `?` to allow `null` or `undefined`.
 
-```javascript
-// generics.sjs
-interface Repository<T> {
-  find(id: number): T | null;
-  save(item: T): void;
-  delete(id: number): boolean;
-  findAll(): T[];
+```sjs
+// null-safety.sjs
+function findUser(id: number): string? {
+  if (id === 1) return "Alice"
+  return null
 }
 
-class UserRepository implements Repository<User> {
-  private users: User[] = [];
+const name = findUser(42)      // type: string?
+const display = name ?? "Unknown"
 
-  find(id: number): User | null {
-    return this.users.find(user => user.id === id) || null;
-  }
+console.log(display)           // "Unknown"
+```
 
-  save(user: User): void {
-    const existingIndex = this.users.findIndex(u => u.id === user.id);
-    if (existingIndex >= 0) {
-      this.users[existingIndex] = user;
-    } else {
-      this.users.push(user);
-    }
-  }
+### Optional Chaining and Nullish Coalescing
 
-  delete(id: number): boolean {
-    const index = this.users.findIndex(user => user.id === id);
-    if (index >= 0) {
-      this.users.splice(index, 1);
-      return true;
-    }
-    return false;
-  }
-
-  findAll(): User[] {
-    return [...this.users];
-  }
+```sjs
+interface Address {
+  street: string
+  city: string
+  zip: string?
 }
 
-// Generic utility function
-function createRepository<T>(): Repository<T> {
-  return {
-    find: () => null,
-    save: () => {},
-    delete: () => false,
-    findAll: () => []
-  };
+interface User {
+  name: string
+  address: Address?
+}
+
+function getZip(user: User): string {
+  return user.address?.zip ?? "N/A"
 }
 ```
 
-### Async/Await with Error Handling
+### Nullable Return Types
 
-```javascript
-// async.sjs
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message: string;
+```sjs
+function parseInt10(s: string): number? {
+  const n = parseInt(s, 10)
+  return isNaN(n) ? null : n
 }
 
-class ApiClient {
-  private baseUrl: string;
+const result = parseInt10("abc")
+if (result !== null) {
+  console.log(result * 2)
+}
+```
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
+## 3. Sum Types and Match
 
-  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return {
-        data,
-        status: response.status,
-        message: "Success"
-      };
-    } catch (error) {
-      throw new Error(`API request failed: ${error.message}`);
-    }
-  }
+Sum types declare a closed set of variants. The `match` expression handles each variant and the compiler enforces exhaustiveness (SJS-E007).
 
-  async post<T>(endpoint: string, body: any): Promise<ApiResponse<T>> {
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return {
-        data,
-        status: response.status,
-        message: "Success"
-      };
-    } catch (error) {
-      throw new Error(`API request failed: ${error.message}`);
-    }
-  }
+### Result Type
+
+```sjs
+// result.sjs
+type Result<T, E> = Ok(T) | Err(E)
+
+function divide(a: number, b: number): Result<number, string> {
+  if (b === 0) return Err("division by zero")
+  return Ok(a / b)
 }
 
-// Usage
-const api = new ApiClient('https://api.example.com');
+const r = divide(10, 2)
+const msg = match r {
+  Ok(val) => `Result: ${val}`,
+  Err(e)  => `Error: ${e}`,
+}
+console.log(msg)   // "Result: 5"
+```
 
-async function fetchUsers() {
-  try {
-    const response = await api.get<User[]>('/users');
-    console.log('Users:', response.data);
-  } catch (error) {
-    console.error('Failed to fetch users:', error.message);
+### Option Type
+
+```sjs
+// option.sjs
+type Option<T> = Some(T) | None
+
+function head<T>(arr: T[]): Option<T> {
+  return arr.length > 0 ? Some(arr[0]) : None
+}
+
+const first = head([10, 20, 30])
+const display = match first {
+  Some(v) => `First: ${v}`,
+  None    => "Empty list",
+}
+console.log(display)   // "First: 10"
+```
+
+### Exhaustiveness Checking
+
+Missing a variant produces a SJS-E007 error at compile time:
+
+```sjs
+type Color = Red | Green | Blue
+
+function label(c: Color): string {
+  return match c {
+    Red   => "red",
+    Green => "green",
+    Blue  => "blue",
   }
 }
 ```
 
-### JSX Components
+## 4. Generics
 
-```javascript
-// components.sjs
-interface ButtonProps {
-  text: string;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  disabled?: boolean;
+### Generic Stack
+
+```sjs
+// stack.sjs
+class Stack<T> {
+  private items: T[] = []
+
+  push(item: T): void { this.items.push(item) }
+
+  pop(): T? {
+    return this.items.length > 0 ? this.items.pop()! : null
+  }
+
+  peek(): T? {
+    return this.items.length > 0 ? this.items[this.items.length - 1] : null
+  }
+
+  get size(): number { return this.items.length }
 }
 
-function Button({ text, onClick, variant = 'primary', disabled = false }: ButtonProps) {
-  const baseClass = 'btn';
-  const variantClass = `btn-${variant}`;
-  const disabledClass = disabled ? 'btn-disabled' : '';
-  
+const stack = new Stack<number>()
+stack.push(1)
+stack.push(2)
+stack.push(3)
+console.log(stack.pop())   // 3
+console.log(stack.size)    // 2
+```
+
+### Generic Functions
+
+```sjs
+function identity<T>(value: T): T {
+  return value
+}
+
+function first<T>(arr: T[]): T? {
+  return arr.length > 0 ? arr[0] : null
+}
+
+function zip<A, B>(as: A[], bs: B[]): [A, B][] {
+  const len = Math.min(as.length, bs.length)
+  const result: [A, B][] = []
+  for (let i = 0; i < len; i++) {
+    result.push([as[i], bs[i]])
+  }
+  return result
+}
+
+console.log(zip([1, 2, 3], ["a", "b", "c"]))
+// [[1, "a"], [2, "b"], [3, "c"]]
+```
+
+## 5. Structural Interfaces
+
+SJS interfaces are structural — a class satisfies an interface by having the right shape, no `implements` keyword required.
+
+```sjs
+interface Shape {
+  area(): number
+  perimeter(): number
+}
+
+class Circle {
+  constructor(private radius: number) {}
+
+  area(): number {
+    return Math.PI * this.radius ** 2
+  }
+
+  perimeter(): number {
+    return 2 * Math.PI * this.radius
+  }
+}
+
+class Rectangle {
+  constructor(private width: number, private height: number) {}
+
+  area(): number {
+    return this.width * this.height
+  }
+
+  perimeter(): number {
+    return 2 * (this.width + this.height)
+  }
+}
+
+function describe(s: Shape): string {
+  return `area=${s.area().toFixed(2)}, perimeter=${s.perimeter().toFixed(2)}`
+}
+
+console.log(describe(new Circle(5)))
+console.log(describe(new Rectangle(4, 6)))
+```
+
+### Interface Composition
+
+```sjs
+interface Named {
+  name: string
+}
+
+interface Aged {
+  age: number
+}
+
+interface Person extends Named, Aged {
+  email: string
+}
+
+function greet(p: Person): string {
+  return `Hello, ${p.name} (age ${p.age})`
+}
+```
+
+## 6. JSX
+
+JSX is enabled by default in SJS. Use it directly in `.sjs` files with no extra configuration.
+
+### Typed Props
+
+```sjs
+// card.sjs
+interface CardProps {
+  title: string
+  body: string
+  footer?: string
+}
+
+function Card({ title, body, footer }: CardProps) {
   return (
-    <button 
-      className={`${baseClass} ${variantClass} ${disabledClass}`}
+    <div className="card">
+      <h2>{title}</h2>
+      <p>{body}</p>
+      {footer && <footer>{footer}</footer>}
+    </div>
+  )
+}
+```
+
+### Component with Event Handlers
+
+```sjs
+interface ButtonProps {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}
+
+function Button({ label, onClick, disabled = false }: ButtonProps) {
+  return (
+    <button
+      className={disabled ? "btn btn-disabled" : "btn"}
       onClick={onClick}
       disabled={disabled}
     >
-      {text}
+      {label}
     </button>
-  );
-}
-
-interface UserCardProps {
-  user: User;
-  onEdit: (user: User) => void;
-  onDelete: (id: number) => void;
-}
-
-function UserCard({ user, onEdit, onDelete }: UserCardProps) {
-  return (
-    <div className="user-card">
-      <h3>{user.name}</h3>
-      <p>Email: {user.email}</p>
-      <p>Age: {user.age}</p>
-      <div className="actions">
-        <Button 
-          text="Edit" 
-          onClick={() => onEdit(user)}
-          variant="secondary"
-        />
-        <Button 
-          text="Delete" 
-          onClick={() => onDelete(user.id)}
-          variant="danger"
-        />
-      </div>
-    </div>
-  );
+  )
 }
 ```
 
-## Design Patterns
+### List Rendering
 
-### Observer Pattern
-
-```javascript
-// observer.sjs
-interface Observer<T> {
-  update(data: T): void;
+```sjs
+interface ListProps {
+  items: string[]
+  emptyMessage?: string
 }
 
-interface Subject<T> {
-  attach(observer: Observer<T>): void;
-  detach(observer: Observer<T>): void;
-  notify(data: T): void;
-}
-
-class EventEmitter<T> implements Subject<T> {
-  private observers: Observer<T>[] = [];
-
-  attach(observer: Observer<T>): void {
-    this.observers.push(observer);
+function List({ items, emptyMessage = "Nothing here." }: ListProps) {
+  if (items.length === 0) {
+    return <p>{emptyMessage}</p>
   }
+  return (
+    <ul>
+      {items.map((item, i) => (
+        <li key={i}>{item}</li>
+      ))}
+    </ul>
+  )
+}
+```
 
-  detach(observer: Observer<T>): void {
-    const index = this.observers.indexOf(observer);
-    if (index > -1) {
-      this.observers.splice(index, 1);
+## 7. Node.js Usage
+
+### File Analysis CLI Tool
+
+```sjs
+// analyze.sjs
+import fs from 'fs'
+import path from 'path'
+
+interface FileStats {
+  path: string
+  lines: number
+  sizeBytes: number
+}
+
+type AnalysisResult<T> = Success(T) | Failure(string)
+
+function analyzeFile(filePath: string): AnalysisResult<FileStats> {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return Success({
+      path: filePath,
+      lines: content.split('\n').length,
+      sizeBytes: Buffer.byteLength(content),
+    })
+  } catch (e) {
+    return Failure(`Cannot read ${filePath}`)
+  }
+}
+
+const result = analyzeFile(process.argv[2])
+match result {
+  Success(stats) => console.log(`${stats.lines} lines, ${stats.sizeBytes} bytes`),
+  Failure(msg)   => console.error(msg),
+}
+```
+
+### Directory Walker
+
+```sjs
+// walk.sjs
+import fs from 'fs'
+import path from 'path'
+
+function walkDir(dir: string): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+  const files: string[] = []
+
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...walkDir(full))
+    } else {
+      files.push(full)
     }
   }
 
-  notify(data: T): void {
-    this.observers.forEach(observer => observer.update(data));
-  }
+  return files
 }
 
-// Usage
-class Logger implements Observer<string> {
-  update(message: string): void {
-    console.log(`[LOG] ${new Date().toISOString()}: ${message}`);
-  }
-}
-
-class EmailNotifier implements Observer<string> {
-  update(message: string): void {
-    console.log(`[EMAIL] Sending notification: ${message}`);
-  }
-}
-
-const eventEmitter = new EventEmitter<string>();
-const logger = new Logger();
-const emailNotifier = new EmailNotifier();
-
-eventEmitter.attach(logger);
-eventEmitter.attach(emailNotifier);
-
-eventEmitter.notify("User logged in");
+const target = process.argv[2] ?? "."
+const files = walkDir(target)
+console.log(`Found ${files.length} files`)
+files.forEach(f => console.log(f))
 ```
 
-### Factory Pattern
+### HTTP Server
 
-```javascript
-// factory.sjs
-interface Animal {
-  name: string;
-  makeSound(): string;
+```sjs
+// server.sjs
+import http from 'http'
+
+interface Route {
+  method: string
+  path: string
+  handler: (body: string) => string
 }
 
-class Dog implements Animal {
-  constructor(public name: string) {}
-  
-  makeSound(): string {
-    return "Woof!";
+const routes: Route[] = [
+  {
+    method: "GET",
+    path: "/",
+    handler: () => JSON.stringify({ message: "Hello from SJS!" }),
+  },
+]
+
+const server = http.createServer((req, res) => {
+  const route = routes.find(
+    r => r.method === req.method && r.path === req.url
+  )
+
+  if (!route) {
+    res.writeHead(404)
+    res.end(JSON.stringify({ error: "Not found" }))
+    return
   }
-}
 
-class Cat implements Animal {
-  constructor(public name: string) {}
-  
-  makeSound(): string {
-    return "Meow!";
-  }
-}
+  let body = ""
+  req.on("data", chunk => { body += chunk })
+  req.on("end", () => {
+    res.writeHead(200, { "Content-Type": "application/json" })
+    res.end(route.handler(body))
+  })
+})
 
-class Bird implements Animal {
-  constructor(public name: string) {}
-  
-  makeSound(): string {
-    return "Tweet!";
-  }
-}
-
-type AnimalType = 'dog' | 'cat' | 'bird';
-
-class AnimalFactory {
-  static createAnimal(type: AnimalType, name: string): Animal {
-    switch (type) {
-      case 'dog':
-        return new Dog(name);
-      case 'cat':
-        return new Cat(name);
-      case 'bird':
-        return new Bird(name);
-      default:
-        throw new Error(`Unknown animal type: ${type}`);
-    }
-  }
-}
-
-// Usage
-const animals = [
-  AnimalFactory.createAnimal('dog', 'Rex'),
-  AnimalFactory.createAnimal('cat', 'Whiskers'),
-  AnimalFactory.createAnimal('bird', 'Polly')
-];
-
-animals.forEach(animal => {
-  console.log(`${animal.name} says: ${animal.makeSound()}`);
-});
+server.listen(3000, () => console.log("Listening on :3000"))
 ```
-
-## Utility Examples
-
-### Type Guards and Validation
-
-```javascript
-// validation.sjs
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
-function isNumber(value: unknown): value is number {
-  return typeof value === 'number' && !isNaN(value);
-}
-
-function isEmail(value: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(value);
-}
-
-function validateUser(data: unknown): data is User {
-  if (typeof data !== 'object' || data === null) {
-    return false;
-  }
-  
-  const user = data as any;
-  
-  return (
-    isString(user.name) &&
-    isString(user.email) &&
-    isEmail(user.email) &&
-    (user.age === undefined || isNumber(user.age))
-  );
-}
-
-// Usage
-function processUserData(data: unknown): User | null {
-  if (validateUser(data)) {
-    return data;
-  }
-  return null;
-}
-```
-
-### Higher-Order Functions
-
-```javascript
-// hof.sjs
-type Predicate<T> = (item: T) => boolean;
-type Mapper<T, U> = (item: T) => U;
-type Reducer<T, U> = (accumulator: U, item: T) => U;
-
-function filter<T>(array: T[], predicate: Predicate<T>): T[] {
-  return array.filter(predicate);
-}
-
-function map<T, U>(array: T[], mapper: Mapper<T, U>): U[] {
-  return array.map(mapper);
-}
-
-function reduce<T, U>(array: T[], reducer: Reducer<T, U>, initial: U): U {
-  return array.reduce(reducer, initial);
-}
-
-// Usage with type safety
-const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-const evenNumbers = filter(numbers, n => n % 2 === 0);
-const doubled = map(evenNumbers, n => n * 2);
-const sum = reduce(doubled, (acc, n) => acc + n, 0);
-
-console.log(`Sum of doubled even numbers: ${sum}`);
-```
-
-These examples demonstrate the power and flexibility of Super.js while maintaining type safety and ECMA compliance. Each example can be compiled and run using the Super.js compiler. 
