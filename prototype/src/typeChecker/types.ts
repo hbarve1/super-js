@@ -114,7 +114,7 @@ export type Type =
  */
 export interface PrototypeDiagnostic {
   code: string          // e.g. "SJS-E001"
-  severity: 'error' | 'warning' | 'note'
+  severity: 'error' | 'warning' | 'info'
   message: string       // plain-English, names both types
   file?: string
   line: number
