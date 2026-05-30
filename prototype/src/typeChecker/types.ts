@@ -1,84 +1,130 @@
-// Basic types
-interface NumberType {
-  kind: 'number';
+/**
+ * Super.js type representation.
+ *
+ * Primitive kinds map directly to ECMAScript Language Types (ECMA-262 §6.1):
+ *   https://tc39.es/ecma262/#sec-ecmascript-language-types
+ *
+ * `any` is the gradual type (consistent with every type) from:
+ *   Siek & Taha, "Gradual Typing for Functional Languages" (2006)
+ */
+
+// ── Primitive types — ECMA-262 §6.1 ─────────────────────────────────────────
+
+export interface UndefinedType { kind: 'undefined' }   // §6.1.1
+export interface NullType      { kind: 'null' }        // §6.1.2
+export interface BooleanType   { kind: 'boolean' }     // §6.1.3
+export interface StringType    { kind: 'string' }      // §6.1.4
+export interface SymbolType    { kind: 'symbol' }      // §6.1.5
+export interface NumberType    { kind: 'number' }      // §6.1.6.1
+export interface BigIntType    { kind: 'bigint' }      // §6.1.6.2
+
+// ── Object type — ECMA-262 §6.1.7 ────────────────────────────────────────────
+
+export interface ObjectType {
+  kind: 'object'
+  properties: Map<string, Type>
 }
 
-interface StringType {
-  kind: 'string';
+// ── Composite types ───────────────────────────────────────────────────────────
+
+export interface ArrayType {
+  kind: 'array'
+  elementType: Type
 }
 
-interface BooleanType {
-  kind: 'boolean';
+export interface FunctionType {
+  kind: 'function'
+  params: Array<{ name: string; type: Type; optional: boolean }>
+  returnType: Type
 }
 
-interface NullType {
-  kind: 'null';
+export interface UnionType {
+  kind: 'union'
+  types: Type[]
 }
 
-interface VoidType {
-  kind: 'void';
+export interface IntersectionType {
+  kind: 'intersection'
+  types: Type[]
 }
 
-interface AnyType {
-  kind: 'any';
+// ── Sum types (SJS-specific — type Result<T> = Ok(T) | Err(string)) ──────────
+
+export interface SumVariantType {
+  kind: 'sumVariant'
+  tag: string                                    // variant name, e.g. "Ok"
+  fields: Array<{ name: string; type: Type }>   // positional: _0, _1, …
 }
 
-// Complex types
-interface ArrayType {
-  kind: 'array';
-  elementType: Type;
+export interface SumType {
+  kind: 'sum'
+  name: string           // declared type name, e.g. "Result"
+  variants: SumVariantType[]
 }
 
-interface ObjectType {
-  kind: 'object';
-  properties: Map<string, Type>;
-}
+/** `dynamic` — runtime-checked escape hatch (not `any`). Consistent with every type. */
+export interface DynamicType { kind: 'dynamic' }
 
-interface FunctionType {
-  kind: 'function';
-  params: Type[];
-  returnType: Type;
-}
+// ── Special types ─────────────────────────────────────────────────────────────
 
-interface UnionType {
-  kind: 'union';
-  types: Type[];
-}
+/** Void — function returns nothing. ECMA-262 §15.8.3 step 3 (absent completion value). */
+export interface VoidType { kind: 'void' }
 
-interface IntersectionType {
-  kind: 'intersection';
-  types: Type[];
-}
+/**
+ * `any` — the gradual/dynamic type. Consistent with every other type.
+ * All unannotated positions receive `any`.
+ * Consistency relation: `any ~ T` and `T ~ any` hold for all T.
+ */
+export interface AnyType { kind: 'any' }
 
-// Type definition
+/** `never` — the bottom type; no value inhabits it. */
+export interface NeverType { kind: 'never' }
+
+// ── Union of all type variants ────────────────────────────────────────────────
+
 export type Type =
-  | NumberType
-  | StringType
-  | BooleanType
+  | UndefinedType
   | NullType
-  | VoidType
-  | AnyType
-  | ArrayType
+  | BooleanType
+  | StringType
+  | SymbolType
+  | NumberType
+  | BigIntType
   | ObjectType
+  | ArrayType
   | FunctionType
   | UnionType
-  | IntersectionType;
+  | IntersectionType
+  | VoidType
+  | AnyType
+  | NeverType
+  | SumType
+  | SumVariantType
+  | DynamicType
 
-// Type environment for storing variable types
-export type TypeEnvironment = Map<string, Type>;
+// ── Diagnostic ────────────────────────────────────────────────────────────────
 
-// Compiler options types
-export interface CompilerOptions {
-  target: string;
-  module: string;
-  strict: boolean;
-  declaration: boolean;
-  sourceMap: boolean;
+/**
+ * A compiler diagnostic (error or warning).
+ *
+ * Follows the Rust-inspired model from research.md §3:
+ *   - stable `SJS-Exxx` codes
+ *   - precise source location
+ *   - `specUrl` linking to the ECMAScript (or TypeScript) specification section
+ *     that defines the rule being violated
+ */
+export interface Diagnostic {
+  code: string          // e.g. "SJS-E001"
+  severity: 'error' | 'warning' | 'note'
+  message: string       // plain-English, names both types
+  file?: string
+  line: number
+  column: number
+  endLine?: number
+  endColumn?: number
+  specUrl: string       // authoritative spec anchor for this rule
 }
 
-// Transform options
-export interface TransformOptions {
-  target: string;
-  module: string;
-  sourceMaps: boolean;
-} 
+// ── Type environment ──────────────────────────────────────────────────────────
+
+export type TypeEnvironment = Map<string, Type>

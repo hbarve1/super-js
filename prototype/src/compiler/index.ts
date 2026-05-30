@@ -1,11 +1,51 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import generate from '@babel/generator';
 import * as t from '@babel/types';
-import { transformFromAstSync } from '@babel/core';
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { transformSync } from '@babel/core';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs';
 import { resolve, basename, relative, dirname, join } from 'path';
 import { TypeChecker } from '../typeChecker';
+import type { Diagnostic } from '../typeChecker/types';
+import { preprocessSJS } from '../preprocessor';
+
+// ── CompilationError ──────────────────────────────────────────────────────────
+
+/**
+ * Thrown by compile() when one or more error-severity diagnostics exist.
+ * Callers can inspect `.diagnostics` for structured diagnostic data.
+ *
+ * The `.message` property is a human-readable Rust-style summary.
+ */
+export class CompilationError extends Error {
+  constructor(
+    public readonly diagnostics: Diagnostic[],
+    public readonly file?: string,
+  ) {
+    super(CompilationError.format(diagnostics, file))
+    this.name = 'CompilationError'
+  }
+
+  /**
+   * Formats diagnostics as a Rust-inspired human-readable string.
+   *
+   * Example output:
+   *   error[SJS-E001]: I cannot assign a value of type 'string' to … 'number'.
+   *    --> bad.sjs:1:19
+   *    = spec: https://tc39.es/ecma262/#sec-let-and-const-declarations
+   */
+  static format(diagnostics: Diagnostic[], file?: string): string {
+    return diagnostics.map(d => {
+      const loc = file ? `${basename(file)}:${d.line}:${d.column}` : `${d.line}:${d.column}`
+      return [
+        `${d.severity}[${d.code}]: ${d.message}`,
+        ` --> ${loc}`,
+        ` = spec: ${d.specUrl}`,
+      ].join('\n')
+    }).join('\n\n')
+  }
+}
+
+// ── CompileOptions ────────────────────────────────────────────────────────────
 
 interface CompileOptions {
   watch?: boolean;
@@ -16,6 +56,30 @@ interface CompileOptions {
   target?: string;
   jsxPragma?: string;
   jsxFragmentPragma?: string;
+  silent?: boolean;
+  /** Type-check only; do not write output files. Exit code 1 on errors. */
+  noEmit?: boolean;
+  /** Enable strict mode: SJS-W001 (implicit any) warnings. */
+  strict?: boolean;
+}
+
+function loadProjectConfig(dir: string): Partial<CompileOptions> {
+  const configPath = join(dir, 'superjs.config.json');
+  if (!existsSync(configPath)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const result: Partial<CompileOptions> = {};
+    if (raw.jsxFactory) result.jsxPragma = raw.jsxFactory;
+    if (raw.jsxFragment) result.jsxFragmentPragma = raw.jsxFragment;
+    if (raw.jsxPragma) result.jsxPragma = raw.jsxPragma;
+    if (raw.jsxFragmentPragma) result.jsxFragmentPragma = raw.jsxFragmentPragma;
+    if (raw.target) result.target = raw.target;
+    if (raw.outDir) result.outDir = raw.outDir;
+    if (raw.strict !== undefined) result.strict = raw.strict;
+    return result;
+  } catch {
+    return {};
+  }
 }
 
 function findSjsFiles(dir: string): string[] {
@@ -47,18 +111,21 @@ async function compileFile(
   typeChecker: TypeChecker,
   target: string = 'es2022',
   jsxPragma: string = 'sjs.createElement',
-  jsxFragmentPragma: string = 'sjs.Fragment'
+  jsxFragmentPragma: string = 'sjs.Fragment',
+  log: (...args: unknown[]) => void = console.log.bind(console),
+  noEmit: boolean = false
 ): Promise<void> {
   const resolvedSourceFile = resolve(process.cwd(), sourceFile);
-  console.log(`Compiling ${resolvedSourceFile}...`);
+  log(`Compiling ${resolvedSourceFile}...`);
 
   // Parse the source file
-  const sourceCode = readFileSync(resolvedSourceFile, 'utf-8');
+  const rawSource = readFileSync(resolvedSourceFile, 'utf-8');
+  const sourceCode = preprocessSJS(rawSource);
   const ast = parse(sourceCode, {
     sourceType: 'module',
     plugins: [
       'typescript',
-      ['jsx', { throwIfNamespace: false }],
+      'jsx',
       'classProperties',
       'classPrivateProperties',
       'classPrivateMethods',
@@ -69,15 +136,22 @@ async function compileFile(
   });
 
   // Type checking phase
-  console.log('Running type checker...');
+  log('Running type checker...');
+  typeChecker.reset();
   traverse(ast, {
     enter(path) {
       typeChecker.check(path);
     },
   });
 
+  // Surface type errors — ECMA-262 §14.3.1, §15.2 (via type-system.md rules)
+  const diagnostics = typeChecker.getDiagnostics().filter(d => d.severity === 'error');
+  if (diagnostics.length > 0) {
+    throw new CompilationError(diagnostics, resolvedSourceFile);
+  }
+
   // Type stripping phase
-  console.log('Stripping types...');
+  log('Stripping types...');
   traverse(ast, {
     // Remove TypeScript-specific nodes
     TSTypeAnnotation(path) {
@@ -234,7 +308,7 @@ async function compileFile(
   });
 
   // Code generation phase
-  console.log('Generating code...');
+  log('Generating code...');
 
   // Preserve directory structure in output
   const relativeSourcePath = relative(sourceRoot, resolvedSourceFile);
@@ -248,56 +322,56 @@ async function compileFile(
   const sourceMapRelativePath = basename(outputMapFile);
 
   // Transform AST with preset-env and custom JSX transform
-  const { ast: transformedAst } = transformFromAstSync(ast, sourceCode, {
+  // Map target to browserslist-compatible format
+  const targetMap: Record<string, object> = {
+    'es5':    { browsers: ['ie 11'] },
+    'es2015': { browsers: ['last 2 Chrome versions', 'last 2 Firefox versions'] },
+    'es2022': { node: 'current' },
+  };
+  const resolvedTargets = targetMap[target] ?? { node: 'current' };
+
+  // Use transformSync on original source — avoids corrupted-AST issues
+  const transformed = transformSync(sourceCode, {
+    filename: resolvedSourceFile,
     presets: [
-      ['@babel/preset-env', {
-        targets: {
-          [target]: true
-        }
-      }]
+      ['@babel/preset-env', { targets: resolvedTargets }],
+      ['@babel/preset-typescript', { allExtensions: true, isTSX: true }],
     ],
     plugins: [
+      ['@babel/plugin-proposal-decorators', { version: '2023-11' }],
       ['@babel/plugin-transform-react-jsx', {
         pragma: jsxPragma,
         pragmaFrag: jsxFragmentPragma,
         runtime: 'classic',
-        useBuiltIns: true
-      }]
+      }],
     ],
     sourceMaps: true,
     sourceFileName: relative(sourceRoot, resolvedSourceFile),
-    sourceRoot: relative(dirname(outputFile), sourceRoot)
-  }) || { ast: null };
-
-  if (!transformedAst) {
-    throw new Error('Failed to transform AST');
-  }
-
-  // Generate code with source maps
-  const { code, map } = generate(transformedAst, {
-    retainLines: true,
-    compact: false,
-    sourceMaps: true,
-    sourceFileName: relative(sourceRoot, resolvedSourceFile),
     sourceRoot: relative(dirname(outputFile), sourceRoot),
-    jsescOption: {
-      minimal: true
-    }
   });
 
-  // Add source map comment to generated code
-  const codeWithSourceMap = code + '\n//# sourceMappingURL=' + sourceMapRelativePath + '\n';
+  if (!transformed || transformed.code == null) {
+    throw new Error('Failed to transform source: Babel returned no output');
+  }
 
-  // Write the output files
-  writeFileSync(outputFile, codeWithSourceMap);
-  writeFileSync(outputMapFile, JSON.stringify(map));
+  const codeWithSourceMap = transformed.code + '\n//# sourceMappingURL=' + sourceMapRelativePath + '\n';
 
-  console.log(`Output written to ${outputFile}`);
-  console.log(`Source map written to ${outputMapFile}`);
+  if (!noEmit) {
+    writeFileSync(outputFile, codeWithSourceMap);
+    if (transformed.map) {
+      writeFileSync(outputMapFile, JSON.stringify(transformed.map));
+    }
+    log(`Output written to ${outputFile}`);
+    log(`Source map written to ${outputMapFile}`);
+  }
 }
 
 export async function compile(options: CompileOptions = {}): Promise<void> {
-  const { 
+  // Load project config from superjs.config.json; CLI options take precedence
+  const projectConfig = loadProjectConfig(process.cwd());
+  const merged: CompileOptions = { ...projectConfig, ...options };
+
+  const {
     watch = false,
     outDir = './dist',
     sourceFile,
@@ -305,43 +379,47 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
     directory,
     target = 'es2022',
     jsxPragma = 'sjs.createElement',
-    jsxFragmentPragma = 'sjs.Fragment'
-  } = options;
+    jsxFragmentPragma = 'sjs.Fragment',
+    silent = false,
+    noEmit = false,
+    strict = false,
+  } = merged;
+
+  const log = silent ? () => {} : console.log.bind(console);
 
   // Initialize type checker
-  const typeChecker = new TypeChecker();
+  const typeChecker = new TypeChecker({ strict });
 
   try {
     if (directory) {
-      // Compile all .sjs files in the directory
       const resolvedDir = resolve(process.cwd(), directory);
-      console.log(`Finding .sjs files in ${resolvedDir}...`);
-      
+      log(`Finding .sjs files in ${resolvedDir}...`);
+
       const files = findSjsFiles(resolvedDir);
-      console.log(`Found ${files.length} .sjs files`);
-      
+      log(`Found ${files.length} .sjs files`);
+
+      const effectiveSourceRoot = sourceRoot === process.cwd() ? resolvedDir : sourceRoot;
       for (const file of files) {
-        await compileFile(file, outDir, sourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma);
+        await compileFile(file, outDir, effectiveSourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma, log, noEmit);
       }
-      
-      console.log('Directory compilation successful');
+
+      log('Directory compilation successful');
     } else if (sourceFile) {
-      // Compile single file
-      await compileFile(sourceFile, outDir, sourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma);
-      console.log('File compilation successful');
+      await compileFile(sourceFile, outDir, sourceRoot, typeChecker, target, jsxPragma, jsxFragmentPragma, log, noEmit);
+      log('File compilation successful');
     } else {
       throw new Error('Either --source or --dir option must be specified');
     }
 
     if (watch) {
-      console.log('Watching for changes...');
+      log('Watching for changes...');
       // TODO: Implement watch mode
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Compilation failed:', error.message);
-      if (error.stack) {
-        console.error(error.stack);
+      if (!silent) {
+        console.error('Compilation failed:', error.message);
+        if (error.stack) console.error(error.stack);
       }
     }
     throw error;
