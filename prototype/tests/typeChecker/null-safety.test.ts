@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import { TypeChecker } from '../../src/typeChecker'
-import type { Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic as Diagnostic } from '../../src/typeChecker/types'
 
 function typeCheck(source: string): Diagnostic[] {
   const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
