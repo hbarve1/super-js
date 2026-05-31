@@ -1,0 +1,635 @@
+(* ============================================================= *)
+(* Super.js (SJS) — EBNF Grammar Specification                  *)
+(* Version: 0.1 (Stage 0 — Foundations)                         *)
+(*                                                               *)
+(* Notation:                                                     *)
+(*   |   alternation                                             *)
+(*   [ X ]   optional (zero or one)                             *)
+(*   { X }   zero or more repetitions                           *)
+(*   ( X )   grouping                                           *)
+(*   "kw"    terminal keyword or punctuation                     *)
+(*   <Name>  non-terminal                                        *)
+(*   (* n *) inline comment / ambiguity note                     *)
+(*                                                               *)
+(* SJS is a strict subset of JavaScript plus:                   *)
+(*   - Type annotations (TypeScript-like, with restrictions)    *)
+(*   - Sum types:  type R<T,E> = Ok(T) | Err(E)                 *)
+(*   - Match expressions (exhaustive)                           *)
+(*   - Nullable shorthand: T?  (not T | null)                   *)
+(*   - `dynamic` type  (replaces banned `any`)                  *)
+(*   - Structural interfaces (Go-style, no `implements`)        *)
+(*                                                               *)
+(* BANNED (compiler error if present):                          *)
+(*   any, A & B (intersection), conditional types, mapped types,*)
+(*   infer, enum, namespace, ! non-null assertion               *)
+(* ============================================================= *)
+
+
+(* ============================================================= *)
+(* TOP LEVEL                                                      *)
+(* ============================================================= *)
+
+<Program> ::= { <Statement> }
+
+<Statement> ::= <VariableDecl>
+              | <FunctionDecl>
+              | <ClassDecl>
+              | <InterfaceDecl>
+              | <TypeDecl>
+              | <ImportDecl>
+              | <ExportDecl>
+              | <ExpressionStatement>
+              | <ReturnStatement>
+              | <IfStatement>
+              | <WhileStatement>
+              | <DoWhileStatement>
+              | <ForStatement>
+              | <ForOfStatement>
+              | <ForInStatement>
+              | <SwitchStatement>
+              | <BreakStatement>
+              | <ContinueStatement>
+              | <ThrowStatement>
+              | <TryCatchStatement>
+              | <BlockStatement>
+              | <LabeledStatement>
+              | ";"                    (* empty statement *)
+
+<BlockStatement> ::= "{" { <Statement> } "}"
+
+
+(* ============================================================= *)
+(* VARIABLE DECLARATIONS                                          *)
+(* ============================================================= *)
+
+<VariableDecl> ::= <VariableKind> <VariableDeclarator>
+                   { "," <VariableDeclarator> } ";"
+
+<VariableKind> ::= "const" | "let" | "var"
+
+<VariableDeclarator> ::= <BindingPattern> [ ":" <Type> ] [ "=" <Expression> ]
+
+<BindingPattern> ::= <Identifier>
+                   | <ArrayBindingPattern>
+                   | <ObjectBindingPattern>
+
+<ArrayBindingPattern> ::= "[" [ <ArrayBindingElement>
+                           { "," <ArrayBindingElement> }
+                           [ "," ] ] "]"
+
+<ArrayBindingElement> ::= <BindingPattern> [ "=" <Expression> ]
+                         | "..." <Identifier>
+                         | (* empty slot *)
+
+<ObjectBindingPattern> ::= "{" [ <ObjectBindingElement>
+                             { "," <ObjectBindingElement> }
+                             [ "," ] ] "}"
+
+<ObjectBindingElement> ::= <Identifier> [ ":" <BindingPattern> ]
+                             [ "=" <Expression> ]
+                           | "..." <Identifier>
+
+
+(* ============================================================= *)
+(* FUNCTION DECLARATIONS                                          *)
+(* ============================================================= *)
+
+<FunctionDecl> ::= [ "async" ] "function" [ "*" ] <Identifier>
+                   [ <TypeParameters> ]
+                   "(" [ <ParameterList> ] ")"
+                   [ ":" <Type> ]
+                   <BlockStatement>
+
+<ParameterList> ::= <Parameter> { "," <Parameter> } [ "," <RestParameter> ]
+                  | <RestParameter>
+
+<Parameter> ::= [ <AccessModifier> ]          (* note: only valid in class constructors *)
+                <BindingPattern>
+                [ "?" ]                        (* optional parameter *)
+                [ ":" <Type> ]
+                [ "=" <Expression> ]
+
+<RestParameter> ::= "..." <Identifier> [ ":" <Type> ]
+
+<ArrowFunction> ::= [ "async" ]
+                    ( <Identifier> | "(" [ <ParameterList> ] ")" )
+                    [ ":" <Type> ]
+                    "=>"
+                    ( <Expression> | <BlockStatement> )
+
+
+(* ============================================================= *)
+(* CLASS DECLARATIONS                                             *)
+(* ============================================================= *)
+
+<ClassDecl> ::= [ "abstract" ] "class" <Identifier>
+                [ <TypeParameters> ]
+                [ "extends" <TypeRef> ]
+                (* note: no `implements` keyword — interfaces are structural *)
+                "{" { <ClassMember> } "}"
+
+<ClassMember> ::= <ClassProperty>
+                | <ClassMethod>
+                | <ClassConstructor>
+                | <IndexSignature>
+                | ";"
+
+<ClassProperty> ::= [ <AccessModifier> ] [ "static" ] [ "readonly" ] [ "abstract" ]
+                    <Identifier> [ "?" ] [ ":" <Type> ] [ "=" <Expression> ] ";"
+
+<ClassConstructor> ::= [ <AccessModifier> ]
+                       "constructor"
+                       "(" [ <ParameterList> ] ")"
+                       <BlockStatement>
+
+<ClassMethod> ::= [ <AccessModifier> ] [ "static" ] [ "abstract" ] [ "async" ]
+                  [ "get" | "set" | "*" ]
+                  <Identifier>
+                  [ <TypeParameters> ]
+                  "(" [ <ParameterList> ] ")"
+                  [ ":" <Type> ]
+                  ( <BlockStatement> | ";" )  (* ";" for abstract methods *)
+
+<AccessModifier> ::= "public" | "private" | "protected"
+
+<IndexSignature> ::= "[" <Identifier> ":" <PrimitiveType> "]" ":" <Type> ";"
+
+
+(* ============================================================= *)
+(* INTERFACE DECLARATIONS (structural / Go-style)                *)
+(* ============================================================= *)
+(* No `implements` keyword. A value satisfies an interface       *)
+(* if it structurally provides all required members.             *)
+
+<InterfaceDecl> ::= "interface" <Identifier>
+                    [ <TypeParameters> ]
+                    [ "extends" <TypeRef> { "," <TypeRef> } ]
+                    "{" { <InterfaceMember> } "}"
+
+<InterfaceMember> ::= <InterfaceProperty>
+                    | <InterfaceMethod>
+                    | <IndexSignature>
+                    | ";"
+
+<InterfaceProperty> ::= [ "readonly" ] <Identifier> [ "?" ] ":" <Type> ";"
+
+<InterfaceMethod> ::= <Identifier>
+                      [ <TypeParameters> ]
+                      "(" [ <ParameterList> ] ")"
+                      ":" <Type> ";"
+
+
+(* ============================================================= *)
+(* TYPE DECLARATIONS                                              *)
+(* ============================================================= *)
+(* SJS supports two forms of type aliases:                       *)
+(*   1. Plain alias:   type Alias<T> = SomeType                  *)
+(*   2. Sum type:      type Result<T,E> = Ok(T) | Err(E)         *)
+(* The distinction is syntactic: the RHS uses <VariantDef> form. *)
+
+<TypeDecl> ::= "type" <Identifier> [ <TypeParameters> ] "="
+               ( <SumTypeDef> | <Type> ) ";"
+
+<SumTypeDef> ::= <VariantDef> { "|" <VariantDef> }
+                 (* note: at least two variants makes it a sum type;
+                    a single VariantDef is still valid but unusual *)
+
+<VariantDef> ::= <Identifier>                              (* unit variant    *)
+               | <Identifier> "(" <Type> ")"               (* tuple variant   *)
+               | <Identifier> "(" "{" <VariantFieldList> "}" ")"  (* record variant *)
+
+<VariantFieldList> ::= <VariantField> { "," <VariantField> } [ "," ]
+
+<VariantField> ::= <Identifier> [ "?" ] ":" <Type>
+
+
+(* ============================================================= *)
+(* IMPORT / EXPORT DECLARATIONS (ES module syntax)               *)
+(* ============================================================= *)
+
+<ImportDecl> ::= "import" <ImportClause> "from" <StringLiteral> ";"
+               | "import" <StringLiteral> ";"
+               | "import" "type" <ImportClause> "from" <StringLiteral> ";"
+
+<ImportClause> ::= <DefaultImport>
+                 | <NamespaceImport>
+                 | <NamedImports>
+                 | <DefaultImport> "," ( <NamespaceImport> | <NamedImports> )
+
+<DefaultImport>    ::= <Identifier>
+<NamespaceImport>  ::= "*" "as" <Identifier>
+<NamedImports>     ::= "{" [ <ImportSpecifier> { "," <ImportSpecifier> } [ "," ] ] "}"
+<ImportSpecifier>  ::= <Identifier> [ "as" <Identifier> ]
+
+<ExportDecl> ::= "export" "default" <Expression> ";"
+               | "export" "default" <FunctionDecl>
+               | "export" "default" <ClassDecl>
+               | "export" "{" [ <ExportSpecifier> { "," <ExportSpecifier> } [ "," ] ] "}"
+                           [ "from" <StringLiteral> ] ";"
+               | "export" "*" [ "as" <Identifier> ] "from" <StringLiteral> ";"
+               | "export" "type" "{" [ <ExportSpecifier> { "," <ExportSpecifier> } [ "," ] ] "}"
+                           [ "from" <StringLiteral> ] ";"
+               | "export" ( <VariableDecl> | <FunctionDecl> | <ClassDecl>
+                           | <InterfaceDecl> | <TypeDecl> )
+
+<ExportSpecifier> ::= <Identifier> [ "as" <Identifier> ]
+
+
+(* ============================================================= *)
+(* TYPE EXPRESSIONS                                               *)
+(* ============================================================= *)
+(* BANNED types (compiler rejects):                              *)
+(*   - `any`                 (use `dynamic` instead)             *)
+(*   - intersection `A & B`                                      *)
+(*   - conditional `T extends U ? A : B`                         *)
+(*   - mapped  `{ [K in keyof T]: ... }`                         *)
+(*   - `infer T`                                                  *)
+(*   - indexed access `T['key']`                                  *)
+(*   - `typeof` in type position (structural only)               *)
+
+<Type> ::= <PrimaryType> [ "?" ]     (* postfix ? = nullable; note: not T|null *)
+         | <FunctionType>
+         | <TupleType>
+
+<PrimaryType> ::= <PrimitiveType>
+                | <TypeRef>
+                | <ObjectTypeLiteral>
+                | "(" <Type> ")"
+
+<PrimitiveType> ::= "number"
+                  | "string"
+                  | "boolean"
+                  | "bigint"
+                  | "symbol"
+                  | "void"
+                  | "null"
+                  | "never"
+                  | "dynamic"           (* SJS replacement for banned `any` *)
+                  | "unknown"
+                  | "object"
+                  | "undefined"
+
+<TypeRef> ::= <Identifier> [ <TypeArguments> ] { "." <Identifier> [ <TypeArguments> ] }
+            | <ArrayType>
+
+<ArrayType> ::= <PrimaryType> "[" "]"   (* note: left-recursive; parsed iteratively *)
+
+<TypeArguments> ::= "<" <TypeArgumentList> ">"
+<TypeArgumentList> ::= <Type> { "," <Type> }
+
+<TypeParameters> ::= "<" <TypeParameter> { "," <TypeParameter> } ">"
+<TypeParameter> ::= <Identifier>
+                    (* note: no `extends` constraint — banned in SJS *)
+                    [ "=" <Type> ]          (* default type parameter *)
+
+<FunctionType> ::= "(" [ <FunctionTypeParamList> ] ")" "=>" <Type>
+<FunctionTypeParamList> ::= <FunctionTypeParam> { "," <FunctionTypeParam> }
+                          | "..." <Identifier> ":" <Type>
+<FunctionTypeParam> ::= <Identifier> [ "?" ] ":" <Type>
+
+<TupleType> ::= "[" [ <Type> { "," <Type> } ] "]"
+
+<ObjectTypeLiteral> ::= "{" { <ObjectTypeMember> } "}"
+<ObjectTypeMember> ::= [ "readonly" ] <Identifier> [ "?" ] ":" <Type> ";"
+                     | <IndexSignature>
+                     | <InterfaceMethod>
+
+
+(* ============================================================= *)
+(* CONTROL FLOW STATEMENTS                                        *)
+(* ============================================================= *)
+
+<IfStatement> ::= "if" "(" <Expression> ")" <Statement>
+                  [ "else" <Statement> ]
+
+<WhileStatement> ::= "while" "(" <Expression> ")" <Statement>
+
+<DoWhileStatement> ::= "do" <Statement> "while" "(" <Expression> ")" ";"
+
+<ForStatement> ::= "for" "("
+                   ( <VariableDecl> | <ExpressionStatement> | ";" )
+                   [ <Expression> ] ";"
+                   [ <Expression> ]
+                   ")" <Statement>
+
+<ForOfStatement> ::= "for" [ "await" ] "(" <VariableKind> <BindingPattern>
+                     [ ":" <Type> ] "of" <Expression> ")" <Statement>
+
+<ForInStatement> ::= "for" "(" <VariableKind> <Identifier>
+                     "in" <Expression> ")" <Statement>
+
+<SwitchStatement> ::= "switch" "(" <Expression> ")" "{"
+                      { <SwitchCase> }
+                      [ <DefaultCase> ]
+                      "}"
+
+<SwitchCase>    ::= "case" <Expression> ":" { <Statement> }
+<DefaultCase>   ::= "default" ":" { <Statement> }
+
+<BreakStatement>    ::= "break" [ <Identifier> ] ";"
+<ContinueStatement> ::= "continue" [ <Identifier> ] ";"
+<LabeledStatement>  ::= <Identifier> ":" <Statement>
+
+<ReturnStatement> ::= "return" [ <Expression> ] ";"
+<ThrowStatement>  ::= "throw" <Expression> ";"
+
+<TryCatchStatement> ::= "try" <BlockStatement>
+                        [ "catch" "(" <CatchBinding> ")" <BlockStatement> ]
+                        [ "finally" <BlockStatement> ]
+
+<CatchBinding> ::= <Identifier> [ ":" <Type> ]
+
+
+(* ============================================================= *)
+(* EXPRESSIONS                                                    *)
+(* ============================================================= *)
+(* Expressions are listed in decreasing precedence (lowest first)*)
+(* for readability. The actual precedence is JS-standard.        *)
+
+<ExpressionStatement> ::= <Expression> ";"
+
+<Expression> ::= <AssignmentExpression>
+               | <SequenceExpression>
+
+<SequenceExpression> ::= <AssignmentExpression> { "," <AssignmentExpression> }
+                         (* note: comma operator; low precedence, use sparingly *)
+
+<AssignmentExpression> ::= <ConditionalExpression>
+                          | <LeftHandSideExpression> <AssignmentOperator> <AssignmentExpression>
+                          | <ArrowFunction>
+
+<AssignmentOperator> ::= "=" | "+=" | "-=" | "*=" | "/=" | "%="
+                       | "**=" | "&&=" | "||=" | "??="
+                       | "&=" | "|=" | "^=" | "<<=" | ">>=" | ">>>="
+
+<ConditionalExpression> ::= <NullishCoalescing>
+                           | <NullishCoalescing> "?" <AssignmentExpression>
+                             ":" <AssignmentExpression>
+
+<NullishCoalescing> ::= <LogicalOrExpression>
+                      | <NullishCoalescing> "??" <LogicalOrExpression>
+                      (* note: ?? and || cannot be mixed without parens per JS spec *)
+
+<LogicalOrExpression>  ::= <LogicalAndExpression>
+                         | <LogicalOrExpression> "||" <LogicalAndExpression>
+
+<LogicalAndExpression> ::= <BitwiseOrExpression>
+                         | <LogicalAndExpression> "&&" <BitwiseOrExpression>
+
+<BitwiseOrExpression>  ::= <BitwiseXorExpression>
+                         | <BitwiseOrExpression> "|" <BitwiseXorExpression>
+
+<BitwiseXorExpression> ::= <BitwiseAndExpression>
+                         | <BitwiseXorExpression> "^" <BitwiseAndExpression>
+
+<BitwiseAndExpression> ::= <EqualityExpression>
+                         | <BitwiseAndExpression> "&" <EqualityExpression>
+
+<EqualityExpression> ::= <RelationalExpression>
+                       | <EqualityExpression> "===" <RelationalExpression>
+                       | <EqualityExpression> "!==" <RelationalExpression>
+                       (* note: == and != are banned by the SJS linter *)
+
+<RelationalExpression> ::= <ShiftExpression>
+                         | <RelationalExpression> "<" <ShiftExpression>
+                         | <RelationalExpression> ">" <ShiftExpression>
+                         | <RelationalExpression> "<=" <ShiftExpression>
+                         | <RelationalExpression> ">=" <ShiftExpression>
+                         | <RelationalExpression> "instanceof" <ShiftExpression>
+                         | <RelationalExpression> "in" <ShiftExpression>
+
+<ShiftExpression> ::= <AdditiveExpression>
+                    | <ShiftExpression> "<<" <AdditiveExpression>
+                    | <ShiftExpression> ">>" <AdditiveExpression>
+                    | <ShiftExpression> ">>>" <AdditiveExpression>
+
+<AdditiveExpression> ::= <MultiplicativeExpression>
+                       | <AdditiveExpression> "+" <MultiplicativeExpression>
+                       | <AdditiveExpression> "-" <MultiplicativeExpression>
+
+<MultiplicativeExpression> ::= <ExponentiationExpression>
+                             | <MultiplicativeExpression> "*" <ExponentiationExpression>
+                             | <MultiplicativeExpression> "/" <ExponentiationExpression>
+                             | <MultiplicativeExpression> "%" <ExponentiationExpression>
+
+<ExponentiationExpression> ::= <UnaryExpression>
+                             | <UpdateExpression> "**" <ExponentiationExpression>
+
+<UnaryExpression> ::= <UpdateExpression>
+                    | "typeof" <UnaryExpression>
+                    | "void" <UnaryExpression>
+                    | "delete" <UnaryExpression>
+                    | "!" <UnaryExpression>
+                    | "~" <UnaryExpression>
+                    | "+" <UnaryExpression>
+                    | "-" <UnaryExpression>
+                    | "await" <UnaryExpression>
+                    | "yield" [ "*" ] <AssignmentExpression>
+                    (* note: ! non-null assertion (`x!`) is BANNED in SJS *)
+
+<UpdateExpression> ::= <LeftHandSideExpression>
+                     | <LeftHandSideExpression> "++"
+                     | <LeftHandSideExpression> "--"
+                     | "++" <UnaryExpression>
+                     | "--" <UnaryExpression>
+
+<LeftHandSideExpression> ::= <CallExpression>
+                           | <NewExpression>
+                           | <MemberExpression>
+
+<CallExpression> ::= <MemberExpression> <Arguments>
+                   | <CallExpression> <Arguments>
+                   | <CallExpression> "[" <Expression> "]"
+                   | <CallExpression> "." <Identifier>
+                   | <CallExpression> "?." <Identifier>
+                   | <CallExpression> "?." <Arguments>
+                   | <CallExpression> "?." "[" <Expression> "]"
+
+<NewExpression> ::= "new" <MemberExpression> [ <Arguments> ]
+
+<Arguments> ::= [ <TypeArguments> ]              (* generic call *)
+                "(" [ <ArgumentList> ] ")"
+
+<ArgumentList> ::= <Argument> { "," <Argument> } [ "," ]
+<Argument>     ::= [ "..." ] <AssignmentExpression>
+
+<MemberExpression> ::= <PrimaryExpression>
+                     | <MemberExpression> "." <Identifier>
+                     | <MemberExpression> "?." <Identifier>
+                     | <MemberExpression> "[" <Expression> "]"
+                     | <MemberExpression> "?." "[" <Expression> "]"
+                     | <MemberExpression> "!" <Identifier>
+                       (* note: postfix ! non-null is BANNED; this rule is here
+                          only for error recovery and to emit a diagnostic *)
+
+<LeftHandSideExpression> ::= <CallExpression>
+                           | <NewExpression>
+                           | <MemberExpression>
+
+
+(* ============================================================= *)
+(* PRIMARY EXPRESSIONS                                            *)
+(* ============================================================= *)
+
+<PrimaryExpression> ::= <Literal>
+                      | <Identifier>
+                      | <MatchExpression>             (* SJS-specific *)
+                      | <VariantConstructorExpression> (* SJS-specific *)
+                      | <ArrayLiteral>
+                      | <ObjectLiteral>
+                      | <TemplateLiteral>
+                      | <ArrowFunction>
+                      | <FunctionExpression>
+                      | <ClassExpression>
+                      | <JsxElement>
+                      | "(" <Expression> ")"
+                      | <TypeAssertion>
+
+<TypeAssertion> ::= <Expression> "as" <Type>
+                    (* note: `as` is the only casting syntax; `<Type>expr` is banned *)
+
+
+(* ============================================================= *)
+(* MATCH EXPRESSION (SJS-specific)                               *)
+(* ============================================================= *)
+(* Exhaustive pattern matching over sum-type values.             *)
+(* The compiler emits an error if not all variants are covered   *)
+(* and no `default` arm is present.                              *)
+
+<MatchExpression> ::= "match" <Expression> "{" { <MatchArm> } "}"
+
+<MatchArm> ::= <MatchPattern> "=>" ( <Expression> | <BlockStatement> ) ","
+
+<MatchPattern> ::= <Identifier> "(" <Identifier> ")"
+                   (* tuple variant: Ok(value) — binds inner value *)
+                 | <Identifier> "(" "{" <RecordPattern> "}" ")"
+                   (* record variant: Node({ left, right }) *)
+                 | <Identifier>
+                   (* unit variant: None *)
+                 | "default"
+                   (* catch-all; makes match non-exhaustive *)
+                 | <Identifier> "(" ")" (* unit variant with explicit parens *)
+
+<RecordPattern> ::= <RecordPatternField> { "," <RecordPatternField> } [ "," ]
+<RecordPatternField> ::= <Identifier> [ ":" <Identifier> ]
+                          (* note: `field` shorthand or `field: binding` *)
+
+
+(* ============================================================= *)
+(* VARIANT CONSTRUCTOR EXPRESSION (SJS-specific)                 *)
+(* ============================================================= *)
+(* Used on the value side to construct a sum-type variant.       *)
+(* Ambiguity note: `Ok(x)` looks like a call expression.        *)
+(* Resolution: if `Ok` is a variant name in scope (defined via   *)
+(* `type` declaration), the compiler treats it as a constructor; *)
+(* otherwise it is a regular call expression.                    *)
+
+<VariantConstructorExpression> ::= <Identifier>              (* unit variant  *)
+                                 | <Identifier> "(" <Expression> ")"  (* tuple variant *)
+
+
+(* ============================================================= *)
+(* LITERALS                                                       *)
+(* ============================================================= *)
+
+<Literal> ::= <NumberLiteral>
+            | <StringLiteral>
+            | <BooleanLiteral>
+            | <NullLiteral>
+            | <UndefinedLiteral>
+            | <BigIntLiteral>
+            | <RegexLiteral>
+
+<NumberLiteral>    ::= (* decimal, hex 0x, octal 0o, binary 0b, with optional _ separator *)
+<StringLiteral>    ::= (* single-quoted or double-quoted string; no raw string form *)
+<BooleanLiteral>   ::= "true" | "false"
+<NullLiteral>      ::= "null"
+<UndefinedLiteral> ::= "undefined"
+<BigIntLiteral>    ::= (* integer literal followed by n: 42n, 0xFFn *)
+<RegexLiteral>     ::= (* /pattern/flags *)
+
+<TemplateLiteral> ::= "`" { <TemplateCharacter> | "${" <Expression> "}" } "`"
+<TemplateCharacter> ::= (* any character except ` and ${ *)
+
+<ArrayLiteral> ::= "[" [ <ArrayElement> { "," <ArrayElement> } [ "," ] ] "]"
+<ArrayElement> ::= [ "..." ] <AssignmentExpression>
+                 | (* elision — empty element *)
+
+<ObjectLiteral> ::= "{" [ <PropertyDefinition>
+                       { "," <PropertyDefinition> } [ "," ] ] "}"
+
+<PropertyDefinition> ::= <Identifier>                           (* shorthand *)
+                       | <Identifier> ":" <AssignmentExpression>
+                       | "[" <AssignmentExpression> "]" ":" <AssignmentExpression>
+                       | "..." <AssignmentExpression>           (* spread *)
+                       | <MethodDefinition>
+
+<MethodDefinition> ::= [ "get" | "set" | "*" | "async" ]
+                       ( <Identifier> | "[" <AssignmentExpression> "]" )
+                       [ <TypeParameters> ]
+                       "(" [ <ParameterList> ] ")"
+                       [ ":" <Type> ]
+                       <BlockStatement>
+
+<FunctionExpression> ::= [ "async" ] "function" [ "*" ] [ <Identifier> ]
+                         [ <TypeParameters> ]
+                         "(" [ <ParameterList> ] ")"
+                         [ ":" <Type> ]
+                         <BlockStatement>
+
+<ClassExpression> ::= "class" [ <Identifier> ]
+                      [ <TypeParameters> ]
+                      [ "extends" <TypeRef> ]
+                      "{" { <ClassMember> } "}"
+
+
+(* ============================================================= *)
+(* JSX (enabled by default in SJS)                               *)
+(* ============================================================= *)
+
+<JsxElement> ::= <JsxOpeningElement> { <JsxChild> } <JsxClosingElement>
+               | <JsxSelfClosingElement>
+               | <JsxFragment>
+
+<JsxFragment> ::= "<>" { <JsxChild> } "</>"
+
+<JsxSelfClosingElement> ::= "<" <JsxElementName> { <JsxAttribute> } "/>"
+
+<JsxOpeningElement> ::= "<" <JsxElementName> { <JsxAttribute> } ">"
+<JsxClosingElement> ::= "</" <JsxElementName> ">"
+
+<JsxElementName> ::= <Identifier>
+                   | <Identifier> "." <Identifier>   (* member: Module.Component *)
+
+<JsxAttribute> ::= <Identifier> [ "=" <JsxAttributeValue> ]
+                 | "{" "..." <Expression> "}"         (* spread attributes *)
+
+<JsxAttributeValue> ::= <StringLiteral>
+                       | "{" <Expression> "}"
+                       | <JsxElement>
+
+<JsxChild> ::= <JsxElement>
+             | "{" <Expression> "}"
+             | <JsxText>
+
+<JsxText> ::= (* any characters except { } < > *)
+
+
+(* ============================================================= *)
+(* IDENTIFIERS AND KEYWORDS                                       *)
+(* ============================================================= *)
+
+<Identifier> ::= (* Unicode letter or _ or $, followed by Unicode letters, digits, _ or $ *)
+                 (* Must not be a reserved keyword *)
+
+(* Reserved keywords (not usable as identifiers):               *)
+(* await, break, case, catch, class, const, continue, debugger,  *)
+(* default, delete, do, dynamic, else, export, extends, false,   *)
+(* finally, for, function, if, import, in, instanceof, let,      *)
+(* match, new, null, of, return, static, super, switch, this,    *)
+(* throw, true, try, typeof, undefined, var, void, while, with,  *)
+(* yield, abstract, async, as, declare, from, get, interface,    *)
+(* object, readonly, set, type                                    *)
+
+(* Banned identifiers (compiler emits an error if used):         *)
+(* any, enum, namespace, infer                                    *)
