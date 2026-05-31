@@ -14,7 +14,7 @@
   "bugs": {
     "url": "https://github.com/hbarve1/super-js/issues"
   },
-  "icon": "icons/sjs-marketplace.png",
+  "icon": "icons/sjs-marketplace.svg",
   "galleryBanner": {
     "color": "#1e1e1e",
     "theme": "dark"

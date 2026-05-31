@@ -1,1 +1,129 @@
-{}
+{
+  "Match expression": {
+    "prefix": "match",
+    "scope": "source.sjs",
+    "body": [
+      "match ${1:expr} {",
+      "  ${2:Pattern1}(${3:val}) => ${4:body1},",
+      "  ${5:Pattern2}(${6:val}) => ${7:body2},",
+      "  default => ${8:defaultBody}",
+      "}"
+    ],
+    "description": "Match expression with two arms and default"
+  },
+  "Match Result": {
+    "prefix": "matchres",
+    "scope": "source.sjs",
+    "body": [
+      "match ${1:result} {",
+      "  Ok(${2:value}) => ${3:value},",
+      "  Err(${4:err}) => ${5:handleErr(err)}",
+      "}"
+    ],
+    "description": "Match a Result<T, E>"
+  },
+  "Match Option / Nullable": {
+    "prefix": "matchopt",
+    "scope": "source.sjs",
+    "body": [
+      "match ${1:opt} {",
+      "  Some(${2:value}) => ${3:value},",
+      "  None => ${4:defaultValue}",
+      "}"
+    ],
+    "description": "Match an Option<T> or nullable value"
+  },
+  "Sum type declaration": {
+    "prefix": "type",
+    "scope": "source.sjs",
+    "body": [
+      "type ${1:TypeName}${2:<${3:T}>} =",
+      "  | ${4:Variant1}(${5:T})",
+      "  | ${6:Variant2}(${7:E})"
+    ],
+    "description": "Sum type (algebraic data type) declaration"
+  },
+  "Unit-variant sum type": {
+    "prefix": "typeu",
+    "scope": "source.sjs",
+    "body": [
+      "type ${1:TypeName} =",
+      "  | ${2:Variant1}",
+      "  | ${3:Variant2}",
+      "  | ${4:Variant3}"
+    ],
+    "description": "Unit-variant sum type (enum-like)"
+  },
+  "Function returning Result": {
+    "prefix": "result",
+    "scope": "source.sjs",
+    "body": [
+      "function ${1:name}(${2:args}): Result<${3:T}, ${4:E}> {",
+      "  ${0:// body}",
+      "}"
+    ],
+    "description": "Function returning Result<T, E>"
+  },
+  "Return Ok": {
+    "prefix": "okret",
+    "scope": "source.sjs",
+    "body": "return Ok(${1:value})",
+    "description": "Return Ok variant"
+  },
+  "Return Err": {
+    "prefix": "errret",
+    "scope": "source.sjs",
+    "body": "return Err(${1:message})",
+    "description": "Return Err variant"
+  },
+  "Interface declaration": {
+    "prefix": "iface",
+    "scope": "source.sjs",
+    "body": [
+      "interface ${1:Name} {",
+      "  ${2:field}: ${3:type}",
+      "}"
+    ],
+    "description": "Interface declaration"
+  },
+  "Function returning nullable": {
+    "prefix": "fnopt",
+    "scope": "source.sjs",
+    "body": [
+      "function ${1:name}(${2:args}): ${3:Type}? {",
+      "  ${0:// body}",
+      "}"
+    ],
+    "description": "Function returning nullable T?"
+  },
+  "Generic with constraint": {
+    "prefix": "genc",
+    "scope": "source.sjs",
+    "body": [
+      "function ${1:name}<${2:T}: ${3:Constraint}>(${4:arg}: ${2:T}): ${2:T} {",
+      "  ${0:// body}",
+      "}"
+    ],
+    "description": "Generic function with type constraint"
+  },
+  "Dynamic-typed function": {
+    "prefix": "dyn",
+    "scope": "source.sjs",
+    "body": [
+      "function ${1:name}(${2:input}: dynamic): dynamic {",
+      "  ${0:// body}",
+      "}"
+    ],
+    "description": "Function using dynamic type (escape hatch)"
+  },
+  "Async function returning Result": {
+    "prefix": "asyncres",
+    "scope": "source.sjs",
+    "body": [
+      "async function ${1:name}(${2:args}): Promise<Result<${3:T}, ${4:E}>> {",
+      "  ${0:// body}",
+      "}"
+    ],
+    "description": "Async function returning Promise<Result<T, E>>"
+  }
+}
