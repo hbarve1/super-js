@@ -110,10 +110,13 @@ console.log(ss)  // [95,87,92]
 
 const maybeNum: number? = 7
 console.log(mapMaybe(maybeNum, n => n * 10))  // 70
-console.log(mapMaybe(null as number?, n => n * 10))  // null
 
-console.log(getOrElse(null as string?, "default"))  // default
-console.log(getOrElse("found", "default"))          // found
+const nothing: number? = null
+console.log(mapMaybe(nothing, n => n * 10))  // null
+
+const notFound: string? = null
+console.log(getOrElse(notFound, "default"))  // default
+console.log(getOrElse("found", "default"))   // found
 
 console.log(repeat(0, 5))        // [0,0,0,0,0]
 console.log(repeat("x", 3))      // ["x","x","x"]
