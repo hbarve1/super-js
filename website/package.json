@@ -9,7 +9,8 @@
     "lint": "eslint",
     "build:cf": "npx @cloudflare/next-on-pages",
     "preview:cf": "npm run build:cf && npx wrangler pages dev .vercel/output/static",
-    "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website"
+    "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website",
+    "postbuild": "npx pagefind --site .next/static --output-path public/pagefind || true"
   },
   "dependencies": {
     "@pagefind/default-ui": "^1.5.2",
