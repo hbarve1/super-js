@@ -1,0 +1,42 @@
+name: Compiler Crash
+description: The SuperJS compiler crashed or produced an unexpected internal error
+labels: ["bug", "crash", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A compiler crash is a bug. Please include the crash output below.
+        Note: crash logs include only file basenames and symbol basenames by default.
+        To include full paths, re-run with `superjs build --crash-full` (see SECURITY.md for details).
+  - type: textarea
+    id: crash-output
+    attributes:
+      label: Crash Output
+      description: Paste the full terminal output including the error message
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproduction
+      description: Smallest `.sjs` file that triggers the crash
+      placeholder: |
+        ```sjs
+        // paste .sjs code here
+        ```
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SuperJS version
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command that triggered the crash
+      placeholder: "superjs build --source app.sjs"
+    validations:
+      required: true
