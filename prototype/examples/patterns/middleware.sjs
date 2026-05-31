@@ -5,13 +5,13 @@ interface Request {
   path: string;
   method: string;
   headers: Record<string, string>;
-  body: any;
+  body: dynamic;
 }
 
 interface Response {
   status: number;
   headers: Record<string, string>;
-  body: any;
+  body: dynamic;
 }
 
 // Middleware type
