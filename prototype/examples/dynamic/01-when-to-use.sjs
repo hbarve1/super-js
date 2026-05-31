@@ -22,7 +22,7 @@ function greet(u: User): string {
 
 // WRONG (commented out — do not do this):
 // function greetBad(u: User): string {
-//   const nick: dynamic = u.nickname   // BAD — dynamic just to avoid null check
+//   const nick: dynamic = u.nickname   // BAD — dynamic is unnecessary here because nickname is already typed as string? in the User interface — the type is statically known
 //   return "Hi " + nick
 // }
 
