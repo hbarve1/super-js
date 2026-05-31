@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SuperJS",
+  "scopeName": "source.sjs",
+  "fileTypes": ["sjs"],
+  "patterns": [
+    { "comment": "SJS-specific rules will be added in sprints 1-2", "include": "#sjs-banned-keywords" },
+    { "include": "#sjs-sum-type-decl" },
+    { "include": "#sjs-match-expression" },
+    { "include": "#sjs-dynamic-type" },
+    { "include": "#sjs-nullable-suffix" },
+    { "include": "#sjs-variant-constructor" },
+    { "include": "#sjs-generic-constraint" },
+    { "include": "source.tsx" }
+  ],
+  "repository": {
+    "sjs-banned-keywords": {
+      "comment": "Stub — implemented in sprint 1",
+      "patterns": []
+    },
+    "sjs-sum-type-decl": {
+      "comment": "Stub — implemented in sprint 1",
+      "patterns": []
+    },
+    "sjs-match-expression": {
+      "comment": "Stub — implemented in sprint 1",
+      "patterns": []
+    },
+    "sjs-dynamic-type": {
+      "comment": "Stub — implemented in sprint 1",
+      "patterns": []
+    },
+    "sjs-nullable-suffix": {
+      "comment": "Stub — implemented in sprint 2",
+      "patterns": []
+    },
+    "sjs-variant-constructor": {
+      "comment": "Stub — implemented in sprint 2",
+      "patterns": []
+    },
+    "sjs-generic-constraint": {
+      "comment": "Stub — implemented in sprint 2",
+      "patterns": []
+    }
+  }
+}
