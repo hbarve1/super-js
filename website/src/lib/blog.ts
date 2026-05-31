@@ -33,6 +33,10 @@ export async function getPostBySlug(slug: string): Promise<Post> {
   const filePath = path.join(BLOG_DIR, `${slug}.mdx`)
   const raw = fs.readFileSync(filePath, 'utf-8')
   const { data, content } = matter(raw)
+  // gray-matter parses date fields as Date objects; normalize to ISO string
+  if (data.date instanceof Date) {
+    data.date = data.date.toISOString().split('T')[0]
+  }
   return { slug, frontmatter: data as PostFrontmatter, content }
 }
 
