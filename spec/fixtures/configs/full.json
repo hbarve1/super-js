@@ -1,0 +1,35 @@
+{
+  "language": "1.0",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noEmitOnError": true,
+    "target": "ES2022",
+    "outDir": "dist",
+    "sourceMap": "external",
+    "watch": false
+  },
+  "jsx": {
+    "runtime": "classic",
+    "importSource": "react",
+    "pragma": "React.createElement",
+    "pragmaFrag": "React.Fragment"
+  },
+  "paths": {
+    "@/*": ["src/*"],
+    "@utils/*": ["src/utils/*"]
+  },
+  "output": {
+    "variants": [
+      { "name": "esm", "target": "ES2022", "outDir": "dist/esm" },
+      { "name": "cjs", "target": "ES2020", "outDir": "dist/cjs" }
+    ],
+    "eol": "lf"
+  },
+  "lsp": {
+    "memoryBudgetMB": 256
+  },
+  "env": {
+    "allowlist": ["NODE_ENV", "API_URL", "DEBUG"]
+  }
+}

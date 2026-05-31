@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import { TypeChecker } from '../../src/typeChecker'
-import type { Diagnostic, SumType, SumVariantType } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic as Diagnostic, SumType, SumVariantType } from '../../src/typeChecker/types'
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
 

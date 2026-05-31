@@ -1,0 +1,322 @@
+[
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/api.sjs",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 14,
+      "byteStart": 100,
+      "byteEnd": 109
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/api.sjs",
+          "startLine": 6,
+          "startCol": 5,
+          "endLine": 6,
+          "endCol": 14,
+          "byteStart": 100,
+          "byteEnd": 109
+        },
+        "message": "variable 'response' has inferred type 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["strict mode requires all bindings to have explicit or inferable static types"],
+    "helps": ["add an explicit type annotation, e.g. 'let response: ApiResponse = ...'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/parser.sjs",
+      "startLine": 23,
+      "startCol": 10,
+      "endLine": 23,
+      "endCol": 19,
+      "byteStart": 460,
+      "byteEnd": 469
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/parser.sjs",
+          "startLine": 23,
+          "startCol": 10,
+          "endLine": 23,
+          "endCol": 19,
+          "byteStart": 460,
+          "byteEnd": 469
+        },
+        "message": "parameter 'rawData' has inferred type 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["function parameters must have explicit type annotations in strict mode"],
+    "helps": ["annotate the parameter: 'rawData: RawData' or use an appropriate type"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' return type in strict mode",
+    "span": {
+      "file": "src/transform.sjs",
+      "startLine": 11,
+      "startCol": 9,
+      "endLine": 11,
+      "endCol": 27,
+      "byteStart": 210,
+      "byteEnd": 228
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/transform.sjs",
+          "startLine": 11,
+          "startCol": 9,
+          "endLine": 11,
+          "endCol": 27,
+          "byteStart": 210,
+          "byteEnd": 228
+        },
+        "message": "function 'processRecord' has inferred return type 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["functions must have an explicit return type in strict mode when it cannot be inferred statically"],
+    "helps": ["add a return type annotation: 'fn processRecord(...): Record'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/json-utils.sjs",
+      "startLine": 34,
+      "startCol": 14,
+      "endLine": 34,
+      "endCol": 22,
+      "byteStart": 680,
+      "byteEnd": 688
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/json-utils.sjs",
+          "startLine": 34,
+          "startCol": 14,
+          "endLine": 34,
+          "endCol": 22,
+          "byteStart": 680,
+          "byteEnd": 688
+        },
+        "message": "variable 'parsed' receives the result of 'JSON.parse()' which is 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'JSON.parse()' returns 'dynamic'; strict mode requires narrowing to a concrete type"],
+    "helps": ["cast the result: 'let parsed = JSON.parse(s) as MyType' and validate at runtime"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/storage.sjs",
+      "startLine": 48,
+      "startCol": 7,
+      "endLine": 48,
+      "endCol": 18,
+      "byteStart": 960,
+      "byteEnd": 971
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/storage.sjs",
+          "startLine": 48,
+          "startCol": 7,
+          "endLine": 48,
+          "endCol": 18,
+          "byteStart": 960,
+          "byteEnd": 971
+        },
+        "message": "variable 'cachedItem' inferred as 'dynamic' from map lookup",
+        "style": "primary"
+      }
+    ],
+    "notes": ["lookup on 'Map<string, dynamic>' yields 'dynamic'"],
+    "helps": ["use a strongly-typed map 'Map<string, CacheEntry>' and annotate the variable"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/plugin.sjs",
+      "startLine": 17,
+      "startCol": 5,
+      "endLine": 17,
+      "endCol": 11,
+      "byteStart": 320,
+      "byteEnd": 326
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/plugin.sjs",
+          "startLine": 17,
+          "startCol": 5,
+          "endLine": 17,
+          "endCol": 11,
+          "byteStart": 320,
+          "byteEnd": 326
+        },
+        "message": "loop variable 'plugin' has inferred type 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["for-of loop variable type is inferred from iterable element type"],
+    "helps": ["type the array explicitly: 'plugins: PluginDescriptor[]' before iterating"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' spread in strict mode",
+    "span": {
+      "file": "src/merge.sjs",
+      "startLine": 29,
+      "startCol": 21,
+      "endLine": 29,
+      "endCol": 31,
+      "byteStart": 590,
+      "byteEnd": 600
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/merge.sjs",
+          "startLine": 29,
+          "startCol": 21,
+          "endLine": 29,
+          "endCol": 31,
+          "byteStart": 590,
+          "byteEnd": 600
+        },
+        "message": "spread of 'dynamic' produces 'dynamic' result",
+        "style": "primary"
+      }
+    ],
+    "notes": ["spreading a 'dynamic' value in strict mode loses type safety"],
+    "helps": ["type the value before spreading, or use 'Object.assign' with explicit types"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/middleware.sjs",
+      "startLine": 8,
+      "startCol": 25,
+      "endLine": 8,
+      "endCol": 32,
+      "byteStart": 155,
+      "byteEnd": 162
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/middleware.sjs",
+          "startLine": 8,
+          "startCol": 25,
+          "endLine": 8,
+          "endCol": 32,
+          "byteStart": 155,
+          "byteEnd": 162
+        },
+        "message": "destructuring target 'payload' has inferred type 'dynamic'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["destructuring from a 'dynamic' source yields 'dynamic' bindings"],
+    "helps": ["add a type assertion before destructuring: 'const { payload } = event as AuthEvent'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/config-loader.sjs",
+      "startLine": 41,
+      "startCol": 12,
+      "endLine": 41,
+      "endCol": 19,
+      "byteStart": 830,
+      "byteEnd": 837
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/config-loader.sjs",
+          "startLine": 41,
+          "startCol": 12,
+          "endLine": 41,
+          "endCol": 19,
+          "byteStart": 830,
+          "byteEnd": 837
+        },
+        "message": "variable 'options' has inferred type 'dynamic' from 'require()' call",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'require()' returns 'dynamic' in strict mode without type declarations"],
+    "helps": ["add a type declaration file for the module, or cast the result to a known type"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-W001",
+    "severity": "warning",
+    "message": "implicit 'dynamic' type in strict mode",
+    "span": {
+      "file": "src/template.sjs",
+      "startLine": 55,
+      "startCol": 9,
+      "endLine": 55,
+      "endCol": 17,
+      "byteStart": 1110,
+      "byteEnd": 1118
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/template.sjs",
+          "startLine": 55,
+          "startCol": 9,
+          "endLine": 55,
+          "endCol": 17,
+          "byteStart": 1110,
+          "byteEnd": 1118
+        },
+        "message": "variable 'rendered' inferred as 'dynamic' from template function call",
+        "style": "primary"
+      }
+    ],
+    "notes": ["template function has an overloaded return type that resolves to 'dynamic'"],
+    "helps": ["provide explicit generic type parameters: 'render<HtmlOutput>(template, data)'"]
+  }
+]

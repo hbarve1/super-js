@@ -5,7 +5,7 @@ import { transformSync } from '@babel/core';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs';
 import { resolve, basename, relative, dirname, join } from 'path';
 import { TypeChecker } from '../typeChecker';
-import type { Diagnostic } from '../typeChecker/types';
+import type { PrototypeDiagnostic } from '../typeChecker/types';
 import { preprocessSJS } from '../preprocessor';
 
 // ── CompilationError ──────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ import { preprocessSJS } from '../preprocessor';
  */
 export class CompilationError extends Error {
   constructor(
-    public readonly diagnostics: Diagnostic[],
+    public readonly diagnostics: PrototypeDiagnostic[],
     public readonly file?: string,
   ) {
     super(CompilationError.format(diagnostics, file))
@@ -33,7 +33,7 @@ export class CompilationError extends Error {
    *    --> bad.sjs:1:19
    *    = spec: https://tc39.es/ecma262/#sec-let-and-const-declarations
    */
-  static format(diagnostics: Diagnostic[], file?: string): string {
+  static format(diagnostics: PrototypeDiagnostic[], file?: string): string {
     return diagnostics.map(d => {
       const loc = file ? `${basename(file)}:${d.line}:${d.column}` : `${d.line}:${d.column}`
       return [

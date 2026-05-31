@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "dist"
+  },
+  "jsx": {
+    "runtime": "automatic"
+  },
+  "paths": {
+    "@/*": ["src/*"]
+  }
+}
