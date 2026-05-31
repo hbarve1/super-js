@@ -1,0 +1,361 @@
+[
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot assign null to non-nullable type 'string'",
+    "span": {
+      "file": "src/app.sjs",
+      "startLine": 3,
+      "startCol": 22,
+      "endLine": 3,
+      "endCol": 26,
+      "byteStart": 65,
+      "byteEnd": 69
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/app.sjs",
+          "startLine": 3,
+          "startCol": 22,
+          "endLine": 3,
+          "endCol": 26,
+          "byteStart": 65,
+          "byteEnd": 69
+        },
+        "message": "null is not assignable to type 'string'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["type 'string' does not include null or undefined"],
+    "helps": ["use 'string?' to allow null, or assign a non-null value"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot assign null to non-nullable type 'number'",
+    "span": {
+      "file": "src/math.sjs",
+      "startLine": 12,
+      "startCol": 14,
+      "endLine": 12,
+      "endCol": 18,
+      "byteStart": 210,
+      "byteEnd": 214
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/math.sjs",
+          "startLine": 12,
+          "startCol": 14,
+          "endLine": 12,
+          "endCol": 18,
+          "byteStart": 210,
+          "byteEnd": 214
+        },
+        "message": "null is not assignable to type 'number'",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/math.sjs",
+          "startLine": 10,
+          "startCol": 7,
+          "endLine": 10,
+          "endCol": 19,
+          "byteStart": 180,
+          "byteEnd": 192
+        },
+        "message": "variable declared as 'number' here",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["type 'number' does not include null or undefined"],
+    "helps": ["use 'number?' to allow null, or provide a default value"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot assign undefined to non-nullable type 'boolean'",
+    "span": {
+      "file": "src/flags.sjs",
+      "startLine": 7,
+      "startCol": 18,
+      "endLine": 7,
+      "endCol": 27,
+      "byteStart": 130,
+      "byteEnd": 139
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/flags.sjs",
+          "startLine": 7,
+          "startCol": 18,
+          "endLine": 7,
+          "endCol": 27,
+          "byteStart": 130,
+          "byteEnd": 139
+        },
+        "message": "undefined is not assignable to type 'boolean'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["type 'boolean' does not include null or undefined"],
+    "helps": ["use 'boolean?' to allow undefined, or initialize to true or false"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E003",
+    "severity": "error",
+    "message": "property access on potentially null value 'user'",
+    "span": {
+      "file": "src/user.sjs",
+      "startLine": 25,
+      "startCol": 5,
+      "endLine": 25,
+      "endCol": 14,
+      "byteStart": 490,
+      "byteEnd": 499
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/user.sjs",
+          "startLine": 25,
+          "startCol": 5,
+          "endLine": 25,
+          "endCol": 14,
+          "byteStart": 490,
+          "byteEnd": 499
+        },
+        "message": "'user' may be null here",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/user.sjs",
+          "startLine": 18,
+          "startCol": 10,
+          "endLine": 18,
+          "endCol": 22,
+          "byteStart": 340,
+          "byteEnd": 352
+        },
+        "message": "'user' has type 'User?' (nullable)",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["access on a nullable type without a null guard is unsafe"],
+    "helps": ["add a null check: 'if (user != null) { ... }', or use optional chaining: 'user?.name'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E003",
+    "severity": "error",
+    "message": "property access on potentially null value 'config'",
+    "span": {
+      "file": "src/config.sjs",
+      "startLine": 41,
+      "startCol": 10,
+      "endLine": 41,
+      "endCol": 21,
+      "byteStart": 870,
+      "byteEnd": 881
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/config.sjs",
+          "startLine": 41,
+          "startCol": 10,
+          "endLine": 41,
+          "endCol": 21,
+          "byteStart": 870,
+          "byteEnd": 881
+        },
+        "message": "'config' may be null here",
+        "style": "primary"
+      }
+    ],
+    "notes": ["the return type of 'loadConfig()' is nullable"],
+    "helps": ["check that 'config' is not null before accessing its properties"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot pass null as argument of type 'string'",
+    "span": {
+      "file": "src/logger.sjs",
+      "startLine": 9,
+      "startCol": 12,
+      "endLine": 9,
+      "endCol": 16,
+      "byteStart": 155,
+      "byteEnd": 159
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/logger.sjs",
+          "startLine": 9,
+          "startCol": 12,
+          "endLine": 9,
+          "endCol": 16,
+          "byteStart": 155,
+          "byteEnd": 159
+        },
+        "message": "argument is null, expected 'string'",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/logger.sjs",
+          "startLine": 2,
+          "startCol": 15,
+          "endLine": 2,
+          "endCol": 28,
+          "byteStart": 28,
+          "byteEnd": 41
+        },
+        "message": "parameter 'message' is declared as 'string' here",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["function 'log' requires a non-null 'string' argument"],
+    "helps": ["provide a non-null string, or update the function signature to accept 'string?'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E003",
+    "severity": "error",
+    "message": "method call on potentially null value 'handler'",
+    "span": {
+      "file": "src/events.sjs",
+      "startLine": 55,
+      "startCol": 3,
+      "endLine": 55,
+      "endCol": 10,
+      "byteStart": 1120,
+      "byteEnd": 1127
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/events.sjs",
+          "startLine": 55,
+          "startCol": 3,
+          "endLine": 55,
+          "endCol": 10,
+          "byteStart": 1120,
+          "byteEnd": 1127
+        },
+        "message": "'handler' may be null",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'handler' is typed as 'EventHandler?' and may not be set"],
+    "helps": ["guard with 'if (handler != null)' before calling"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot assign null to non-nullable type 'User'",
+    "span": {
+      "file": "src/auth.sjs",
+      "startLine": 34,
+      "startCol": 25,
+      "endLine": 34,
+      "endCol": 29,
+      "byteStart": 720,
+      "byteEnd": 724
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/auth.sjs",
+          "startLine": 34,
+          "startCol": 25,
+          "endLine": 34,
+          "endCol": 29,
+          "byteStart": 720,
+          "byteEnd": 724
+        },
+        "message": "null is not assignable to type 'User'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'currentUser' is declared as non-nullable 'User'"],
+    "helps": ["use 'User?' if the value can be absent, or provide a default 'User' object"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E003",
+    "severity": "error",
+    "message": "index access on potentially null array 'items'",
+    "span": {
+      "file": "src/cart.sjs",
+      "startLine": 16,
+      "startCol": 18,
+      "endLine": 16,
+      "endCol": 24,
+      "byteStart": 310,
+      "byteEnd": 316
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/cart.sjs",
+          "startLine": 16,
+          "startCol": 18,
+          "endLine": 16,
+          "endCol": 24,
+          "byteStart": 310,
+          "byteEnd": 316
+        },
+        "message": "'items' may be null",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'items' has type 'Item[]?' and may not have been initialized"],
+    "helps": ["initialize 'items' to an empty array, or guard with 'if (items != null)'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E001",
+    "severity": "error",
+    "message": "cannot assign null to non-nullable type 'Date'",
+    "span": {
+      "file": "src/schedule.sjs",
+      "startLine": 22,
+      "startCol": 19,
+      "endLine": 22,
+      "endCol": 23,
+      "byteStart": 445,
+      "byteEnd": 449
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/schedule.sjs",
+          "startLine": 22,
+          "startCol": 19,
+          "endLine": 22,
+          "endCol": 23,
+          "byteStart": 445,
+          "byteEnd": 449
+        },
+        "message": "null is not assignable to type 'Date'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'dueDate' requires a non-null 'Date' value"],
+    "helps": ["use 'Date?' if the due date is optional, or provide a valid date"]
+  }
+]
