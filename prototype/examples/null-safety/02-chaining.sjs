@@ -2,6 +2,8 @@
 
 // ?. short-circuits to undefined (JS semantics) when the left-hand side is null or undefined.
 // Return type of a ?. expression is T | undefined — this is JS operator behaviour, not a banned pattern.
+// Note: T? in SJS type declarations means T | null. The ?. operator returns undefined, not null.
+// That is why functions using ?. have return type T | undefined even when the field type is T?.
 // Use ?. to traverse nullable object chains without manual null checks at every step.
 
 interface Address {
@@ -96,10 +98,18 @@ console.log(callGreeter(acme.owner))   // undefined
 // owner.greet is a function — called normally
 console.log(callGreeter(betaCorp.owner))   // Hi from Bruno!
 
-// zip is "12345"
+// owner.address.zip is "12345" — chain completes, returns the string value
 console.log(getZip(betaCorp))          // 12345
 
-// auditor.zip is null — string? accessed via ?. yields null propagated as undefined? No:
-// address.zip is string? so getZip returns string | undefined (the zip value may be null too).
-// Here betaCorp.auditor.address.zip === null, so the result is null (through the chain).
+// owner.address.zip is null (zip is string?). The ?. chain reaches zip and reads its value (null).
+// ?. short-circuits only when the LEFT side of ?. is null/undefined; here every left side is
+// non-null, so the chain completes and returns the stored null — not undefined.
+const zipNullOrg: Organization = {
+  name: "ZipNull",
+  owner: { displayName: null, address: { street: "1 A St", city: "Town", zip: null }, tags: null, greet: null },
+  auditor: null
+}
+console.log(getZip(zipNullOrg))        // null (owner.address.zip is null, chain completes)
+
+// owner is null — the very first ?. short-circuits and returns undefined before reaching address.
 console.log(getZip({ name: "X", owner: null, auditor: null }))  // undefined (owner is null)
