@@ -42,8 +42,7 @@
       },
       {
         "id": "json",
-        "filenames": ["superjs.config.json"],
-        "configuration": "./language-configuration.json"
+        "filenames": ["superjs.config.json"]
       }
     ],
     "jsonValidation": [

@@ -19,7 +19,7 @@ interface TokenLine {
 async function main(): Promise<void> {
   // Load oniguruma WASM
   const wasmBin = fs.readFileSync(ONIG_WASM_PATH);
-  await loadWASM(wasmBin.buffer as ArrayBuffer);
+  await loadWASM(wasmBin.buffer.slice(wasmBin.byteOffset, wasmBin.byteOffset + wasmBin.byteLength));
 
   const registry = new Registry({
     onigLib: Promise.resolve({ createOnigScanner, createOnigString }),
