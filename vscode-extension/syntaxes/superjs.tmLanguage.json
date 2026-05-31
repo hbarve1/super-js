@@ -9,8 +9,8 @@
     { "include": "#sjs-match-expression" },
     { "include": "#sjs-dynamic-type" },
     { "include": "#sjs-nullable-suffix" },
-    { "include": "#sjs-variant-constructor" },
     { "include": "#sjs-generic-constraint" },
+    { "include": "#sjs-variant-constructor" },
     { "include": "source.tsx" }
   ],
   "repository": {
@@ -164,7 +164,7 @@
       ]
     },
     "sjs-generic-constraint": {
-      "begin": "(?<=[<,]\\s{0,5})([A-Za-z][A-Za-z0-9_$]*)\\s*(:)(?!:)",
+      "begin": "(?<=<\\s{0,5})([A-Za-z][A-Za-z0-9_$]*)\\s*(:)(?!:)",
       "beginCaptures": {
         "1": { "name": "entity.name.type.parameter.sjs" },
         "2": { "name": "keyword.operator.type.constraint.sjs" }

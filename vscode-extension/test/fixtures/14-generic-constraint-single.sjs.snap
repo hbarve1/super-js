@@ -14,22 +14,22 @@
         "endIndex": 14,
         "scopes": [
           "source.sjs",
-          "entity.name.function.constructor.variant.unit.sjs"
+          "entity.name.type.parameter.sjs"
         ]
       },
       {
         "startIndex": 14,
-        "endIndex": 27,
+        "endIndex": 15,
         "scopes": [
-          "source.sjs"
+          "source.sjs",
+          "keyword.operator.type.constraint.sjs"
         ]
       },
       {
-        "startIndex": 27,
+        "startIndex": 15,
         "endIndex": 28,
         "scopes": [
-          "source.sjs",
-          "entity.name.function.constructor.variant.unit.sjs"
+          "source.sjs"
         ]
       },
       {
@@ -49,29 +49,36 @@
       },
       {
         "startIndex": 35,
-        "endIndex": 37,
+        "endIndex": 40,
         "scopes": [
           "source.sjs"
         ]
       },
       {
-        "startIndex": 37,
-        "endIndex": 38,
+        "startIndex": 40,
+        "endIndex": 41,
         "scopes": [
           "source.sjs",
-          "entity.name.type.parameter.sjs"
+          "entity.name.function.constructor.variant.unit.sjs"
         ]
       },
       {
-        "startIndex": 38,
-        "endIndex": 39,
+        "startIndex": 41,
+        "endIndex": 44,
         "scopes": [
-          "source.sjs",
-          "keyword.operator.type.constraint.sjs"
+          "source.sjs"
         ]
       },
       {
-        "startIndex": 39,
+        "startIndex": 44,
+        "endIndex": 45,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 45,
         "endIndex": 48,
         "scopes": [
           "source.sjs"
@@ -84,13 +91,6 @@
     "tokens": [
       {
         "startIndex": 0,
-        "endIndex": 11,
-        "scopes": [
-          "source.sjs"
-        ]
-      },
-      {
-        "startIndex": 11,
         "endIndex": 23,
         "scopes": [
           "source.sjs"
