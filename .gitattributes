@@ -1,0 +1,6 @@
+# Normalize line endings to LF for all text files
+* text=auto eol=lf
+
+# Force LF for fixture and snapshot files used in grammar tests
+vscode-extension/test/fixtures/*.sjs text eol=lf
+vscode-extension/test/fixtures/*.snap text eol=lf

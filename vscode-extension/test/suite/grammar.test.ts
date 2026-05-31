@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     const fixturePath = path.join(FIXTURES_DIR, fixture);
     const snapPath = fixturePath + '.snap';
     const source = fs.readFileSync(fixturePath, 'utf8');
-    const lines = source.split('\n');
+    const lines = source.split('\n').map(l => l.replace(/\r$/, ''));
 
     // Tokenize all lines
     const actual: TokenLine[] = [];
