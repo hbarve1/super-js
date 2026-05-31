@@ -36,8 +36,8 @@
         "extensions": [".sjs"],
         "configuration": "./language-configuration.json",
         "icon": {
-          "light": "./icons/sjs-file.svg",
-          "dark":  "./icons/sjs-file-dark.svg"
+          "light": "./icons/sjs-file-dark.svg",
+          "dark":  "./icons/sjs-file.svg"
         }
       },
       {

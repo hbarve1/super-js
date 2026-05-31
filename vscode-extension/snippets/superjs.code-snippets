@@ -37,9 +37,9 @@
     "prefix": "type",
     "scope": "source.sjs",
     "body": [
-      "type ${1:TypeName}${2:<${3:T}>} =",
-      "  | ${4:Variant1}(${5:T})",
-      "  | ${6:Variant2}(${7:E})"
+      "type ${1:TypeName}${2:<${3:T}, ${4:E}>} =",
+      "  | ${5:Variant1}(${3})",
+      "  | ${6:Variant2}(${4})"
     ],
     "description": "Sum type (algebraic data type) declaration"
   },

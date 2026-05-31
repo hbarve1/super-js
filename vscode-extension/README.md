@@ -3,6 +3,8 @@
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/hbarve1.superjs-syntax?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=hbarve1.superjs-syntax)
 [![Open VSX](https://img.shields.io/open-vsx/v/hbarve1/superjs-syntax?label=Open%20VSX)](https://open-vsx.org/extension/hbarve1/superjs-syntax)
 
+> **Note:** Theme screenshots will be added after the first VS Code Extension Development Host smoke test. See [Known Limitations](#known-limitations) for current v0.1 status.
+
 Syntax highlighting and snippets for [SuperJS](https://github.com/hbarve1/super-js) (`.sjs`) files in Visual Studio Code.
 
 ## Features
@@ -17,7 +19,7 @@ Syntax highlighting and snippets for [SuperJS](https://github.com/hbarve1/super-
 - **Full TypeScript/JSX inheritance** — everything else (classes, async/await, JSX, imports, template literals) reuses VS Code's built-in TypeScript grammar
 - **Snippets** — 13 high-leverage snippets for common SJS patterns (see below)
 - **Config schema** — `superjs.config.json` gets JSON validation
-- **Bracket matching** — `{}`, `[]`, `()`, `<>`
+- **Bracket matching** — `{}`, `[]`, `()`; `<>` is available as a surrounding pair (select + press `<`) but excluded from bracket-match to avoid false positives with comparison operators
 - **Comment toggling** — `//` and `/* */`
 
 ## Snippets
@@ -50,7 +52,7 @@ Add this to your VS Code user settings to enable Emmet in `.sjs` JSX files:
 
 ## File Icon
 
-The custom `.sjs` file icon is visible when using VS Code's built-in **Minimal** or **Seti** icon theme, or when no icon theme is active.
+The custom `.sjs` file icon is visible when using VS Code's built-in **Seti** icon theme, or when no icon theme is active.
 
 > **Note:** Popular icon themes (Material Icon Theme, vscode-icons) will override with their own icons. SJS support for these themes is planned for v0.2.
 
