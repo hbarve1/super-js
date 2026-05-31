@@ -39,3 +39,8 @@ body {
 ::-webkit-scrollbar-track { background: var(--color-bg-deep); }
 ::-webkit-scrollbar-thumb { background: rgba(249, 115, 22, 0.3); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(249, 115, 22, 0.5); }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
