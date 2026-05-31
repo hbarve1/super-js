@@ -15,20 +15,137 @@
   ],
   "repository": {
     "sjs-banned-keywords": {
-      "comment": "Stub — implemented in sprint 1",
-      "patterns": []
+      "patterns": [
+        {
+          "comment": "Flag 'any' only in type position after colon annotation",
+          "match": "(?<=:\\s{0,10})\\b(any)\\b(?=\\s*[,;)\\]}>|&\\n])",
+          "captures": { "1": { "name": "invalid.deprecated.any.sjs" } }
+        },
+        {
+          "comment": "Flag 'any' in generic angle-bracket position",
+          "match": "(?<=<\\s{0,10})\\b(any)\\b(?=\\s*[,;)\\]}>|&\\n])",
+          "captures": { "1": { "name": "invalid.deprecated.any.sjs" } }
+        },
+        {
+          "comment": "Flag 'any' after pipe or comma in union/generic",
+          "match": "(?<=[|,]\\s{0,10})\\b(any)\\b(?=\\s*[,;)\\]}>|&\\n])",
+          "captures": { "1": { "name": "invalid.deprecated.any.sjs" } }
+        },
+        {
+          "match": "\\bnamespace\\b",
+          "name": "invalid.deprecated.namespace.sjs"
+        },
+        {
+          "match": "\\benum\\b",
+          "name": "invalid.deprecated.enum.sjs"
+        }
+      ]
     },
     "sjs-sum-type-decl": {
-      "comment": "Stub — implemented in sprint 1",
-      "patterns": []
+      "begin": "\\b(type)\\s+([A-Z][A-Za-z0-9_$]*)\\s*(<[^>]*>)?\\s*(=)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.sjs" },
+        "2": { "name": "entity.name.type.sjs" },
+        "3": {
+          "name": "meta.type.parameters.sjs",
+          "patterns": [{ "include": "source.tsx#type-parameters" }]
+        },
+        "4": { "name": "keyword.operator.assignment.sjs" }
+      },
+      "end": "(?=;|^\\s*\\n|^\\s*(?:type|function|const|let|var|class|interface|export|import|return|throw|if|else|switch|for|while|do|try|catch|finally|async|await|yield|new|void|break|continue|@)\\b)",
+      "patterns": [
+        {
+          "match": "\\|",
+          "name": "keyword.operator.type.union.sjs"
+        },
+        {
+          "comment": "Variant with payload",
+          "begin": "([A-Z][A-Za-z0-9_$]*)\\s*\\(",
+          "beginCaptures": {
+            "1": { "name": "entity.name.type.variant.sjs" }
+          },
+          "end": "\\)",
+          "patterns": [{ "include": "source.tsx#type" }]
+        },
+        {
+          "comment": "Unit variant inside type decl body",
+          "match": "([A-Z][A-Za-z0-9_$]*)",
+          "captures": {
+            "1": { "name": "entity.name.type.variant.unit.sjs" }
+          }
+        },
+        { "include": "source.tsx#type" }
+      ]
     },
     "sjs-match-expression": {
-      "comment": "Stub — implemented in sprint 1",
-      "patterns": []
+      "begin": "(?<![.\\w])(match)(?=\\s+[^({=\\s])",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.match.sjs" }
+      },
+      "end": "(?<=\\})",
+      "name": "meta.match.sjs",
+      "patterns": [
+        {
+          "comment": "Match scrutinee — expression up to opening brace",
+          "begin": "(?<=match\\s)",
+          "end": "(?=\\{)",
+          "patterns": [{ "include": "source.tsx#expression" }]
+        },
+        {
+          "comment": "Match body",
+          "begin": "\\{",
+          "beginCaptures": { "0": { "name": "punctuation.section.match.begin.sjs" } },
+          "end": "\\}",
+          "endCaptures": { "0": { "name": "punctuation.section.match.end.sjs" } },
+          "name": "meta.match.body.sjs",
+          "patterns": [
+            { "include": "#sjs-match-arm" }
+          ]
+        }
+      ]
+    },
+    "sjs-match-arm": {
+      "patterns": [
+        {
+          "comment": "default arm",
+          "begin": "\\b(default)\\b\\s*(=>)",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.default.sjs" },
+            "2": { "name": "keyword.operator.match.arrow.sjs" }
+          },
+          "end": "(?=,|\\})",
+          "patterns": [{ "include": "source.tsx#expression" }]
+        },
+        {
+          "comment": "Pattern => body arm",
+          "begin": "(?=[A-Z_a-z0-9$\"'`\\-\\[])",
+          "end": "(?=,|\\})",
+          "patterns": [
+            {
+              "comment": "Pattern up to =>",
+              "begin": "(?=\\S)",
+              "end": "(=>)",
+              "endCaptures": { "1": { "name": "keyword.operator.match.arrow.sjs" } },
+              "patterns": [
+                { "include": "#sjs-variant-constructor" },
+                { "include": "source.tsx#expression" }
+              ]
+            },
+            {
+              "comment": "Body after =>",
+              "begin": "(?<=>)",
+              "end": "(?=,|\\})",
+              "patterns": [{ "include": "source.tsx#expression" }]
+            }
+          ]
+        }
+      ]
     },
     "sjs-dynamic-type": {
-      "comment": "Stub — implemented in sprint 1",
-      "patterns": []
+      "match": "\\b(dynamic)\\b(?=\\s*[,;=)\\]\\}>|&]|$)",
+      "captures": {
+        "1": { "name": "support.type.dynamic.sjs" }
+      }
     },
     "sjs-nullable-suffix": {
       "comment": "Stub — implemented in sprint 2",
