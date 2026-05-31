@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SuperJS Configuration",
+  "description": "Configuration file for SuperJS projects",
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "enum": ["es2015", "es2017", "es2020", "es2022"],
+      "default": "es2020",
+      "description": "ECMAScript target version"
+    },
+    "jsx": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable JSX support"
+    },
+    "outDir": {
+      "type": "string",
+      "description": "Output directory for compiled files"
+    },
+    "strict": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable strict null safety"
+    }
+  }
+}

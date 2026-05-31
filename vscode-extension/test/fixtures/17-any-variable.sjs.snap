@@ -1,0 +1,38 @@
+[
+  {
+    "line": "const any = something()",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 24,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "const y = any + 1",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

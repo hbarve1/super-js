@@ -1,0 +1,38 @@
+[
+  {
+    "line": "function match(x) { return x }",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 31,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "const m = str.match(/pattern/)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 31,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]
