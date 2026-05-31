@@ -13,6 +13,7 @@
     "postbuild": "npx pagefind --site .next/server/app --output-path public/pagefind || true"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@pagefind/default-ui": "^1.5.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
