@@ -1,0 +1,125 @@
+[
+  {
+    "line": "function max<T: Comparable<T>>(a: T, b: T): T {",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 13,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 13,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 14,
+        "endIndex": 27,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 27,
+        "endIndex": 28,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 28,
+        "endIndex": 34,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 34,
+        "endIndex": 35,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 35,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 37,
+        "endIndex": 38,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.parameter.sjs"
+        ]
+      },
+      {
+        "startIndex": 38,
+        "endIndex": 39,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.constraint.sjs"
+        ]
+      },
+      {
+        "startIndex": 39,
+        "endIndex": 48,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  return a > b ? a : b",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 11,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 11,
+        "endIndex": 23,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

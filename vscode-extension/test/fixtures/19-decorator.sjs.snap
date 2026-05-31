@@ -1,0 +1,53 @@
+[
+  {
+    "line": "@Injectable()",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "class MyService {}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 6,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 6,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 19,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

@@ -60,6 +60,16 @@
       },
       {
         "startIndex": 2,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs",
+          "entity.name.function.constructor.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
         "endIndex": 8,
         "scopes": [
           "source.sjs",

@@ -18,7 +18,7 @@
       "patterns": [
         {
           "comment": "Flag 'any' only in type position after colon annotation",
-          "match": "(?<=:\\s{0,10})\\b(any)\\b(?=\\s*[,;)\\]}>|&\\n])",
+          "match": "(?<=:\\s{0,10})\\b(any)\\b(?=\\s*[,;)\\]}>|&\\n=]|$)",
           "captures": { "1": { "name": "invalid.deprecated.any.sjs" } }
         },
         {
@@ -148,16 +148,29 @@
       }
     },
     "sjs-nullable-suffix": {
-      "comment": "Stub — implemented in sprint 2",
-      "patterns": []
+      "match": "(?<=[A-Za-z0-9_$\\]>)])\\?(?=\\s*[,;)\\]}>|&{=\\n]|$)",
+      "name": "keyword.operator.optional.sjs"
     },
     "sjs-variant-constructor": {
-      "comment": "Stub — implemented in sprint 2",
-      "patterns": []
+      "patterns": [
+        {
+          "match": "(?<![A-Za-z0-9_$@.])([A-Z][A-Za-z0-9_$]*)\\s*(?=\\()",
+          "captures": { "1": { "name": "entity.name.function.constructor.variant.sjs" } }
+        },
+        {
+          "match": "(?<![A-Za-z0-9_$@:.])([A-Z][A-Za-z0-9_$]*)\\b(?!\\s*[(<.])",
+          "captures": { "1": { "name": "entity.name.function.constructor.variant.unit.sjs" } }
+        }
+      ]
     },
     "sjs-generic-constraint": {
-      "comment": "Stub — implemented in sprint 2",
-      "patterns": []
+      "begin": "(?<=[<,]\\s{0,5})([A-Za-z][A-Za-z0-9_$]*)\\s*(:)(?!:)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.type.parameter.sjs" },
+        "2": { "name": "keyword.operator.type.constraint.sjs" }
+      },
+      "end": "(?=[,>])",
+      "patterns": [{ "include": "source.tsx#type" }]
     }
   }
 }

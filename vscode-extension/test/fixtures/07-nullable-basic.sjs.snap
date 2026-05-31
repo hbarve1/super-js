@@ -1,0 +1,68 @@
+[
+  {
+    "line": "const x: number? = null",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.optional.sjs"
+        ]
+      },
+      {
+        "startIndex": 16,
+        "endIndex": 24,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "const y: string? = \"\"",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.optional.sjs"
+        ]
+      },
+      {
+        "startIndex": 16,
+        "endIndex": 22,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]
