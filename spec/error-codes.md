@@ -64,10 +64,16 @@ These codes are emitted by the type checker or compiler pipeline for conditions 
 | Code | Severity | Category | Short Message | Owning Stage |
 |------|----------|----------|---------------|--------------|
 | SJS-W001 | warning | strict | Parameter or variable has implicit type `dynamic` (strict mode) | Stage 0 (prototype) |
+| `SJS-W002` | — | reserved | Reserved for future use | — |
 | SJS-W003 | warning | match | Unreachable match arm | Stage 1 |
+| `SJS-W004` | — | reserved | Reserved for future use | — |
 | SJS-W005 | warning | type-check | Circular value reference detected | Stage 1 |
+| `SJS-W006` | — | reserved | Reserved for future use | — |
+| `SJS-W007` | — | reserved | Reserved for future use | — |
 | SJS-W008 | warning | api | Use of deprecated symbol | Stage 1 |
+| `SJS-W009` | — | reserved | Reserved for future use | — |
 | SJS-W010 | warning | lsp | LSP server memory pressure: usage exceeds budget | Stage 3 |
+| `SJS-W011` | — | reserved | Reserved for future use | — |
 | SJS-W012 | warning | security | Bidirectional Unicode codepoint in source file | Stage 1 |
 
 ---
