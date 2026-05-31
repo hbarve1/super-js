@@ -3,7 +3,7 @@
 import { readLines, walkDir, getExtension, formatBytes } from './fs-utils'
 import fs from 'fs'
 
-type AnalysisResult<T> = Success(T) | Failure(string)
+type AnalysisResult<T> = | Success(T) | Failure(string)
 
 interface FileStats {
   path: string
@@ -45,7 +45,7 @@ function getFileSizeBytes(filePath: string): number {
   try {
     const stat: fs.Stats = fs.statSync(filePath)
     return stat.size
-  } catch (err) {
+  } catch (e: dynamic) {
     return 0
   }
 }
