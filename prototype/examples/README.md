@@ -1,118 +1,118 @@
-# super.js Examples
+# SJS Examples
 
-This directory contains various examples demonstrating the features and capabilities of super.js. Each example is designed to showcase different aspects of the language and common programming patterns.
+A curated collection of Super.js (SJS) programs — from hello world to production-ready patterns.
 
-## Basic Examples
+---
 
-### 1. Types (`basics/types.sjs`)
-Demonstrates the type system features including:
-- Type aliases
-- Interfaces
-- Union types
-- Optional types
-- Function types
-- Array types
+## 1. Prerequisites
 
-### 2. Classes (`basics/classes.sjs`)
-Shows object-oriented programming features:
-- Class inheritance
-- Abstract classes
-- Interfaces
-- Private fields (#)
-- Protected members
-- Static methods
+- **Node.js 18+**
+- Install the compiler:
+  ```bash
+  npm install -g superjs
+  # — or, build from source —
+  cd prototype && npm run build && npm link
+  ```
+- Confirm: `superjs --version`
 
-## Advanced Examples
+---
 
-### 3. Generics (`advanced/generics.sjs`)
-Illustrates generic programming concepts:
-- Generic interfaces
-- Generic classes
-- Generic functions
-- Type constraints
-- Generic type inference
-
-### 4. Async Iterator (`advanced/async-iterator.sjs`)
-Demonstrates asynchronous iteration:
-- Async iterators
-- Async generators
-- Pagination handling
-- Data streaming
-
-### 5. Decorators (`advanced/decorators.sjs`)
-Shows the decorator pattern implementation:
-- Method decorators
-- Class decorators
-- Property decorators
-- Decorator factories
-- Real-world decorator use cases
-
-## Design Patterns
-
-### 6. Dependency Injection (`patterns/dependency-injection.sjs`)
-Implements a dependency injection container:
-- Service interfaces
-- Service implementations
-- Dependency container
-- Service registration and resolution
-- Application composition
-
-### 7. Events (`patterns/events.sjs`)
-Shows event handling and pub/sub pattern:
-- Event emitter implementation
-- Event subscription
-- Event unsubscription
-- Type-safe events
-- Real-time updates
-
-### 8. State Management (`patterns/state.sjs`)
-Demonstrates state management pattern:
-- Action types
-- State reducer
-- Store implementation
-- State subscription
-- Immutable updates
-
-### 9. Observable (`patterns/observable.sjs`)
-Implements the observer pattern:
-- Observable class
-- Observer interface
-- Subscription management
-- Real-time data updates
-- Multiple observers
-
-### 10. Middleware (`patterns/middleware.sjs`)
-Shows middleware pattern implementation:
-- Middleware chain
-- Request/Response handling
-- Async middleware
-- Error handling
-- Common middleware examples
-
-## Running the Examples
-
-To run any example, use the super.js compiler:
+## 2. Quickstart
 
 ```bash
-npx super-js compile examples/path/to/example.sjs
-node examples/path/to/example.js
+# Write a minimal program
+cat > hello.sjs << 'EOF'
+const msg: string = "Hello, SJS!"
+console.log(msg)
+EOF
+
+# Compile and run
+superjs build --source hello.sjs --outDir /tmp/out && node /tmp/out/hello.js
 ```
 
-Each example is self-contained and includes a `main()` function that demonstrates its usage.
+---
 
-## Learning Path
+## 3. Reading order
 
-For best learning experience, we recommend following the examples in this order:
+Follow this path for the best learning experience:
 
-1. Start with basic examples to understand the type system and classes
-2. Move to advanced examples to learn about generics and async programming
-3. Explore the design patterns to see how super.js can be used in real-world scenarios
+1. `basics/` — variables, functions, control flow, loops, arrays, objects, template literals
+2. `null-safety/` — nullable types (`T?`), `??`, `?.` chaining, nullable iteration
+3. `sum-types/` — `type Result<T,E> = | Ok(T) | Err(E)`, basic/generic/recursive variants
+4. `match/` — pattern matching, destructuring, exhaustiveness
+5. `dynamic/` — when to use `dynamic`, JS interop escape hatches
+6. `structural-interfaces/` — duck-typed interfaces, generic interfaces
+7. `generics/` — generic functions, constraints, generic sum types
+8. `gradual-typing/` — step-by-step migration from plain JS to full SJS
+9. `async/` — async/await, `Promise<Result<T,E>>`, async iterators
+10. `oop/` — classes, inheritance, private fields, abstract classes
+11. `algorithms/` — hash-map and other data structure implementations
+12. `patterns/` — dependency injection, events, state, observable, middleware
+13. `types/` — type aliases, interfaces, literal types, union types, tuples, generics advanced
+14. `modules/` — exported generic collections, async HTTP module
+15. `node/` — Node.js file I/O integration, code analysis
+16. `jsx/` — JSX basics, fragments, composition, server-side rendering
+17. `errors/` — SJS-E001 null safety, SJS-E007 exhaustiveness (with fixes)
+18. `testing/` — `Result<T,E>` test helpers, async test patterns
 
-## Contributing
+---
 
-Feel free to add more examples or improve existing ones. Make sure to:
+## 4. How to run any example
 
-1. Follow the established directory structure
-2. Include detailed comments explaining the code
-3. Add usage examples in the main function
-4. Update this README with any new examples 
+```bash
+superjs build --source <file> --outDir /tmp/out && node /tmp/out/<filename>.js
+```
+
+Example:
+
+```bash
+superjs build --source null-safety/01-basics.sjs --outDir /tmp/out && node /tmp/out/01-basics.js
+```
+
+---
+
+## 5. SJS idiom cheatsheet
+
+| Idiom | Syntax |
+|-------|--------|
+| Nullable type | `const x: string? = null` |
+| Null coalesce | `const v = x ?? "default"` |
+| Optional chain | `const n = obj?.prop?.value` |
+| Match expression | `match color { Red => "red"; Blue => "blue"; _ => "other" }` |
+| Sum type declaration | `type Result<T,E> = \| Ok(T) \| Err(E)` |
+| Generic constraint | `function max<T extends number>(a: T, b: T): T` |
+
+---
+
+## 6. Error reference
+
+| Error | File | Description |
+|-------|------|-------------|
+| SJS-E001 | `errors/SJS-E001-null-deref.sjs` | Assigning `null` to a non-nullable type — and three fixes |
+| SJS-E007 | `errors/SJS-E007-nonexhaustive.sjs` | Non-exhaustive `match` arms — and three fixes |
+
+---
+
+## 7. File a bug
+
+[https://github.com/hbarve1/super-js/issues](https://github.com/hbarve1/super-js/issues)
+
+---
+
+## 8. What's NOT supported
+
+| Avoid | Use instead |
+|-------|-------------|
+| `any` | `dynamic` |
+| `enum Color { Red, Green }` | `type Color = \| Red \| Green` |
+| `Partial<T>` | Explicit interface with optional fields (`field?: T`) |
+| `x!` (non-null assertion) | Null check: `if (x === null) ...` or `x ?? fallback` |
+| `value as T` | Assign to `dynamic` local, then narrow with `typeof` checks |
+| Mapped types (`{ [K in keyof T]: ... }`) | Explicit interface |
+| Conditional types (`T extends U ? A : B`) | Sum type with explicit variants |
+
+---
+
+## 9. License
+
+MIT — see [LICENSE](../../LICENSE) in the repository root.

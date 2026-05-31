@@ -2,7 +2,7 @@ import { sjs } from '../../src/runtime/jsx';
 
 interface CardProps {
   title: string;
-  children?: any;
+  children?: dynamic;
 }
 
 interface TabProps {
@@ -12,7 +12,7 @@ interface TabProps {
 }
 
 interface TabPanelProps {
-  children?: any;
+  children?: dynamic;
   active?: boolean;
 }
 
