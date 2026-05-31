@@ -11,7 +11,8 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "release": "changeset publish",
-    "check-grammar": "node scripts/check-grammar.mjs"
+    "check-grammar": "node scripts/check-grammar.mjs",
+    "check-config": "node scripts/validate-config.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
