@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop, "0**"]
+  pull_request:
+    branches: [master, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --workspaces --if-present
+
+      - name: Lint
+        run: npm run lint --workspace=super-js --if-present
+        continue-on-error: true
+
+      - name: Type-check compiler-types
+        run: npm run typecheck --workspace=@superjs/compiler-types
+
+      - name: Test
+        run: npm test --workspace=super-js
+
+      - name: Grammar smoke test
+        run: node scripts/check-grammar.mjs
+
+      - name: Validate diagnostic fixtures
+        run: node scripts/validate-diagnostics.mjs
+
+      - name: Validate config fixtures
+        run: node scripts/validate-config.mjs
+
+      - name: Determinism check
+        shell: bash
+        run: |
+          npm run build --workspace=super-js
+          cp -r prototype/dist /tmp/dist_a
+          npm run build --workspace=super-js
+          diff -r prototype/dist /tmp/dist_a
+
+      - name: Benchmark baseline
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          if [ -f scripts/benchmark.mjs ]; then
+            node scripts/benchmark.mjs
+          else
+            echo "Benchmark script not yet present; skipping"
+          fi
