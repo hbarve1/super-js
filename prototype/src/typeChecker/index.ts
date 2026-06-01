@@ -15,7 +15,7 @@
 import type { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import type {
-  Type, Diagnostic, TypeEnvironment,
+  Type, PrototypeDiagnostic, TypeEnvironment,
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType,
@@ -224,7 +224,7 @@ export interface TypeCheckerOptions {
 // ── TypeChecker ───────────────────────────────────────────────────────────────
 
 export class TypeChecker {
-  private diagnostics: Diagnostic[] = []
+  private diagnostics: PrototypeDiagnostic[] = []
   private env: TypeEnvironment = new Map()
   private readonly strict: boolean
   // maps type alias name → SumType (built from TSTypeAliasDeclaration with TSUnionType RHS)
@@ -237,7 +237,7 @@ export class TypeChecker {
     this.strict = options.strict ?? false
   }
 
-  getDiagnostics(): Diagnostic[] {
+  getDiagnostics(): PrototypeDiagnostic[] {
     return [...this.diagnostics]
   }
 
@@ -735,7 +735,7 @@ export class TypeChecker {
 
   private report(opts: {
     code: string
-    severity: Diagnostic['severity']
+    severity: PrototypeDiagnostic['severity']
     message: string
     node: t.Node
     specUrl: string

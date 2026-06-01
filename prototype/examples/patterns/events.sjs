@@ -1,98 +1,62 @@
 // Event System Example
 
-// Event types
-type EventCallback<T> = (data: T) => void;
+// Event types as sum types
+type AppEvent =
+  | UserLogin { userId: string; timestamp: number }
+  | UserLogout { userId: string }
+  | DataLoaded { count: number }
+  | ErrorOccurred { message: string }
 
-// Generic event emitter
-class EventEmitter<T extends { [K in keyof T]: any }> {
-  #listeners: { [K in keyof T]?: Set<EventCallback<T[K]>> } = {};
+interface EventHandler<E> {
+  handle(event: E): void
+}
 
-  on<K extends keyof T>(event: K, callback: EventCallback<T[K]>): void {
-    if (!this.#listeners[event]) {
-      this.#listeners[event] = new Set();
+// Simple typed event bus
+interface EventBus {
+  emit(event: AppEvent): void
+  on(handler: (event: AppEvent) => void): void
+  off(handler: (event: AppEvent) => void): void
+}
+
+function createEventBus(): EventBus {
+  const handlers: ((event: AppEvent) => void)[] = []
+  return {
+    emit(event) {
+      for (const h of handlers) h(event)
+    },
+    on(handler) { handlers.push(handler) },
+    off(handler) {
+      const i = handlers.indexOf(handler)
+      if (i >= 0) handlers.splice(i, 1)
     }
-    this.#listeners[event]?.add(callback);
-  }
-
-  off<K extends keyof T>(event: K, callback: EventCallback<T[K]>): void {
-    this.#listeners[event]?.delete(callback);
-  }
-
-  emit<K extends keyof T>(event: K, data: T[K]): void {
-    this.#listeners[event]?.forEach(callback => callback(data));
   }
 }
 
-// Example chat system
-interface ChatEvents {
-  message: { user: string; text: string };
-  join: string;
-  leave: string;
-  typing: { user: string; isTyping: boolean };
-}
-
-class ChatRoom extends EventEmitter<ChatEvents> {
-  #users: Set<string> = new Set();
-
-  join(username: string): void {
-    this.#users.add(username);
-    this.emit('join', username);
-  }
-
-  leave(username: string): void {
-    this.#users.delete(username);
-    this.emit('leave', username);
-  }
-
-  sendMessage(user: string, text: string): void {
-    this.emit('message', { user, text });
-  }
-
-  setTyping(user: string, isTyping: boolean): void {
-    this.emit('typing', { user, isTyping });
-  }
-
-  getUsers(): string[] {
-    return Array.from(this.#users);
-  }
-}
-
-// Usage example
 function main(): void {
-  const chatRoom = new ChatRoom();
+  const bus = createEventBus()
 
-  // Set up event listeners
-  chatRoom.on('join', username => {
-    console.log(`${username} joined the chat`);
-  });
+  const logHandler = (event: AppEvent) => {
+    match event {
+      UserLogin { userId } => console.log('Login:', userId)
+      UserLogout { userId } => console.log('Logout:', userId)
+      DataLoaded { count } => console.log('Loaded', count, 'items')
+      ErrorOccurred { message } => console.error('Error:', message)
+    }
+  }
 
-  chatRoom.on('leave', username => {
-    console.log(`${username} left the chat`);
-  });
+  bus.on(logHandler)
 
-  chatRoom.on('message', ({ user, text }) => {
-    console.log(`${user}: ${text}`);
-  });
+  bus.emit(UserLogin({ userId: 'u1', timestamp: Date.now() }))
+  bus.emit(DataLoaded({ count: 42 }))
+  bus.emit(UserLogin({ userId: 'u2', timestamp: Date.now() }))
+  bus.emit(ErrorOccurred({ message: 'Connection timeout' }))
+  bus.emit(UserLogout({ userId: 'u1' }))
 
-  chatRoom.on('typing', ({ user, isTyping }) => {
-    console.log(`${user} is ${isTyping ? 'typing...' : 'stopped typing'}`);
-  });
+  bus.off(logHandler)
 
-  // Simulate chat activity
-  chatRoom.join('Alice');
-  chatRoom.join('Bob');
-  
-  chatRoom.setTyping('Alice', true);
-  chatRoom.sendMessage('Alice', 'Hello everyone!');
-  chatRoom.setTyping('Alice', false);
-  
-  chatRoom.setTyping('Bob', true);
-  chatRoom.sendMessage('Bob', 'Hi Alice!');
-  chatRoom.setTyping('Bob', false);
-  
-  chatRoom.leave('Alice');
-  
-  console.log('Current users:', chatRoom.getUsers());
+  // After unsubscribing, this should not be logged
+  bus.emit(DataLoaded({ count: 0 }))
+  console.log('Handler removed — no output above for last event')
 }
 
-main(); 
+main()

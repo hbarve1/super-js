@@ -1,0 +1,361 @@
+[
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: expected 'string', found 'number'",
+    "span": {
+      "file": "src/formatter.sjs",
+      "startLine": 8,
+      "startCol": 10,
+      "endLine": 8,
+      "endCol": 15,
+      "byteStart": 145,
+      "byteEnd": 150
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/formatter.sjs",
+          "startLine": 8,
+          "startCol": 10,
+          "endLine": 8,
+          "endCol": 15,
+          "byteStart": 145,
+          "byteEnd": 150
+        },
+        "message": "expression has type 'number'",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/formatter.sjs",
+          "startLine": 4,
+          "startCol": 19,
+          "endLine": 4,
+          "endCol": 25,
+          "byteStart": 68,
+          "byteEnd": 74
+        },
+        "message": "function return type declared as 'string' here",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["return type annotation requires 'string', but the expression is 'number'"],
+    "helps": ["call '.toString()' to convert the number to a string"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: expected 'boolean', found 'string'",
+    "span": {
+      "file": "src/validation.sjs",
+      "startLine": 19,
+      "startCol": 12,
+      "endLine": 19,
+      "endCol": 20,
+      "byteStart": 380,
+      "byteEnd": 388
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/validation.sjs",
+          "startLine": 19,
+          "startCol": 12,
+          "endLine": 19,
+          "endCol": 20,
+          "byteStart": 380,
+          "byteEnd": 388
+        },
+        "message": "expression has type 'string'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["condition in 'if' expression must be 'boolean'"],
+    "helps": ["use a comparison operator, e.g. 'value !== \"\"'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "argument type mismatch: expected 'number', found 'string'",
+    "span": {
+      "file": "src/calculator.sjs",
+      "startLine": 33,
+      "startCol": 8,
+      "endLine": 33,
+      "endCol": 16,
+      "byteStart": 670,
+      "byteEnd": 678
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/calculator.sjs",
+          "startLine": 33,
+          "startCol": 8,
+          "endLine": 33,
+          "endCol": 16,
+          "byteStart": 670,
+          "byteEnd": 678
+        },
+        "message": "argument has type 'string'",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/calculator.sjs",
+          "startLine": 5,
+          "startCol": 14,
+          "endLine": 5,
+          "endCol": 20,
+          "byteStart": 80,
+          "byteEnd": 86
+        },
+        "message": "parameter 'value' expects type 'number'",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["cannot implicitly convert 'string' to 'number'"],
+    "helps": ["use 'parseInt(value)' or 'parseFloat(value)' to convert"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: expected 'string[]', found 'number[]'",
+    "span": {
+      "file": "src/list.sjs",
+      "startLine": 47,
+      "startCol": 16,
+      "endLine": 47,
+      "endCol": 28,
+      "byteStart": 950,
+      "byteEnd": 962
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/list.sjs",
+          "startLine": 47,
+          "startCol": 16,
+          "endLine": 47,
+          "endCol": 28,
+          "byteStart": 950,
+          "byteEnd": 962
+        },
+        "message": "array literal has element type 'number'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["array element types must be homogeneous and match the declared type"],
+    "helps": ["convert elements to 'string', or change the variable type to 'number[]'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: expected 'User', found 'AdminUser'",
+    "span": {
+      "file": "src/profile.sjs",
+      "startLine": 61,
+      "startCol": 22,
+      "endLine": 61,
+      "endCol": 35,
+      "byteStart": 1280,
+      "byteEnd": 1293
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/profile.sjs",
+          "startLine": 61,
+          "startCol": 22,
+          "endLine": 61,
+          "endCol": 35,
+          "byteStart": 1280,
+          "byteEnd": 1293
+        },
+        "message": "expression has type 'AdminUser'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'AdminUser' is not a subtype of 'User' in strict structural mode"],
+    "helps": ["implement the 'User' interface in 'AdminUser', or use a type assertion"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch in variable initializer: expected 'Date', found 'string'",
+    "span": {
+      "file": "src/events.sjs",
+      "startLine": 14,
+      "startCol": 27,
+      "endLine": 14,
+      "endCol": 39,
+      "byteStart": 275,
+      "byteEnd": 287
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/events.sjs",
+          "startLine": 14,
+          "startCol": 27,
+          "endLine": 14,
+          "endCol": 39,
+          "byteStart": 275,
+          "byteEnd": 287
+        },
+        "message": "string literal is not of type 'Date'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["string literals are not automatically coerced to 'Date'"],
+    "helps": ["wrap the string in 'new Date(\"...\")' to create a Date object"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: function expected '() => void', found '() => string'",
+    "span": {
+      "file": "src/callbacks.sjs",
+      "startLine": 28,
+      "startCol": 19,
+      "endLine": 28,
+      "endCol": 42,
+      "byteStart": 560,
+      "byteEnd": 583
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/callbacks.sjs",
+          "startLine": 28,
+          "startCol": 19,
+          "endLine": 28,
+          "endCol": 42,
+          "byteStart": 560,
+          "byteEnd": 583
+        },
+        "message": "callback returns 'string', expected 'void'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["callbacks with return type 'void' must not return a value"],
+    "helps": ["remove the return statement or change the callback signature to '() => string'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: expected 'Map<string, number>', found 'object'",
+    "span": {
+      "file": "src/inventory.sjs",
+      "startLine": 52,
+      "startCol": 24,
+      "endLine": 52,
+      "endCol": 32,
+      "byteStart": 1050,
+      "byteEnd": 1058
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/inventory.sjs",
+          "startLine": 52,
+          "startCol": 24,
+          "endLine": 52,
+          "endCol": 32,
+          "byteStart": 1050,
+          "byteEnd": 1058
+        },
+        "message": "expression has structural type 'object'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["plain objects do not satisfy the 'Map<K, V>' interface"],
+    "helps": ["use 'new Map([...])' to create a typed Map"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: property 'id' expected 'number', found 'string'",
+    "span": {
+      "file": "src/models.sjs",
+      "startLine": 9,
+      "startCol": 7,
+      "endLine": 9,
+      "endCol": 12,
+      "byteStart": 165,
+      "byteEnd": 170
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/models.sjs",
+          "startLine": 9,
+          "startCol": 7,
+          "endLine": 9,
+          "endCol": 12,
+          "byteStart": 165,
+          "byteEnd": 170
+        },
+        "message": "string value used where 'number' is expected",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/models.sjs",
+          "startLine": 3,
+          "startCol": 3,
+          "endLine": 3,
+          "endCol": 12,
+          "byteStart": 48,
+          "byteEnd": 57
+        },
+        "message": "'id' declared as 'number' in interface",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["object literal does not satisfy 'Entity' interface: 'id' type mismatch"],
+    "helps": ["change 'id' to a numeric value, or update the interface if string IDs are intended"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E002",
+    "severity": "error",
+    "message": "type mismatch: tuple element 1 expected 'string', found 'number'",
+    "span": {
+      "file": "src/pairs.sjs",
+      "startLine": 17,
+      "startCol": 22,
+      "endLine": 17,
+      "endCol": 24,
+      "byteStart": 350,
+      "byteEnd": 352
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/pairs.sjs",
+          "startLine": 17,
+          "startCol": 22,
+          "endLine": 17,
+          "endCol": 24,
+          "byteStart": 350,
+          "byteEnd": 352
+        },
+        "message": "element has type 'number'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["tuple type '[number, string]' requires element 1 to be 'string'"],
+    "helps": ["convert the number to a string, or reorder the tuple elements"]
+  }
+]

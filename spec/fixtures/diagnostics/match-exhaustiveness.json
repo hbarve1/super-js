@@ -1,0 +1,348 @@
+[
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'None' is not handled",
+    "span": {
+      "file": "src/option.sjs",
+      "startLine": 15,
+      "startCol": 3,
+      "endLine": 20,
+      "endCol": 4,
+      "byteStart": 280,
+      "byteEnd": 390
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/option.sjs",
+          "startLine": 15,
+          "startCol": 3,
+          "endLine": 20,
+          "endCol": 4,
+          "byteStart": 280,
+          "byteEnd": 390
+        },
+        "message": "match expression does not cover all variants of 'Option<T>'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["enum 'Option<T>' has variants: Some(T), None", "variant 'None' is unhandled"],
+    "helps": ["add a 'case None:' arm to handle the missing variant"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variants 'Pending' and 'Cancelled' are not handled",
+    "span": {
+      "file": "src/order.sjs",
+      "startLine": 38,
+      "startCol": 3,
+      "endLine": 45,
+      "endCol": 4,
+      "byteStart": 760,
+      "byteEnd": 920
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/order.sjs",
+          "startLine": 38,
+          "startCol": 3,
+          "endLine": 45,
+          "endCol": 4,
+          "byteStart": 760,
+          "byteEnd": 920
+        },
+        "message": "match on 'OrderStatus' is not exhaustive",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/order.sjs",
+          "startLine": 2,
+          "startCol": 1,
+          "endLine": 7,
+          "endCol": 2,
+          "byteStart": 0,
+          "byteEnd": 105
+        },
+        "message": "'OrderStatus' defined here with 4 variants",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["enum 'OrderStatus' has variants: Placed, Pending, Shipped, Cancelled", "unhandled: Pending, Cancelled"],
+    "helps": ["add arms for 'Pending' and 'Cancelled', or add a wildcard arm 'case _:'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'Err(E)' is not handled",
+    "span": {
+      "file": "src/result.sjs",
+      "startLine": 22,
+      "startCol": 5,
+      "endLine": 26,
+      "endCol": 6,
+      "byteStart": 440,
+      "byteEnd": 530
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/result.sjs",
+          "startLine": 22,
+          "startCol": 5,
+          "endLine": 26,
+          "endCol": 6,
+          "byteStart": 440,
+          "byteEnd": 530
+        },
+        "message": "match on 'Result<T, E>' must cover both Ok and Err",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'Result<T, E>' is a sealed enum with exactly two variants"],
+    "helps": ["add 'case Err(e):' to handle the error case"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: boolean literal 'false' is not handled",
+    "span": {
+      "file": "src/toggle.sjs",
+      "startLine": 11,
+      "startCol": 7,
+      "endLine": 14,
+      "endCol": 8,
+      "byteStart": 200,
+      "byteEnd": 275
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/toggle.sjs",
+          "startLine": 11,
+          "startCol": 7,
+          "endLine": 14,
+          "endCol": 8,
+          "byteStart": 200,
+          "byteEnd": 275
+        },
+        "message": "match on 'boolean' covers only 'true'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["matching on 'boolean' requires both 'true' and 'false' arms"],
+    "helps": ["add 'case false:' to complete the match"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variants 'Circle' and 'Triangle' are not handled",
+    "span": {
+      "file": "src/shapes.sjs",
+      "startLine": 50,
+      "startCol": 3,
+      "endLine": 55,
+      "endCol": 4,
+      "byteStart": 1020,
+      "byteEnd": 1120
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/shapes.sjs",
+          "startLine": 50,
+          "startCol": 3,
+          "endLine": 55,
+          "endCol": 4,
+          "byteStart": 1020,
+          "byteEnd": 1120
+        },
+        "message": "match on 'Shape' is not exhaustive",
+        "style": "primary"
+      },
+      {
+        "span": {
+          "file": "src/shapes.sjs",
+          "startLine": 5,
+          "startCol": 1,
+          "endLine": 10,
+          "endCol": 2,
+          "byteStart": 80,
+          "byteEnd": 165
+        },
+        "message": "'Shape' defined here with 3 variants",
+        "style": "secondary"
+      }
+    ],
+    "notes": ["sealed type 'Shape' has variants: Rectangle, Circle, Triangle", "unhandled: Circle, Triangle"],
+    "helps": ["add arms for the missing variants, or use 'case _:' as a catch-all"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'Admin' is not handled",
+    "span": {
+      "file": "src/roles.sjs",
+      "startLine": 29,
+      "startCol": 3,
+      "endLine": 35,
+      "endCol": 4,
+      "byteStart": 580,
+      "byteEnd": 700
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/roles.sjs",
+          "startLine": 29,
+          "startCol": 3,
+          "endLine": 35,
+          "endCol": 4,
+          "byteStart": 580,
+          "byteEnd": 700
+        },
+        "message": "match on 'Role' does not handle 'Admin'",
+        "style": "primary"
+      }
+    ],
+    "notes": ["enum 'Role' has variants: Guest, User, Admin"],
+    "helps": ["add 'case Admin:' to handle admin users explicitly"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'Loading' is not handled",
+    "span": {
+      "file": "src/async-state.sjs",
+      "startLine": 66,
+      "startCol": 5,
+      "endLine": 72,
+      "endCol": 6,
+      "byteStart": 1340,
+      "byteEnd": 1480
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/async-state.sjs",
+          "startLine": 66,
+          "startCol": 5,
+          "endLine": 72,
+          "endCol": 6,
+          "byteStart": 1340,
+          "byteEnd": 1480
+        },
+        "message": "match on 'AsyncState<T>' is missing 'Loading' arm",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'AsyncState<T>' has 3 variants: Loading, Success(T), Failure(string)"],
+    "helps": ["add a 'case Loading:' arm to render a loading indicator"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variants 'BiWeekly' and 'Monthly' are not handled",
+    "span": {
+      "file": "src/billing.sjs",
+      "startLine": 84,
+      "startCol": 7,
+      "endLine": 90,
+      "endCol": 8,
+      "byteStart": 1700,
+      "byteEnd": 1820
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/billing.sjs",
+          "startLine": 84,
+          "startCol": 7,
+          "endLine": 90,
+          "endCol": 8,
+          "byteStart": 1700,
+          "byteEnd": 1820
+        },
+        "message": "match on 'BillingCycle' does not cover all cases",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'BillingCycle' has variants: Weekly, BiWeekly, Monthly, Annual"],
+    "helps": ["add arms for 'BiWeekly' and 'Monthly', or use a wildcard 'case _:'"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'Disconnected' is not handled",
+    "span": {
+      "file": "src/network.sjs",
+      "startLine": 43,
+      "startCol": 3,
+      "endLine": 49,
+      "endCol": 4,
+      "byteStart": 870,
+      "byteEnd": 990
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/network.sjs",
+          "startLine": 43,
+          "startCol": 3,
+          "endLine": 49,
+          "endCol": 4,
+          "byteStart": 870,
+          "byteEnd": 990
+        },
+        "message": "match on 'ConnectionState' is not exhaustive",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'ConnectionState' variants: Connected, Connecting, Disconnected"],
+    "helps": ["handle 'Disconnected' to show an offline indicator"]
+  },
+  {
+    "version": "1",
+    "code": "SJS-E007",
+    "severity": "error",
+    "message": "non-exhaustive match: variant 'Unknown(string)' is not handled",
+    "span": {
+      "file": "src/errors.sjs",
+      "startLine": 57,
+      "startCol": 5,
+      "endLine": 63,
+      "endCol": 6,
+      "byteStart": 1140,
+      "byteEnd": 1270
+    },
+    "labels": [
+      {
+        "span": {
+          "file": "src/errors.sjs",
+          "startLine": 57,
+          "startCol": 5,
+          "endLine": 63,
+          "endCol": 6,
+          "byteStart": 1140,
+          "byteEnd": 1270
+        },
+        "message": "match on 'AppError' is missing the 'Unknown' variant",
+        "style": "primary"
+      }
+    ],
+    "notes": ["'AppError' has variants: NotFound, Unauthorized, ServerError, Unknown(string)"],
+    "helps": ["add 'case Unknown(msg):' to handle unexpected error messages"]
+  }
+]

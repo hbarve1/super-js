@@ -1,0 +1,765 @@
+[
+  {
+    "line": "type HttpError =",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "storage.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 5,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 5,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 14,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.assignment.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  | NetworkError({ message: string })",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 2,
+        "endIndex": 3,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 3,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 16,
+        "endIndex": 17,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 17,
+        "endIndex": 36,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 36,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  | NotFound({ url: string })",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 2,
+        "endIndex": 3,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 3,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 12,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 12,
+        "endIndex": 13,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 13,
+        "endIndex": 28,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 28,
+        "endIndex": 29,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  | Unauthorized",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 2,
+        "endIndex": 3,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 3,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "type Result<T, E> = Ok(T) | Err(E)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "storage.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 5,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 5,
+        "endIndex": 11,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 11,
+        "endIndex": 17,
+        "scopes": [
+          "source.sjs",
+          "meta.type.parameters.sjs"
+        ]
+      },
+      {
+        "startIndex": 17,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 18,
+        "endIndex": 19,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.assignment.sjs"
+        ]
+      },
+      {
+        "startIndex": 19,
+        "endIndex": 20,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 20,
+        "endIndex": 22,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 22,
+        "endIndex": 23,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 23,
+        "endIndex": 24,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 24,
+        "endIndex": 25,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 25,
+        "endIndex": 26,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 26,
+        "endIndex": 27,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 27,
+        "endIndex": 28,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 28,
+        "endIndex": 31,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 31,
+        "endIndex": 32,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 32,
+        "endIndex": 33,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 33,
+        "endIndex": 34,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "interface User {",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 10,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 10,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 14,
+        "endIndex": 17,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  id: number",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 13,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  name: string",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  email: string?",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.optional.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "async function fetchUser(id: number): Promise<Result<User, HttpError>> {",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 53,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 53,
+        "endIndex": 57,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 57,
+        "endIndex": 59,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 59,
+        "endIndex": 68,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 68,
+        "endIndex": 73,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  const data: dynamic = await fetch(\"/users\")",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 14,
+        "endIndex": 21,
+        "scopes": [
+          "source.sjs",
+          "support.type.dynamic.sjs"
+        ]
+      },
+      {
+        "startIndex": 21,
+        "endIndex": 46,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  return Ok(data)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 9,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 9,
+        "endIndex": 11,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 11,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "const result = match await fetchUser(1) {",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 20,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "keyword.control.match.sjs"
+        ]
+      },
+      {
+        "startIndex": 20,
+        "endIndex": 21,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs"
+        ]
+      },
+      {
+        "startIndex": 21,
+        "endIndex": 40,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs"
+        ]
+      },
+      {
+        "startIndex": 40,
+        "endIndex": 41,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs",
+          "punctuation.section.match.begin.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  Ok(user) => console.log(user.name)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs"
+        ]
+      },
+      {
+        "startIndex": 2,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs",
+          "entity.name.function.constructor.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 11,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs"
+        ]
+      },
+      {
+        "startIndex": 11,
+        "endIndex": 13,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs",
+          "keyword.operator.match.arrow.sjs"
+        ]
+      },
+      {
+        "startIndex": 13,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  Err(NotFound({ url })) => console.error(\"not found:\", url)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 21,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs"
+        ]
+      },
+      {
+        "startIndex": 21,
+        "endIndex": 22,
+        "scopes": [
+          "source.sjs",
+          "meta.match.sjs",
+          "meta.match.body.sjs",
+          "punctuation.section.match.end.sjs"
+        ]
+      },
+      {
+        "startIndex": 22,
+        "endIndex": 61,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  Err(Unauthorized) => console.error(\"unauthorized\")",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 2,
+        "endIndex": 5,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.sjs"
+        ]
+      },
+      {
+        "startIndex": 5,
+        "endIndex": 6,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 6,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 18,
+        "endIndex": 53,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

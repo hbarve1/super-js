@@ -65,3 +65,7 @@ typings/
 
 # Git worktrees
 .worktrees/
+# Build artifacts
+packages/*/dist/
+packages/*/tsconfig.tsbuildinfo
+prototype/tsconfig.tsbuildinfo

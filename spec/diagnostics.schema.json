@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superjs.dev/spec/diagnostics/v1",
+  "title": "SuperJS Diagnostic",
+  "description": "A single compiler diagnostic emitted by `superjs build --format json`",
+  "type": "object",
+  "required": ["version", "code", "severity", "message", "span"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1",
+      "description": "Schema version — always '1' for this schema"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^SJS-[A-Z][0-9]{3}$",
+      "description": "Stable diagnostic code, e.g. SJS-E001"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["error", "warning", "info"],
+      "description": "Diagnostic severity"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable diagnostic message"
+    },
+    "span": {
+      "$ref": "#/$defs/SourceSpan"
+    },
+    "labels": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DiagnosticLabel" },
+      "default": []
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "helps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "fix": {
+      "$ref": "#/$defs/DiagnosticFix"
+    }
+  },
+  "$defs": {
+    "SourceSpan": {
+      "type": "object",
+      "required": ["file", "startLine", "startCol", "endLine", "endCol", "byteStart", "byteEnd"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string", "description": "Source file path" },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "startCol": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "endCol": { "type": "integer", "minimum": 1 },
+        "byteStart": { "type": "integer", "minimum": 0 },
+        "byteEnd": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "DiagnosticLabel": {
+      "type": "object",
+      "required": ["span", "message", "style"],
+      "additionalProperties": false,
+      "properties": {
+        "span": { "$ref": "#/$defs/SourceSpan" },
+        "message": { "type": "string" },
+        "style": { "type": "string", "enum": ["primary", "secondary"] }
+      }
+    },
+    "DiagnosticFix": {
+      "type": "object",
+      "required": ["message", "replacements"],
+      "additionalProperties": false,
+      "properties": {
+        "message": { "type": "string" },
+        "replacements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["span", "replacement"],
+            "additionalProperties": false,
+            "properties": {
+              "span": { "$ref": "#/$defs/SourceSpan" },
+              "replacement": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

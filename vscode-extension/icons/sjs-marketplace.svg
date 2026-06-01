@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect width="128" height="128" rx="20" ry="20" fill="#1e1e3f"/>
+  <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle"
+        font-family="'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif"
+        font-weight="800" font-size="46" fill="#ffffff" letter-spacing="-2">SJS</text>
+  <text x="50%" y="79%" dominant-baseline="middle" text-anchor="middle"
+        font-family="'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif"
+        font-weight="400" font-size="19" fill="#8ab4f8">Super.js</text>
+</svg>
