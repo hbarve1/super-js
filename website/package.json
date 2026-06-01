@@ -1,0 +1,43 @@
+{
+  "name": "website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "build:cf": "npx @cloudflare/next-on-pages",
+    "preview:cf": "npm run build:cf && npx wrangler pages dev .vercel/output/static",
+    "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website",
+    "postbuild": "npx pagefind --site .next/server/app --output-path public/pagefind || true"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@pagefind/default-ui": "^1.5.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "framer-motion": "^12.40.0",
+    "geist": "^1.7.1",
+    "gray-matter": "^4.0.3",
+    "gsap": "^3.15.0",
+    "next": "16.2.6",
+    "next-mdx-remote": "^6.0.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "shiki": "^4.1.0",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.184.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
