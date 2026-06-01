@@ -8,7 +8,7 @@ import { CallToAction } from '@/components/sections/CallToAction'
 
 export default function Home() {
   return (
-    <main className="bg-[#050510]">
+    <main id="main-content" className="bg-[#050510]">
       <Hero />
       <Features />
       <Compare />

@@ -33,7 +33,7 @@ export default function TableOfContents({ headings }: TableOfContentsProps) {
   if (headings.length === 0) return null
 
   return (
-    <aside className="w-56 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
+    <aside className="w-56 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4" data-pagefind-ignore>
       <div className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8] mb-4">
         On this page
       </div>

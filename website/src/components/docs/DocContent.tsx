@@ -1,4 +1,5 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import { CodeBlockWrapper } from '@/components/ui/CodeBlock'
 
 interface DocContentProps {
   source: string
@@ -47,11 +48,14 @@ const mdxComponents = {
     <code className="px-1.5 py-0.5 rounded text-[#fbbf24] bg-white/10 font-mono text-sm" {...props} />
   ),
   hr: () => <hr className="border-white/10 my-8" />,
+  pre: (props: React.ComponentPropsWithoutRef<'pre'>) => (
+    <CodeBlockWrapper>{props.children}</CodeBlockWrapper>
+  ),
 }
 
 export default function DocContent({ source }: DocContentProps) {
   return (
-    <article className="flex-1 min-w-0 max-w-3xl py-8">
+    <article className="flex-1 min-w-0 max-w-3xl py-8" data-pagefind-body>
       <MDXRemote source={source} components={mdxComponents} />
     </article>
   )

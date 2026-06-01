@@ -1,7 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  experimental: {},
+  experimental: {
+    optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei'],
+  },
   images: {
     unoptimized: true,
   },
