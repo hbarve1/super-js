@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Bash(mkdir *)",
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(cd *)",
+      "Read"
+    ]
+  }
+}

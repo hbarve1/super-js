@@ -69,3 +69,5 @@ typings/
 packages/*/dist/
 packages/*/tsconfig.tsbuildinfo
 prototype/tsconfig.tsbuildinfo
+graphify-out/
+.superpowers/

@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://superjs.dev/schemas/config.json",
+  "title": "SuperJS Project Configuration",
+  "description": "Schema for superjs.config.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "type": "string",
+      "enum": ["es5", "es2015", "es2022"],
+      "default": "es2022",
+      "description": "Output ECMAScript version"
+    },
+    "outDir": {
+      "type": "string",
+      "default": "dist",
+      "description": "Output directory relative to project root"
+    },
+    "rootDir": {
+      "type": "string",
+      "default": ".",
+      "description": "Root directory for source files"
+    },
+    "jsxFactory": {
+      "type": "string",
+      "default": "React.createElement",
+      "description": "JSX factory function (e.g., React.createElement, h)"
+    },
+    "jsxFragment": {
+      "type": "string",
+      "default": "React.Fragment",
+      "description": "JSX fragment factory (e.g., React.Fragment, Fragment)"
+    },
+    "strict": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable strict mode: disallow implicit any, require all annotations"
+    },
+    "include": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["**/*.sjs"],
+      "description": "Glob patterns for files to include in compilation"
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["node_modules", "dist"],
+      "description": "Glob patterns for files to exclude from compilation"
+    },
+    "lintRules": {
+      "type": "object",
+      "description": "Per-rule severity overrides. Key is rule ID, value is severity.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["error", "warning", "off"]
+      },
+      "default": {}
+    },
+    "sourceMap": {
+      "type": "boolean",
+      "default": false,
+      "description": "Emit .js.map sourcemap files alongside output"
+    },
+    "incremental": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable incremental compilation using superjs.buildinfo cache"
+    }
+  }
+}
