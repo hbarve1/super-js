@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Super.js Todo — Type-Safe Vanilla App</title>
+    <meta name="description" content="A vanilla HTML+CSS Todo app written in Super.js (.sjs) demonstrating gradual type safety compiled to plain JavaScript." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-wrapper">
+
+      <header class="app-header">
+        <h1 class="app-title"><span>Super.js</span> Todo</h1>
+        <p class="app-subtitle">
+          Written in <code>.sjs</code> &mdash; compiled to vanilla JS
+          &bull; types erased at build time
+        </p>
+      </header>
+
+      <main>
+        <div class="todo-card">
+
+          <!-- Input form -->
+          <form id="todo-form" class="todo-form" novalidate>
+            <label class="toggle-all-label" title="Toggle all tasks">
+              <input
+                type="checkbox"
+                id="toggle-all"
+                aria-label="Toggle all tasks"
+              />
+            </label>
+            <input
+              type="text"
+              id="todo-input"
+              class="todo-input"
+              placeholder="What needs to be done?"
+              maxlength="280"
+              autocomplete="off"
+              aria-label="New task"
+            />
+            <button type="submit" class="todo-add-btn" aria-label="Add task">
+              + Add
+            </button>
+          </form>
+
+          <!-- Todo list -->
+          <ul id="todo-list" role="list" aria-label="Todo list">
+            <!-- Populated by app.js -->
+          </ul>
+
+          <!-- Footer: count, filters, clear -->
+          <footer id="todo-footer" style="display: none;">
+            <span id="todo-count" aria-live="polite">0 items left</span>
+
+            <nav id="todo-filters" aria-label="Filter tasks">
+              <button class="filter-btn active" data-filter="all" aria-current="true">All</button>
+              <button class="filter-btn" data-filter="active" aria-current="false">Active</button>
+              <button class="filter-btn" data-filter="completed" aria-current="false">Completed</button>
+            </nav>
+
+            <button id="clear-completed" style="display: none;" aria-label="Clear completed tasks">
+              Clear done
+            </button>
+          </footer>
+
+        </div><!-- .todo-card -->
+      </main>
+
+      <footer class="app-footer">
+        <p>
+          Source: <code>src/app.sjs</code> &rarr; compiled to <code>dist/app.js</code>
+        </p>
+        <p>
+          Compile: <code>superjs build --source src/app.sjs --outDir dist</code>
+        </p>
+      </footer>
+
+    </div><!-- .app-wrapper -->
+
+    <!-- Compiled output — run `superjs build` to generate -->
+    <script src="dist/app.js"></script>
+  </body>
+</html>
