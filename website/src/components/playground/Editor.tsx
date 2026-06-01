@@ -83,6 +83,7 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
         </div>
         <button
           onClick={onRun}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
           className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded hover:opacity-90 transition-opacity"
         >
           ▶ Run
@@ -90,24 +91,26 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
         </button>
       </div>
       <div className="flex-1">
-        <MonacoEditor
-          height="100%"
-          language="superjs"
-          value={value}
-          onChange={(v) => onChange(v ?? '')}
-          onMount={handleEditorMount}
-          options={{
-            fontSize: 14,
-            lineHeight: 22,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            padding: { top: 16, bottom: 16 },
-            fontFamily: '"Geist Mono", "Fira Code", monospace',
-            fontLigatures: true,
-            tabSize: 2,
-          }}
-        />
+        <div role="application" aria-label="Super.js code editor" className="h-full">
+          <MonacoEditor
+            height="100%"
+            language="superjs"
+            value={value}
+            onChange={(v) => onChange(v ?? '')}
+            onMount={handleEditorMount}
+            options={{
+              fontSize: 14,
+              lineHeight: 22,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              padding: { top: 16, bottom: 16 },
+              fontFamily: '"Geist Mono", "Fira Code", monospace',
+              fontLigatures: true,
+              tabSize: 2,
+            }}
+          />
+        </div>
       </div>
     </div>
   )

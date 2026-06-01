@@ -38,6 +38,7 @@ export function Navbar() {
             href="https://github.com/hbarve1/super-js"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="View Super.js on GitHub"
             className="text-sm text-white/60 hover:text-white transition-colors"
           >
             GitHub
@@ -49,7 +50,8 @@ export function Navbar() {
         <button
           className="md:hidden p-2 text-white/60 hover:text-white"
           onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
+          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={open}
         >
           {open ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -80,6 +82,7 @@ export function Navbar() {
             href="https://github.com/hbarve1/super-js"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="View Super.js on GitHub"
             className="text-sm text-white/70 hover:text-white"
           >
             GitHub
