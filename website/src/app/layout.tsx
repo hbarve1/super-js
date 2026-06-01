@@ -18,10 +18,12 @@ export const metadata: Metadata = {
     url: 'https://superjs.dev',
     siteName: 'Super.js',
     type: 'website',
+    images: [{ url: 'https://superjs.dev/opengraph-image', width: 1200, height: 630, alt: 'Super.js — JavaScript, Perfected.' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Super.js — JavaScript, Perfected',
+    images: ['https://superjs.dev/opengraph-image'],
   },
 }
 
