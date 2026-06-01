@@ -12,7 +12,7 @@ export default function Sidebar({ items }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <nav>
+    <nav data-pagefind-ignore>
       <div className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8] mb-4 px-3">
         Documentation
       </div>

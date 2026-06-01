@@ -55,7 +55,7 @@ const mdxComponents = {
 
 export default function DocContent({ source }: DocContentProps) {
   return (
-    <article className="flex-1 min-w-0 max-w-3xl py-8">
+    <article className="flex-1 min-w-0 max-w-3xl py-8" data-pagefind-body>
       <MDXRemote source={source} components={mdxComponents} />
     </article>
   )
