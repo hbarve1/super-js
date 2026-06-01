@@ -13,7 +13,7 @@ export function EvolutionScene({ progress }: Props) {
   return (
     <Canvas
       camera={{ position: [0, 0, 4], fov: 60 }}
-      style={{ position: 'absolute', inset: 0 }}
+      style={{ position: 'absolute', inset: 0, touchAction: 'none' }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
     >

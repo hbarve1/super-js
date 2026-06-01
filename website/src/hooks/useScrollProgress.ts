@@ -6,6 +6,8 @@ import ScrollTrigger from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
+ScrollTrigger.normalizeScroll(true)
+
 /**
  * Returns a scroll progress value 0→1 over `scrollHeight` pixels of scroll.
  * 0 = top of trigger element, 1 = after scrolling `scrollHeight` px.
@@ -29,9 +31,12 @@ export function useScrollProgress(scrollHeight = 2000): {
         end: `+=${scrollHeight}`,
         scrub: true,
         pin: true,
+        anticipatePin: 1,
         onUpdate: (self) => setProgress(self.progress),
       },
     })
+
+    ScrollTrigger.refresh()
 
     return () => {
       tween.scrollTrigger?.kill()

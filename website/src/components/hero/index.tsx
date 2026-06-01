@@ -22,7 +22,7 @@ export function Hero() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[100svh] bg-[#050510] overflow-hidden touch-none"
+      className="relative w-full h-[100svh] bg-[#050510] overflow-hidden"
     >
       {canvasReady && <EvolutionScene progress={progress} />}
       <HeroContent progress={progress} />
