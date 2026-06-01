@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { Playground } from '@/components/playground/Playground'
 
 const EMBED_CODE = `// Try Super.js — null-safe, sum types, match expressions
@@ -21,6 +22,15 @@ match r {
 `
 
 export default function PlaygroundEmbed() {
+  const [height, setHeight] = useState('380px')
+
+  useEffect(() => {
+    const update = () => setHeight(window.innerWidth < 768 ? '420px' : '380px')
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
   return (
     <section className="py-24 px-4 md:px-8 bg-[#050510]">
       <div className="max-w-6xl mx-auto">
@@ -36,12 +46,7 @@ export default function PlaygroundEmbed() {
           </p>
         </div>
 
-        <div className="block md:hidden">
-          <Playground initialCode={EMBED_CODE} height="420px" />
-        </div>
-        <div className="hidden md:block">
-          <Playground initialCode={EMBED_CODE} height="380px" />
-        </div>
+        <Playground initialCode={EMBED_CODE} height={height} />
 
         <div className="mt-6 text-center">
           <Link

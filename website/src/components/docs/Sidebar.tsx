@@ -63,31 +63,39 @@ export default function Sidebar({ items }: SidebarProps) {
         Docs
       </button>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <>
-          <div
-            className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="md:hidden fixed top-0 left-0 z-50 h-full w-72 bg-[#0d1117] border-r border-white/10 overflow-y-auto py-8 px-4">
-            <div className="flex items-center justify-between mb-6">
-              <span className="font-semibold text-[#f8fafc]">Documentation</span>
-              <button
-                onClick={() => setMobileOpen(false)}
-                aria-label="Close documentation menu"
-                className="p-1 text-[#94a3b8] hover:text-white"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <SidebarNav items={items} onLinkClick={() => setMobileOpen(false)} />
+      {/* Mobile drawer — always mounted, CSS transition */}
+      <div className="md:hidden">
+        {/* Backdrop */}
+        <div
+          className={[
+            'fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
+            mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          ].join(' ')}
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+        {/* Panel */}
+        <div
+          className={[
+            'fixed top-0 left-0 z-50 h-full w-72 bg-[#0d1117] border-r border-white/10 overflow-y-auto py-8 px-4 transition-transform duration-300 ease-in-out',
+            mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          ].join(' ')}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <span className="font-semibold text-[#f8fafc]">Documentation</span>
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close documentation menu"
+              className="p-1 text-[#94a3b8] hover:text-white"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        </>
-      )}
+          <SidebarNav items={items} onLinkClick={() => setMobileOpen(false)} />
+        </div>
+      </div>
     </>
   )
 }
