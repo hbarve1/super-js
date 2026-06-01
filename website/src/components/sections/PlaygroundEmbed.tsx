@@ -36,7 +36,12 @@ export default function PlaygroundEmbed() {
           </p>
         </div>
 
-        <Playground initialCode={EMBED_CODE} height="380px" />
+        <div className="block md:hidden">
+          <Playground initialCode={EMBED_CODE} height="420px" />
+        </div>
+        <div className="hidden md:block">
+          <Playground initialCode={EMBED_CODE} height="380px" />
+        </div>
 
         <div className="mt-6 text-center">
           <Link
