@@ -48,6 +48,11 @@ export interface TypeParamType {
   name: string
 }
 
+export interface TupleType {
+  kind: 'tuple'
+  elements: Type[]
+}
+
 export interface UnionType {
   kind: 'union'
   types: Type[]
@@ -111,6 +116,7 @@ export type Type =
   | BigIntType
   | ObjectType
   | ArrayType
+  | TupleType
   | FunctionType
   | UnionType
   | IntersectionType

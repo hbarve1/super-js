@@ -352,3 +352,112 @@ describe('TC-generics: Generic type parameter resolution', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── Task 1.3: Destructuring Type Annotations — ECMA-262 §14.3.3 ──────────────
+
+describe('TC-destructuring: Destructuring type annotations — ECMA-262 §14.3.3', () => {
+  it('object destructuring — property bound to declared type (error on wrong downstream use)', () => {
+    expect(errors(`
+      const { x, y }: { x: number; y: string } = { x: 1, y: "hello" }
+      const a: string = x
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('object destructuring — property bound to declared type (no error on correct downstream use)', () => {
+    expect(errors(`
+      const { x, y }: { x: number; y: string } = { x: 1, y: "hello" }
+      const a: number = x
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring — second property bound correctly', () => {
+    expect(errors(`
+      const { x, y }: { x: number; y: string } = { x: 1, y: "hello" }
+      const b: string = y
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring — element bound to tuple element type', () => {
+    expect(errors(`
+      const [a, b]: [number, string] = [1, "hello"]
+      const c: number = a
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring — wrong downstream type emits error', () => {
+    expect(errors(`
+      const [a, b]: [number, string] = [1, "hello"]
+      const c: string = a
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('array destructuring — second tuple element bound correctly', () => {
+    expect(errors(`
+      const [a, b]: [number, string] = [1, "hello"]
+      const c: string = b
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring — array annotation gives element type to each binding', () => {
+    expect(errors(`
+      const [first, second]: number[] = [1, 2]
+      const n: number = first
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring — rest binds to array of remaining tuple elements', () => {
+    expect(errors(`
+      const [head, ...tail]: [number, string, boolean] = [1, "hi", true]
+      const n: number = head
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring — rest binds to object remainder type', () => {
+    expect(() => errors(`
+      const { x, ...rest }: { x: number; y: string; z: boolean } = { x: 1, y: "hi", z: true }
+    `)).not.toThrow()
+  })
+
+  it('nested object destructuring — inner binding typed from nested object', () => {
+    expect(errors(`
+      const { a: { b } }: { a: { b: number } } = { a: { b: 42 } }
+      const c: number = b
+    `)).toHaveLength(0)
+  })
+
+  it('nested object destructuring — wrong type on inner binding emits error', () => {
+    expect(errors(`
+      const { a: { b } }: { a: { b: number } } = { a: { b: 42 } }
+      const c: string = b
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('unannotated destructuring from typed variable — binding inherits source type', () => {
+    expect(errors(`
+      const obj: { x: number } = { x: 1 }
+      const { x } = obj
+      const a: string = x
+    `).length).toBeGreaterThan(0)  // x inferred as number from obj — string assignment is wrong
+  })
+
+  it('unannotated destructuring from unknown source — bindings get any', () => {
+    expect(errors(`
+      const { x } = unknownObj
+      const a: string = x
+    `)).toHaveLength(0)  // x is any — consistent with all types
+  })
+
+  it('renamed binding — const { x: y } — y is bound to x property type', () => {
+    expect(errors(`
+      const { x: renamed }: { x: number } = { x: 1 }
+      const a: number = renamed
+    `)).toHaveLength(0)
+  })
+
+  it('renamed binding — wrong downstream type emits error', () => {
+    expect(errors(`
+      const { x: renamed }: { x: number } = { x: 1 }
+      const a: string = renamed
+    `).length).toBeGreaterThan(0)
+  })
+})

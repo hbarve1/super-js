@@ -19,7 +19,7 @@ import type {
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType,
-  TypeParamType, PromiseType,
+  TypeParamType, PromiseType, TupleType, ObjectType, ArrayType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -108,6 +108,31 @@ function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[
       }
       return T_ANY  // unknown reference — gradual fallback
     }
+    // Object type literal — e.g. { x: number; y: string }
+    case 'TSTypeLiteral': {
+      const properties = new Map<string, Type>()
+      for (const member of node.members) {
+        if (!t.isTSPropertySignature(member)) continue
+        const key = t.isIdentifier(member.key) ? member.key.name
+          : t.isStringLiteral(member.key) ? member.key.value
+          : null
+        if (!key) continue
+        const memberAnnot = member.typeAnnotation
+        const propType = memberAnnot && t.isTSTypeAnnotation(memberAnnot)
+          ? resolveType(memberAnnot.typeAnnotation, typeParamNames)
+          : T_ANY
+        properties.set(key, propType)
+      }
+      return { kind: 'object', properties }
+    }
+    // Tuple type — e.g. [number, string]
+    case 'TSTupleType': {
+      const elements = node.elementTypes.map((e: t.TSType | t.TSNamedTupleMember) => {
+        if (t.isTSNamedTupleMember(e)) return resolveType(e.elementType, typeParamNames)
+        return resolveType(e as t.TSType, typeParamNames)
+      })
+      return { kind: 'tuple', elements } satisfies TupleType
+    }
     // Function type — e.g. (x: number) => string
     case 'TSFunctionType': {
       const params = node.parameters.map(p => ({
@@ -143,6 +168,8 @@ function instantiate(type: Type, bindings: Map<string, Type>): Type {
       return bindings.get(type.name) ?? T_ANY
     case 'array':
       return { kind: 'array', elementType: instantiate(type.elementType, bindings) }
+    case 'tuple':
+      return { kind: 'tuple', elements: (type as TupleType).elements.map(e => instantiate(e, bindings)) }
     case 'function':
       return {
         kind: 'function',
@@ -315,6 +342,18 @@ function isConsistent(a: Type, b: Type): boolean {
   return false
 }
 
+// ── Destructuring helpers ─────────────────────────────────────────────────────
+
+/** Returns a new object type with `usedKeys` removed — used for rest patterns `...rest`. */
+function computeObjectRest(objType: Type, usedKeys: string[]): Type {
+  if (objType.kind !== 'object') return T_ANY
+  const remaining = new Map<string, Type>()
+  ;(objType as ObjectType).properties.forEach((v, k) => {
+    if (!usedKeys.includes(k)) remaining.set(k, v)
+  })
+  return { kind: 'object', properties: remaining }
+}
+
 // ── TypeChecker class ─────────────────────────────────────────────────────────
 
 // ── TypeCheckerOptions ────────────────────────────────────────────────────────
@@ -408,6 +447,10 @@ export class TypeChecker {
    */
   private checkVariableDeclaration(path: NodePath<t.VariableDeclaration>): void {
     for (const decl of path.node.declarations) {
+      if (t.isObjectPattern(decl.id) || t.isArrayPattern(decl.id)) {
+        this.checkDestructuringDeclaration(decl)
+        continue
+      }
       if (!t.isIdentifier(decl.id)) continue
 
       const annotation = decl.id.typeAnnotation
@@ -459,6 +502,125 @@ export class TypeChecker {
         this.env.set(name, declared)
       } else {
         this.env.set(name, declared)
+      }
+    }
+  }
+
+  // ── Destructuring declarations — ECMA-262 §14.3.3 ────────────────────────────
+
+  /**
+   * Resolves the declared type for a destructuring pattern, then registers each
+   * binding in the environment with its extracted type.
+   *
+   * ECMA-262 §14.3.3 Destructuring Binding Patterns:
+   * https://tc39.es/ecma262/#sec-destructuring-binding-patterns
+   */
+  private checkDestructuringDeclaration(decl: t.VariableDeclarator): void {
+    const pattern = decl.id as t.ObjectPattern | t.ArrayPattern
+    const annotation = (pattern as { typeAnnotation?: t.TSTypeAnnotation | null }).typeAnnotation
+    let sourceType: Type = T_ANY
+    if (annotation && t.isTSTypeAnnotation(annotation)) {
+      sourceType = resolveType(annotation.typeAnnotation)
+    } else if (decl.init) {
+      const inferred = inferExprType(decl.init, this.env)
+      if (inferred.kind !== 'any') sourceType = inferred
+    }
+
+    if (t.isObjectPattern(pattern)) {
+      this.registerObjectPattern(pattern, sourceType)
+    } else {
+      this.registerArrayPattern(pattern as t.ArrayPattern, sourceType)
+    }
+  }
+
+  /** Registers bindings for each property in an ObjectPattern. */
+  private registerObjectPattern(pattern: t.ObjectPattern, sourceType: Type): void {
+    const destructuredKeys: string[] = []
+
+    for (const prop of pattern.properties) {
+      if (t.isRestElement(prop)) {
+        if (t.isIdentifier(prop.argument)) {
+          this.env.set(prop.argument.name, computeObjectRest(sourceType, destructuredKeys))
+        }
+        continue
+      }
+      if (!t.isObjectProperty(prop)) continue
+
+      const keyName = t.isIdentifier(prop.key) ? prop.key.name
+        : t.isStringLiteral(prop.key) ? prop.key.value
+        : null
+      if (!keyName) continue
+      destructuredKeys.push(keyName)
+
+      let propType: Type = T_ANY
+      if (sourceType.kind === 'object') {
+        propType = (sourceType as ObjectType).properties.get(keyName) ?? T_ANY
+      }
+
+      const val = prop.value as t.PatternLike | t.Expression
+      if (t.isIdentifier(val)) {
+        this.env.set(val.name, propType)
+      } else if (t.isObjectPattern(val)) {
+        this.registerObjectPattern(val, propType)
+      } else if (t.isArrayPattern(val)) {
+        this.registerArrayPattern(val, propType)
+      } else if (t.isAssignmentPattern(val)) {
+        if (t.isIdentifier(val.left)) {
+          this.env.set(val.left.name, propType)
+        } else if (t.isObjectPattern(val.left)) {
+          this.registerObjectPattern(val.left, propType)
+        } else if (t.isArrayPattern(val.left)) {
+          this.registerArrayPattern(val.left, propType)
+        }
+      }
+    }
+  }
+
+  /** Registers bindings for each element in an ArrayPattern. */
+  private registerArrayPattern(pattern: t.ArrayPattern, sourceType: Type): void {
+    for (let i = 0; i < pattern.elements.length; i++) {
+      const elem = pattern.elements[i]
+      if (!elem) continue
+
+      let elemType: Type = T_ANY
+      if (sourceType.kind === 'tuple') {
+        elemType = i < (sourceType as TupleType).elements.length
+          ? (sourceType as TupleType).elements[i]
+          : T_ANY
+      } else if (sourceType.kind === 'array') {
+        elemType = (sourceType as ArrayType).elementType
+      }
+
+      if (t.isRestElement(elem)) {
+        if (t.isIdentifier(elem.argument)) {
+          let restType: Type = T_ANY
+          if (sourceType.kind === 'tuple') {
+            const remaining = (sourceType as TupleType).elements.slice(i)
+            restType = { kind: 'array', elementType: remaining.length === 1
+              ? remaining[0]
+              : remaining.length > 1 ? { kind: 'union', types: remaining } : T_ANY }
+          } else if (sourceType.kind === 'array') {
+            restType = sourceType
+          }
+          this.env.set(elem.argument.name, restType)
+        }
+        continue
+      }
+
+      if (t.isIdentifier(elem)) {
+        this.env.set(elem.name, elemType)
+      } else if (t.isObjectPattern(elem)) {
+        this.registerObjectPattern(elem, elemType)
+      } else if (t.isArrayPattern(elem)) {
+        this.registerArrayPattern(elem, elemType)
+      } else if (t.isAssignmentPattern(elem)) {
+        if (t.isIdentifier(elem.left)) {
+          this.env.set(elem.left.name, elemType)
+        } else if (t.isObjectPattern(elem.left)) {
+          this.registerObjectPattern(elem.left, elemType)
+        } else if (t.isArrayPattern(elem.left)) {
+          this.registerArrayPattern(elem.left, elemType)
+        }
       }
     }
   }

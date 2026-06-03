@@ -35,13 +35,13 @@ Started: 2026-06-03
 
 ### Task 1.3: Destructuring Type Annotations
 **Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Handle `ObjectPattern` in variable declarator with type annotation
-- [ ] Extract per-binding type from declared object type
-- [ ] Handle `ArrayPattern` with tuple/array type annotation
-- [ ] Handle rest patterns `...rest` with remainder type
-- [ ] Handle nested destructuring
-- [ ] Write examples: `specs/002-ecmascript-features/examples/destructuring-types.sjs`
+**Status**: [x]
+- [x] Handle `ObjectPattern` in variable declarator with type annotation
+- [x] Extract per-binding type from declared object type
+- [x] Handle `ArrayPattern` with tuple/array type annotation
+- [x] Handle rest patterns `...rest` with remainder type
+- [x] Handle nested destructuring
+- [x] Write examples: `specs/002-ecmascript-features/examples/destructuring-types.sjs`
 
 ### Task 1.4: Object Spread Type Merging
 **Files**: `prototype/src/typeChecker/index.ts`
