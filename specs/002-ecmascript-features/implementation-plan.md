@@ -25,13 +25,13 @@ Started: 2026-06-03
 
 ### Task 1.2: Async/Await Type Inference
 **Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Detect `async` modifier on FunctionDeclaration/ArrowFunction
-- [ ] Wrap inferred return type in `Promise<T>` if not already
-- [ ] Handle `AwaitExpression`: unwrap `Promise<T>` → `T`
-- [ ] Error SJS-E009 if `await` used outside async function
-- [ ] Test: async functions infer `Promise<T>`, await unwraps
-- [ ] Write examples: `specs/002-ecmascript-features/examples/async-types.sjs`
+**Status**: [x]
+- [x] Detect `async` modifier on FunctionDeclaration/ArrowFunction
+- [x] Wrap inferred return type in `Promise<T>` if not already
+- [x] Handle `AwaitExpression`: unwrap `Promise<T>` → `T`
+- [x] Error SJS-E009 if `await` used outside async function
+- [x] Test: async functions infer `Promise<T>`, await unwraps
+- [x] Write examples: `specs/002-ecmascript-features/examples/async-types.sjs`
 
 ### Task 1.3: Destructuring Type Annotations
 **Files**: `prototype/src/typeChecker/index.ts`

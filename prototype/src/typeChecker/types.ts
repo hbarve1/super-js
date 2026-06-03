@@ -72,6 +72,15 @@ export interface SumType {
   variants: SumVariantType[]
 }
 
+/**
+ * Promise<T> — the result of an async function or an awaitable value.
+ * ECMA-262 §27.2 Promise Objects.
+ */
+export interface PromiseType {
+  kind: 'promise'
+  valueType: Type
+}
+
 /** `dynamic` — runtime-checked escape hatch (not `any`). Consistent with every type. */
 export interface DynamicType { kind: 'dynamic' }
 
@@ -112,6 +121,7 @@ export type Type =
   | SumVariantType
   | DynamicType
   | TypeParamType
+  | PromiseType
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 

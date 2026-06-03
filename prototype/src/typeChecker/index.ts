@@ -19,7 +19,7 @@ import type {
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType,
-  TypeParamType,
+  TypeParamType, PromiseType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -49,6 +49,8 @@ const SPEC = {
   LET_CONST:      'https://tc39.es/ecma262/#sec-let-and-const-declarations',
   // Function definitions — ECMA-262 §15.2
   FUNCTION_DEF:   'https://tc39.es/ecma262/#sec-function-definitions',
+  // Async function definitions — ECMA-262 §15.8
+  ASYNC_FUNCTION: 'https://tc39.es/ecma262/#sec-async-function-definitions',
 } as const
 
 // ── Resolve: TSType node → Type ───────────────────────────────────────────────
@@ -97,8 +99,13 @@ function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[
       if (name === 'Array' && node.typeParameters?.params.length === 1) {
         return { kind: 'array', elementType: resolveType(node.typeParameters.params[0], typeParamNames) }
       }
-      // Promise<T> — deferred to Task 1.2 (async/await); use any to avoid false positives
-      if (name === 'Promise') return T_ANY
+      // Promise<T> — ECMA-262 §27.2 Promise Objects
+      if (name === 'Promise') {
+        const valueType = node.typeParameters?.params.length === 1
+          ? resolveType(node.typeParameters.params[0], typeParamNames)
+          : T_ANY
+        return { kind: 'promise', valueType } satisfies PromiseType
+      }
       return T_ANY  // unknown reference — gradual fallback
     }
     // Function type — e.g. (x: number) => string
@@ -150,6 +157,8 @@ function instantiate(type: Type, bindings: Map<string, Type>): Type {
       type.properties.forEach((v, k) => props.set(k, instantiate(v, bindings)))
       return { kind: 'object', properties: props, typeParams: type.typeParams }
     }
+    case 'promise':
+      return { kind: 'promise', valueType: instantiate(type.valueType, bindings) }
     default:
       return type
   }
@@ -213,12 +222,25 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           : T_ANY,
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
+      let returnType = resolveType(returnAnnotation, typeParams)
+      // Async arrow: wrap return type in Promise<T> — ECMA-262 §15.8
+      if (node.async && returnType.kind !== 'promise') {
+        returnType = { kind: 'promise', valueType: returnType }
+      }
       return {
         kind: 'function',
         params,
-        returnType: resolveType(returnAnnotation, typeParams),
+        returnType,
         ...(typeParams.length > 0 ? { typeParams } : {}),
       } satisfies FunctionType
+    }
+
+    // AwaitExpression — unwrap Promise<T> → T (ECMA-262 §6.2.6 / §27.2)
+    case 'AwaitExpression': {
+      const awaitNode = node as t.AwaitExpression
+      const argType = inferExprType(awaitNode.argument, env)
+      if (argType.kind === 'promise') return (argType as PromiseType).valueType
+      return T_ANY  // awaiting non-promise or any — gradual fallback
     }
 
     // Call expression — infer the instantiated return type
@@ -367,6 +389,9 @@ export class TypeChecker {
       case 'SwitchStatement':
         this.checkSwitchExhaustiveness(path as NodePath<t.SwitchStatement>)
         break
+      case 'AwaitExpression':
+        this.checkAwaitExpression(path as NodePath<t.AwaitExpression>)
+        break
     }
   }
 
@@ -488,13 +513,21 @@ export class TypeChecker {
       : null
     const declaredReturn = resolveType(returnAnnotation)
 
-    if (declaredReturn.kind === 'any') return  // no annotation — nothing to check
+    // In async functions, `return T` implicitly wraps in Promise<T>.
+    // If the annotation is Promise<T>, check the return value against T not Promise<T>.
+    // ECMA-262 §15.8.4 Runtime Semantics: EvaluateAsyncFunctionBody
+    const isAsync = !!(fnNode as t.Function & { async?: boolean }).async
+    const effectiveDeclaredReturn = (isAsync && declaredReturn.kind === 'promise')
+      ? (declaredReturn as PromiseType).valueType
+      : declaredReturn
+
+    if (effectiveDeclaredReturn.kind === 'any') return  // no annotation — nothing to check
 
     const returnArg = path.node.argument
     const actualType = inferExprType(returnArg ?? null, this.env)
 
     // void function must not return a value — ECMA-262 §15.2
-    if (declaredReturn.kind === 'void' && returnArg) {
+    if (effectiveDeclaredReturn.kind === 'void' && returnArg) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
@@ -505,11 +538,11 @@ export class TypeChecker {
       return
     }
 
-    if (!isConsistent(actualType, declaredReturn)) {
+    if (!isConsistent(actualType, effectiveDeclaredReturn)) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
-        message: `I expected this function to return '${declaredReturn.kind}' but found '${actualType.kind}'.`,
+        message: `I expected this function to return '${effectiveDeclaredReturn.kind}' but found '${actualType.kind}'.`,
         node: returnArg ?? path.node,
         specUrl: SPEC.FUNCTION_DEF,
       })
@@ -649,10 +682,16 @@ export class TypeChecker {
       }
     })
 
+    let resolvedReturn = resolveType(returnAnnotation, typeParams)
+    // Async function: its return type in the env is Promise<T> — ECMA-262 §15.8
+    if (node.async && resolvedReturn.kind !== 'promise') {
+      resolvedReturn = { kind: 'promise', valueType: resolvedReturn }
+    }
+
     const fnType: FunctionType = {
       kind: 'function',
       params,
-      returnType: resolveType(returnAnnotation, typeParams),
+      returnType: resolvedReturn,
       ...(typeParams.length > 0 ? { typeParams } : {}),
     }
 
@@ -696,14 +735,21 @@ export class TypeChecker {
       ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
       : null
     const declaredReturn = resolveType(returnAnnotation)
-    if (declaredReturn.kind === 'any') return  // no annotation
+
+    // Async arrow: `async () => expr` wraps expr in Promise<T>.
+    // If annotation is Promise<T>, check the body expression against T.
+    const effectiveDeclaredReturn = (node.async && declaredReturn.kind === 'promise')
+      ? (declaredReturn as PromiseType).valueType
+      : declaredReturn
+
+    if (effectiveDeclaredReturn.kind === 'any') return  // no annotation
 
     const actualType = inferExprType(node.body, this.env)
-    if (!isConsistent(actualType, declaredReturn)) {
+    if (!isConsistent(actualType, effectiveDeclaredReturn)) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
-        message: `I expected this arrow function to return '${declaredReturn.kind}' but found '${actualType.kind}'.`,
+        message: `I expected this arrow function to return '${effectiveDeclaredReturn.kind}' but found '${actualType.kind}'.`,
         node: node.body,
         specUrl: 'https://tc39.es/ecma262/#sec-arrow-function-definitions',
       })
@@ -846,6 +892,31 @@ export class TypeChecker {
         line: path.node.loc?.start.line ?? 0,
         column: path.node.loc?.start.column ?? 0,
         specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md#45-pattern-matching',
+      })
+    }
+  }
+
+  // ── Rule SJS-E009: await outside async function — ECMA-262 §15.8 ─────────────
+
+  /**
+   * Verifies that `await` is used inside an async function.
+   * Top-level `await` in ES modules is valid (ES2022) and is not flagged.
+   *
+   * ECMA-262 §15.8 Async Function Definitions:
+   * https://tc39.es/ecma262/#sec-async-function-definitions
+   */
+  private checkAwaitExpression(path: NodePath<t.AwaitExpression>): void {
+    const fnPath = path.getFunctionParent()
+    if (!fnPath) return  // top-level await — valid in ES2022 modules
+
+    const fnNode = fnPath.node as t.Function & { async?: boolean }
+    if (!fnNode.async) {
+      this.report({
+        code: 'SJS-E009',
+        severity: 'error',
+        message: `'await' cannot be used inside a non-async function. Mark the enclosing function 'async' to use 'await'.`,
+        node: path.node,
+        specUrl: SPEC.ASYNC_FUNCTION,
       })
     }
   }

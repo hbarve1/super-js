@@ -7,6 +7,7 @@
 
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
+import * as t from '@babel/types'
 import { TypeChecker } from '../../src/typeChecker'
 import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
 
@@ -200,6 +201,97 @@ describe('TC-008: Diagnostic structure', () => {
     const diags = errors('const x: number = "hello"')
     expect(diags[0].message).toMatch(/number/)
     expect(diags[0].message).toMatch(/string/)
+  })
+})
+
+// ── Task 1.2: Async/Await Type Inference — ECMA-262 §15.8 ────────────────────
+
+describe('TC-async: Async/Await type inference — ECMA-262 §15.8', () => {
+  it('accepts async function returning matching type inside Promise<T>', () => {
+    expect(errors(`
+      async function fetchData(): Promise<number> { return 42 }
+    `)).toHaveLength(0)
+  })
+
+  it('rejects async function returning wrong type inside Promise<T>', () => {
+    expect(errors(`
+      async function fetchData(): Promise<number> { return "hello" }
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('accepts async function with no return annotation (gradual)', () => {
+    expect(errors(`
+      async function fetchData() { return 42 }
+    `)).toHaveLength(0)
+  })
+
+  it('await unwraps Promise<number> to number', () => {
+    expect(errors(`
+      async function fetchNumber(): Promise<number> { return 42 }
+      async function main() {
+        const x: number = await fetchNumber()
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('rejects assigning awaited Promise<string> to number', () => {
+    expect(errors(`
+      async function fetchString(): Promise<string> { return "hi" }
+      async function main() {
+        const x: number = await fetchString()
+      }
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('accepts async arrow with Promise<T> annotation', () => {
+    expect(errors(`
+      const f = async (): Promise<string> => "hello"
+    `)).toHaveLength(0)
+  })
+
+  it('rejects async arrow returning wrong type', () => {
+    expect(errors(`
+      const f = async (): Promise<string> => 42
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('emits SJS-E009 when await used inside non-async function', () => {
+    // Babel rejects `await` inside non-async functions at parse time, so we
+    // construct the AST manually to verify the checker's static analysis rule.
+    const awaitExpr = t.awaitExpression(
+      t.callExpression(t.identifier('somePromise'), [])
+    )
+    const fn = t.functionDeclaration(
+      t.identifier('f'),
+      [],
+      t.blockStatement([t.returnStatement(awaitExpr)]),
+      false,  // not generator
+      false   // not async
+    )
+    const file = t.file(t.program([fn], [], 'module'))
+    const checker = new TypeChecker()
+    traverse(file, { enter(path: any) { checker.check(path) } })
+    const diags = checker.getDiagnostics().filter((d: PrototypeDiagnostic) => d.severity === 'error')
+    expect(diags.some((d: PrototypeDiagnostic) => d.code === 'SJS-E009')).toBe(true)
+  })
+
+  it('does not flag await inside async function', () => {
+    expect(errors(`
+      async function f(): Promise<number> {
+        const x = await Promise.resolve(42)
+        return 1
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('Promise<T> — registered return type is accessible to callers', () => {
+    // calling an async function should give Promise<T>, await should give T
+    expect(errors(`
+      async function getNum(): Promise<number> { return 1 }
+      async function main() {
+        const p: Promise<number> = getNum()
+      }
+    `)).toHaveLength(0)
   })
 })
 
