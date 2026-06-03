@@ -9,7 +9,7 @@
  */
 
 import { formatDiagnosticsAsJson, DiagnosticJson } from '../../src/diagnostic'
-import type { Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic as Diagnostic } from '../../src/typeChecker/types'
 
 const SAMPLE_DIAGNOSTIC: Diagnostic = {
   code: 'SJS-E001',

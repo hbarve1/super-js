@@ -1,0 +1,737 @@
+/**
+ * ECMAScript ES5–ES2025 type-checking feature tests.
+ * Covers all items in specs/002-ecmascript-features/implementation-plan.md
+ */
+
+import { parse } from '@babel/parser'
+import traverse from '@babel/traverse'
+import { TypeChecker } from '../../src/typeChecker'
+import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
+
+// ── Test helpers ─────────────────────────────────────────────────────────────
+
+function typeCheck(source: string): PrototypeDiagnostic[] {
+  const ast = parse(source, {
+    sourceType: 'module',
+    plugins: ['typescript', 'jsx'],
+  })
+  const checker = new TypeChecker()
+  traverse(ast, {
+    enter(path) { checker.check(path) },
+  })
+  return checker.getDiagnostics()
+}
+
+function errors(source: string): PrototypeDiagnostic[] {
+  return typeCheck(source).filter(d => d.severity === 'error')
+}
+
+function errorCodes(source: string): string[] {
+  return errors(source).map(d => d.code)
+}
+
+// ── Task 1.1: Generic Type Parameter Resolution — ES2015 ─────────────────────
+
+describe('Task 1.1: Generic type parameter resolution — ES2015', () => {
+  it('accepts Array<string> annotation', () => {
+    expect(errors('const xs: Array<string> = ["a", "b"]')).toHaveLength(0)
+  })
+
+  it('accepts Array<number> annotation', () => {
+    expect(errors('const ns: Array<number> = [1, 2, 3]')).toHaveLength(0)
+  })
+
+  it('accepts Promise<number> annotation', () => {
+    expect(errors('const p: Promise<number> = new Promise<number>((r) => r(1))')).toHaveLength(0)
+  })
+
+  it('resolves Array<T> — rejects non-array', () => {
+    expect(errors('const xs: Array<string> = "not array"').length).toBeGreaterThan(0)
+  })
+
+  it('accepts Map<string, number> annotation', () => {
+    expect(errors('const m: Map<string, number> = new Map()')).toHaveLength(0)
+  })
+
+  it('accepts Set<string> annotation', () => {
+    expect(errors('const s: Set<string> = new Set()')).toHaveLength(0)
+  })
+
+  it('accepts Iterable<T> annotation', () => {
+    expect(errors('const it: Iterable<number> = [1,2,3]')).toHaveLength(0)
+  })
+
+  it('resolves nested generics: Array<Array<string>>', () => {
+    expect(errors('const mat: Array<Array<string>> = [["a"]]')).toHaveLength(0)
+  })
+})
+
+// ── Task 1.2: Async/Await Return Type Inference — ES2017 ─────────────────────
+
+describe('Task 1.2: Async/Await return type inference — ES2017', () => {
+  it('async function with Promise<string> return type accepts string return', () => {
+    expect(errors(`
+      async function fetchData(): Promise<string> {
+        return "data"
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('async function with wrong inner type errors', () => {
+    expect(errors(`
+      async function getNum(): Promise<number> {
+        return "not a number"
+      }
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('await unwraps Promise<T> to T for assignment', () => {
+    expect(errors(`
+      async function main() {
+        const p: Promise<string> = new Promise<string>((r) => r("hi"))
+        const s: string = await p
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('SJS-E009: no error for await inside async function', () => {
+    // Babel rejects await in non-async functions at parse time (syntax error).
+    // Verify that await inside an async function produces no SJS-E009.
+    const src = 'async function f() { return await Promise.resolve(1) }'
+    const ast = parse(src, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(p) { checker.check(p) } })
+    const codes = checker.getDiagnostics().filter(d => d.severity === 'error').map(d => d.code)
+    expect(codes).not.toContain('SJS-E009')
+  })
+
+  it('await in async arrow is valid — no SJS-E009', () => {
+    expect(errorCodes('const f = async () => { const x = await Promise.resolve(1) }')).not.toContain('SJS-E009')
+  })
+
+  it('async arrow with Promise<number> return accepts number', () => {
+    expect(errors('const f = async (): Promise<number> => 42')).toHaveLength(0)
+  })
+})
+
+// ── Task 1.3: Destructuring Type Annotations — ES2015 ────────────────────────
+
+describe('Task 1.3: Destructuring type annotations — ES2015', () => {
+  it('object destructuring with inline type annotation', () => {
+    expect(errors(`
+      const obj = { name: "Alice", age: 30 }
+      const { name, age }: { name: string; age: number } = obj
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring with tuple annotation', () => {
+    expect(errors(`
+      const pair: [string, number] = ["hello", 42]
+      const [s, n]: [string, number] = pair
+    `)).toHaveLength(0)
+  })
+
+  it('destructuring registers bindings for subsequent use', () => {
+    expect(errors(`
+      const { x }: { x: number } = { x: 1 }
+      const n: number = x
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring non-object init errors', () => {
+    expect(errors(`
+      const { x }: { x: number } = "not an object"
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('rest element in array destructuring', () => {
+    expect(errors(`
+      const [head, ...tail] = [1, 2, 3]
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring rest element', () => {
+    expect(errors(`
+      const { a, ...rest } = { a: 1, b: 2 }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 1.4: Object Spread Type Merging — ES2018 ─────────────────────────────
+
+describe('Task 1.4: Object spread type merging — ES2018', () => {
+  it('infers merged type from spread objects', () => {
+    expect(errors(`
+      const a = { x: 1 }
+      const b = { y: "hello" }
+      const merged = { ...a, ...b }
+    `)).toHaveLength(0)
+  })
+
+  it('later spread overrides earlier properties', () => {
+    expect(errors(`
+      const base = { x: 1, y: 2 }
+      const override = { y: 100 }
+      const merged = { ...base, ...override }
+    `)).toHaveLength(0)
+  })
+
+  it('spread with additional literal properties', () => {
+    expect(errors(`
+      const base = { a: "hello" }
+      const extended = { ...base, b: 42 }
+    `)).toHaveLength(0)
+  })
+
+  it('assigns merged object to declared type', () => {
+    expect(errors(`
+      const a = { name: "Alice" }
+      const b = { age: 30 }
+      const person: object = { ...a, ...b }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 1.5: Type Narrowing — ES2015 ────────────────────────────────────────
+
+describe('Task 1.5: Type narrowing (typeof/instanceof/null) — ES2015', () => {
+  it('typeof string narrows in then-branch', () => {
+    expect(errors(`
+      function process(x: string | number) {
+        if (typeof x === "string") {
+          const s: string = x
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('null !== check narrows away null', () => {
+    expect(errors(`
+      function greet(name: string | null) {
+        if (name !== null) {
+          const s: string = name
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('instanceof narrows to object type', () => {
+    expect(errors(`
+      function handle(e: unknown) {
+        if (e instanceof Error) {
+          const obj: object = e
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('truthy check removes null/undefined', () => {
+    expect(errors(`
+      function greet(name: string | null | undefined) {
+        if (name) {
+          const s: string = name
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 2.1: Iterator / AsyncIterator Protocol — ES2015/ES2018 ──────────────
+
+describe('Task 2.1: Iterator/AsyncIterator protocol — ES2015/ES2018', () => {
+  it('accepts Iterator<T> annotation', () => {
+    expect(errors('const it: Iterator<number> = [1,2,3].values()')).toHaveLength(0)
+  })
+
+  it('accepts Generator<T> annotation', () => {
+    expect(errors(`
+      function* nums(): Generator<number, void, unknown> {
+        yield 1
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('array.values() is callable', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const it = arr.values()
+    `)).toHaveLength(0)
+  })
+
+  it('array.keys() is callable', () => {
+    expect(errors(`
+      const arr = ['a', 'b']
+      const it = arr.keys()
+    `)).toHaveLength(0)
+  })
+
+  it('Map has entries() returning iterator', () => {
+    expect(errors(`
+      const m: Map<string, number> = new Map()
+      const entries = m.entries()
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 2.2: WeakRef and FinalizationRegistry — ES2021 ──────────────────────
+
+describe('Task 2.2: WeakRef<T> and FinalizationRegistry<T> — ES2021', () => {
+  it('new WeakRef() creates object with deref()', () => {
+    expect(errors(`
+      const obj = { name: "test" }
+      const ref = new WeakRef(obj)
+      const val = ref.deref()
+    `)).toHaveLength(0)
+  })
+
+  it('accepts WeakRef<object> annotation on new WeakRef()', () => {
+    expect(errors(`
+      const obj = { name: "test" }
+      const ref: WeakRef<typeof obj> = new WeakRef(obj)
+    `)).toHaveLength(0)
+  })
+
+  it('FinalizationRegistry instantiates without errors', () => {
+    expect(errors(`
+      const registry = new FinalizationRegistry((held: string) => {
+        console.log(held)
+      })
+    `)).toHaveLength(0)
+  })
+
+  it('FinalizationRegistry.register() is callable', () => {
+    expect(errors(`
+      const registry = new FinalizationRegistry((held: string) => {})
+      registry.register({}, "value")
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 2.3: BigInt Mixing Enforcement (SJS-E004) — ES2020 ──────────────────
+
+describe('Task 2.3: BigInt mixing enforcement (SJS-E004) — ES2020', () => {
+  it('SJS-E004: bigint + number is rejected', () => {
+    expect(errorCodes('const x = 1n + 1')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: number + bigint is rejected', () => {
+    expect(errorCodes('const x = 1 + 1n')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint * number is rejected', () => {
+    expect(errorCodes('const x = 2n * 3')).toContain('SJS-E004')
+  })
+
+  it('bigint + bigint is allowed', () => {
+    expect(errorCodes('const x = 1n + 2n')).not.toContain('SJS-E004')
+  })
+
+  it('number + number is allowed', () => {
+    expect(errorCodes('const x = 1 + 2')).not.toContain('SJS-E004')
+  })
+
+  it('bigint subtraction is allowed', () => {
+    expect(errorCodes('const x = 10n - 3n')).not.toContain('SJS-E004')
+  })
+
+  it('comparison operators do not trigger SJS-E004', () => {
+    expect(errorCodes('const b = 1n > 2')).not.toContain('SJS-E004')
+  })
+})
+
+// ── Task 2.4: Promise.withResolvers<T> — ES2024 ───────────────────────────────
+
+describe('Task 2.4: Promise.withResolvers<T> — ES2024', () => {
+  it('Promise.withResolvers() is callable', () => {
+    expect(errors(`
+      const result = Promise.withResolvers()
+    `)).toHaveLength(0)
+  })
+
+  it('Promise.withResolvers() destructuring works', () => {
+    expect(errors(`
+      const { promise, resolve, reject } = Promise.withResolvers()
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 2.5: Object.groupBy and Map.groupBy — ES2024 ────────────────────────
+
+describe('Task 2.5: Object.groupBy and Map.groupBy — ES2024', () => {
+  it('Object.groupBy is callable', () => {
+    expect(errors(`
+      const items = [1, 2, 3, 4]
+      const grouped = Object.groupBy(items, (n) => n % 2 === 0 ? "even" : "odd")
+    `)).toHaveLength(0)
+  })
+
+  it('Map.groupBy is callable', () => {
+    expect(errors(`
+      const items = ["a", "bb", "ccc"]
+      const grouped = Map.groupBy(items, (s) => s.length)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.1: Array.prototype.at() Return Type — ES2022 ──────────────────────
+
+describe('Task 3.1: Array.prototype.at() — ES2022', () => {
+  it('array.at() assignable to T | undefined', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const item: number | undefined = arr.at(0)
+    `)).toHaveLength(0)
+  })
+
+  it('array.at() NOT assignable to just T (result includes undefined)', () => {
+    // Annotate arr so the type checker knows element type (gradual: unannotated → any)
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const item: number = arr.at(0)
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('string.at() returns string | undefined', () => {
+    expect(errors(`
+      const s = "hello"
+      const ch: string | undefined = s.at(0)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.2: Object.hasOwn() — ES2022 ───────────────────────────────────────
+
+describe('Task 3.2: Object.hasOwn() — ES2022', () => {
+  it('Object.hasOwn returns boolean', () => {
+    expect(errors(`
+      const obj = { x: 1 }
+      const has: boolean = Object.hasOwn(obj, "x")
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.3: Error.cause Typing — ES2022 ────────────────────────────────────
+
+describe('Task 3.3: Error.cause typing — ES2022', () => {
+  it('new Error() with message is valid', () => {
+    expect(errors(`
+      const e = new Error("something went wrong")
+    `)).toHaveLength(0)
+  })
+
+  it('Error instance has cause property', () => {
+    expect(errors(`
+      const e = new Error("failed")
+      const c = e.cause
+    `)).toHaveLength(0)
+  })
+
+  it('new Error with options.cause is valid', () => {
+    expect(errors(`
+      const orig = new Error("original")
+      const wrapped = new Error("wrapper", { cause: orig })
+    `)).toHaveLength(0)
+  })
+
+  it('Error.message and .name are strings', () => {
+    expect(errors(`
+      const e = new Error("msg")
+      const msg: string = e.message
+      const name: string = e.name
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.4: Symbol as WeakMap/WeakSet Keys — ES2023 ────────────────────────
+
+describe('Task 3.4: Symbol as WeakMap/WeakSet keys — ES2023', () => {
+  it('accepts WeakMap<symbol, V> annotation', () => {
+    expect(errors(`
+      const wm: WeakMap<symbol, string> = new WeakMap()
+    `)).toHaveLength(0)
+  })
+
+  it('WeakMap<object, V> annotation still valid', () => {
+    expect(errors(`
+      const wm: WeakMap<object, number> = new WeakMap()
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.5: RegExp Named Capture Groups — ES2018 ───────────────────────────
+
+describe('Task 3.5: RegExp named capture groups — ES2018', () => {
+  it('string.match() is callable', () => {
+    expect(errors(`
+      const result = "2024-01-15".match(/\\d+/)
+    `)).toHaveLength(0)
+  })
+
+  it('string.matchAll() is callable', () => {
+    expect(errors(`
+      const iter = "hello world".matchAll(/\\w+/g)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 3.6: SharedArrayBuffer and Atomics — ES2017 ─────────────────────────
+
+describe('Task 3.6: SharedArrayBuffer and Atomics — ES2017', () => {
+  it('new SharedArrayBuffer() is valid', () => {
+    expect(errors(`
+      const sab = new SharedArrayBuffer(1024)
+    `)).toHaveLength(0)
+  })
+
+  it('Atomics.add is callable', () => {
+    expect(errors(`
+      const sab = new SharedArrayBuffer(4)
+      const view = new Int32Array(sab)
+      const prev: number = Atomics.add(view, 0, 1)
+    `)).toHaveLength(0)
+  })
+
+  it('Atomics.load is callable', () => {
+    expect(errors(`
+      const sab = new SharedArrayBuffer(4)
+      const val: number = Atomics.load(sab, 0)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.1: Iterator Helpers — ES2025 ──────────────────────────────────────
+
+describe('Task 4.1: Iterator Helpers — ES2025', () => {
+  it('Iterator.from is callable', () => {
+    expect(errors(`
+      const it = Iterator.from([1, 2, 3])
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.2: Set Methods — ES2025 ───────────────────────────────────────────
+
+describe('Task 4.2: Set methods — ES2025', () => {
+  it('Set.union is callable', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1, 2])
+      const b: Set<number> = new Set([2, 3])
+      const u = a.union(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.intersection is callable', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1, 2])
+      const b: Set<number> = new Set([2, 3])
+      const inter = a.intersection(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.difference is callable', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1, 2])
+      const b: Set<number> = new Set([2, 3])
+      const diff = a.difference(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.symmetricDifference is callable', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1, 2])
+      const b: Set<number> = new Set([2, 3])
+      const sd = a.symmetricDifference(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.isSubsetOf returns boolean', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1])
+      const b: Set<number> = new Set([1, 2])
+      const sub: boolean = a.isSubsetOf(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.isSupersetOf returns boolean', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1, 2])
+      const b: Set<number> = new Set([1])
+      const sup: boolean = a.isSupersetOf(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.isDisjointFrom returns boolean', () => {
+    expect(errors(`
+      const a: Set<number> = new Set([1])
+      const b: Set<number> = new Set([2])
+      const disj: boolean = a.isDisjointFrom(b)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.3: Promise.try — ES2025 ───────────────────────────────────────────
+
+describe('Task 4.3: Promise.try — ES2025', () => {
+  it('Promise.try is callable', () => {
+    expect(errors(`
+      const p = Promise.try(() => 42)
+    `)).toHaveLength(0)
+  })
+
+  it('Promise.try result assignable to Promise<any>', () => {
+    expect(errors(`
+      const p: Promise<any> = Promise.try(() => "hello")
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.4: Error.isError — ES2025 ─────────────────────────────────────────
+
+describe('Task 4.4: Error.isError() — ES2025', () => {
+  it('Error.isError returns boolean', () => {
+    expect(errors(`
+      const isErr: boolean = Error.isError(new Error("test"))
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.5: Float16Array — ES2025 ──────────────────────────────────────────
+
+describe('Task 4.5: Float16Array — ES2025', () => {
+  it('new Float16Array() is valid', () => {
+    expect(errors(`
+      const arr = new Float16Array(4)
+    `)).toHaveLength(0)
+  })
+
+  it('Float16Array.BYTES_PER_ELEMENT is number', () => {
+    expect(errors(`
+      const bpe: number = Float16Array.BYTES_PER_ELEMENT
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Task 4.6: Math.sumPrecise — ES2025 ───────────────────────────────────────
+
+describe('Task 4.6: Math.sumPrecise — ES2025', () => {
+  it('Math.sumPrecise returns number', () => {
+    expect(errors(`
+      const sum: number = Math.sumPrecise([1.1, 2.2, 3.3])
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Stdlib coverage: Array methods ───────────────────────────────────────────
+
+describe('Array prototype methods — stdlib coverage', () => {
+  it('array.length is number', () => {
+    expect(errors('const arr = [1,2,3]; const n: number = arr.length')).toHaveLength(0)
+  })
+
+  it('array.includes returns boolean', () => {
+    expect(errors('const arr = [1,2,3]; const b: boolean = arr.includes(2)')).toHaveLength(0)
+  })
+
+  it('array.join returns string', () => {
+    expect(errors('const arr = ["a","b"]; const s: string = arr.join(",")')).toHaveLength(0)
+  })
+
+  it('array.findLast (ES2023) is callable', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const last = arr.findLast((n) => n > 1)
+    `)).toHaveLength(0)
+  })
+
+  it('array.toReversed (ES2023) is callable', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const rev = arr.toReversed()
+    `)).toHaveLength(0)
+  })
+
+  it('array.with (ES2023) is callable', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const updated = arr.with(1, 99)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Stdlib coverage: String methods ──────────────────────────────────────────
+
+describe('String prototype methods — stdlib coverage', () => {
+  it('string.replaceAll (ES2021) returns string', () => {
+    expect(errors('const s = "hello world"; const r: string = s.replaceAll("l", "x")')).toHaveLength(0)
+  })
+
+  it('string.padStart (ES2017) returns string', () => {
+    expect(errors('const s = "5"; const p: string = s.padStart(3, "0")')).toHaveLength(0)
+  })
+
+  it('string.at (ES2022) returns string | undefined', () => {
+    expect(errors('const s = "hello"; const c: string | undefined = s.at(-1)')).toHaveLength(0)
+  })
+})
+
+// ── Stdlib coverage: Object static methods ────────────────────────────────────
+
+describe('Object static methods — stdlib coverage', () => {
+  it('Object.keys returns string[]', () => {
+    expect(errors('const ks: string[] = Object.keys({ a: 1 })')).toHaveLength(0)
+  })
+
+  it('Object.fromEntries is callable (ES2019)', () => {
+    expect(errors('const obj = Object.fromEntries([["a", 1]])')).toHaveLength(0)
+  })
+})
+
+// ── Stdlib coverage: Math methods ────────────────────────────────────────────
+
+describe('Math methods — stdlib coverage', () => {
+  it('Math.abs returns number', () => {
+    expect(errors('const n: number = Math.abs(-5)')).toHaveLength(0)
+  })
+
+  it('Math.random returns number', () => {
+    expect(errors('const n: number = Math.random()')).toHaveLength(0)
+  })
+
+  it('Math.floor returns number', () => {
+    expect(errors('const n: number = Math.floor(3.7)')).toHaveLength(0)
+  })
+})
+
+// ── Regression: pre-existing features still work ─────────────────────────────
+
+describe('Regression: pre-existing type checking', () => {
+  it('primitive type mismatch detected', () => {
+    expect(errors('const x: number = "hello"').length).toBeGreaterThan(0)
+  })
+
+  it('null safety enforced', () => {
+    expect(errors('const x: string = null').length).toBeGreaterThan(0)
+  })
+
+  it('function return type checked', () => {
+    expect(errors('function f(): number { return "oops" }').length).toBeGreaterThan(0)
+  })
+
+  it('bigint literal assigns to bigint', () => {
+    expect(errors('const n: bigint = 100n')).toHaveLength(0)
+  })
+
+  it('Symbol.iterator has symbol type', () => {
+    expect(errors('const s: symbol = Symbol.iterator')).toHaveLength(0)
+  })
+
+  it('sum type exhaustiveness still enforced', () => {
+    expect(errors(`
+      type Shape = Circle | Square
+      const s: Shape = { _tag: "Circle" } as any
+      switch (s._tag) {
+        case "Circle": break
+      }
+    `).filter(e => e.code === 'SJS-E007').length).toBeGreaterThan(0)
+  })
+})

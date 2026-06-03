@@ -7,7 +7,7 @@
  * contracts/cli-interface.md § Diagnostic output
  */
 
-import type { Diagnostic } from './typeChecker/types'
+import type { PrototypeDiagnostic as Diagnostic } from './typeChecker/types'
 
 // ── JSON output (T054) ────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ export function formatDiagnosticsAsJson(
   return diagnostics.map(d => {
     const record: DiagnosticJson = {
       code: d.code,
-      severity: d.severity,
+      severity: d.severity === 'info' ? 'note' : d.severity,
       message: d.message,
       line: d.line,
       column: d.column,
