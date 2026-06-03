@@ -19,6 +19,7 @@ import type {
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType,
+  TypeParamType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -58,7 +59,7 @@ const SPEC = {
  * Each keyword maps to its ECMAScript Language Type (ECMA-262 §6.1.*).
  * Unknown or unsupported annotations fall back to `any` (gradual escape).
  */
-function resolveType(node: t.TSType | null | undefined): Type {
+function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[]): Type {
   if (!node) return T_ANY
 
   switch (node.type) {
@@ -77,12 +78,29 @@ function resolveType(node: t.TSType | null | undefined): Type {
     case 'TSBigIntKeyword': return { kind: 'bigint' }
     // Union — e.g. string | null
     case 'TSUnionType': {
-      const types = node.types.map(resolveType)
+      const types = node.types.map(n => resolveType(n, typeParamNames))
       return { kind: 'union', types } satisfies UnionType
     }
     // Array — e.g. number[]
     case 'TSArrayType':
-      return { kind: 'array', elementType: resolveType(node.elementType) }
+      return { kind: 'array', elementType: resolveType(node.elementType, typeParamNames) }
+    // Generic type reference — e.g. T, Array<T>, Promise<T>
+    case 'TSTypeReference': {
+      const typeName = node.typeName
+      if (!t.isIdentifier(typeName)) return T_ANY
+      const name = typeName.name
+      // Type parameter placeholder — e.g. T, U
+      if (typeParamNames && typeParamNames.includes(name)) {
+        return { kind: 'typeParam', name } satisfies TypeParamType
+      }
+      // Array<T> — generic array shorthand
+      if (name === 'Array' && node.typeParameters?.params.length === 1) {
+        return { kind: 'array', elementType: resolveType(node.typeParameters.params[0], typeParamNames) }
+      }
+      // Promise<T> — deferred to Task 1.2 (async/await); use any to avoid false positives
+      if (name === 'Promise') return T_ANY
+      return T_ANY  // unknown reference — gradual fallback
+    }
     // Function type — e.g. (x: number) => string
     case 'TSFunctionType': {
       const params = node.parameters.map(p => ({
@@ -90,17 +108,50 @@ function resolveType(node: t.TSType | null | undefined): Type {
         type: resolveType(
           t.isIdentifier(p) && p.typeAnnotation
             ? (p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation
-            : null
+            : null,
+          typeParamNames
         ),
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
       const returnType = node.typeAnnotation
-        ? resolveType(node.typeAnnotation.typeAnnotation)
+        ? resolveType(node.typeAnnotation.typeAnnotation, typeParamNames)
         : T_ANY
       return { kind: 'function', params, returnType } satisfies FunctionType
     }
     default:
       return T_ANY  // gradual fallback — unknown annotation treated as any
+  }
+}
+
+// ── Instantiate: substitute type parameters with concrete types ───────────────
+
+/**
+ * Recursively substitutes TypeParam placeholders with their bound concrete types.
+ * Returns the input type unchanged if it contains no type params.
+ */
+function instantiate(type: Type, bindings: Map<string, Type>): Type {
+  if (bindings.size === 0) return type
+  switch (type.kind) {
+    case 'typeParam':
+      return bindings.get(type.name) ?? T_ANY
+    case 'array':
+      return { kind: 'array', elementType: instantiate(type.elementType, bindings) }
+    case 'function':
+      return {
+        kind: 'function',
+        typeParams: type.typeParams,
+        params: type.params.map(p => ({ ...p, type: instantiate(p.type, bindings) })),
+        returnType: instantiate(type.returnType, bindings),
+      }
+    case 'union':
+      return { kind: 'union', types: type.types.map(t => instantiate(t, bindings)) }
+    case 'object': {
+      const props = new Map<string, Type>()
+      type.properties.forEach((v, k) => props.set(k, instantiate(v, bindings)))
+      return { kind: 'object', properties: props, typeParams: type.typeParams }
+    }
+    default:
+      return type
   }
 }
 
@@ -151,18 +202,53 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const returnAnnotation = node.returnType
         ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
         : null
+      // Extract type params from generic arrows, e.g. <T>(x: T): T => x
+      const typeParams: string[] = node.typeParameters && t.isTSTypeParameterDeclaration(node.typeParameters)
+        ? node.typeParameters.params.map(p => p.name)
+        : []
       const params = node.params.map(p => ({
         name: t.isIdentifier(p) ? p.name : '_',
         type: t.isIdentifier(p) && p.typeAnnotation
-          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
           : T_ANY,
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
       return {
         kind: 'function',
         params,
-        returnType: resolveType(returnAnnotation),
+        returnType: resolveType(returnAnnotation, typeParams),
+        ...(typeParams.length > 0 ? { typeParams } : {}),
       } satisfies FunctionType
+    }
+
+    // Call expression — infer the instantiated return type
+    case 'CallExpression': {
+      if (!t.isIdentifier(node.callee)) return T_ANY
+      const calleeName = node.callee.name
+      const calleeType = env.get(calleeName)
+      if (!calleeType || calleeType.kind !== 'function') return T_ANY
+
+      let fnType = calleeType as FunctionType
+      if (fnType.typeParams && fnType.typeParams.length > 0) {
+        const bindings = new Map<string, Type>()
+        const explicitTypeArgs = node.typeParameters as t.TSTypeParameterInstantiation | null
+
+        if (explicitTypeArgs?.params) {
+          for (let i = 0; i < fnType.typeParams.length && i < explicitTypeArgs.params.length; i++) {
+            bindings.set(fnType.typeParams[i], resolveType(explicitTypeArgs.params[i]))
+          }
+        } else {
+          for (let i = 0; i < fnType.params.length && i < node.arguments.length; i++) {
+            const paramType = fnType.params[i].type
+            if (paramType.kind === 'typeParam') {
+              const arg = node.arguments[i]
+              if (t.isExpression(arg)) bindings.set(paramType.name, inferExprType(arg, env))
+            }
+          }
+        }
+        fnType = instantiate(fnType, bindings) as FunctionType
+      }
+      return fnType.returnType
     }
 
     default:
@@ -448,7 +534,34 @@ export class TypeChecker {
     const calleeType = this.env.get(calleeName)
     if (!calleeType || calleeType.kind !== 'function') return
 
-    const fnType = calleeType as FunctionType
+    let fnType = calleeType as FunctionType
+
+    // Generic instantiation — bind type parameters before checking arguments
+    if (fnType.typeParams && fnType.typeParams.length > 0) {
+      const bindings = new Map<string, Type>()
+      const explicitTypeArgs = path.node.typeParameters as t.TSTypeParameterInstantiation | null
+
+      if (explicitTypeArgs?.params) {
+        // Explicit: identity<string>("hello") — use declared type args
+        for (let i = 0; i < fnType.typeParams.length && i < explicitTypeArgs.params.length; i++) {
+          bindings.set(fnType.typeParams[i], resolveType(explicitTypeArgs.params[i]))
+        }
+      } else {
+        // Inferred: identity("hello") — match arg types to TypeParam params
+        for (let i = 0; i < fnType.params.length && i < path.node.arguments.length; i++) {
+          const paramType = fnType.params[i].type
+          if (paramType.kind === 'typeParam') {
+            const arg = path.node.arguments[i]
+            if (t.isExpression(arg)) {
+              bindings.set(paramType.name, inferExprType(arg, this.env))
+            }
+          }
+        }
+      }
+
+      fnType = instantiate(fnType, bindings) as FunctionType
+    }
+
     const requiredParams = fnType.params.filter(p => !p.optional)
 
     for (let i = 0; i < fnType.params.length; i++) {
@@ -496,6 +609,11 @@ export class TypeChecker {
     const { node } = path
     if (!node.id) return
 
+    // Extract declared type parameters, e.g. <T, U> in function identity<T, U>
+    const typeParams: string[] = node.typeParameters && t.isTSTypeParameterDeclaration(node.typeParameters)
+      ? node.typeParameters.params.map(p => p.name)
+      : []
+
     const returnAnnotation = node.returnType
       ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
       : null
@@ -508,9 +626,9 @@ export class TypeChecker {
         || (t.isAssignmentPattern(p) && t.isIdentifier(p.left) && p.left.typeAnnotation)
 
       const paramType = t.isIdentifier(p) && p.typeAnnotation
-        ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+        ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
         : (t.isAssignmentPattern(p) && t.isIdentifier(p.left) && p.left.typeAnnotation
-            ? resolveType((p.left.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+            ? resolveType((p.left.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
             : T_ANY)
 
       // SJS-W001: implicit any parameter — TypeScript noImplicitAny
@@ -534,7 +652,8 @@ export class TypeChecker {
     const fnType: FunctionType = {
       kind: 'function',
       params,
-      returnType: resolveType(returnAnnotation),
+      returnType: resolveType(returnAnnotation, typeParams),
+      ...(typeParams.length > 0 ? { typeParams } : {}),
     }
 
     this.env.set(node.id.name, fnType)

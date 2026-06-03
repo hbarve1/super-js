@@ -8,11 +8,11 @@
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import { TypeChecker } from '../../src/typeChecker'
-import type { Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
 
 // ── Test helper ──────────────────────────────────────────────────────────────
 
-function typeCheck(source: string): Diagnostic[] {
+function typeCheck(source: string): PrototypeDiagnostic[] {
   const ast = parse(source, {
     sourceType: 'module',
     plugins: ['typescript', 'jsx'],
@@ -24,7 +24,7 @@ function typeCheck(source: string): Diagnostic[] {
   return checker.getDiagnostics()
 }
 
-function errors(source: string): Diagnostic[] {
+function errors(source: string): PrototypeDiagnostic[] {
   return typeCheck(source).filter(d => d.severity === 'error')
 }
 
@@ -200,5 +200,63 @@ describe('TC-008: Diagnostic structure', () => {
     const diags = errors('const x: number = "hello"')
     expect(diags[0].message).toMatch(/number/)
     expect(diags[0].message).toMatch(/string/)
+  })
+})
+
+// ── Task 1.1: Generic Type Parameter Resolution ───────────────────────────────
+
+describe('TC-generics: Generic type parameter resolution', () => {
+  it('identity<T> — no error when argument matches return type annotation', () => {
+    expect(errors(`
+      function identity<T>(x: T): T { return x }
+      const s: string = identity("hello")
+    `)).toHaveLength(0)
+  })
+
+  it('identity<T> — error when return type annotation mismatches instantiated type', () => {
+    expect(errors(`
+      function identity<T>(x: T): T { return x }
+      const n: number = identity("hello")
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('identity<T> — explicit type arg accepted', () => {
+    expect(errors(`
+      function identity<T>(x: T): T { return x }
+      const s: string = identity<string>("hello")
+    `)).toHaveLength(0)
+  })
+
+  it('identity<T> — explicit type arg mismatch emits error', () => {
+    expect(errors(`
+      function identity<T>(x: T): T { return x }
+      const n: number = identity<string>("hello")
+    `).length).toBeGreaterThan(0)
+  })
+
+  it('Array<T> — array type reference resolves element type', () => {
+    expect(errors(`
+      function first<T>(arr: Array<T>): T { return arr[0] }
+    `)).toHaveLength(0)
+  })
+
+  it('Array<T> — no error for consistent element type argument', () => {
+    expect(errors(`
+      function wrap<T>(x: T): Array<T> { return [x] }
+      const a: Array<number> = wrap(42)
+    `)).toHaveLength(0)
+  })
+
+  it('Promise<T> — Promise return type annotation accepted without crash', () => {
+    expect(() => errors(`
+      function fetch<T>(): Promise<T> { return Promise.resolve() }
+    `)).not.toThrow()
+  })
+
+  it('multi-param generics — both params inferred independently', () => {
+    expect(errors(`
+      function pair<A, B>(a: A, b: B): A { return a }
+      const s: string = pair("hello", 42)
+    `)).toHaveLength(0)
   })
 })

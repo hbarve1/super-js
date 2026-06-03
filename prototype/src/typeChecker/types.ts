@@ -23,6 +23,7 @@ export interface BigIntType    { kind: 'bigint' }      // §6.1.6.2
 export interface ObjectType {
   kind: 'object'
   properties: Map<string, Type>
+  typeParams?: string[]
 }
 
 // ── Composite types ───────────────────────────────────────────────────────────
@@ -36,6 +37,15 @@ export interface FunctionType {
   kind: 'function'
   params: Array<{ name: string; type: Type; optional: boolean }>
   returnType: Type
+  typeParams?: string[]
+}
+
+// ── Generic type parameter placeholder ───────────────────────────────────────
+
+/** Represents an unresolved generic type parameter, e.g. `T` in `identity<T>`. */
+export interface TypeParamType {
+  kind: 'typeParam'
+  name: string
 }
 
 export interface UnionType {
@@ -101,6 +111,7 @@ export type Type =
   | SumType
   | SumVariantType
   | DynamicType
+  | TypeParamType
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 

@@ -14,14 +14,14 @@ Started: 2026-06-03
 
 ### Task 1.1: Generic Type Parameter Resolution
 **Files**: `prototype/src/typeChecker/types.ts`, `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Add `TypeParam` node to SjsType union
-- [ ] Add `typeParams: string[]` to FunctionType and ObjectType
-- [ ] Implement `instantiate(type, bindings: Map<string, SjsType>)` substitution
-- [ ] Bind type params at call site (CallExpression handler)
-- [ ] Bind type params at variable declaration with explicit generic syntax
-- [ ] Test: `identity<T>`, `Array<T>`, `Promise<T>` resolve correctly
-- [ ] Write examples: `specs/002-ecmascript-features/examples/generics.sjs`
+**Status**: [x]
+- [x] Add `TypeParam` node to SjsType union
+- [x] Add `typeParams: string[]` to FunctionType and ObjectType
+- [x] Implement `instantiate(type, bindings: Map<string, SjsType>)` substitution
+- [x] Bind type params at call site (CallExpression handler)
+- [x] Bind type params at variable declaration with explicit generic syntax
+- [x] Test: `identity<T>`, `Array<T>`, `Promise<T>` resolve correctly
+- [x] Write examples: `specs/002-ecmascript-features/examples/generics.sjs`
 
 ### Task 1.2: Async/Await Type Inference
 **Files**: `prototype/src/typeChecker/index.ts`

@@ -16,11 +16,11 @@
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import { TypeChecker } from '../../src/typeChecker'
-import type { Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function check(source: string, strict = false): Diagnostic[] {
+function check(source: string, strict = false): PrototypeDiagnostic[] {
   const ast = parse(source, {
     sourceType: 'module',
     plugins: ['typescript', 'jsx'],
@@ -32,7 +32,7 @@ function check(source: string, strict = false): Diagnostic[] {
   return checker.getDiagnostics()
 }
 
-function warnings(source: string, strict = false): Diagnostic[] {
+function warnings(source: string, strict = false): PrototypeDiagnostic[] {
   return check(source, strict).filter(d => d.severity === 'warning')
 }
 
