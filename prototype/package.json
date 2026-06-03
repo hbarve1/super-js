@@ -8,7 +8,7 @@
     "superjs": "./bin/superjs.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "dev": "tsc --watch",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint src",
