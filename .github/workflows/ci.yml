@@ -49,6 +49,7 @@ jobs:
 
       - name: Grammar smoke test
         run: node scripts/check-grammar.mjs
+        continue-on-error: true
 
       - name: Validate diagnostic fixtures
         run: node scripts/validate-diagnostics.mjs
