@@ -15,11 +15,10 @@
 import type { NodePath } from '@babel/traverse'
 import * as t from '@babel/types'
 import type {
-  Type, PrototypeDiagnostic, TypeEnvironment,
+  Type, Diagnostic, TypeEnvironment,
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType,
-  TypeParamType, PromiseType, TupleType, ObjectType, ArrayType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -49,16 +48,9 @@ const SPEC = {
   LET_CONST:      'https://tc39.es/ecma262/#sec-let-and-const-declarations',
   // Function definitions — ECMA-262 §15.2
   FUNCTION_DEF:   'https://tc39.es/ecma262/#sec-function-definitions',
-  // Async function definitions — ECMA-262 §15.8
-  ASYNC_FUNCTION: 'https://tc39.es/ecma262/#sec-async-function-definitions',
-  // BigInt arithmetic — ECMA-262 §6.1.6.2 (BigInt cannot mix with number)
-  BIGINT_MIXED:   'https://tc39.es/ecma262/#sec-ecmascript-language-types-bigint-type',
+  // Binary arithmetic operators — ECMA-262 §13.15
+  BINARY_EXPR:    'https://tc39.es/ecma262/#sec-binary-arithmetic-operators',
 } as const
-
-// Operators that produce a numeric result (not comparison)
-const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**', '|', '&', '^', '<<', '>>', '>>>'])
-// Operators that always produce boolean
-const COMPARISON_OPS = new Set(['<', '>', '<=', '>=', '==', '!=', '===', '!==', 'in', 'instanceof'])
 
 // ── Resolve: TSType node → Type ───────────────────────────────────────────────
 
@@ -68,7 +60,7 @@ const COMPARISON_OPS = new Set(['<', '>', '<=', '>=', '==', '!=', '===', '!==', 
  * Each keyword maps to its ECMAScript Language Type (ECMA-262 §6.1.*).
  * Unknown or unsupported annotations fall back to `any` (gradual escape).
  */
-function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[]): Type {
+function resolveType(node: t.TSType | null | undefined): Type {
   if (!node) return T_ANY
 
   switch (node.type) {
@@ -87,59 +79,12 @@ function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[
     case 'TSBigIntKeyword': return { kind: 'bigint' }
     // Union — e.g. string | null
     case 'TSUnionType': {
-      const types = node.types.map(n => resolveType(n, typeParamNames))
+      const types = node.types.map(resolveType)
       return { kind: 'union', types } satisfies UnionType
     }
     // Array — e.g. number[]
     case 'TSArrayType':
-      return { kind: 'array', elementType: resolveType(node.elementType, typeParamNames) }
-    // Generic type reference — e.g. T, Array<T>, Promise<T>
-    case 'TSTypeReference': {
-      const typeName = node.typeName
-      if (!t.isIdentifier(typeName)) return T_ANY
-      const name = typeName.name
-      // Type parameter placeholder — e.g. T, U
-      if (typeParamNames && typeParamNames.includes(name)) {
-        return { kind: 'typeParam', name } satisfies TypeParamType
-      }
-      // Array<T> — generic array shorthand
-      if (name === 'Array' && node.typeParameters?.params.length === 1) {
-        return { kind: 'array', elementType: resolveType(node.typeParameters.params[0], typeParamNames) }
-      }
-      // Promise<T> — ECMA-262 §27.2 Promise Objects
-      if (name === 'Promise') {
-        const valueType = node.typeParameters?.params.length === 1
-          ? resolveType(node.typeParameters.params[0], typeParamNames)
-          : T_ANY
-        return { kind: 'promise', valueType } satisfies PromiseType
-      }
-      return T_ANY  // unknown reference — gradual fallback
-    }
-    // Object type literal — e.g. { x: number; y: string }
-    case 'TSTypeLiteral': {
-      const properties = new Map<string, Type>()
-      for (const member of node.members) {
-        if (!t.isTSPropertySignature(member)) continue
-        const key = t.isIdentifier(member.key) ? member.key.name
-          : t.isStringLiteral(member.key) ? member.key.value
-          : null
-        if (!key) continue
-        const memberAnnot = member.typeAnnotation
-        const propType = memberAnnot && t.isTSTypeAnnotation(memberAnnot)
-          ? resolveType(memberAnnot.typeAnnotation, typeParamNames)
-          : T_ANY
-        properties.set(key, propType)
-      }
-      return { kind: 'object', properties }
-    }
-    // Tuple type — e.g. [number, string]
-    case 'TSTupleType': {
-      const elements = node.elementTypes.map((e: t.TSType | t.TSNamedTupleMember) => {
-        if (t.isTSNamedTupleMember(e)) return resolveType(e.elementType, typeParamNames)
-        return resolveType(e as t.TSType, typeParamNames)
-      })
-      return { kind: 'tuple', elements } satisfies TupleType
-    }
+      return { kind: 'array', elementType: resolveType(node.elementType) }
     // Function type — e.g. (x: number) => string
     case 'TSFunctionType': {
       const params = node.parameters.map(p => ({
@@ -147,13 +92,12 @@ function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[
         type: resolveType(
           t.isIdentifier(p) && p.typeAnnotation
             ? (p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation
-            : null,
-          typeParamNames
+            : null
         ),
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
       const returnType = node.typeAnnotation
-        ? resolveType(node.typeAnnotation.typeAnnotation, typeParamNames)
+        ? resolveType(node.typeAnnotation.typeAnnotation)
         : T_ANY
       return { kind: 'function', params, returnType } satisfies FunctionType
     }
@@ -162,40 +106,34 @@ function resolveType(node: t.TSType | null | undefined, typeParamNames?: string[
   }
 }
 
-// ── Instantiate: substitute type parameters with concrete types ───────────────
+// ── Binary expression type inference helper — ECMA-262 §13.15 ────────────────
+
+const ARITH_OPS  = new Set(['+', '-', '*', '/', '%', '**'])
+const RELAT_OPS  = new Set(['<', '>', '<=', '>=', '===', '!==', '==', '!=', 'instanceof', 'in'])
+const BITWISE_OPS = new Set(['&', '|', '^', '<<', '>>', '>>>'])
 
 /**
- * Recursively substitutes TypeParam placeholders with their bound concrete types.
- * Returns the input type unchanged if it contains no type params.
+ * Returns the result type of a binary operation without emitting diagnostics.
+ * Callers that need error reporting (SJS-E004) must inspect operand types separately.
+ *
+ * ECMA-262 §13.15 Binary Arithmetic Operators:
+ * https://tc39.es/ecma262/#sec-binary-arithmetic-operators
  */
-function instantiate(type: Type, bindings: Map<string, Type>): Type {
-  if (bindings.size === 0) return type
-  switch (type.kind) {
-    case 'typeParam':
-      return bindings.get(type.name) ?? T_ANY
-    case 'array':
-      return { kind: 'array', elementType: instantiate(type.elementType, bindings) }
-    case 'tuple':
-      return { kind: 'tuple', elements: (type as TupleType).elements.map(e => instantiate(e, bindings)) }
-    case 'function':
-      return {
-        kind: 'function',
-        typeParams: type.typeParams,
-        params: type.params.map(p => ({ ...p, type: instantiate(p.type, bindings) })),
-        returnType: instantiate(type.returnType, bindings),
-      }
-    case 'union':
-      return { kind: 'union', types: type.types.map(t => instantiate(t, bindings)) }
-    case 'object': {
-      const props = new Map<string, Type>()
-      type.properties.forEach((v, k) => props.set(k, instantiate(v, bindings)))
-      return { kind: 'object', properties: props, typeParams: type.typeParams }
-    }
-    case 'promise':
-      return { kind: 'promise', valueType: instantiate(type.valueType, bindings) }
-    default:
-      return type
+function inferBinaryType(op: string, left: Type, right: Type): Type {
+  if (ARITH_OPS.has(op)) {
+    // String concatenation — ECMA-262 §13.15.4 step 1 (ApplyStringOrNumericBinaryOperator)
+    if ((left.kind === 'string' || right.kind === 'string') && op === '+') return T_STRING
+    if (left.kind === 'bigint' && right.kind === 'bigint') return { kind: 'bigint' }
+    if (left.kind === 'number' && right.kind === 'number') return T_NUMBER
+    // Mixed bigint/number or unknown — caller emits SJS-E004; return any here
+    return T_ANY
   }
+  if (RELAT_OPS.has(op)) return T_BOOLEAN
+  if (BITWISE_OPS.has(op)) {
+    if (left.kind === 'bigint' && right.kind === 'bigint') return { kind: 'bigint' }
+    return T_NUMBER
+  }
+  return T_ANY
 }
 
 // ── Infer: Expression → Type (synthesis / bottom-up) ─────────────────────────
@@ -240,32 +178,12 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return env.get(node.name) ?? T_ANY
     }
 
-    // Binary expression — ECMA-262 §13.15 (assignment) / §13.8 (additive) / §13.5 (relational)
+    // Binary expression — ECMA-262 §13.15
     case 'BinaryExpression': {
-      const { operator, left, right } = node
-      if (!t.isExpression(left)) return T_ANY  // PrivateName in `#x in obj` — skip
-      const lt = inferExprType(left, env)
-      const rt = inferExprType(right, env)
-
-      if (COMPARISON_OPS.has(operator)) return T_BOOLEAN
-
-      if (operator === '+') {
-        // String concatenation takes priority — ECMA-262 §13.8.1
-        if (lt.kind === 'string' || rt.kind === 'string') return T_STRING
-        if (lt.kind === 'number' && rt.kind === 'number') return T_NUMBER
-        if (lt.kind === 'bigint' && rt.kind === 'bigint') return { kind: 'bigint' }
-        if (lt.kind === 'any' || rt.kind === 'any') return T_ANY
-        return T_ANY
-      }
-
-      if (ARITHMETIC_OPS.has(operator)) {
-        if (lt.kind === 'number' && rt.kind === 'number') return T_NUMBER
-        if (lt.kind === 'bigint' && rt.kind === 'bigint') return { kind: 'bigint' }
-        if (lt.kind === 'any' || rt.kind === 'any') return T_ANY
-        return T_ANY
-      }
-
-      return T_ANY
+      if (!t.isExpression(node.left)) return T_ANY
+      const left  = inferExprType(node.left,  env)
+      const right = inferExprType(node.right, env)
+      return inferBinaryType(node.operator, left, right)
     }
 
     // Arrow function — ECMA-262 §15.3 (arrow function definitions)
@@ -273,66 +191,18 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const returnAnnotation = node.returnType
         ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
         : null
-      // Extract type params from generic arrows, e.g. <T>(x: T): T => x
-      const typeParams: string[] = node.typeParameters && t.isTSTypeParameterDeclaration(node.typeParameters)
-        ? node.typeParameters.params.map(p => p.name)
-        : []
       const params = node.params.map(p => ({
         name: t.isIdentifier(p) ? p.name : '_',
         type: t.isIdentifier(p) && p.typeAnnotation
-          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
+          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
           : T_ANY,
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
-      let returnType = resolveType(returnAnnotation, typeParams)
-      // Async arrow: wrap return type in Promise<T> — ECMA-262 §15.8
-      if (node.async && returnType.kind !== 'promise') {
-        returnType = { kind: 'promise', valueType: returnType }
-      }
       return {
         kind: 'function',
         params,
-        returnType,
-        ...(typeParams.length > 0 ? { typeParams } : {}),
+        returnType: resolveType(returnAnnotation),
       } satisfies FunctionType
-    }
-
-    // AwaitExpression — unwrap Promise<T> → T (ECMA-262 §6.2.6 / §27.2)
-    case 'AwaitExpression': {
-      const awaitNode = node as t.AwaitExpression
-      const argType = inferExprType(awaitNode.argument, env)
-      if (argType.kind === 'promise') return (argType as PromiseType).valueType
-      return T_ANY  // awaiting non-promise or any — gradual fallback
-    }
-
-    // Call expression — infer the instantiated return type
-    case 'CallExpression': {
-      if (!t.isIdentifier(node.callee)) return T_ANY
-      const calleeName = node.callee.name
-      const calleeType = env.get(calleeName)
-      if (!calleeType || calleeType.kind !== 'function') return T_ANY
-
-      let fnType = calleeType as FunctionType
-      if (fnType.typeParams && fnType.typeParams.length > 0) {
-        const bindings = new Map<string, Type>()
-        const explicitTypeArgs = node.typeParameters as t.TSTypeParameterInstantiation | null
-
-        if (explicitTypeArgs?.params) {
-          for (let i = 0; i < fnType.typeParams.length && i < explicitTypeArgs.params.length; i++) {
-            bindings.set(fnType.typeParams[i], resolveType(explicitTypeArgs.params[i]))
-          }
-        } else {
-          for (let i = 0; i < fnType.params.length && i < node.arguments.length; i++) {
-            const paramType = fnType.params[i].type
-            if (paramType.kind === 'typeParam') {
-              const arg = node.arguments[i]
-              if (t.isExpression(arg)) bindings.set(paramType.name, inferExprType(arg, env))
-            }
-          }
-        }
-        fnType = instantiate(fnType, bindings) as FunctionType
-      }
-      return fnType.returnType
     }
 
     default:
@@ -377,18 +247,6 @@ function isConsistent(a: Type, b: Type): boolean {
   return false
 }
 
-// ── Destructuring helpers ─────────────────────────────────────────────────────
-
-/** Returns a new object type with `usedKeys` removed — used for rest patterns `...rest`. */
-function computeObjectRest(objType: Type, usedKeys: string[]): Type {
-  if (objType.kind !== 'object') return T_ANY
-  const remaining = new Map<string, Type>()
-  ;(objType as ObjectType).properties.forEach((v, k) => {
-    if (!usedKeys.includes(k)) remaining.set(k, v)
-  })
-  return { kind: 'object', properties: remaining }
-}
-
 // ── TypeChecker class ─────────────────────────────────────────────────────────
 
 // ── TypeCheckerOptions ────────────────────────────────────────────────────────
@@ -406,7 +264,7 @@ export interface TypeCheckerOptions {
 // ── TypeChecker ───────────────────────────────────────────────────────────────
 
 export class TypeChecker {
-  private diagnostics: PrototypeDiagnostic[] = []
+  private diagnostics: Diagnostic[] = []
   private env: TypeEnvironment = new Map()
   private readonly strict: boolean
   // maps type alias name → SumType (built from TSTypeAliasDeclaration with TSUnionType RHS)
@@ -419,7 +277,7 @@ export class TypeChecker {
     this.strict = options.strict ?? false
   }
 
-  getDiagnostics(): PrototypeDiagnostic[] {
+  getDiagnostics(): Diagnostic[] {
     return [...this.diagnostics]
   }
 
@@ -463,9 +321,6 @@ export class TypeChecker {
       case 'SwitchStatement':
         this.checkSwitchExhaustiveness(path as NodePath<t.SwitchStatement>)
         break
-      case 'AwaitExpression':
-        this.checkAwaitExpression(path as NodePath<t.AwaitExpression>)
-        break
       case 'BinaryExpression':
         this.checkBinaryExpression(path as NodePath<t.BinaryExpression>)
         break
@@ -485,10 +340,6 @@ export class TypeChecker {
    */
   private checkVariableDeclaration(path: NodePath<t.VariableDeclaration>): void {
     for (const decl of path.node.declarations) {
-      if (t.isObjectPattern(decl.id) || t.isArrayPattern(decl.id)) {
-        this.checkDestructuringDeclaration(decl)
-        continue
-      }
       if (!t.isIdentifier(decl.id)) continue
 
       const annotation = decl.id.typeAnnotation
@@ -544,125 +395,6 @@ export class TypeChecker {
     }
   }
 
-  // ── Destructuring declarations — ECMA-262 §14.3.3 ────────────────────────────
-
-  /**
-   * Resolves the declared type for a destructuring pattern, then registers each
-   * binding in the environment with its extracted type.
-   *
-   * ECMA-262 §14.3.3 Destructuring Binding Patterns:
-   * https://tc39.es/ecma262/#sec-destructuring-binding-patterns
-   */
-  private checkDestructuringDeclaration(decl: t.VariableDeclarator): void {
-    const pattern = decl.id as t.ObjectPattern | t.ArrayPattern
-    const annotation = (pattern as { typeAnnotation?: t.TSTypeAnnotation | null }).typeAnnotation
-    let sourceType: Type = T_ANY
-    if (annotation && t.isTSTypeAnnotation(annotation)) {
-      sourceType = resolveType(annotation.typeAnnotation)
-    } else if (decl.init) {
-      const inferred = inferExprType(decl.init, this.env)
-      if (inferred.kind !== 'any') sourceType = inferred
-    }
-
-    if (t.isObjectPattern(pattern)) {
-      this.registerObjectPattern(pattern, sourceType)
-    } else {
-      this.registerArrayPattern(pattern as t.ArrayPattern, sourceType)
-    }
-  }
-
-  /** Registers bindings for each property in an ObjectPattern. */
-  private registerObjectPattern(pattern: t.ObjectPattern, sourceType: Type): void {
-    const destructuredKeys: string[] = []
-
-    for (const prop of pattern.properties) {
-      if (t.isRestElement(prop)) {
-        if (t.isIdentifier(prop.argument)) {
-          this.env.set(prop.argument.name, computeObjectRest(sourceType, destructuredKeys))
-        }
-        continue
-      }
-      if (!t.isObjectProperty(prop)) continue
-
-      const keyName = t.isIdentifier(prop.key) ? prop.key.name
-        : t.isStringLiteral(prop.key) ? prop.key.value
-        : null
-      if (!keyName) continue
-      destructuredKeys.push(keyName)
-
-      let propType: Type = T_ANY
-      if (sourceType.kind === 'object') {
-        propType = (sourceType as ObjectType).properties.get(keyName) ?? T_ANY
-      }
-
-      const val = prop.value as t.PatternLike | t.Expression
-      if (t.isIdentifier(val)) {
-        this.env.set(val.name, propType)
-      } else if (t.isObjectPattern(val)) {
-        this.registerObjectPattern(val, propType)
-      } else if (t.isArrayPattern(val)) {
-        this.registerArrayPattern(val, propType)
-      } else if (t.isAssignmentPattern(val)) {
-        if (t.isIdentifier(val.left)) {
-          this.env.set(val.left.name, propType)
-        } else if (t.isObjectPattern(val.left)) {
-          this.registerObjectPattern(val.left, propType)
-        } else if (t.isArrayPattern(val.left)) {
-          this.registerArrayPattern(val.left, propType)
-        }
-      }
-    }
-  }
-
-  /** Registers bindings for each element in an ArrayPattern. */
-  private registerArrayPattern(pattern: t.ArrayPattern, sourceType: Type): void {
-    for (let i = 0; i < pattern.elements.length; i++) {
-      const elem = pattern.elements[i]
-      if (!elem) continue
-
-      let elemType: Type = T_ANY
-      if (sourceType.kind === 'tuple') {
-        elemType = i < (sourceType as TupleType).elements.length
-          ? (sourceType as TupleType).elements[i]
-          : T_ANY
-      } else if (sourceType.kind === 'array') {
-        elemType = (sourceType as ArrayType).elementType
-      }
-
-      if (t.isRestElement(elem)) {
-        if (t.isIdentifier(elem.argument)) {
-          let restType: Type = T_ANY
-          if (sourceType.kind === 'tuple') {
-            const remaining = (sourceType as TupleType).elements.slice(i)
-            restType = { kind: 'array', elementType: remaining.length === 1
-              ? remaining[0]
-              : remaining.length > 1 ? { kind: 'union', types: remaining } : T_ANY }
-          } else if (sourceType.kind === 'array') {
-            restType = sourceType
-          }
-          this.env.set(elem.argument.name, restType)
-        }
-        continue
-      }
-
-      if (t.isIdentifier(elem)) {
-        this.env.set(elem.name, elemType)
-      } else if (t.isObjectPattern(elem)) {
-        this.registerObjectPattern(elem, elemType)
-      } else if (t.isArrayPattern(elem)) {
-        this.registerArrayPattern(elem, elemType)
-      } else if (t.isAssignmentPattern(elem)) {
-        if (t.isIdentifier(elem.left)) {
-          this.env.set(elem.left.name, elemType)
-        } else if (t.isObjectPattern(elem.left)) {
-          this.registerObjectPattern(elem.left, elemType)
-        } else if (t.isArrayPattern(elem.left)) {
-          this.registerArrayPattern(elem.left, elemType)
-        }
-      }
-    }
-  }
-
   // ── Rule TC-004: Re-assignment — ECMA-262 §14.3.1 ────────────────────────────
 
   /**
@@ -713,21 +445,13 @@ export class TypeChecker {
       : null
     const declaredReturn = resolveType(returnAnnotation)
 
-    // In async functions, `return T` implicitly wraps in Promise<T>.
-    // If the annotation is Promise<T>, check the return value against T not Promise<T>.
-    // ECMA-262 §15.8.4 Runtime Semantics: EvaluateAsyncFunctionBody
-    const isAsync = !!(fnNode as t.Function & { async?: boolean }).async
-    const effectiveDeclaredReturn = (isAsync && declaredReturn.kind === 'promise')
-      ? (declaredReturn as PromiseType).valueType
-      : declaredReturn
-
-    if (effectiveDeclaredReturn.kind === 'any') return  // no annotation — nothing to check
+    if (declaredReturn.kind === 'any') return  // no annotation — nothing to check
 
     const returnArg = path.node.argument
     const actualType = inferExprType(returnArg ?? null, this.env)
 
     // void function must not return a value — ECMA-262 §15.2
-    if (effectiveDeclaredReturn.kind === 'void' && returnArg) {
+    if (declaredReturn.kind === 'void' && returnArg) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
@@ -738,11 +462,11 @@ export class TypeChecker {
       return
     }
 
-    if (!isConsistent(actualType, effectiveDeclaredReturn)) {
+    if (!isConsistent(actualType, declaredReturn)) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
-        message: `I expected this function to return '${effectiveDeclaredReturn.kind}' but found '${actualType.kind}'.`,
+        message: `I expected this function to return '${declaredReturn.kind}' but found '${actualType.kind}'.`,
         node: returnArg ?? path.node,
         specUrl: SPEC.FUNCTION_DEF,
       })
@@ -767,34 +491,7 @@ export class TypeChecker {
     const calleeType = this.env.get(calleeName)
     if (!calleeType || calleeType.kind !== 'function') return
 
-    let fnType = calleeType as FunctionType
-
-    // Generic instantiation — bind type parameters before checking arguments
-    if (fnType.typeParams && fnType.typeParams.length > 0) {
-      const bindings = new Map<string, Type>()
-      const explicitTypeArgs = path.node.typeParameters as t.TSTypeParameterInstantiation | null
-
-      if (explicitTypeArgs?.params) {
-        // Explicit: identity<string>("hello") — use declared type args
-        for (let i = 0; i < fnType.typeParams.length && i < explicitTypeArgs.params.length; i++) {
-          bindings.set(fnType.typeParams[i], resolveType(explicitTypeArgs.params[i]))
-        }
-      } else {
-        // Inferred: identity("hello") — match arg types to TypeParam params
-        for (let i = 0; i < fnType.params.length && i < path.node.arguments.length; i++) {
-          const paramType = fnType.params[i].type
-          if (paramType.kind === 'typeParam') {
-            const arg = path.node.arguments[i]
-            if (t.isExpression(arg)) {
-              bindings.set(paramType.name, inferExprType(arg, this.env))
-            }
-          }
-        }
-      }
-
-      fnType = instantiate(fnType, bindings) as FunctionType
-    }
-
+    const fnType = calleeType as FunctionType
     const requiredParams = fnType.params.filter(p => !p.optional)
 
     for (let i = 0; i < fnType.params.length; i++) {
@@ -842,11 +539,6 @@ export class TypeChecker {
     const { node } = path
     if (!node.id) return
 
-    // Extract declared type parameters, e.g. <T, U> in function identity<T, U>
-    const typeParams: string[] = node.typeParameters && t.isTSTypeParameterDeclaration(node.typeParameters)
-      ? node.typeParameters.params.map(p => p.name)
-      : []
-
     const returnAnnotation = node.returnType
       ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
       : null
@@ -859,9 +551,9 @@ export class TypeChecker {
         || (t.isAssignmentPattern(p) && t.isIdentifier(p.left) && p.left.typeAnnotation)
 
       const paramType = t.isIdentifier(p) && p.typeAnnotation
-        ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
+        ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
         : (t.isAssignmentPattern(p) && t.isIdentifier(p.left) && p.left.typeAnnotation
-            ? resolveType((p.left.typeAnnotation as t.TSTypeAnnotation).typeAnnotation, typeParams)
+            ? resolveType((p.left.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
             : T_ANY)
 
       // SJS-W001: implicit any parameter — TypeScript noImplicitAny
@@ -882,17 +574,10 @@ export class TypeChecker {
       }
     })
 
-    let resolvedReturn = resolveType(returnAnnotation, typeParams)
-    // Async function: its return type in the env is Promise<T> — ECMA-262 §15.8
-    if (node.async && resolvedReturn.kind !== 'promise') {
-      resolvedReturn = { kind: 'promise', valueType: resolvedReturn }
-    }
-
     const fnType: FunctionType = {
       kind: 'function',
       params,
-      returnType: resolvedReturn,
-      ...(typeParams.length > 0 ? { typeParams } : {}),
+      returnType: resolveType(returnAnnotation),
     }
 
     this.env.set(node.id.name, fnType)
@@ -935,21 +620,14 @@ export class TypeChecker {
       ? (node.returnType as t.TSTypeAnnotation).typeAnnotation
       : null
     const declaredReturn = resolveType(returnAnnotation)
-
-    // Async arrow: `async () => expr` wraps expr in Promise<T>.
-    // If annotation is Promise<T>, check the body expression against T.
-    const effectiveDeclaredReturn = (node.async && declaredReturn.kind === 'promise')
-      ? (declaredReturn as PromiseType).valueType
-      : declaredReturn
-
-    if (effectiveDeclaredReturn.kind === 'any') return  // no annotation
+    if (declaredReturn.kind === 'any') return  // no annotation
 
     const actualType = inferExprType(node.body, this.env)
-    if (!isConsistent(actualType, effectiveDeclaredReturn)) {
+    if (!isConsistent(actualType, declaredReturn)) {
       this.report({
         code: 'SJS-E002',
         severity: 'error',
-        message: `I expected this arrow function to return '${effectiveDeclaredReturn.kind}' but found '${actualType.kind}'.`,
+        message: `I expected this arrow function to return '${declaredReturn.kind}' but found '${actualType.kind}'.`,
         node: node.body,
         specUrl: 'https://tc39.es/ecma262/#sec-arrow-function-definitions',
       })
@@ -1040,6 +718,39 @@ export class TypeChecker {
     }
   }
 
+  // ── Rule SJS-E004: Binary expression — BigInt + Number mix — ECMA-262 §6.1.6.2 ─
+
+  /**
+   * Checks binary expressions for the BigInt + Number mixing prohibition.
+   *
+   * ECMAScript §6.1.6.2 forbids mixing BigInt and Number operands in arithmetic.
+   * Doing so throws a TypeError at runtime; we surface it at compile time as SJS-E004.
+   *
+   * ECMA-262 §13.15.4 ApplyStringOrNumericBinaryOperator:
+   * https://tc39.es/ecma262/#sec-applystringornumericbinaryoperator
+   */
+  private checkBinaryExpression(path: NodePath<t.BinaryExpression>): void {
+    const { node } = path
+    if (!ARITH_OPS.has(node.operator)) return
+    if (!t.isExpression(node.left)) return
+
+    const left  = inferExprType(node.left,  this.env)
+    const right = inferExprType(node.right, this.env)
+
+    if (
+      (left.kind === 'bigint' && right.kind === 'number') ||
+      (left.kind === 'number' && right.kind === 'bigint')
+    ) {
+      this.report({
+        code: 'SJS-E004',
+        severity: 'error',
+        message: `I cannot mix BigInt and Number in arithmetic '${node.operator}'. BigInt and Number are incompatible numeric types — use explicit conversion. (ECMA-262 §6.1.6.2)`,
+        node,
+        specUrl: SPEC.BIGINT_TYPE,
+      })
+    }
+  }
+
   // ── Rule SJS-E007: Switch exhaustiveness check ────────────────────────────────
 
   /**
@@ -1096,69 +807,11 @@ export class TypeChecker {
     }
   }
 
-  // ── Rule SJS-E009: await outside async function — ECMA-262 §15.8 ─────────────
-
-  /**
-   * Verifies that `await` is used inside an async function.
-   * Top-level `await` in ES modules is valid (ES2022) and is not flagged.
-   *
-   * ECMA-262 §15.8 Async Function Definitions:
-   * https://tc39.es/ecma262/#sec-async-function-definitions
-   */
-  private checkAwaitExpression(path: NodePath<t.AwaitExpression>): void {
-    const fnPath = path.getFunctionParent()
-    if (!fnPath) return  // top-level await — valid in ES2022 modules
-
-    const fnNode = fnPath.node as t.Function & { async?: boolean }
-    if (!fnNode.async) {
-      this.report({
-        code: 'SJS-E009',
-        severity: 'error',
-        message: `'await' cannot be used inside a non-async function. Mark the enclosing function 'async' to use 'await'.`,
-        node: path.node,
-        specUrl: SPEC.ASYNC_FUNCTION,
-      })
-    }
-  }
-
-  // ── Rule SJS-E004: BigInt / Number mixing — ECMA-262 §6.1.6.2 ────────────────
-
-  /**
-   * Checks arithmetic binary expressions for illegal BigInt/Number mixing.
-   *
-   * ECMA-262 §6.1.6.2 specifies that BigInt values cannot be mixed with Number
-   * values in any arithmetic operation — a TypeError is thrown at runtime.
-   * We surface this at compile time as SJS-E004.
-   *
-   * https://tc39.es/ecma262/#sec-ecmascript-language-types-bigint-type
-   */
-  private checkBinaryExpression(path: NodePath<t.BinaryExpression>): void {
-    const { node } = path
-    if (!ARITHMETIC_OPS.has(node.operator)) return
-    if (!t.isExpression(node.left)) return  // PrivateName in `#x in obj`
-
-    const lt = inferExprType(node.left, this.env)
-    const rt = inferExprType(node.right, this.env)
-
-    if (
-      (lt.kind === 'bigint' && rt.kind === 'number') ||
-      (lt.kind === 'number' && rt.kind === 'bigint')
-    ) {
-      this.report({
-        code: 'SJS-E004',
-        severity: 'error',
-        message: `Cannot mix 'bigint' and 'number' in '${node.operator}' expression. Both operands must be the same numeric type.`,
-        node: path.node,
-        specUrl: SPEC.BIGINT_MIXED,
-      })
-    }
-  }
-
   // ── Diagnostic helper ─────────────────────────────────────────────────────────
 
   private report(opts: {
     code: string
-    severity: PrototypeDiagnostic['severity']
+    severity: Diagnostic['severity']
     message: string
     node: t.Node
     specUrl: string

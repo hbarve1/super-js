@@ -1,16 +1,17 @@
-import type { Config } from 'jest';
+import type { Config } from '@jest/types'
 
-const config: Config = {
+const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.ts'],
-  moduleNameMapper: {
-    '^@superjs/compiler-types$': '<rootDir>/../packages/compiler-types/src/index.ts',
-  },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { tsconfig: { module: 'CommonJS' } }],
+    '^.+\.tsx?$': ['ts-jest', {
+      tsconfig: {
+        module: 'commonjs',
+        esModuleInterop: true,
+      },
+    }],
   },
-  transformIgnorePatterns: ['node_modules/(?!@superjs/)'],
-};
+}
 
-export default config;
+export default config

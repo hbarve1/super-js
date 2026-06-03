@@ -1,184 +1,202 @@
-# ECMAScript Features Implementation Plan
-Branch: 002-ecmascript-features
-Worktree: .worktrees/002-ecmascript-features
-Started: 2026-06-03
+# ECMAScript Features — Implementation Plan
 
-## Status Legend
-- [ ] Not started
-- [~] In progress
-- [x] Done
+Each task is self-contained and adds one type-checking rule on top of the existing
+bidirectional type checker (prototype/src/typeChecker/index.ts).
+
+Babel handles all compilation; we only add SJS type-checking on top.
 
 ---
 
-## Phase 1 — Foundation (P0 features, blocks everything else)
+## Phase 1 — Arithmetic and Operator Type Checking
 
-### Task 1.1: Generic Type Parameter Resolution
-**Files**: `prototype/src/typeChecker/types.ts`, `prototype/src/typeChecker/index.ts`
-**Status**: [x]
-- [x] Add `TypeParam` node to SjsType union
-- [x] Add `typeParams: string[]` to FunctionType and ObjectType
-- [x] Implement `instantiate(type, bindings: Map<string, SjsType>)` substitution
-- [x] Bind type params at call site (CallExpression handler)
-- [x] Bind type params at variable declaration with explicit generic syntax
-- [x] Test: `identity<T>`, `Array<T>`, `Promise<T>` resolve correctly
-- [x] Write examples: `specs/002-ecmascript-features/examples/generics.sjs`
+### Task 1.1 — Binary expression type inference + BigInt/Number mix (SJS-E004)
 
-### Task 1.2: Async/Await Type Inference
-**Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [x]
-- [x] Detect `async` modifier on FunctionDeclaration/ArrowFunction
-- [x] Wrap inferred return type in `Promise<T>` if not already
-- [x] Handle `AwaitExpression`: unwrap `Promise<T>` → `T`
-- [x] Error SJS-E009 if `await` used outside async function
-- [x] Test: async functions infer `Promise<T>`, await unwraps
-- [x] Write examples: `specs/002-ecmascript-features/examples/async-types.sjs`
+**Gap:** Binary expressions (`BinaryExpression`) fall through to `T_ANY` in `inferExprType`.
+The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in arithmetic.
 
-### Task 1.3: Destructuring Type Annotations
-**Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [x]
-- [x] Handle `ObjectPattern` in variable declarator with type annotation
-- [x] Extract per-binding type from declared object type
-- [x] Handle `ArrayPattern` with tuple/array type annotation
-- [x] Handle rest patterns `...rest` with remainder type
-- [x] Handle nested destructuring
-- [x] Write examples: `specs/002-ecmascript-features/examples/destructuring-types.sjs`
+**Spec refs:**
+- ECMA-262 §13.15.4 Applying the Addition Operation — https://tc39.es/ecma262/#sec-addition-operation
+- ECMA-262 §6.1.6.2 The BigInt Type — https://tc39.es/ecma262/#sec-ecmascript-language-types-bigint-type
+- ECMA-262 §13.15 Binary Expressions — https://tc39.es/ecma262/#sec-binary-arithmetic-operators
 
-### Task 1.4: Object Spread Type Merging
-**Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] In ObjectExpression handler, detect `SpreadElement`
-- [ ] Merge properties from spread source type into result
-- [ ] Later spread properties override earlier ones
-- [ ] Handle rest in destructuring: remainder is `Omit<T, Keys>`
-- [ ] Write examples: `specs/002-ecmascript-features/examples/spread-types.sjs`
+**What to implement:**
+1. In `inferExprType`, handle `BinaryExpression`:
+   - Infer left and right operand types.
+   - For arithmetic operators (`+`, `-`, `*`, `/`, `%`, `**`):
+     - left=`number`, right=`number` → `number`
+     - left=`bigint`, right=`bigint` → `bigint`
+     - left=`bigint`, right=`number` (or vice versa) → emit SJS-E004, return `T_ANY`
+     - left or right is `string` and operator is `+` → `string` (string concatenation)
+   - For relational/equality operators (`<`, `>`, `<=`, `>=`, `===`, `!==`, `==`, `!=`) → `boolean`
+   - For bitwise operators (`&`, `|`, `^`, `<<`, `>>`, `>>>`) → `number` (or `bigint` if both sides are bigint)
+2. Add `SJS-E004` to SPEC constants.
+3. Tests in `prototype/tests/typeChecker/type-checker.test.ts`.
+4. Example: `specs/002-ecmascript-features/examples/binary-expressions.sjs`.
 
-### Task 1.5: Type Narrowing (typeof / instanceof / null checks)
-**Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Add narrowed type environment inside if/else branches
-- [ ] Implement `typeof x === "string"` narrowing
-- [ ] Implement `x instanceof Foo` narrowing
-- [ ] Implement `x !== null` and `x != null` null narrowing
-- [ ] Implement `"prop" in x` narrowing
-- [ ] Narrowing applies to `?.` optional chain checks
-- [ ] Write examples: `specs/002-ecmascript-features/examples/type-narrowing.sjs`
+**Error code:** SJS-E004
+**Files:** `prototype/src/typeChecker/index.ts`, `prototype/tests/typeChecker/type-checker.test.ts`
+
+- [x] Implement BinaryExpression inference in `inferExprType`
+- [x] Emit SJS-E004 on BigInt+Number mixing
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 
-## Phase 2 — Common Patterns (P1 features)
+### Task 1.2 — Logical and conditional expression type inference
 
-### Task 2.1: Iterator / AsyncIterator Protocol
-**Files**: `prototype/src/typeChecker/types.ts`, `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Define `IteratorType<Y,R,N>` and `IterableType<T>` in types.ts
-- [ ] Define `AsyncIteratorType<Y,R,N>` and `AsyncIterableType<T>`
-- [ ] Validate `Symbol.iterator` protocol on objects used in `for...of`
-- [ ] Validate `Symbol.asyncIterator` for `for-await-of`
-- [ ] Generator return type: `Generator<Y,R,N>`
-- [ ] Async generator return type: `AsyncGenerator<Y,R,N>`
-- [ ] Write examples: `specs/002-ecmascript-features/examples/iterators.sjs`
+**Gap:** `LogicalExpression` (`&&`, `||`, `??`) and `ConditionalExpression` (ternary) return `T_ANY`.
 
-### Task 2.2: WeakRef<T> and FinalizationRegistry<T>
-**Files**: `prototype/src/typeChecker/types.ts`, `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] Add `WeakRefType<T>` to stdlib type env
-- [ ] `.deref(): T | undefined` method
-- [ ] Add `FinalizationRegistryType<T>` to stdlib type env
-- [ ] `.register(target: object, value: T, token?: object): void`
-- [ ] `.unregister(token: object): boolean`
-- [ ] Constraint: T in WeakRef must extend object
-- [ ] Write examples: `specs/002-ecmascript-features/examples/weak-refs.sjs`
+**Spec refs:**
+- ECMA-262 §13.13 Binary Logical Operators — https://tc39.es/ecma262/#sec-binary-logical-operators
+- ECMA-262 §13.14 Conditional Operator — https://tc39.es/ecma262/#sec-conditional-operator
 
-### Task 2.3: BigInt Mixing Enforcement (SJS-E004)
-**Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [x]
-- [x] In BinaryExpression handler, check both operand types
-- [x] Error SJS-E004 when mixing `bigint` and `number`
-- [x] Allow `bigint op bigint` (all arithmetic operators)
-- [x] Allow `number op number`
-- [x] Reject `bigint op number` and `number op bigint`
-- [x] Write examples: `specs/002-ecmascript-features/examples/bigint-safety.sjs`
+**What to implement:**
+1. `LogicalExpression` in `inferExprType`:
+   - `&&` → if left is truthy-typed, return right type; otherwise union of left and right
+   - `||` → union of left and right types (consistent with TypeScript)
+   - `??` → if left is `T | null | undefined`, return `T | typeof(right)`; else left type
+2. `ConditionalExpression` in `inferExprType`:
+   - Return union of consequent and alternate types
 
-### Task 2.4: Promise.withResolvers<T>
-**Files**: `prototype/src/typeChecker/index.ts` (stdlib types)
-**Status**: [ ]
-- [ ] Add to stdlib type env: `Promise.withResolvers<T>(): { promise: Promise<T>, resolve: (v: T) => void, reject: (r: unknown) => void }`
-- [ ] Infer T from usage context
-- [ ] Write examples: `specs/002-ecmascript-features/examples/promise-resolvers.sjs`
-
-### Task 2.5: Object.groupBy and Map.groupBy
-**Files**: `prototype/src/typeChecker/index.ts` (stdlib types)
-**Status**: [ ]
-- [ ] `Object.groupBy<K extends PropertyKey, T>(items: Iterable<T>, fn: (x:T)=>K): Partial<Record<K,T[]>>`
-- [ ] `Map.groupBy<K, T>(items: Iterable<T>, fn: (x:T)=>K): Map<K,T[]>`
-- [ ] Write examples: `specs/002-ecmascript-features/examples/groupby.sjs`
+- [ ] Implement LogicalExpression type inference
+- [ ] Implement ConditionalExpression type inference
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
 
 ---
 
-## Phase 3 — Modern Stdlib (P2 features)
+## Phase 2 — Collection Type Inference
 
-### Task 3.1: Array.prototype.at() Return Type
-- [ ] `at(index: number): T | undefined` (not just `T`)
+### Task 2.1 — Array literal type inference
 
-### Task 3.2: Object.hasOwn() Narrowing
-- [ ] `Object.hasOwn(obj: T, key: string): key is keyof T`
+**Gap:** `ArrayExpression` falls through to `T_ANY`; computed member access not handled.
 
-### Task 3.3: Error.cause Typing
-- [ ] `new Error(message: string, options?: { cause?: unknown })`
+**Spec refs:**
+- ECMA-262 §13.2.4 Array Initializer — https://tc39.es/ecma262/#sec-array-initializer
 
-### Task 3.4: Symbol as WeakMap/WeakSet Keys
-- [ ] `WeakMap<K extends object | symbol, V>` (ES2023+)
-- [ ] `WeakSet<T extends object | symbol>`
+**What to implement:**
+1. `ArrayExpression` in `inferExprType`:
+   - If all elements share the same type `T`, return `Array<T>` (i.e., `{ kind: 'array', elementType: T }`)
+   - Otherwise return `Array<any>`
+2. `MemberExpression` (computed, e.g., `arr[0]`):
+   - If object type is `ArrayType`, return its `elementType`
 
-### Task 3.5: RegExp Named Capture Groups
-- [ ] `exec()` and `match()` return `.groups: { [name: string]: string | undefined }`
-
-### Task 3.6: SharedArrayBuffer and Atomics
-- [ ] Basic type stubs for SharedArrayBuffer
-- [ ] Atomics method signatures
-
----
-
-## Phase 4 — ES2025 (P3 features)
-
-### Task 4.1: Iterator Helpers Protocol
-- [ ] `Iterator<T>` built-in with all helper methods typed
-- [ ] `Iterator.from(iterable: Iterable<T>): Iterator<T>`
-
-### Task 4.2: Set Methods
-- [ ] All 7 new methods on `Set<T>` typed
-
-### Task 4.3: Promise.try<T>
-- [ ] `Promise.try<T>(fn: () => T | PromiseLike<T>): Promise<T>`
-
-### Task 4.4: Error.isError() Type Guard
-- [ ] `Error.isError(value: unknown): value is Error`
-
-### Task 4.5: Float16Array
-- [ ] Add as TypedArray variant
-
-### Task 4.6: Math.sumPrecise
-- [ ] `Math.sumPrecise(values: Iterable<number>): number`
+- [ ] Implement ArrayExpression inference
+- [ ] Implement computed MemberExpression inference
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
 
 ---
 
-## Progress Tracking
+### Task 2.2 — Object literal type inference + property access
 
-Each completed task must:
-1. Update status above: `[x]`
-2. Add passing tests in `prototype/tests/`
-3. Add SJS example in `specs/002-ecmascript-features/examples/`
-4. Commit to `002-ecmascript-features` branch
-5. Update `specs/002-ecmascript-features/gap-analysis.md` classification
+**Gap:** `ObjectExpression` and `MemberExpression` (static) return `T_ANY`.
 
-## Checkpoint Protocol (for long-running sessions)
+**Spec refs:**
+- ECMA-262 §13.2.5 Object Initializer — https://tc39.es/ecma262/#sec-object-initializer
+- ECMA-262 §13.3.2 Property Accessors — https://tc39.es/ecma262/#sec-property-accessors
 
-After each phase completes:
-```bash
-cd /Users/hbarve1/codes/github/hbarve1/super-js/.worktrees/002-ecmascript-features
-git add -A && git commit -m "feat(ecmascript): phase N complete - <summary>"
-```
+**What to implement:**
+1. `ObjectExpression` in `inferExprType`:
+   - Build `ObjectType` with `properties` map from each key→inferred value type
+2. Static `MemberExpression` (`obj.prop`) in `inferExprType`:
+   - If object type is `ObjectType` and property key exists, return its type
+   - If object type is `ArrayType` and property is `length`, return `number`
 
-Then update KG:
-- `kg_patch` `super-js.md` Recent Activity
-- `kg_task_update` task 002-ecmascript-features
+- [ ] Implement ObjectExpression inference
+- [ ] Implement static MemberExpression inference
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
+
+---
+
+## Phase 3 — Unary and Nullish Operators
+
+### Task 3.1 — Unary expression type inference
+
+**Gap:** `UnaryExpression` returns `T_ANY`.
+
+**Spec refs:**
+- ECMA-262 §13.5 Unary Operators — https://tc39.es/ecma262/#sec-unary-operators
+
+**What to implement:**
+1. `UnaryExpression` in `inferExprType`:
+   - `typeof expr` → `string`
+   - `!expr` → `boolean`
+   - `-expr` / `+expr` where expr is `number` → `number`
+   - `-expr` / `+expr` where expr is `bigint` → `bigint`
+   - `~expr` where expr is `number` → `number`
+   - `void expr` → `undefined`
+
+- [ ] Implement UnaryExpression inference
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
+
+---
+
+### Task 3.2 — Optional chaining and nullish coalescing narrowing
+
+**Gap:** `OptionalMemberExpression`, `OptionalCallExpression` return `T_ANY`.
+
+**Spec refs:**
+- ECMA-262 §13.5.1 Optional Chains — https://tc39.es/ecma262/#sec-optional-chains
+
+**What to implement:**
+1. `OptionalMemberExpression` in `inferExprType`:
+   - If object is non-nullable `ObjectType` with known property, return `T | undefined`
+2. Improve `??` inference in `LogicalExpression` (from Task 1.2) to narrow union types:
+   - `(T | null | undefined) ?? U` → `T | U`
+
+- [ ] Implement OptionalMemberExpression inference
+- [ ] Refine nullish coalescing narrowing
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
+
+---
+
+## Phase 4 — Destructuring Patterns
+
+### Task 4.1 — Array destructuring type inference
+
+**Gap:** `checkVariableDeclaration` skips non-`Identifier` patterns (`!t.isIdentifier(decl.id)`).
+
+**Spec refs:**
+- ECMA-262 §14.3.3 Destructuring Binding Patterns — https://tc39.es/ecma262/#sec-destructuring-binding-patterns
+
+**What to implement:**
+1. In `checkVariableDeclaration`, handle `ArrayPattern`:
+   - If initializer type is `ArrayType`, bind each element identifier to `elementType`
+   - Otherwise bind to `any`
+2. Report SJS-E002 if initializer type is not an array when pattern is `ArrayPattern`
+
+- [ ] Handle ArrayPattern in checkVariableDeclaration
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
+
+---
+
+### Task 4.2 — Object destructuring type inference
+
+**Gap:** `ObjectPattern` in variable declarations is skipped.
+
+**Spec refs:**
+- ECMA-262 §14.3.3 Destructuring Binding Patterns — https://tc39.es/ecma262/#sec-destructuring-binding-patterns
+
+**What to implement:**
+1. In `checkVariableDeclaration`, handle `ObjectPattern`:
+   - If initializer type is `ObjectType`, bind each property key to its declared type
+   - Otherwise bind all extracted names to `any`
+2. Report SJS-E002 if initializer is not an `ObjectType` and has a declared annotation
+
+- [ ] Handle ObjectPattern in checkVariableDeclaration
+- [ ] Add tests
+- [ ] Add example .sjs file
+- [ ] Commit and push
