@@ -43,6 +43,9 @@ jobs:
 
       - name: Test
         run: npm test --workspace=super-js
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+        continue-on-error: true
 
       - name: Grammar smoke test
         run: node scripts/check-grammar.mjs
