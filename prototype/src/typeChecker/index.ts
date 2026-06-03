@@ -51,7 +51,14 @@ const SPEC = {
   FUNCTION_DEF:   'https://tc39.es/ecma262/#sec-function-definitions',
   // Async function definitions — ECMA-262 §15.8
   ASYNC_FUNCTION: 'https://tc39.es/ecma262/#sec-async-function-definitions',
+  // BigInt arithmetic — ECMA-262 §6.1.6.2 (BigInt cannot mix with number)
+  BIGINT_MIXED:   'https://tc39.es/ecma262/#sec-ecmascript-language-types-bigint-type',
 } as const
+
+// Operators that produce a numeric result (not comparison)
+const ARITHMETIC_OPS = new Set(['+', '-', '*', '/', '%', '**', '|', '&', '^', '<<', '>>', '>>>'])
+// Operators that always produce boolean
+const COMPARISON_OPS = new Set(['<', '>', '<=', '>=', '==', '!=', '===', '!==', 'in', 'instanceof'])
 
 // ── Resolve: TSType node → Type ───────────────────────────────────────────────
 
@@ -231,6 +238,34 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     case 'Identifier': {
       if (node.name === 'undefined') return T_UNDEFINED
       return env.get(node.name) ?? T_ANY
+    }
+
+    // Binary expression — ECMA-262 §13.15 (assignment) / §13.8 (additive) / §13.5 (relational)
+    case 'BinaryExpression': {
+      const { operator, left, right } = node
+      if (!t.isExpression(left)) return T_ANY  // PrivateName in `#x in obj` — skip
+      const lt = inferExprType(left, env)
+      const rt = inferExprType(right, env)
+
+      if (COMPARISON_OPS.has(operator)) return T_BOOLEAN
+
+      if (operator === '+') {
+        // String concatenation takes priority — ECMA-262 §13.8.1
+        if (lt.kind === 'string' || rt.kind === 'string') return T_STRING
+        if (lt.kind === 'number' && rt.kind === 'number') return T_NUMBER
+        if (lt.kind === 'bigint' && rt.kind === 'bigint') return { kind: 'bigint' }
+        if (lt.kind === 'any' || rt.kind === 'any') return T_ANY
+        return T_ANY
+      }
+
+      if (ARITHMETIC_OPS.has(operator)) {
+        if (lt.kind === 'number' && rt.kind === 'number') return T_NUMBER
+        if (lt.kind === 'bigint' && rt.kind === 'bigint') return { kind: 'bigint' }
+        if (lt.kind === 'any' || rt.kind === 'any') return T_ANY
+        return T_ANY
+      }
+
+      return T_ANY
     }
 
     // Arrow function — ECMA-262 §15.3 (arrow function definitions)
@@ -430,6 +465,9 @@ export class TypeChecker {
         break
       case 'AwaitExpression':
         this.checkAwaitExpression(path as NodePath<t.AwaitExpression>)
+        break
+      case 'BinaryExpression':
+        this.checkBinaryExpression(path as NodePath<t.BinaryExpression>)
         break
     }
   }
@@ -1079,6 +1117,39 @@ export class TypeChecker {
         message: `'await' cannot be used inside a non-async function. Mark the enclosing function 'async' to use 'await'.`,
         node: path.node,
         specUrl: SPEC.ASYNC_FUNCTION,
+      })
+    }
+  }
+
+  // ── Rule SJS-E004: BigInt / Number mixing — ECMA-262 §6.1.6.2 ────────────────
+
+  /**
+   * Checks arithmetic binary expressions for illegal BigInt/Number mixing.
+   *
+   * ECMA-262 §6.1.6.2 specifies that BigInt values cannot be mixed with Number
+   * values in any arithmetic operation — a TypeError is thrown at runtime.
+   * We surface this at compile time as SJS-E004.
+   *
+   * https://tc39.es/ecma262/#sec-ecmascript-language-types-bigint-type
+   */
+  private checkBinaryExpression(path: NodePath<t.BinaryExpression>): void {
+    const { node } = path
+    if (!ARITHMETIC_OPS.has(node.operator)) return
+    if (!t.isExpression(node.left)) return  // PrivateName in `#x in obj`
+
+    const lt = inferExprType(node.left, this.env)
+    const rt = inferExprType(node.right, this.env)
+
+    if (
+      (lt.kind === 'bigint' && rt.kind === 'number') ||
+      (lt.kind === 'number' && rt.kind === 'bigint')
+    ) {
+      this.report({
+        code: 'SJS-E004',
+        severity: 'error',
+        message: `Cannot mix 'bigint' and 'number' in '${node.operator}' expression. Both operands must be the same numeric type.`,
+        node: path.node,
+        specUrl: SPEC.BIGINT_MIXED,
       })
     }
   }

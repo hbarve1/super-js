@@ -91,13 +91,13 @@ Started: 2026-06-03
 
 ### Task 2.3: BigInt Mixing Enforcement (SJS-E004)
 **Files**: `prototype/src/typeChecker/index.ts`
-**Status**: [ ]
-- [ ] In BinaryExpression handler, check both operand types
-- [ ] Error SJS-E004 when mixing `bigint` and `number`
-- [ ] Allow `bigint op bigint` (all arithmetic operators)
-- [ ] Allow `number op number`
-- [ ] Reject `bigint op number` and `number op bigint`
-- [ ] Write examples: `specs/002-ecmascript-features/examples/bigint-safety.sjs`
+**Status**: [x]
+- [x] In BinaryExpression handler, check both operand types
+- [x] Error SJS-E004 when mixing `bigint` and `number`
+- [x] Allow `bigint op bigint` (all arithmetic operators)
+- [x] Allow `number op number`
+- [x] Reject `bigint op number` and `number op bigint`
+- [x] Write examples: `specs/002-ecmascript-features/examples/bigint-safety.sjs`
 
 ### Task 2.4: Promise.withResolvers<T>
 **Files**: `prototype/src/typeChecker/index.ts` (stdlib types)
