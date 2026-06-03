@@ -50,6 +50,10 @@ const SPEC = {
   FUNCTION_DEF:   'https://tc39.es/ecma262/#sec-function-definitions',
   // Binary arithmetic operators — ECMA-262 §13.15
   BINARY_EXPR:    'https://tc39.es/ecma262/#sec-binary-arithmetic-operators',
+  // Logical operators — ECMA-262 §13.13
+  LOGICAL_OPS:    'https://tc39.es/ecma262/#sec-binary-logical-operators',
+  // Conditional operator — ECMA-262 §13.14
+  CONDITIONAL:    'https://tc39.es/ecma262/#sec-conditional-operator',
 } as const
 
 // ── Resolve: TSType node → Type ───────────────────────────────────────────────
@@ -136,6 +140,54 @@ function inferBinaryType(op: string, left: Type, right: Type): Type {
   return T_ANY
 }
 
+// ── Union construction helper ─────────────────────────────────────────────────
+
+/**
+ * Builds the smallest type that represents "either A or B":
+ * - If either is `any`, return `any` (gradual absorbs everything).
+ * - If both have the same kind (ignoring sub-structure), return one copy.
+ * - Otherwise flatten nested unions and dedup by kind, returning a UnionType.
+ *
+ * ECMA-262 §13.13 / §13.14 — union result of logical/conditional operators.
+ */
+function makeUnion(a: Type, b: Type): Type {
+  if (a.kind === 'any' || b.kind === 'any') return T_ANY
+
+  // Collect members, flattening nested unions and deduplicating by kind.
+  const seen = new Set<string>()
+  const members: Type[] = []
+  function add(t: Type): void {
+    if (t.kind === 'union') {
+      for (const m of (t as UnionType).types) add(m)
+    } else if (!seen.has(t.kind)) {
+      seen.add(t.kind)
+      members.push(t)
+    }
+  }
+  add(a)
+  add(b)
+
+  if (members.length === 1) return members[0]
+  return { kind: 'union', types: members } satisfies UnionType
+}
+
+/**
+ * Removes `null` and `undefined` from a union type.
+ * Used for `??` nullish coalescing: the left operand's non-nullable portion.
+ *
+ * ECMA-262 §13.13 Nullish Coalescing Operator.
+ */
+function stripNullable(t: Type): Type {
+  if (t.kind === 'null' || t.kind === 'undefined') return T_ANY
+  if (t.kind !== 'union') return t
+  const members = (t as UnionType).types.filter(
+    m => m.kind !== 'null' && m.kind !== 'undefined'
+  )
+  if (members.length === 0) return T_ANY
+  if (members.length === 1) return members[0]
+  return { kind: 'union', types: members } satisfies UnionType
+}
+
 // ── Infer: Expression → Type (synthesis / bottom-up) ─────────────────────────
 
 /**
@@ -184,6 +236,30 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const left  = inferExprType(node.left,  env)
       const right = inferExprType(node.right, env)
       return inferBinaryType(node.operator, left, right)
+    }
+
+    // Logical expression — ECMA-262 §13.13
+    // &&  : short-circuits on falsy left — result is left-or-right union (conservative)
+    // ||  : short-circuits on truthy left — result is left-or-right union
+    // ??  : nullish coalescing — strips null/undefined from left, unions with right
+    case 'LogicalExpression': {
+      const left  = inferExprType(node.left,  env)
+      const right = inferExprType(node.right, env)
+      if (node.operator === '??') {
+        // `a ?? b`: when a is null/undefined use b, otherwise a
+        // Result type: non-nullable part of a, unioned with b's type
+        return makeUnion(stripNullable(left), right)
+      }
+      // `a && b` and `a || b`: either side may be returned
+      return makeUnion(left, right)
+    }
+
+    // Conditional (ternary) expression — ECMA-262 §13.14
+    // `cond ? a : b` → union of types of a and b
+    case 'ConditionalExpression': {
+      const consequent = inferExprType(node.consequent, env)
+      const alternate  = inferExprType(node.alternate,  env)
+      return makeUnion(consequent, alternate)
     }
 
     // Arrow function — ECMA-262 §15.3 (arrow function definitions)

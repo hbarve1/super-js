@@ -60,11 +60,11 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
 2. `ConditionalExpression` in `inferExprType`:
    - Return union of consequent and alternate types
 
-- [ ] Implement LogicalExpression type inference
-- [ ] Implement ConditionalExpression type inference
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Implement LogicalExpression type inference
+- [x] Implement ConditionalExpression type inference
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 

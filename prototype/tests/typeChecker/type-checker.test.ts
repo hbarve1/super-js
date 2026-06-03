@@ -91,3 +91,95 @@ describe('SJS-E004 — BigInt + Number mixing (ECMA-262 §6.1.6.2)', () => {
     expect(e004!.specUrl).toContain('bigint')
   })
 })
+
+// ── Task 1.2: Logical and conditional expression type inference ────────────────
+
+describe('LogicalExpression type inference — ECMA-262 §13.13', () => {
+  describe('&& operator', () => {
+    it('accepts assignment to union type of both branches', () => {
+      expect(errors('const x: number | string = (1 as any) && "hello"')).toHaveLength(0)
+    })
+
+    it('infers number when both sides are number', () => {
+      expect(errors('const x: number = 1 && 2')).toHaveLength(0)
+    })
+
+    it('accepts number || number as number', () => {
+      expect(errors('const x: number = 1 || 2')).toHaveLength(0)
+    })
+
+    it('rejects mixed && branches assigned to single type when inconsistent', () => {
+      const diags = errors('const x: number = true && "hello"')
+      expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+    })
+  })
+
+  describe('|| operator', () => {
+    it('infers string when both sides are string', () => {
+      expect(errors('const x: string = "a" || "b"')).toHaveLength(0)
+    })
+
+    it('infers union of string | number for mixed ||', () => {
+      // string | number union is assignable to string | number
+      expect(errors('const x: string | number = "a" || 42')).toHaveLength(0)
+    })
+
+    it('rejects mixed || result assigned to non-union type', () => {
+      const diags = errors('const x: string = "a" || 42')
+      expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+    })
+  })
+
+  describe('?? (nullish coalescing) operator — ECMA-262 §13.13', () => {
+    it('strips null from left side — result is non-nullable', () => {
+      // (string | null) ?? string → string (null stripped, unioned with string = string)
+      expect(errors('const x: string = (null as string | null) ?? "default"')).toHaveLength(0)
+    })
+
+    it('strips undefined from left side — result is non-nullable', () => {
+      expect(errors('const x: string = (undefined as string | undefined) ?? "default"')).toHaveLength(0)
+    })
+
+    it('propagates right-side type when left is pure null', () => {
+      // null ?? number → number (null stripped → any, unioned with number → number)
+      expect(errors('const x: number = null ?? 42')).toHaveLength(0)
+    })
+
+    it('propagates right-side type when left is pure undefined', () => {
+      expect(errors('const x: string = undefined ?? "hello"')).toHaveLength(0)
+    })
+
+    it('produces union when right type differs from non-nullable left', () => {
+      // string ?? number → string | number
+      expect(errors('const x: string | number = "a" ?? 42')).toHaveLength(0)
+    })
+  })
+})
+
+describe('ConditionalExpression (ternary) type inference — ECMA-262 §13.14', () => {
+  it('infers number when both branches are number', () => {
+    expect(errors('const x: number = true ? 1 : 2')).toHaveLength(0)
+  })
+
+  it('infers string when both branches are string', () => {
+    expect(errors('const x: string = true ? "a" : "b"')).toHaveLength(0)
+  })
+
+  it('infers union type from mixed branches', () => {
+    expect(errors('const x: number | string = true ? 1 : "hello"')).toHaveLength(0)
+  })
+
+  it('rejects mixed-branch ternary assigned to single non-union type', () => {
+    const diags = errors('const x: number = true ? 1 : "hello"')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('infers boolean from comparison in consequent and alternate', () => {
+    expect(errors('const x: boolean = true ? true : false')).toHaveLength(0)
+  })
+
+  it('accepts any-typed result for ternary with unknown branches', () => {
+    // Both arms unknown → any → no error
+    expect(errors('const x: number = (foo as any) ? (bar as any) : (baz as any)')).toHaveLength(0)
+  })
+})
