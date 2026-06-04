@@ -73,3 +73,39 @@ describe('SJS2: Match guard syntax', () => {
     expect(output).toContain('"default"')
   })
 })
+
+// ── SJS3: Nested pattern matching ─────────────────────────────────────────────
+
+describe('SJS3: Nested pattern matching', () => {
+  it('handles nested tuple variant: Ok({ inner: Err(msg) })', () => {
+    const input = `const x = match result {
+      Ok({ inner: Err(msg) }) => msg,
+      _ => "fallback",
+    }`
+    const output = transformMatch(input)
+    // Should match outer tag
+    expect(output).toContain('case "Ok"')
+    // Should destructure inner from outer
+    expect(output).toContain('inner')
+    // Should check inner tag
+    expect(output).toContain('inner._tag === "Err"')
+    // Should bind inner positional field
+    expect(output).toContain('inner._0')
+    expect(output).toContain('msg')
+  })
+
+  it('handles multiple fields with one nested: { value, inner: Err(msg) }', () => {
+    const input = `match result { Ok({ value, inner: Err(msg) }) => value + msg, _ => "" }`
+    const output = transformMatch(input)
+    expect(output).toContain('case "Ok"')
+    expect(output).toContain('inner._tag === "Err"')
+    expect(output).toContain('value')
+  })
+
+  it('simple struct patterns still work after SJS3 changes', () => {
+    const input = `match c { Ok({ v }) => v, Err({ e }) => 0 }`
+    const output = transformMatch(input)
+    expect(output).toContain('const { v } = __m')
+    expect(output).toContain('const { e } = __m')
+  })
+})

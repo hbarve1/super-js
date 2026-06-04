@@ -313,10 +313,10 @@ Deadline: 2026-06-05T06:00:00Z
 - [x] Emit as `if (_tag === 'X' && condition)` in generated switch
 - [x] Exhaustiveness still required on unguarded arms
 
-### SJS3: Nested pattern matching [ ]
+### SJS3: Nested pattern matching [x]
 **File**: `prototype/src/preprocessor/matchExpr.ts`
-- [ ] `Ok({ inner: Err(msg) }) => ...` — nested sum type destructuring
-- [ ] Emit nested switch/if in generated IIFE
+- [x] `Ok({ inner: Err(msg) }) => ...` — nested sum type destructuring
+- [x] Emit nested switch/if in generated IIFE
 
 ### SJS4: `pub/priv/prot` access modifiers on classes [ ]
 **File**: `prototype/src/typeChecker/index.ts`
@@ -360,9 +360,9 @@ Update this section after each phase:
 | Phase 2 — Stdlib | 7 | 6 | 86% |
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
-| Phase 5 — SJS Features | 5 | 2 | 40% |
+| Phase 5 — SJS Features | 5 | 3 | 60% |
 | Phase 6 — Pipeline | 3 | 1 | 33% |
-| **TOTAL** | **34** | **28** | **82%** |
+| **TOTAL** | **34** | **29** | **85%** |
 
 ---
 
