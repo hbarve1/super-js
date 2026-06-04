@@ -333,9 +333,9 @@ Deadline: 2026-06-05T06:00:00Z
 
 ## PHASE 6 — Pipeline Polish (~1h)
 
-### P1: Source map verification [ ]
-- [ ] Verify source maps are correct after preprocessor transforms
-- [ ] Integration test: error location in `.sjs` source, not transformed output
+### P1: Source map verification [x]
+- [x] Verify source maps are correct after preprocessor transforms
+- [x] Integration test: error location in `.sjs` source, not transformed output
 
 ### P2: Test runner watch + coverage stubs [x]
 - [x] `superjs test --watch` — implement incremental re-run
@@ -361,8 +361,8 @@ Update this section after each phase:
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
 | Phase 5 — SJS Features | 5 | 4 | 80% |
-| Phase 6 — Pipeline | 3 | 2 | 67% |
-| **TOTAL** | **34** | **31** | **91%** |
+| Phase 6 — Pipeline | 3 | 3 | 100% |
+| **TOTAL** | **34** | **32** | **94%** |
 
 ---
 
