@@ -8,7 +8,7 @@ import { format } from './formatter';
 import { runTests } from './tester';
 import { Watcher } from './watch/watcher';
 import { formatDiagnosticsAsJson } from './diagnostic';
-import type { Diagnostic } from './typeChecker/types';
+import type { PrototypeDiagnostic } from './typeChecker/types';
 
 const c = {
   green:  (s: string) => `\x1b[32m${s}\x1b[0m`,
@@ -82,7 +82,7 @@ program
         } catch (err: unknown) {
           const elapsed = Date.now() - buildStart;
           if (options.json && err instanceof Error && 'diagnostics' in err) {
-            const diags = (err as { diagnostics: Diagnostic[] }).diagnostics;
+            const diags = (err as { diagnostics: PrototypeDiagnostic[] }).diagnostics;
             formatDiagnosticsAsJson(diags).forEach(l => process.stdout.write(l + '\n'));
             process.exit(1);
           }

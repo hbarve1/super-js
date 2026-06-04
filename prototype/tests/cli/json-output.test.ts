@@ -9,9 +9,9 @@
  */
 
 import { formatDiagnosticsAsJson, DiagnosticJson } from '../../src/diagnostic'
-import type { PrototypeDiagnostic as Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
 
-const SAMPLE_DIAGNOSTIC: Diagnostic = {
+const SAMPLE_DIAGNOSTIC: PrototypeDiagnostic = {
   code: 'SJS-E001',
   severity: 'error',
   message: "I cannot assign a value of type 'string' to a variable declared as 'number'.",
@@ -55,7 +55,7 @@ describe('formatDiagnosticsAsJson()', () => {
   })
 
   it('emits one line per diagnostic for multiple diagnostics', () => {
-    const diags: Diagnostic[] = [
+    const diags: PrototypeDiagnostic[] = [
       SAMPLE_DIAGNOSTIC,
       { ...SAMPLE_DIAGNOSTIC, code: 'SJS-W001', severity: 'warning', line: 5 },
     ]

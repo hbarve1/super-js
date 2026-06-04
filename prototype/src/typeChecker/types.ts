@@ -23,7 +23,7 @@ export interface BigIntType    { kind: 'bigint' }      // §6.1.6.2
 export interface ObjectType {
   kind: 'object'
   properties: Map<string, Type>
-  typeParams?: string[]   // declared generic type parameters, e.g. ['K', 'V']
+  typeParams?: string[]
 }
 
 // ── Composite types ───────────────────────────────────────────────────────────
@@ -33,18 +33,24 @@ export interface ArrayType {
   elementType: Type
 }
 
-/** Tuple type — fixed-length array with per-element types. ECMA-262 §23.1 */
-export interface TupleType {
-  kind: 'tuple'
-  elements: Type[]
-}
-
 export interface FunctionType {
   kind: 'function'
   params: Array<{ name: string; type: Type; optional: boolean }>
   returnType: Type
-  typeParams?: string[]   // generic type param names, e.g. ['T', 'U']
-  async?: boolean         // whether this is an async function
+  typeParams?: string[]
+}
+
+// ── Generic type parameter placeholder ───────────────────────────────────────
+
+/** Represents an unresolved generic type parameter, e.g. `T` in `identity<T>`. */
+export interface TypeParamType {
+  kind: 'typeParam'
+  name: string
+}
+
+export interface TupleType {
+  kind: 'tuple'
+  elements: Type[]
 }
 
 export interface UnionType {
@@ -55,64 +61,6 @@ export interface UnionType {
 export interface IntersectionType {
   kind: 'intersection'
   types: Type[]
-}
-
-// ── Generic type parameter — used inside generic function/type bodies ─────────
-
-/**
- * Represents a free type variable, e.g. `T` in `identity<T>(x: T): T`.
- * Resolved via `instantiate()` when the function is called with known types.
- */
-export interface TypeParamType {
-  kind: 'typeParam'
-  name: string
-}
-
-// ── Promise type — ECMA-262 §27.2 ────────────────────────────────────────────
-
-export interface PromiseType {
-  kind: 'promise'
-  resolvedType: Type
-}
-
-// ── Iterator / Generator types — ECMA-262 §27.1 ──────────────────────────────
-
-export interface IteratorType {
-  kind: 'iterator'
-  yieldType: Type
-  returnType: Type
-  nextType: Type
-}
-
-export interface IterableType {
-  kind: 'iterable'
-  elementType: Type
-}
-
-export interface AsyncIteratorType {
-  kind: 'asyncIterator'
-  yieldType: Type
-  returnType: Type
-  nextType: Type
-}
-
-export interface AsyncIterableType {
-  kind: 'asyncIterable'
-  elementType: Type
-}
-
-export interface GeneratorType {
-  kind: 'generator'
-  yieldType: Type
-  returnType: Type
-  nextType: Type
-}
-
-export interface AsyncGeneratorType {
-  kind: 'asyncGenerator'
-  yieldType: Type
-  returnType: Type
-  nextType: Type
 }
 
 // ── Sum types (SJS-specific — type Result<T> = Ok(T) | Err(string)) ──────────
@@ -127,6 +75,15 @@ export interface SumType {
   kind: 'sum'
   name: string           // declared type name, e.g. "Result"
   variants: SumVariantType[]
+}
+
+/**
+ * Promise<T> — the result of an async function or an awaitable value.
+ * ECMA-262 §27.2 Promise Objects.
+ */
+export interface PromiseType {
+  kind: 'promise'
+  valueType: Type
 }
 
 /** `dynamic` — runtime-checked escape hatch (not `any`). Consistent with every type. */
@@ -171,12 +128,6 @@ export type Type =
   | DynamicType
   | TypeParamType
   | PromiseType
-  | IteratorType
-  | IterableType
-  | AsyncIteratorType
-  | AsyncIterableType
-  | GeneratorType
-  | AsyncGeneratorType
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 

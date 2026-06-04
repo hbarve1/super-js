@@ -7,7 +7,7 @@
  * contracts/cli-interface.md § Diagnostic output
  */
 
-import type { PrototypeDiagnostic as Diagnostic } from './typeChecker/types'
+import type { PrototypeDiagnostic } from './typeChecker/types'
 
 // ── JSON output (T054) ────────────────────────────────────────────────────────
 
@@ -17,7 +17,7 @@ import type { PrototypeDiagnostic as Diagnostic } from './typeChecker/types'
  */
 export interface DiagnosticJson {
   code: string
-  severity: 'error' | 'warning' | 'note'
+  severity: 'error' | 'warning' | 'info'
   message: string
   line: number
   column: number
@@ -33,13 +33,13 @@ export interface DiagnosticJson {
  * ndjson output: `lines.forEach(l => process.stdout.write(l + '\n'))`.
  */
 export function formatDiagnosticsAsJson(
-  diagnostics: Diagnostic[],
+  diagnostics: PrototypeDiagnostic[],
   file?: string,
 ): string[] {
   return diagnostics.map(d => {
     const record: DiagnosticJson = {
       code: d.code,
-      severity: d.severity === 'info' ? 'note' : d.severity,
+      severity: d.severity,
       message: d.message,
       line: d.line,
       column: d.column,
@@ -61,7 +61,7 @@ export function formatDiagnosticsAsJson(
  *    = spec: https://tc39.es/ecma262/#sec-let-and-const-declarations
  */
 export function formatDiagnosticsAsText(
-  diagnostics: Diagnostic[],
+  diagnostics: PrototypeDiagnostic[],
   file?: string,
 ): string {
   return diagnostics.map(d => {

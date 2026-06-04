@@ -1,30 +1,52 @@
-// SJS Example: Destructuring Type Annotations (ES2015+)
-// Task 1.3 — specs/002-ecmascript-features/implementation-plan.md
+// Destructuring Type Annotations — ECMA-262 §14.3.3
+// SJS extracts per-binding types from the declared pattern annotation.
 
-// Object destructuring with type annotation
-const config: { host: string; port: number; debug: boolean } = {
-  host: "localhost",
-  port: 8080,
-  debug: true,
+// ── Object destructuring with type annotation ─────────────────────────────────
+
+const { x, y }: { x: number; y: string } = { x: 1, y: "hello" }
+const doubled: number = x  // x: number — OK
+const greeting: string = y  // y: string — OK
+
+// Renamed binding
+const { x: width, y: height }: { x: number; y: number } = { x: 100, y: 200 }
+const area: number = width * height  // width: number, height: number — OK
+
+// ── Array destructuring with tuple annotation ─────────────────────────────────
+
+const [first, second]: [number, string] = [42, "world"]
+const n: number = first   // first: number — OK
+const s: string = second  // second: string — OK
+
+// ── Array destructuring with array annotation ─────────────────────────────────
+
+const [a, b, c]: number[] = [1, 2, 3]
+const sum: number = a + b + c  // all: number — OK
+
+// ── Rest patterns ─────────────────────────────────────────────────────────────
+
+// Object rest — remainder after destructured keys
+const { name, ...attrs }: { name: string; age: number; active: boolean } = {
+  name: "Alice",
+  age: 30,
+  active: true,
 }
-const { host, port, debug }: { host: string; port: number; debug: boolean } = config
+// attrs: { age: number; active: boolean }
 
-// Array destructuring with tuple annotation
-const point: [number, number] = [3.14, 2.72]
-const [x, y]: [number, number] = point
+// Array rest — remaining elements as array
+const [head, ...tail]: [string, number, boolean] = ["hello", 42, true]
+// head: string, tail: Array<number | boolean>
 
-// Nested object destructuring
-const user = { name: "Alice", address: { city: "Berlin", zip: "10115" } }
-const { name, address: { city } } = user
+// ── Nested destructuring ──────────────────────────────────────────────────────
 
-// Rest element in destructuring
-const [first, second, ...rest] = [1, 2, 3, 4, 5]
-const { a, b, ...others } = { a: 1, b: 2, c: 3, d: 4 }
-
-// Default values in destructuring
-const { width = 100, height = 200 } = { width: 800 }
-
-// Function parameter destructuring
-function render({ title, count }: { title: string; count: number }): string {
-  return `${title} (${count})`
+const { address: { city, zip } }: { address: { city: string; zip: number } } = {
+  address: { city: "New York", zip: 10001 },
 }
+const cityName: string = city  // city: string — OK
+const zipCode: number = zip    // zip: number — OK
+
+// Nested array inside object
+const { coords: [lat, lng] }: { coords: [number, number] } = {
+  coords: [40.7128, -74.006],
+}
+const latitude: number = lat   // lat: number — OK
+const longitude: number = lng  // lng: number — OK
