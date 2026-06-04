@@ -2727,3 +2727,342 @@ describe('Array.map/reduce callback inference', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── New features: generators ──────────────────────────────────────────────────
+
+describe('Generator functions (function*) — ECMA-262 §27.3', () => {
+  it('generator function registers as generator type', () => {
+    expect(errors(`
+      function* gen(): Generator<number, void, unknown> {
+        yield 1
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('generator function without annotation — no error', () => {
+    expect(errors(`
+      function* counter() {
+        yield 1
+        yield 2
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('generator expression — no error', () => {
+    expect(errors(`
+      const gen = function*() { yield 1 }
+    `)).toHaveLength(0)
+  })
+
+  it('for-of over generator — element type from yield', () => {
+    expect(errors(`
+      function* nums(): Generator<number, void, unknown> { yield 1 }
+      const g = nums()
+      for (const n of g) {
+        const x: number = n
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Object spread ─────────────────────────────────────────────────────────────
+
+describe('Object spread ({...a, ...b}) — ES2018', () => {
+  it('spread merges properties — no error', () => {
+    expect(errors(`
+      const a = { x: 1 }
+      const b = { y: 'hello' }
+      const c = { ...a, ...b, z: true }
+    `)).toHaveLength(0)
+  })
+
+  it('spread object assigns to wider type', () => {
+    expect(errors(`
+      const defaults = { timeout: 5000, retries: 3 }
+      const opts = { ...defaults, url: 'http://example.com' }
+      const t: number = opts.timeout
+    `)).toHaveLength(0)
+  })
+
+  it('spread in object literal — preserves type', () => {
+    expect(errors(`
+      const base = { name: 'Alice', age: 30 }
+      const extended = { ...base, role: 'admin' }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Array spread ──────────────────────────────────────────────────────────────
+
+describe('Array spread ([...a, ...b]) — ES2015', () => {
+  it('spread in array literal — no error', () => {
+    expect(errors(`
+      const a: number[] = [1, 2, 3]
+      const b: number[] = [4, 5]
+      const c = [...a, ...b]
+    `)).toHaveLength(0)
+  })
+
+  it('spread string in array — string elements', () => {
+    expect(errors(`
+      const chars = [..."hello"]
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Nested destructuring ──────────────────────────────────────────────────────
+
+describe('Nested destructuring — ECMA-262 §14.3.3', () => {
+  it('object with default values — no error', () => {
+    expect(errors(`
+      const { x = 0, y = '' } = { x: 1 }
+      const n: number = x
+    `)).toHaveLength(0)
+  })
+
+  it('nested object destructuring — binds inner names', () => {
+    expect(errors(`
+      const obj = { a: { b: 42, c: 'hello' } }
+      const { a: { b, c } } = obj
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring with default — no error', () => {
+    expect(errors(`
+      const [first = 0, second = 0] = [1]
+    `)).toHaveLength(0)
+  })
+
+  it('for-of with object destructuring', () => {
+    expect(errors(`
+      const pairs = [{ key: 'a', val: 1 }, { key: 'b', val: 2 }]
+      for (const { key, val } of pairs) {
+        const k: string = key
+        const v: number = val
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for-of with array destructuring', () => {
+    expect(errors(`
+      const matrix: [number, number][] = [[1,2],[3,4]]
+      for (const [a, b] of matrix) {
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Typed arrays ──────────────────────────────────────────────────────────────
+
+describe('Typed arrays — ECMA-262 §23.2', () => {
+  it('new Int32Array — no error', () => {
+    expect(errors(`
+      const buf = new Int32Array(10)
+      const len: number = buf.length
+    `)).toHaveLength(0)
+  })
+
+  it('new Float64Array — no error', () => {
+    expect(errors(`
+      const arr = new Float64Array([1.0, 2.0, 3.0])
+    `)).toHaveLength(0)
+  })
+
+  it('typed array annotation — no error', () => {
+    expect(errors(`
+      const view: Uint8Array = new Uint8Array(256)
+      const b: number = view.byteLength
+    `)).toHaveLength(0)
+  })
+
+  it('Int8Array methods — no error', () => {
+    expect(errors(`
+      const a = new Int8Array(4)
+      a.fill(0)
+      const included: boolean = a.includes(0)
+      const idx: number = a.indexOf(0)
+    `)).toHaveLength(0)
+  })
+
+  it('BigInt64Array — no error', () => {
+    expect(errors(`
+      const big = new BigInt64Array(4)
+    `)).toHaveLength(0)
+  })
+
+  it('ArrayBuffer — no error', () => {
+    expect(errors(`
+      const buf = new ArrayBuffer(16)
+      const size: number = buf.byteLength
+    `)).toHaveLength(0)
+  })
+
+  it('DataView — no error', () => {
+    expect(errors(`
+      const buf = new ArrayBuffer(8)
+      const dv = new DataView(buf)
+      dv.setInt32(0, 42)
+      const val: number = dv.getInt32(0)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Reflect API ───────────────────────────────────────────────────────────────
+
+describe('Reflect API — ECMA-262 §28.1', () => {
+  it('Reflect.has returns boolean', () => {
+    expect(errors(`
+      const obj = { x: 1 }
+      const has: boolean = Reflect.has(obj, 'x')
+    `)).toHaveLength(0)
+  })
+
+  it('Reflect.ownKeys returns string array', () => {
+    expect(errors(`
+      const keys: string[] = Reflect.ownKeys({})
+    `)).toHaveLength(0)
+  })
+
+  it('Reflect.get returns any', () => {
+    expect(errors(`
+      const val = Reflect.get({ x: 1 }, 'x')
+    `)).toHaveLength(0)
+  })
+
+  it('Reflect.set returns boolean', () => {
+    expect(errors(`
+      const obj = {}
+      const ok: boolean = Reflect.set(obj, 'x', 1)
+    `)).toHaveLength(0)
+  })
+
+  it('Reflect.deleteProperty returns boolean', () => {
+    expect(errors(`
+      const ok: boolean = Reflect.deleteProperty({}, 'key')
+    `)).toHaveLength(0)
+  })
+})
+
+// ── FinalizationRegistry ──────────────────────────────────────────────────────
+
+describe('FinalizationRegistry — ECMA-262 §26.2', () => {
+  it('new FinalizationRegistry — no error', () => {
+    expect(errors(`
+      const registry = new FinalizationRegistry((value: string) => {})
+    `)).toHaveLength(0)
+  })
+
+  it('register method — no error', () => {
+    expect(errors(`
+      const registry = new FinalizationRegistry((val: string) => {})
+      const target = {}
+      registry.register(target, 'token')
+    `)).toHaveLength(0)
+  })
+})
+
+// ── AbortController / AbortSignal ─────────────────────────────────────────────
+
+describe('AbortController/AbortSignal — Web API', () => {
+  it('new AbortController — no error', () => {
+    expect(errors(`
+      const ctrl = new AbortController()
+    `)).toHaveLength(0)
+  })
+
+  it('AbortController.signal.aborted is boolean', () => {
+    expect(errors(`
+      const ctrl = new AbortController()
+      const aborted: boolean = ctrl.signal.aborted
+    `)).toHaveLength(0)
+  })
+
+  it('AbortController.abort() — no error', () => {
+    expect(errors(`
+      const ctrl = new AbortController()
+      ctrl.abort()
+    `)).toHaveLength(0)
+  })
+})
+
+// ── URL / URLSearchParams ─────────────────────────────────────────────────────
+
+describe('URL / URLSearchParams — Web API', () => {
+  it('new URL — no error', () => {
+    expect(errors(`
+      const url = new URL('https://example.com')
+    `)).toHaveLength(0)
+  })
+
+  it('URL annotation — no error', () => {
+    expect(errors(`
+      const url: URL = new URL('https://example.com')
+      const href: string = url.href
+    `)).toHaveLength(0)
+  })
+
+  it('new URLSearchParams — no error', () => {
+    expect(errors(`
+      const params = new URLSearchParams('key=val')
+    `)).toHaveLength(0)
+  })
+
+  it('URLSearchParams.get returns string or null', () => {
+    expect(errors(`
+      const params = new URLSearchParams()
+      const val = params.get('key')
+    `)).toHaveLength(0)
+  })
+})
+
+// ── TextEncoder / TextDecoder ─────────────────────────────────────────────────
+
+describe('TextEncoder / TextDecoder — Web API', () => {
+  it('new TextEncoder — no error', () => {
+    expect(errors(`
+      const enc = new TextEncoder()
+      const bytes = enc.encode('hello')
+    `)).toHaveLength(0)
+  })
+
+  it('new TextDecoder — no error', () => {
+    expect(errors(`
+      const dec = new TextDecoder('utf-8')
+      const str: string = dec.decode(new Uint8Array([104]))
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Atomics API ───────────────────────────────────────────────────────────────
+
+describe('Atomics — ECMA-262 §25.4', () => {
+  it('Atomics.load returns number', () => {
+    expect(errors(`
+      const buf = new SharedArrayBuffer(4)
+      const arr = new Int32Array(buf)
+      const val: number = Atomics.load(arr, 0)
+    `)).toHaveLength(0)
+  })
+
+  it('Atomics.isLockFree returns boolean', () => {
+    expect(errors(`
+      const free: boolean = Atomics.isLockFree(4)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Proxy ─────────────────────────────────────────────────────────────────────
+
+describe('Proxy — ECMA-262 §28.2', () => {
+  it('new Proxy — returns any', () => {
+    expect(errors(`
+      const p = new Proxy({}, {})
+    `)).toHaveLength(0)
+  })
+
+  it('Proxy.revocable — no error', () => {
+    expect(errors(`
+      const r = Proxy.revocable({}, {})
+    `)).toHaveLength(0)
+  })
+})

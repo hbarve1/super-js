@@ -19,7 +19,7 @@ import type {
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType, ArrayType, ObjectType,
-  PromiseType, DynamicType,
+  PromiseType, DynamicType, GeneratorType, TupleType, NeverType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -32,6 +32,8 @@ const T_NULL:      NullType      = { kind: 'null' }
 const T_UNDEFINED: UndefinedType = { kind: 'undefined' }
 const T_VOID:      VoidType      = { kind: 'void' }
 const T_DYNAMIC:   DynamicType   = { kind: 'dynamic' }
+const _T_NEVER: NeverType = { kind: 'never' }
+void _T_NEVER  // reserved for future use
 
 // ── Class member visibility info ──────────────────────────────────────────────
 
@@ -211,9 +213,68 @@ function resolveType(node: t.TSType | null | undefined): Type {
         case 'ConstructorParameters':
           return T_ANY
         case 'Iterable':
-        case 'IterableIterator':
         case 'AsyncIterable':
           return { kind: 'array', elementType: args[0] ?? T_ANY }
+        case 'Generator':
+          return { kind: 'generator', yieldType: args[0] ?? T_ANY, returnType: args[1] ?? T_ANY, nextType: args[2] ?? T_ANY, async: false } as GeneratorType
+        case 'AsyncGenerator':
+          return { kind: 'generator', yieldType: args[0] ?? T_ANY, returnType: args[1] ?? T_ANY, nextType: args[2] ?? T_ANY, async: true } as GeneratorType
+        case 'IterableIterator':
+        case 'Iterator':
+          return { kind: 'generator', yieldType: args[0] ?? T_ANY, returnType: T_ANY, nextType: T_ANY, async: false } as GeneratorType
+        case 'AsyncIterableIterator':
+        case 'AsyncIterator':
+          return { kind: 'generator', yieldType: args[0] ?? T_ANY, returnType: T_ANY, nextType: T_ANY, async: true } as GeneratorType
+        // Typed arrays — ECMA-262 §23.2
+        case 'Int8Array': case 'Uint8Array': case 'Int16Array': case 'Uint16Array':
+        case 'Int32Array': case 'Uint32Array': case 'Uint8ClampedArray':
+        case 'Float32Array': case 'Float64Array': case 'Float16Array':
+          return { kind: 'object', brand: name, properties: new Map<string, Type>([
+            ['length', T_NUMBER], ['byteLength', T_NUMBER], ['byteOffset', T_NUMBER],
+            ['buffer', T_ANY],
+          ]) }
+        case 'BigInt64Array': case 'BigUint64Array':
+          return { kind: 'object', brand: name, properties: new Map<string, Type>([
+            ['length', T_NUMBER], ['byteLength', T_NUMBER], ['byteOffset', T_NUMBER],
+            ['buffer', T_ANY],
+          ]) }
+        case 'DataView':
+          return { kind: 'object', brand: 'DataView', properties: new Map<string, Type>([
+            ['byteLength', T_NUMBER], ['byteOffset', T_NUMBER], ['buffer', T_ANY],
+          ]) }
+        case 'ArrayBuffer':
+        case 'SharedArrayBuffer':
+          return { kind: 'object', brand: name, properties: new Map<string, Type>([
+            ['byteLength', T_NUMBER],
+          ]) }
+        case 'FinalizationRegistry':
+          return { kind: 'object', brand: 'FinalizationRegistry', properties: new Map() }
+        case 'AbortController':
+          return { kind: 'object', brand: 'AbortController', properties: new Map<string, Type>([
+            ['signal', { kind: 'object', brand: 'AbortSignal', properties: new Map<string, Type>([
+              ['aborted', T_BOOLEAN], ['reason', T_ANY],
+            ]) } as Type],
+          ]) }
+        case 'AbortSignal':
+          return { kind: 'object', brand: 'AbortSignal', properties: new Map<string, Type>([
+            ['aborted', T_BOOLEAN], ['reason', T_ANY],
+          ]) }
+        case 'URL':
+          return { kind: 'object', brand: 'URL', properties: new Map<string, Type>([
+            ['href', T_STRING], ['hostname', T_STRING], ['pathname', T_STRING],
+            ['search', T_STRING], ['hash', T_STRING], ['origin', T_STRING],
+            ['protocol', T_STRING], ['port', T_STRING], ['host', T_STRING],
+            ['username', T_STRING], ['password', T_STRING],
+            ['searchParams', T_ANY],
+          ]) }
+        case 'URLSearchParams':
+          return { kind: 'object', brand: 'URLSearchParams', properties: new Map() }
+        case 'Proxy':
+          return T_ANY
+        case 'ProxyHandler':
+          return { kind: 'object', properties: new Map() }
+        case 'PropertyDescriptor':
+          return { kind: 'object', properties: new Map() }
         case 'RegExp': return { kind: 'object', brand: 'RegExp', properties: new Map<string, Type>([
           ['source', T_STRING], ['flags', T_STRING], ['global', T_BOOLEAN],
           ['ignoreCase', T_BOOLEAN], ['multiline', T_BOOLEAN], ['lastIndex', T_NUMBER],
@@ -626,6 +687,57 @@ function inferStdlibMethodCall(
     if (globalName === 'Iterator') {
       if (methodName === 'from') return T_ANY
     }
+
+    // Reflect static methods — ECMA-262 §28.1
+    if (globalName === 'Reflect') {
+      switch (methodName) {
+        case 'apply': return T_ANY
+        case 'construct': return T_ANY
+        case 'has': case 'isExtensible': case 'preventExtensions':
+        case 'deleteProperty': case 'defineProperty': case 'setPrototypeOf': return T_BOOLEAN
+        case 'get': return T_ANY
+        case 'set': return T_BOOLEAN
+        case 'ownKeys': return { kind: 'array', elementType: T_STRING }
+        case 'getOwnPropertyDescriptor': return T_ANY
+        case 'getPrototypeOf': return T_ANY
+      }
+    }
+
+    // Atomics static methods — ECMA-262 §25.4
+    if (globalName === 'Atomics') {
+      switch (methodName) {
+        case 'load': case 'store': case 'add': case 'sub': case 'and':
+        case 'or': case 'xor': case 'exchange': case 'compareExchange': return T_NUMBER
+        case 'isLockFree': return T_BOOLEAN
+        case 'wait': return T_STRING
+        case 'waitAsync': return { kind: 'promise', valueType: T_STRING }
+        case 'notify': return T_NUMBER
+        case 'pause': return T_VOID
+      }
+    }
+
+    // Proxy static methods — ECMA-262 §28.2
+    if (globalName === 'Proxy') {
+      if (methodName === 'revocable') return { kind: 'object', properties: new Map<string, Type>([
+        ['proxy', T_ANY], ['revoke', { kind: 'function', params: [], returnType: T_VOID } as Type],
+      ]) }
+    }
+
+    // URL static methods
+    if (globalName === 'URL') {
+      if (methodName === 'canParse') return T_BOOLEAN
+      if (methodName === 'parse') return makeUnion({ kind: 'object', brand: 'URL', properties: new Map() }, T_NULL)
+    }
+
+    // ArrayBuffer static methods
+    if (globalName === 'ArrayBuffer') {
+      if (methodName === 'isView') return T_BOOLEAN
+    }
+
+    // TextEncoder / TextDecoder static
+    if (globalName === 'TextEncoder' || globalName === 'TextDecoder') {
+      // No common static methods
+    }
   }
 
   // ── Map<K,V> instance methods — ECMA-262 §24.1 ─────────────────────────────
@@ -713,6 +825,117 @@ function inferStdlibMethodCall(
     }
   }
 
+  // ── Typed Array instance methods — ECMA-262 §23.2 ──────────────────────────
+  const TYPED_ARRAY_BRANDS = new Set([
+    'Int8Array', 'Uint8Array', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array',
+    'Uint8ClampedArray', 'Float32Array', 'Float64Array', 'Float16Array',
+    'BigInt64Array', 'BigUint64Array',
+  ])
+  if (objType.kind === 'object' && TYPED_ARRAY_BRANDS.has((objType as ObjectType).brand ?? '')) {
+    const isBigInt = (objType as ObjectType).brand?.startsWith('BigInt') || (objType as ObjectType).brand?.startsWith('BigUint')
+    const elemType: Type = isBigInt ? { kind: 'bigint' } : T_NUMBER
+    switch (methodName) {
+      case 'set': return T_VOID
+      case 'slice': case 'subarray': return objType
+      case 'fill': return objType
+      case 'copyWithin': return objType
+      case 'indexOf': case 'lastIndexOf': return T_NUMBER
+      case 'includes': return T_BOOLEAN
+      case 'join': return T_STRING
+      case 'reverse': return objType
+      case 'sort': return objType
+      case 'map': return { kind: 'object', brand: (objType as ObjectType).brand, properties: (objType as ObjectType).properties }
+      case 'filter': return objType
+      case 'forEach': return T_VOID
+      case 'find': return makeUnion(elemType, T_UNDEFINED)
+      case 'findIndex': return T_NUMBER
+      case 'findLast': return makeUnion(elemType, T_UNDEFINED)
+      case 'findLastIndex': return T_NUMBER
+      case 'some': case 'every': return T_BOOLEAN
+      case 'reduce': case 'reduceRight': return T_ANY
+      case 'keys': case 'values': case 'entries': return T_ANY
+      case 'at': return makeUnion(elemType, T_UNDEFINED)
+      case 'toReversed': case 'toSorted': return objType
+      case 'with': return objType
+    }
+  }
+
+  // ── FinalizationRegistry methods ─────────────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'FinalizationRegistry') {
+    switch (methodName) {
+      case 'register': return T_VOID
+      case 'unregister': return T_BOOLEAN
+    }
+  }
+
+  // ── AbortController / AbortSignal methods ────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'AbortController') {
+    if (methodName === 'abort') return T_VOID
+  }
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'AbortSignal') {
+    if (methodName === 'throwIfAborted') return T_VOID
+    if (methodName === 'addEventListener' || methodName === 'removeEventListener') return T_VOID
+  }
+
+  // ── DataView methods — ECMA-262 §25.3 ────────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'DataView') {
+    if (methodName.startsWith('get')) return T_NUMBER
+    if (methodName.startsWith('set')) return T_VOID
+  }
+
+  // ── ArrayBuffer / SharedArrayBuffer methods ─────────────────────────────────
+  if (objType.kind === 'object' && ((objType as ObjectType).brand === 'ArrayBuffer' || (objType as ObjectType).brand === 'SharedArrayBuffer')) {
+    switch (methodName) {
+      case 'slice': return objType
+      case 'transfer': case 'transferToFixedLength': return objType
+      case 'resize': return T_VOID
+    }
+  }
+
+  // ── TextEncoder / TextDecoder methods ────────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'TextEncoder') {
+    if (methodName === 'encode') return { kind: 'object', brand: 'Uint8Array', properties: new Map<string, Type>([['length', T_NUMBER]]) }
+    if (methodName === 'encodeInto') return { kind: 'object', properties: new Map<string, Type>([['read', T_NUMBER], ['written', T_NUMBER]]) }
+  }
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'TextDecoder') {
+    if (methodName === 'decode') return T_STRING
+  }
+
+  // ── URLSearchParams methods ───────────────────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'URLSearchParams') {
+    switch (methodName) {
+      case 'get': return makeUnion(T_STRING, T_NULL)
+      case 'getAll': return { kind: 'array', elementType: T_STRING }
+      case 'has': return T_BOOLEAN
+      case 'set': case 'append': case 'delete': return T_VOID
+      case 'toString': return T_STRING
+      case 'keys': case 'values': case 'entries': return T_ANY
+      case 'forEach': return T_VOID
+    }
+  }
+
+  // ── URL instance methods ──────────────────────────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'URL') {
+    if (methodName === 'toString' || methodName === 'toJSON') return T_STRING
+  }
+
+  // ── Generator instance methods — ECMA-262 §27.5 ────────────────────────────
+  if (objType.kind === 'generator') {
+    const gen = objType as GeneratorType
+    switch (methodName) {
+      case 'next': return { kind: 'object', properties: new Map<string, Type>([
+        ['value', makeUnion(gen.yieldType, gen.returnType)],
+        ['done', T_BOOLEAN],
+      ]) }
+      case 'return': return { kind: 'object', properties: new Map<string, Type>([
+        ['value', T_ANY], ['done', T_BOOLEAN],
+      ]) }
+      case 'throw': return { kind: 'object', properties: new Map<string, Type>([
+        ['value', T_ANY], ['done', T_BOOLEAN],
+      ]) }
+    }
+  }
+
   // ── Object-type method resolution ───────────────────────────────────────────
   if (objType.kind === 'object') {
     const methodType = (objType as ObjectType).properties.get(methodName)
@@ -761,6 +984,17 @@ function inferStdlibProp(objType: Type, objNode: t.Expression | t.Super | null, 
           propName === 'toPrimitive' || propName === 'toStringTag' ||
           propName === 'species' || propName === 'hasInstance') return { kind: 'symbol' }
     }
+  }
+
+  // Typed array length/buffer properties
+  const TYPED_ARRAY_BRANDS_2 = new Set([
+    'Int8Array', 'Uint8Array', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array',
+    'Uint8ClampedArray', 'Float32Array', 'Float64Array', 'Float16Array',
+    'BigInt64Array', 'BigUint64Array',
+  ])
+  if (objType.kind === 'object' && TYPED_ARRAY_BRANDS_2.has((objType as ObjectType).brand ?? '')) {
+    if (propName === 'length' || propName === 'byteLength' || propName === 'byteOffset' || propName === 'BYTES_PER_ELEMENT') return T_NUMBER
+    if (propName === 'buffer') return T_ANY
   }
 
   return null
@@ -852,9 +1086,17 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     // If all elements share the same type T, infer Array<T>; otherwise Array<any>.
     case 'ArrayExpression': {
       if (node.elements.length === 0) return { kind: 'array', elementType: T_ANY }
-      const elTypes = node.elements.map(el =>
-        el && t.isExpression(el) ? inferExprType(el, env) : T_ANY
-      )
+      const elTypes = node.elements.map(el => {
+        if (!el) return T_ANY
+        if (t.isSpreadElement(el)) {
+          // Spread in array: [...arr] — element type comes from the spread source
+          const spreadType = inferExprType(el.argument as t.Expression, env)
+          if (spreadType.kind === 'array') return (spreadType as ArrayType).elementType
+          if (spreadType.kind === 'string') return T_STRING
+          return T_ANY
+        }
+        return t.isExpression(el) ? inferExprType(el, env) : T_ANY
+      })
       const firstKind = elTypes[0].kind
       const allSame = elTypes.every(et => et.kind === firstKind)
       return { kind: 'array', elementType: allSame ? elTypes[0] : T_ANY } satisfies ArrayType
@@ -899,13 +1141,25 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
 
     // Object literal — ECMA-262 §13.2.5 Object Initializer
     // Build ObjectType with properties map from key → inferred value type.
+    // Spread elements ({ ...src }) merge source properties into this object.
     case 'ObjectExpression': {
       const properties = new Map<string, Type>()
       for (const prop of node.properties) {
+        // Spread element: { ...src } — merge src's properties
+        if (t.isSpreadElement(prop)) {
+          const spreadType = inferExprType(prop.argument as t.Expression, env)
+          if (spreadType.kind === 'object') {
+            for (const [k, v] of (spreadType as ObjectType).properties) {
+              properties.set(k, v)
+            }
+          }
+          continue
+        }
         if (!t.isObjectProperty(prop)) continue
         let key: string | null = null
         if (t.isIdentifier(prop.key)) key = prop.key.name
         else if (t.isStringLiteral(prop.key)) key = prop.key.value
+        else if (t.isNumericLiteral(prop.key)) key = String(prop.key.value)
         if (!key) continue
         const valType = t.isExpression(prop.value)
           ? inferExprType(prop.value, env)
@@ -1043,7 +1297,53 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
             ['global', T_BOOLEAN as Type], ['ignoreCase', T_BOOLEAN as Type],
             ['multiline', T_BOOLEAN as Type], ['lastIndex', T_NUMBER as Type],
           ]) }
-          case 'URL': return { kind: 'object', properties: new Map() }
+          case 'URL': return { kind: 'object', brand: 'URL', properties: new Map<string, Type>([
+            ['href', T_STRING], ['hostname', T_STRING], ['pathname', T_STRING],
+            ['search', T_STRING], ['hash', T_STRING], ['origin', T_STRING],
+            ['protocol', T_STRING], ['port', T_STRING], ['host', T_STRING],
+            ['username', T_STRING], ['password', T_STRING],
+            ['searchParams', T_ANY],
+          ]) }
+          // Typed arrays — ECMA-262 §23.2
+          case 'Int8Array': case 'Uint8Array': case 'Int16Array': case 'Uint16Array':
+          case 'Int32Array': case 'Uint32Array': case 'Uint8ClampedArray':
+          case 'Float32Array': case 'Float64Array': case 'Float16Array':
+          case 'BigInt64Array': case 'BigUint64Array':
+            return { kind: 'object', brand: name, properties: new Map<string, Type>([
+              ['length', T_NUMBER], ['byteLength', T_NUMBER], ['byteOffset', T_NUMBER],
+              ['buffer', T_ANY],
+            ]) }
+          case 'DataView':
+            return { kind: 'object', brand: 'DataView', properties: new Map<string, Type>([
+              ['byteLength', T_NUMBER], ['byteOffset', T_NUMBER], ['buffer', T_ANY],
+            ]) }
+          case 'ArrayBuffer':
+          case 'SharedArrayBuffer':
+            return { kind: 'object', brand: name, properties: new Map<string, Type>([['byteLength', T_NUMBER]]) }
+          case 'FinalizationRegistry':
+            return { kind: 'object', brand: 'FinalizationRegistry', properties: new Map<string, Type>([
+              ['register', { kind: 'function', params: [], returnType: T_VOID } as Type],
+              ['unregister', { kind: 'function', params: [], returnType: T_BOOLEAN } as Type],
+            ]) }
+          case 'AbortController':
+            return { kind: 'object', brand: 'AbortController', properties: new Map<string, Type>([
+              ['signal', { kind: 'object', brand: 'AbortSignal', properties: new Map<string, Type>([
+                ['aborted', T_BOOLEAN], ['reason', T_ANY],
+              ]) } as Type],
+              ['abort', { kind: 'function', params: [], returnType: T_VOID } as Type],
+            ]) }
+          case 'Proxy':
+            return T_ANY
+          case 'TextEncoder':
+            return { kind: 'object', brand: 'TextEncoder', properties: new Map<string, Type>([
+              ['encoding', T_STRING],
+            ]) }
+          case 'TextDecoder':
+            return { kind: 'object', brand: 'TextDecoder', properties: new Map<string, Type>([
+              ['encoding', T_STRING],
+            ]) }
+          case 'URLSearchParams':
+            return { kind: 'object', brand: 'URLSearchParams', properties: new Map() }
         }
         // Look up constructor in env — for user-defined classes
         const ctorType = env.get(name)
@@ -1072,9 +1372,11 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return T_ANY
     }
 
-    // YieldExpression — ECMA-262 §15.5
+    // YieldExpression — ECMA-262 §15.5.1
+    // The *result* of a yield expression is the value passed to generator.next(value)
+    // which is the generator's nextType. We return any for now (gradual).
     case 'YieldExpression':
-      return T_ANY  // Generator yield type inference requires tracking the generator type
+      return T_ANY
 
     // SequenceExpression — `a, b, c` → type of last expression
     case 'SequenceExpression': {
@@ -1121,6 +1423,14 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           : T_ANY,
         optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
       }))
+      // Generator function expression: function*() {}
+      if (fe.generator) {
+        const resolvedReturn = resolveType(returnAnnotation)
+        // If annotated as Generator<Y,R,N>, use that
+        if (resolvedReturn.kind === 'generator') return resolvedReturn as GeneratorType
+        // Otherwise yield type is the declared return (or any), wrapped in Generator
+        return { kind: 'generator', yieldType: resolvedReturn.kind !== 'any' ? resolvedReturn : T_ANY, returnType: T_VOID, nextType: T_ANY, async: false } as GeneratorType
+      }
       return {
         kind: 'function',
         params,
@@ -1160,6 +1470,12 @@ function isConsistent(a: Type, b: Type): boolean {
   // Tuple is consistent with array (tuple is a subtype of array)
   if (a.kind === 'tuple' && b.kind === 'array') return true
   if (a.kind === 'array' && b.kind === 'tuple') return true
+
+  // Generator is consistent with array (generators are iterable)
+  if (a.kind === 'generator' && b.kind === 'array') return true
+  if (a.kind === 'array' && b.kind === 'generator') return true
+  // Generator is consistent with any iterable-like type
+  if (a.kind === 'generator' && b.kind === 'object') return true
 
   // Exact match
   if (a.kind === b.kind) {
@@ -1704,14 +2020,57 @@ export class TypeChecker {
       const key = t.isIdentifier(prop.key) ? prop.key.name
         : t.isStringLiteral(prop.key) ? prop.key.value
         : null
-      const binding = t.isIdentifier(prop.value) ? prop.value.name : null
-      if (!key || !binding) continue
+      if (!key) continue
 
       const propType = objType.kind === 'object'
         ? (objType as ObjectType).properties.get(key) ?? T_ANY
         : T_ANY
 
-      this.env.set(binding, propType)
+      const val = prop.value
+      if (t.isIdentifier(val)) {
+        // { x } or { x: y }
+        this.env.set(val.name, propType)
+      } else if (t.isAssignmentPattern(val) && t.isIdentifier(val.left)) {
+        // { x = default } or { x: y = default }
+        this.env.set(val.left.name, propType)
+      } else if (t.isObjectPattern(val)) {
+        // Nested object destructuring: { x: { y, z } }
+        this.checkObjectDestructuring({
+          id: val,
+          init: null,
+          type: 'VariableDeclarator',
+        } as unknown as t.VariableDeclarator)
+        // Override env to use the actual propType
+        const nestedEnv = propType.kind === 'object' ? propType : T_ANY
+        for (const nestedProp of val.properties) {
+          if (!t.isObjectProperty(nestedProp)) continue
+          const nestedKey = t.isIdentifier(nestedProp.key) ? nestedProp.key.name : null
+          if (!nestedKey) continue
+          const nestedBinding = t.isIdentifier(nestedProp.value) ? nestedProp.value.name
+            : (t.isAssignmentPattern(nestedProp.value) && t.isIdentifier((nestedProp.value as t.AssignmentPattern).left))
+              ? ((nestedProp.value as t.AssignmentPattern).left as t.Identifier).name
+              : null
+          if (!nestedBinding) continue
+          const nestedType = nestedEnv.kind === 'object'
+            ? (nestedEnv as ObjectType).properties.get(nestedKey) ?? T_ANY
+            : T_ANY
+          this.env.set(nestedBinding, nestedType)
+        }
+      } else if (t.isArrayPattern(val)) {
+        // Nested array destructuring: { x: [a, b] }
+        const elemType = propType.kind === 'array' ? (propType as ArrayType).elementType : T_ANY
+        if (t.isArrayPattern(val)) {
+          for (let i = 0; i < val.elements.length; i++) {
+            const elem = val.elements[i]
+            if (!elem) continue
+            const elemT = propType.kind === 'tuple'
+              ? ((propType as TupleType).elements[i] ?? T_ANY)
+              : elemType
+            if (t.isIdentifier(elem)) this.env.set(elem.name, elemT)
+            else if (t.isAssignmentPattern(elem) && t.isIdentifier(elem.left)) this.env.set(elem.left.name, elemT)
+          }
+        }
+      }
     }
   }
 
@@ -1954,6 +2313,27 @@ export class TypeChecker {
       kind: 'function',
       params,
       returnType: resolveType(returnAnnotation),
+    }
+
+    // Generator function: register as GeneratorType (the function returns a generator)
+    if (node.generator) {
+      const resolvedReturn = fnType.returnType
+      // Determine yield type from declared Generator<Y,R,N> annotation or use any
+      const genYieldType = resolvedReturn.kind === 'generator'
+        ? (resolvedReturn as GeneratorType).yieldType
+        : T_ANY
+      const genReturnType = resolvedReturn.kind === 'generator'
+        ? (resolvedReturn as GeneratorType).returnType
+        : T_ANY
+      const genType: GeneratorType = {
+        kind: 'generator',
+        yieldType: genYieldType,
+        returnType: genReturnType,
+        nextType: T_ANY,
+        async: node.async ?? false,
+      }
+      this.env.set(node.id.name, genType)
+      return
     }
 
     this.env.set(node.id.name, fnType)
@@ -2337,14 +2717,56 @@ export class TypeChecker {
       elemType = (rightType as ArrayType).elementType
     } else if (rightType.kind === 'string') {
       elemType = T_STRING
+    } else if (rightType.kind === 'generator') {
+      elemType = (rightType as GeneratorType).yieldType
     }
 
     for (const decl of node.left.declarations) {
       if (t.isIdentifier(decl.id)) {
         this.env.set(decl.id.name, elemType)
-        // Loop vars are block-scoped — track for cleanup
         if (this.blockVarStack.length > 0) {
           this.blockVarStack[this.blockVarStack.length - 1].add(decl.id.name)
+        }
+      } else if (t.isObjectPattern(decl.id)) {
+        // for (const { a, b } of arr) — destructure each iteration value
+        const iterObjType: Type = elemType.kind === 'object' ? elemType : T_ANY
+        for (const prop of decl.id.properties) {
+          if (t.isRestElement(prop)) {
+            if (t.isIdentifier(prop.argument)) {
+              this.env.set(prop.argument.name, T_ANY)
+              if (this.blockVarStack.length > 0) this.blockVarStack[this.blockVarStack.length - 1].add(prop.argument.name)
+            }
+            continue
+          }
+          if (!t.isObjectProperty(prop)) continue
+          const key = t.isIdentifier(prop.key) ? prop.key.name
+            : t.isStringLiteral(prop.key) ? prop.key.value : null
+          const binding = t.isIdentifier(prop.value) ? prop.value.name
+            : (t.isAssignmentPattern(prop.value) && t.isIdentifier((prop.value as t.AssignmentPattern).left))
+              ? ((prop.value as t.AssignmentPattern).left as t.Identifier).name
+              : null
+          if (!key || !binding) continue
+          const propType = iterObjType.kind === 'object'
+            ? (iterObjType as ObjectType).properties.get(key) ?? T_ANY
+            : T_ANY
+          this.env.set(binding, propType)
+          if (this.blockVarStack.length > 0) this.blockVarStack[this.blockVarStack.length - 1].add(binding)
+        }
+      } else if (t.isArrayPattern(decl.id)) {
+        // for (const [a, b] of arr) — destructure array elements
+        for (let i = 0; i < decl.id.elements.length; i++) {
+          const elem = decl.id.elements[i]
+          if (!elem) continue
+          const elemT = elemType.kind === 'tuple'
+            ? ((elemType as TupleType).elements[i] ?? T_ANY)
+            : (elemType.kind === 'array' ? (elemType as ArrayType).elementType : T_ANY)
+          if (t.isIdentifier(elem)) {
+            this.env.set(elem.name, elemT)
+            if (this.blockVarStack.length > 0) this.blockVarStack[this.blockVarStack.length - 1].add(elem.name)
+          } else if (t.isAssignmentPattern(elem) && t.isIdentifier(elem.left)) {
+            this.env.set(elem.left.name, elemT)
+            if (this.blockVarStack.length > 0) this.blockVarStack[this.blockVarStack.length - 1].add(elem.left.name)
+          }
         }
       }
     }

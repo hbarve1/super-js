@@ -96,6 +96,19 @@ export interface PromiseType {
   valueType: Type
 }
 
+/**
+ * Generator<Y, R, N> — the result of a generator function (function*).
+ * ECMA-262 §27.3 Generator Objects.
+ * Y = yield type, R = return type, N = next input type.
+ */
+export interface GeneratorType {
+  kind: 'generator'
+  yieldType: Type
+  returnType: Type
+  nextType: Type
+  async: boolean
+}
+
 /** `dynamic` — runtime-checked escape hatch (not `any`). Consistent with every type. */
 export interface DynamicType { kind: 'dynamic' }
 
@@ -138,6 +151,7 @@ export type Type =
   | DynamicType
   | TypeParamType
   | PromiseType
+  | GeneratorType
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 
