@@ -349,6 +349,66 @@ Deadline: 2026-06-05T06:00:00Z
 
 ---
 
+## Examples Tracking
+
+SJS example files in `specs/002-ecmascript-features/examples/`:
+
+| Task | Example File | Done |
+|---|---|---|
+| B1 — dynamic type | dynamic-type.sjs | [x] |
+| B2 — struct variants | sum-types-struct.sjs | [x] |
+| S1 — if/else narrowing | if-else-narrowing.sjs | [x] |
+| S2 — loops | loops.sjs | [x] |
+| S3 — try/catch | try-catch.sjs | [x] |
+| S4 — import/export | import-export.sjs | [x] |
+| S5 — block scoping | block-scoping.sjs | [x] |
+| L1 — Array methods | array-methods.sjs | [x] |
+| L2 — String methods | string-methods.sjs | [x] |
+| L3 — Object/Math | object-math.sjs | [x] |
+| L4 — Promise chains | promise-chains.sjs | [x] |
+| L5 — Map/Set | map-set.sjs | [x] |
+| L6 — Error/JSON/console | error-json-console.sjs | [x] |
+| L7 — Symbol/Date | symbol-date.sjs | [x] |
+| T1 — Tuple types | tuple-types.sjs | [x] |
+| T2 — Index signatures | index-signatures.sjs | [x] |
+| T3 — Type guards | type-narrowing.sjs | [x] (existing) |
+| T4 — readonly | readonly.sjs | [x] |
+| T5 — null safety T? | null-safety.sjs | [x] |
+| T6 — new expressions | new-expressions.sjs | [x] |
+| E1 — ++/-- | increment-decrement.sjs | [x] |
+| E2 — logical assign | logical-assignment.sjs | [x] |
+| E3 — compound assign | compound-assignment.sjs | [x] |
+| E4 — import.meta | import-meta.sjs | [x] |
+| E5 — generators/yield | generators.sjs | [x] |
+| SJS1 — error codes | bigint-safety.sjs | [x] (existing) |
+| SJS2 — match guards | match-guards.sjs | [x] |
+| SJS3 — nested patterns | nested-patterns.sjs | [x] |
+| SJS4 — access modifiers | access-modifiers.sjs | [x] |
+| SJS5 — implements | implements.sjs | [x] |
+| P3 — lint rules | lint-rules.sjs | [x] |
+| — | array-at.sjs | [x] (existing) |
+| — | array-literals.sjs | [x] (existing) |
+| — | async-types.sjs | [x] (existing) |
+| — | binary-expressions.sjs | [x] (existing) |
+| — | destructuring.sjs | [x] (existing) |
+| — | destructuring-types.sjs | [x] (existing) |
+| — | error-cause.sjs | [x] (existing) |
+| — | generics.sjs | [x] (existing) |
+| — | groupby.sjs | [x] (existing) |
+| — | iterators.sjs | [x] (existing) |
+| — | logical-conditional.sjs | [x] (existing) |
+| — | object-literals.sjs | [x] (existing) |
+| — | optional-chaining.sjs | [x] (existing) |
+| — | promise-resolvers.sjs | [x] (existing) |
+| — | set-methods.sjs | [x] (existing) |
+| — | spread-types.sjs | [x] (existing) |
+| — | unary-operators.sjs | [x] (existing) |
+| — | weak-refs.sjs | [x] (existing) |
+
+**Total: 49 example files — all tasks covered.**
+
+---
+
 ## Completion Tracking
 
 Update this section after each phase:
@@ -363,6 +423,7 @@ Update this section after each phase:
 | Phase 5 — SJS Features | 5 | 5 | 100% |
 | Phase 6 — Pipeline | 3 | 3 | 100% |
 | **TOTAL** | **34** | **34** | **100%** |
+| **Examples** | **49** | **49** | **100%** |
 
 ---
 
