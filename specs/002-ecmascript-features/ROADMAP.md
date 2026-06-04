@@ -325,9 +325,9 @@ Deadline: 2026-06-05T06:00:00Z
 - [x] `prot` → accessible in subclasses
 - [x] SJS-E011: access violation
 
-### SJS5: `implements` clause checking [ ]
-- [ ] Verify class structurally conforms to all declared interfaces
-- [ ] Error if method/property missing or type mismatch
+### SJS5: `implements` clause checking [x]
+- [x] Verify class structurally conforms to all declared interfaces
+- [x] Error if method/property missing or type mismatch
 
 ---
 
@@ -360,9 +360,9 @@ Update this section after each phase:
 | Phase 2 — Stdlib | 7 | 6 | 86% |
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
-| Phase 5 — SJS Features | 5 | 4 | 80% |
+| Phase 5 — SJS Features | 5 | 5 | 100% |
 | Phase 6 — Pipeline | 3 | 3 | 100% |
-| **TOTAL** | **34** | **32** | **94%** |
+| **TOTAL** | **34** | **33** | **97%** |
 
 ---
 

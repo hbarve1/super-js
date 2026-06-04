@@ -1077,6 +1077,8 @@ export class TypeChecker {
   private classInstanceBindings: Map<string, string> = new Map()
   // Name of the class whose method we're currently inside (for this.field access checks)
   private currentClassMethodName: string | null = null
+  // Interface registry: interfaceName → Set of required member names (SJS5)
+  private interfaceRegistry: Map<string, Set<string>> = new Map()
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1099,6 +1101,7 @@ export class TypeChecker {
     this.classRegistry = new Map()
     this.classInstanceBindings = new Map()
     this.currentClassMethodName = null
+    this.interfaceRegistry = new Map()
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1196,6 +1199,21 @@ export class TypeChecker {
       case 'ObjectMethod':
         if ((path.node as t.ObjectMethod).async) this.asyncDepth++
         break
+      case 'TSInterfaceDeclaration': {
+        // SJS5: register interface members for implements checking
+        const iface = path.node as t.TSInterfaceDeclaration
+        const ifaceName = iface.id.name
+        if (!this.interfaceRegistry.has(ifaceName)) {
+          const members = new Set<string>()
+          for (const member of iface.body.body) {
+            if ((t.isTSPropertySignature(member) || t.isTSMethodSignature(member)) && t.isIdentifier(member.key)) {
+              members.add(member.key.name)
+            }
+          }
+          this.interfaceRegistry.set(ifaceName, members)
+        }
+        break
+      }
       case 'ClassDeclaration':
       case 'ClassExpression': {
         const cls = path.node as t.ClassDeclaration | t.ClassExpression
@@ -1211,6 +1229,8 @@ export class TypeChecker {
           this.classRegistry.set(className, members)
         }
         this.classContextStack.push(className)
+        // SJS5: verify implements clauses
+        this.checkImplementsClauses(path as NodePath<t.ClassDeclaration | t.ClassExpression>)
         break
       }
       case 'AwaitExpression':
@@ -2199,6 +2219,49 @@ export class TypeChecker {
       node: path.node,
       specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md',
     })
+  }
+
+  // ── Rule TC-SJS5: implements clause structural conformance ───────────────────
+
+  /**
+   * Verifies that a class body contains all members required by each implemented interface.
+   * Emits SJS-E012 for each missing member.
+   */
+  private checkImplementsClauses(path: NodePath<t.ClassDeclaration | t.ClassExpression>): void {
+    const { node } = path
+    if (!node.implements || node.implements.length === 0) return
+
+    const className = node.id?.name ?? '__anonymous__'
+
+    // Collect actual class member names (including abstract/declare members)
+    const classMemberNames = new Set<string>()
+    for (const member of node.body.body) {
+      const isClassMember = t.isClassMethod(member) || t.isClassProperty(member) ||
+        t.isTSDeclareMethod(member)
+      if (isClassMember && t.isIdentifier((member as t.ClassMethod).key)) {
+        classMemberNames.add(((member as t.ClassMethod).key as t.Identifier).name)
+      }
+    }
+
+    for (const impl of node.implements) {
+      if (!t.isTSExpressionWithTypeArguments(impl)) continue
+      if (!t.isIdentifier(impl.expression)) continue
+      const ifaceName = (impl.expression as t.Identifier).name
+      const required = this.interfaceRegistry.get(ifaceName)
+      if (!required) continue
+
+      for (const reqMember of required) {
+        if (!classMemberNames.has(reqMember)) {
+          this.report({
+            code: 'SJS-E012',
+            severity: 'error',
+            message: `Class '${className}' does not implement member '${reqMember}' required by interface '${ifaceName}'.`,
+            node: path.node,
+            specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md',
+          })
+        }
+      }
+    }
   }
 
   /**

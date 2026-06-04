@@ -2413,3 +2413,85 @@ describe('SJS4: access modifier preprocessor + SJS-E011 type checker', () => {
     expect(typeCheckWithExit(src)).toHaveLength(0)
   })
 })
+
+// ── SJS5: implements clause checking ──────────────────────────────────────────
+
+describe('SJS5: implements clause structural conformance', () => {
+  const typeCheckWithExit = (source: string) => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('SJS-E012: class missing method required by interface', () => {
+    const src = `
+      interface Greeter {
+        greet(name: string): string
+      }
+      class BadGreeter implements Greeter {
+        // Missing: greet method
+        sayHello(): string { return "hello" }
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
+
+  it('class with all interface members is valid', () => {
+    const src = `
+      interface Greeter {
+        greet(name: string): string
+      }
+      class HelloGreeter implements Greeter {
+        greet(name: string): string { return "Hello " + name }
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+
+  it('SJS-E012: class missing property required by interface', () => {
+    const src = `
+      interface Named {
+        name: string
+      }
+      class Unnamed implements Named {
+        // Missing: name property
+        id: number = 0
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
+
+  it('class implementing multiple interfaces — all members required', () => {
+    const src = `
+      interface A { foo(): void }
+      interface B { bar(): void }
+      class C implements A, B {
+        foo(): void {}
+        bar(): void {}
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+
+  it('SJS-E012: class missing one of two interface members', () => {
+    const src = `
+      interface A { foo(): void }
+      interface B { bar(): void }
+      class C implements A, B {
+        foo(): void {}
+        // Missing: bar
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
+})
