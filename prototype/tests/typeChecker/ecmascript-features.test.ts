@@ -1024,3 +1024,95 @@ describe('Gap 3: Array literal and index type inference (ECMA-262 §13.2.4)', ()
     expect(errors('const arr: any[] = [1, "a"]')).toHaveLength(0)
   })
 })
+
+// ── Gap 4 — Object literal type inference ─────────────────────────────────────
+
+describe('Gap 4: Object literal type inference (ECMA-262 §13.2.5)', () => {
+  // Basic object literal property types
+  it('{ x: 1 } infers as object with number property x', () => {
+    expect(errors(`
+      const obj = { x: 1 }
+      const n: number = obj.x
+    `)).toHaveLength(0)
+  })
+
+  it('{ name: "Alice" } infers as object with string property', () => {
+    expect(errors(`
+      const obj = { name: "Alice" }
+      const s: string = obj.name
+    `)).toHaveLength(0)
+  })
+
+  it('{ flag: true } infers as object with boolean property', () => {
+    expect(errors(`
+      const obj = { flag: true }
+      const b: boolean = obj.flag
+    `)).toHaveLength(0)
+  })
+
+  it('{ x: 1, y: "hello" } infers correct property types', () => {
+    expect(errors(`
+      const obj = { x: 1, y: "hello" }
+      const n: number = obj.x
+      const s: string = obj.y
+    `)).toHaveLength(0)
+  })
+
+  // Property type mismatch
+  it('number property assigned to string emits SJS-E001', () => {
+    expect(errorCodes(`
+      const obj = { count: 42 }
+      const s: string = obj.count
+    `)).toContain('SJS-E001')
+  })
+
+  it('string property assigned to number emits SJS-E001', () => {
+    expect(errorCodes(`
+      const obj = { label: "hello" }
+      const n: number = obj.label
+    `)).toContain('SJS-E001')
+  })
+
+  // Object matches declared type annotation
+  it('object literal consistent with declared object type annotation', () => {
+    expect(errors(`
+      const obj: { x: number; y: string } = { x: 1, y: "hello" }
+    `)).toHaveLength(0)
+  })
+
+  // Nested objects inferred recursively
+  it('nested object infers inner property types', () => {
+    expect(errors(`
+      const obj = { inner: { value: 99 } }
+      const inner = obj.inner
+      const n: number = inner.value
+    `)).toHaveLength(0)
+  })
+
+  // Unknown property is any (gradual)
+  it('unknown property access is gradual (any)', () => {
+    expect(errors(`
+      const obj = { x: 1 }
+      const u: any = (obj as any).unknownProp
+    `)).toHaveLength(0)
+  })
+
+  // Object spread merges properties
+  it('spread operator merges object properties', () => {
+    expect(errors(`
+      const a = { x: 1 }
+      const b = { y: "hello" }
+      const merged = { ...a, ...b }
+    `)).toHaveLength(0)
+  })
+
+  // Object with string-keyed properties
+  it('object with multiple properties all accessible', () => {
+    expect(errors(`
+      const point = { x: 3, y: 4, z: 5 }
+      const sx: number = point.x
+      const sy: number = point.y
+      const sz: number = point.z
+    `)).toHaveLength(0)
+  })
+})
