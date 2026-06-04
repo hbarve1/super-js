@@ -839,3 +839,106 @@ describe('Gap 1: Binary expression type checking (ECMA-262 §13.15)', () => {
     expect(errorCodes('const b = 1n < 2')).not.toContain('SJS-E004')
   })
 })
+
+// ── Gap 2 — Logical / conditional expression type inference ───────────────────
+
+describe('Gap 2: Logical/conditional expression type inference (ECMA-262 §13.13/§13.14)', () => {
+  // && — short-circuits on falsy left; result is left-or-right union
+  it('a && b where both same type infers that type', () => {
+    expect(errors(`
+      const n: number = 5
+      const r: number = n && n
+    `)).toHaveLength(0)
+  })
+
+  it('a && b where types differ infers union', () => {
+    expect(errors(`
+      const a: string = "hi"
+      const b: number = 42
+      const r: string | number = a && b
+    `)).toHaveLength(0)
+  })
+
+  it('a && b assigned to wrong single type emits SJS-E001', () => {
+    expect(errorCodes(`
+      const a: string = "hi"
+      const b: number = 42
+      const r: string = a && b
+    `)).toContain('SJS-E001')
+  })
+
+  // || — short-circuits on truthy left; result is union
+  it('a || b where both same type infers that type', () => {
+    expect(errors(`
+      const n: number = 5
+      const r: number = n || n
+    `)).toHaveLength(0)
+  })
+
+  it('a || b where types differ infers union', () => {
+    expect(errors(`
+      const a: string = "hi"
+      const b: number = 42
+      const r: string | number = a || b
+    `)).toHaveLength(0)
+  })
+
+  // ?? — nullish coalescing (ECMA-262 §13.13)
+  it('a ?? b where a is T|null returns T when non-null', () => {
+    expect(errors(`
+      const a: string | null = null
+      const b: string = "default"
+      const r: string = a ?? b
+    `)).toHaveLength(0)
+  })
+
+  it('a ?? b where a is T|undefined returns T when non-undefined', () => {
+    expect(errors(`
+      const a: number | undefined = undefined
+      const b: number = 0
+      const r: number = a ?? b
+    `)).toHaveLength(0)
+  })
+
+  it('a ?? b where a is T|null|undefined uses right fallback', () => {
+    expect(errors(`
+      const a: string | null | undefined = null
+      const b: string = "fallback"
+      const r: string = a ?? b
+    `)).toHaveLength(0)
+  })
+
+  it('a ?? b: no error for any ?? T', () => {
+    expect(errors(`
+      const a: any = null
+      const b: number = 5
+      const r: number = a ?? b
+    `)).toHaveLength(0)
+  })
+
+  // Conditional (ternary) — ECMA-262 §13.14
+  it('cond ? a : b where both same type infers that type', () => {
+    expect(errors(`
+      const flag: boolean = true
+      const r: number = flag ? 1 : 2
+    `)).toHaveLength(0)
+  })
+
+  it('cond ? a : b where types differ infers union', () => {
+    expect(errors(`
+      const flag: boolean = true
+      const r: string | number = flag ? "yes" : 0
+    `)).toHaveLength(0)
+  })
+
+  it('ternary with string/number union assigned to number alone emits SJS-E001', () => {
+    expect(errorCodes(`
+      const flag: boolean = true
+      const r: number = flag ? "yes" : 0
+    `)).toContain('SJS-E001')
+  })
+
+  it('ternary literal branches — no error when consistent', () => {
+    expect(errors('const x: string = true ? "a" : "b"')).toHaveLength(0)
+  })
+})
