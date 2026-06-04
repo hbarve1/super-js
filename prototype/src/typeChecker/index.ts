@@ -1065,6 +1065,10 @@ export class TypeChecker {
   private blockVarStack: Set<string>[] = []
   // Narrowing stack: saved types to restore when exiting narrowed scope
   private narrowingStack: Array<Map<string, Type>> = []
+  // Async function nesting depth (for SJS-E008)
+  private asyncDepth: number = 0
+  // Type-only import bindings (for SJS-E009)
+  private typeOnlyBindings: Set<string> = new Set()
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1081,6 +1085,8 @@ export class TypeChecker {
     this.variantTagRegistry = new Map()
     this.blockVarStack = []
     this.narrowingStack = []
+    this.asyncDepth = 0
+    this.typeOnlyBindings = new Set()
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1098,6 +1104,19 @@ export class TypeChecker {
       case 'IfStatement':
         // Restore narrowings applied for this if statement
         this.popNarrowing()
+        break
+      case 'ArrowFunctionExpression':
+        if ((node as t.ArrowFunctionExpression).async) this.asyncDepth--
+        break
+      case 'FunctionDeclaration':
+        if ((node as t.FunctionDeclaration).async) this.asyncDepth--
+        break
+      case 'FunctionExpression':
+        if ((node as t.FunctionExpression).async) this.asyncDepth--
+        break
+      case 'ClassMethod':
+      case 'ObjectMethod':
+        if ((node as t.ClassMethod | t.ObjectMethod).async) this.asyncDepth--
         break
     }
   }
@@ -1130,6 +1149,7 @@ export class TypeChecker {
         this.checkVariableDeclaration(path as NodePath<t.VariableDeclaration>)
         break
       case 'FunctionDeclaration':
+        if ((path.node as t.FunctionDeclaration).async) this.asyncDepth++
         this.registerFunctionDeclaration(path as NodePath<t.FunctionDeclaration>)
         break
       case 'AssignmentExpression':
@@ -1139,7 +1159,42 @@ export class TypeChecker {
         this.checkReturnStatement(path as NodePath<t.ReturnStatement>)
         break
       case 'ArrowFunctionExpression':
+        if ((path.node as t.ArrowFunctionExpression).async) this.asyncDepth++
         this.checkArrowConciseReturn(path as NodePath<t.ArrowFunctionExpression>)
+        break
+      case 'FunctionExpression':
+        if ((path.node as t.FunctionExpression).async) this.asyncDepth++
+        break
+      case 'ClassMethod':
+      case 'ObjectMethod':
+        if ((path.node as t.ClassMethod | t.ObjectMethod).async) this.asyncDepth++
+        break
+      case 'AwaitExpression':
+        // SJS-E008: await used outside an async function
+        if (this.asyncDepth === 0) {
+          this.report({
+            code: 'SJS-E008',
+            severity: 'error',
+            message: `'await' can only be used inside an async function.`,
+            node: path.node,
+            specUrl: 'https://tc39.es/ecma262/#sec-await',
+          })
+        }
+        break
+      case 'Identifier':
+        // SJS-E009: type-only import binding used at runtime
+        if (this.typeOnlyBindings.has((path.node as t.Identifier).name)) {
+          const p = path as NodePath<t.Identifier>
+          if (p.isReferencedIdentifier()) {
+            this.report({
+              code: 'SJS-E009',
+              severity: 'error',
+              message: `'${(path.node as t.Identifier).name}' is a type-only import and cannot be used as a value.`,
+              node: path.node,
+              specUrl: 'https://tc39.es/ecma262/#sec-imports',
+            })
+          }
+        }
         break
       case 'CallExpression':
         this.checkCallExpression(path as NodePath<t.CallExpression>)
@@ -2064,6 +2119,7 @@ export class TypeChecker {
    * https://tc39.es/ecma262/#sec-imports
    */
   private checkImportDeclaration(path: NodePath<t.ImportDeclaration>): void {
+    const isTypeOnlyDecl = path.node.importKind === 'type'
     for (const specifier of path.node.specifiers) {
       let localName: string | null = null
       if (t.isImportDefaultSpecifier(specifier)) {
@@ -2075,6 +2131,12 @@ export class TypeChecker {
       }
       if (localName) {
         this.env.set(localName, T_ANY)
+        // SJS-E009: mark type-only imports (whole decl or individual specifier)
+        const isTypeOnlySpecifier = t.isImportSpecifier(specifier) &&
+          (specifier as t.ImportSpecifier).importKind === 'type'
+        if (isTypeOnlyDecl || isTypeOnlySpecifier) {
+          this.typeOnlyBindings.add(localName)
+        }
       }
     }
   }

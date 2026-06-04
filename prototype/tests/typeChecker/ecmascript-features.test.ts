@@ -2307,4 +2307,29 @@ describe('SJS1: Missing error codes', () => {
   it('SJS-E006: non-null assertion NOT emitted in non-strict mode', () => {
     expect(errors('const x: number | null = 42; const n = x!')).toHaveLength(0)
   })
+
+  it('SJS-E008: await outside async function emits error', () => {
+    expect(errorCodes('const x = await fetch("url")')).toContain('SJS-E008')
+  })
+
+  it('SJS-E008: await inside async function is valid', () => {
+    expect(errors('async function f() { const x = await Promise.resolve(1); return x }')).toHaveLength(0)
+  })
+
+  it('SJS-E008: await inside async arrow is valid', () => {
+    expect(errors('const f = async () => { const x = await Promise.resolve(1); return x }')).toHaveLength(0)
+  })
+
+  it('SJS-E008: await inside async class method is valid', () => {
+    expect(errors('class C { async m() { const x = await Promise.resolve(1); return x } }')).toHaveLength(0)
+  })
+
+  it('SJS-E009: type-only import used as value emits error', () => {
+    const src = `import type { Foo } from './foo'; const x = Foo`
+    expect(errorCodes(src)).toContain('SJS-E009')
+  })
+
+  it('SJS-E009: regular import used as value is valid', () => {
+    expect(errors(`import { Foo } from './foo'; const x = Foo`)).toHaveLength(0)
+  })
 })
