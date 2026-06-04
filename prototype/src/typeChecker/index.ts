@@ -742,7 +742,11 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const op = node.operator
       if (op === 'instanceof' || op === 'in' || ['===','!==','==','!=','<','>','<=','>='].includes(op)) return T_BOOLEAN
       const leftType = inferExprType(node.left as t.Expression, env)
+      const rightType = inferExprType(node.right as t.Expression, env)
+      // Gradual typing: if either operand is `any`, the result is `any`
+      if (leftType.kind === 'any' || rightType.kind === 'any') return T_ANY
       if (op === '+' && leftType.kind === 'string') return T_STRING
+      if (op === '+' && rightType.kind === 'string') return T_STRING
       return leftType.kind === 'bigint' ? T_BIGINT : T_NUMBER
     }
 
@@ -868,6 +872,8 @@ function dedupeKinds(types: Type[]): Type[] {
 function isConsistent(a: Type, b: Type): boolean {
   if (a.kind === 'any' || b.kind === 'any') return true
   if (a.kind === 'dynamic' || b.kind === 'dynamic') return true
+  // never is only inconsistent with non-never types; never ~ never is trivially true
+  if (a.kind === 'never' && b.kind === 'never') return true
   if (a.kind === 'never' || b.kind === 'never') return false
   if (a.kind === 'typeParam' || b.kind === 'typeParam') return true
 
@@ -887,6 +893,10 @@ function isConsistent(a: Type, b: Type): boolean {
   // promise ~ object (Promise has object-like interface)
   if (a.kind === 'promise' && b.kind === 'object') return true
   if (a.kind === 'object' && b.kind === 'promise') return true
+
+  // intersection type — gradual fallback: any object satisfies an intersection annotation
+  if (b.kind === 'intersection') return true
+  if (a.kind === 'intersection') return true
 
   // array ~ object, tuple ~ array
   if (a.kind === 'array' && b.kind === 'object') return true
@@ -1294,7 +1304,15 @@ export class TypeChecker {
     }
 
     const returnArg = path.node.argument
-    const actualType = inferExprType(returnArg ?? null, this.env)
+    let actualType = inferExprType(returnArg ?? null, this.env)
+
+    // Async functions flatten Promise-returning expressions (Promise resolution procedure).
+    // ECMA-262 §27.2.5.4: `return p` inside an async function unwraps `p` if it is a thenable.
+    // So if the actual expression is Promise<T> and we are checking against T (already unwrapped
+    // from the declared Promise<T>), treat the actual as T.
+    if (fnNode.async && actualType.kind === 'promise' && checkAgainst.kind !== 'promise') {
+      actualType = (actualType as PromiseType).resolvedType
+    }
 
     if (checkAgainst.kind === 'void' && returnArg) {
       this.report({
