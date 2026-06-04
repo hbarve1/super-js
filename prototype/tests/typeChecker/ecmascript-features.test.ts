@@ -2337,3 +2337,79 @@ describe('SJS1: Missing error codes', () => {
     expect(errors(`import { Foo } from './foo'; const x = Foo`)).toHaveLength(0)
   })
 })
+
+// ── SJS4: pub/priv/prot access modifiers ──────────────────────────────────────
+
+describe('SJS4: access modifier preprocessor + SJS-E011 type checker', () => {
+  it('preprocessor converts priv → private', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { priv x: number = 0 }'
+    expect(transformAccessModifiers(src)).toContain('private x')
+  })
+
+  it('preprocessor converts pub → public', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { pub greet() {} }'
+    expect(transformAccessModifiers(src)).toContain('public greet')
+  })
+
+  it('preprocessor converts prot → protected', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { prot value: string = "" }'
+    expect(transformAccessModifiers(src)).toContain('protected value')
+  })
+
+  it('preprocessor does not replace pub/priv as substrings of identifiers', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'const publish = "pub"'
+    expect(transformAccessModifiers(src)).not.toContain('publiclish')
+  })
+
+  it('SJS-E011: accessing private member from instance outside class emits error', () => {
+    const typeCheckWithExit = (source: string) => {
+      const { parse } = require('@babel/parser')
+      const traverse = require('@babel/traverse').default
+      const { TypeChecker } = require('../../src/typeChecker')
+      const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+      const checker = new TypeChecker()
+      traverse(ast, {
+        enter(p: any) { checker.check(p) },
+        exit(p: any) { checker.exit(p) },
+      })
+      return checker.getDiagnostics().filter((d: any) => d.severity === 'error').map((d: any) => d.code)
+    }
+
+    const src = `
+      class Counter {
+        private count: number = 0
+        increment() { this.count++ }
+      }
+      const c = new Counter()
+      const n = c.count
+    `
+    expect(typeCheckWithExit(src)).toContain('SJS-E011')
+  })
+
+  it('SJS-E011: accessing own private member from within class method is valid', () => {
+    const typeCheckWithExit = (source: string) => {
+      const { parse } = require('@babel/parser')
+      const traverse = require('@babel/traverse').default
+      const { TypeChecker } = require('../../src/typeChecker')
+      const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+      const checker = new TypeChecker()
+      traverse(ast, {
+        enter(p: any) { checker.check(p) },
+        exit(p: any) { checker.exit(p) },
+      })
+      return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+    }
+
+    const src = `
+      class Counter {
+        private count: number = 0
+        getCount(): number { return this.count }
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+})

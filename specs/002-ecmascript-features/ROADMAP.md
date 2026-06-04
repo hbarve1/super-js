@@ -318,12 +318,12 @@ Deadline: 2026-06-05T06:00:00Z
 - [x] `Ok({ inner: Err(msg) }) => ...` — nested sum type destructuring
 - [x] Emit nested switch/if in generated IIFE
 
-### SJS4: `pub/priv/prot` access modifiers on classes [ ]
+### SJS4: `pub/priv/prot` access modifiers on classes [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Track visibility on class members
-- [ ] `priv` → only accessible in class body
-- [ ] `prot` → accessible in subclasses
-- [ ] SJS-E011: access violation
+- [x] Track visibility on class members
+- [x] `priv` → only accessible in class body
+- [x] `prot` → accessible in subclasses
+- [x] SJS-E011: access violation
 
 ### SJS5: `implements` clause checking [ ]
 - [ ] Verify class structurally conforms to all declared interfaces
@@ -360,9 +360,9 @@ Update this section after each phase:
 | Phase 2 — Stdlib | 7 | 6 | 86% |
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
-| Phase 5 — SJS Features | 5 | 3 | 60% |
+| Phase 5 — SJS Features | 5 | 4 | 80% |
 | Phase 6 — Pipeline | 3 | 2 | 67% |
-| **TOTAL** | **34** | **30** | **88%** |
+| **TOTAL** | **34** | **31** | **91%** |
 
 ---
 

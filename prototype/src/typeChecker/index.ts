@@ -1069,6 +1069,14 @@ export class TypeChecker {
   private asyncDepth: number = 0
   // Type-only import bindings (for SJS-E009)
   private typeOnlyBindings: Set<string> = new Set()
+  // Class context stack: names of classes we're currently inside (for method context)
+  private classContextStack: string[] = []
+  // Persistent registry of class member visibility: className → memberName → accessibility
+  private classRegistry: Map<string, Map<string, string>> = new Map()
+  // Map from variable name → class name for `const x = new MyClass()` bindings
+  private classInstanceBindings: Map<string, string> = new Map()
+  // Name of the class whose method we're currently inside (for this.field access checks)
+  private currentClassMethodName: string | null = null
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1087,6 +1095,10 @@ export class TypeChecker {
     this.narrowingStack = []
     this.asyncDepth = 0
     this.typeOnlyBindings = new Set()
+    this.classContextStack = []
+    this.classRegistry = new Map()
+    this.classInstanceBindings = new Map()
+    this.currentClassMethodName = null
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1115,8 +1127,17 @@ export class TypeChecker {
         if ((node as t.FunctionExpression).async) this.asyncDepth--
         break
       case 'ClassMethod':
+        if ((node as t.ClassMethod).async) this.asyncDepth--
+        this.currentClassMethodName = null
+        break
       case 'ObjectMethod':
-        if ((node as t.ClassMethod | t.ObjectMethod).async) this.asyncDepth--
+        if ((node as t.ObjectMethod).async) this.asyncDepth--
+        break
+      case 'ClassDeclaration':
+      case 'ClassExpression':
+        this.classContextStack.pop()
+        // Reset method context if we just left the outermost class
+        if (this.classContextStack.length === 0) this.currentClassMethodName = null
         break
     }
   }
@@ -1166,9 +1187,32 @@ export class TypeChecker {
         if ((path.node as t.FunctionExpression).async) this.asyncDepth++
         break
       case 'ClassMethod':
-      case 'ObjectMethod':
-        if ((path.node as t.ClassMethod | t.ObjectMethod).async) this.asyncDepth++
+        if ((path.node as t.ClassMethod).async) this.asyncDepth++
+        // Track which class method we're in for SJS-E011 access checks
+        if (this.classContextStack.length > 0) {
+          this.currentClassMethodName = this.classContextStack[this.classContextStack.length - 1]
+        }
         break
+      case 'ObjectMethod':
+        if ((path.node as t.ObjectMethod).async) this.asyncDepth++
+        break
+      case 'ClassDeclaration':
+      case 'ClassExpression': {
+        const cls = path.node as t.ClassDeclaration | t.ClassExpression
+        const className = cls.id?.name ?? '__anonymous__'
+        // Collect member visibility into persistent registry
+        if (!this.classRegistry.has(className)) {
+          const members = new Map<string, string>()
+          for (const member of cls.body.body) {
+            if ((t.isClassMethod(member) || t.isClassProperty(member)) && t.isIdentifier(member.key)) {
+              members.set(member.key.name, member.accessibility ?? 'public')
+            }
+          }
+          this.classRegistry.set(className, members)
+        }
+        this.classContextStack.push(className)
+        break
+      }
       case 'AwaitExpression':
         // SJS-E008: await used outside an async function
         if (this.asyncDepth === 0) {
@@ -1180,6 +1224,9 @@ export class TypeChecker {
             specUrl: 'https://tc39.es/ecma262/#sec-await',
           })
         }
+        break
+      case 'MemberExpression':
+        this.checkMemberAccess(path as NodePath<t.MemberExpression>)
         break
       case 'Identifier':
         // SJS-E009: type-only import binding used at runtime
@@ -1339,6 +1386,10 @@ export class TypeChecker {
         // access and member expressions can resolve property types (e.g. obj.name).
         // If inference yields `any` (unknown initializer), the binding stays gradual.
         this.registerVar(name, hasAnnotation ? declared : inferred, path.node.kind)
+        // SJS-E011: track `const x = new MyClass()` for member visibility checks
+        if (t.isNewExpression(decl.init) && t.isIdentifier(decl.init.callee)) {
+          this.classInstanceBindings.set(name, (decl.init.callee as t.Identifier).name)
+        }
       } else {
         this.registerVar(name, declared, path.node.kind)
       }
@@ -2101,6 +2152,54 @@ export class TypeChecker {
   }
 
   // ── S4: import/export — ECMA-262 §16.2 ───────────────────────────────────────
+
+  /**
+  // ── Rule TC-SJS4: Class member access visibility — SJS-E011 ──────────────────
+
+  /**
+   * Checks `expr.field` member expressions for access modifier violations.
+   *
+   * Emits SJS-E011 when:
+   *   - `obj.field` where `obj` is a known class instance and `field` is `private`,
+   *     and the access occurs outside the class's own methods.
+   */
+  private checkMemberAccess(path: NodePath<t.MemberExpression>): void {
+    const { node } = path
+    if (node.computed) return  // Skip computed access obj[expr]
+    if (!t.isIdentifier(node.property)) return
+
+    const propName = node.property.name
+    let owningClass: string | null = null
+
+    if (t.isThisExpression(node.object)) {
+      // this.field — owning class is the current class method context
+      owningClass = this.currentClassMethodName
+    } else if (t.isIdentifier(node.object)) {
+      // someVar.field — look up the class from classInstanceBindings
+      owningClass = this.classInstanceBindings.get(node.object.name) ?? null
+    }
+
+    if (!owningClass) return
+
+    // Look up member visibility in the persistent class registry
+    const members = this.classRegistry.get(owningClass)
+    if (!members) return
+
+    const visibility = members.get(propName)
+    if (visibility !== 'private' && visibility !== 'protected') return
+
+    // Private members can only be accessed from within the class's own methods
+    const isInsideOwningClass = this.currentClassMethodName === owningClass
+    if (isInsideOwningClass) return
+
+    this.report({
+      code: 'SJS-E011',
+      severity: 'error',
+      message: `Cannot access '${visibility}' member '${propName}' of class '${owningClass}' from outside the class.`,
+      node: path.node,
+      specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md',
+    })
+  }
 
   /**
    * Handles import declarations — registers imported bindings in the type env.
