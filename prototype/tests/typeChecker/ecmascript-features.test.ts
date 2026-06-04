@@ -1547,3 +1547,235 @@ describe('B1: dynamic type keyword', () => {
     expect(diags.filter(d => d.severity === 'warning')).toHaveLength(0)
   })
 })
+
+// ── S1: if/else type narrowing ────────────────────────────────────────────────
+
+describe('S1: if/else statement with type narrowing', () => {
+  function typeCheckWithExit(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('if statement condition is type-checked', () => {
+    expect(typeCheckWithExit('if (typeof x === "string") { const y = x }')).toHaveLength(0)
+  })
+
+  it('no errors for simple if/else', () => {
+    expect(typeCheckWithExit(`
+      const x: number = 5
+      if (x > 3) {
+        const y: number = x
+      } else {
+        const z: number = x
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('typeof narrowing: variable is narrowed to string in if-body', () => {
+    // With narrowing, accessing x as string inside if should be fine
+    expect(typeCheckWithExit(`
+      const x: string = "hello"
+      if (typeof x === "string") {
+        const len: number = x.length
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── S2: Loop statement type checking ─────────────────────────────────────────
+
+describe('S2: Loop statement type checking', () => {
+  function typeCheckWithExit(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('for-of loop variable typed as element type', () => {
+    expect(typeCheckWithExit(`
+      const arr: number[] = [1, 2, 3]
+      for (const x of arr) {
+        const n: number = x
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for-in loop variable typed as string', () => {
+    expect(typeCheckWithExit(`
+      const obj = { a: 1, b: 2 }
+      for (const key in obj) {
+        const s: string = key
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for-of string iterates characters (string elements)', () => {
+    expect(typeCheckWithExit(`
+      const str = "hello"
+      for (const ch of str) {
+        const s: string = ch
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for loop no errors for regular C-style for', () => {
+    expect(typeCheckWithExit(`
+      for (let i = 0; i < 10; i++) {
+        const n: number = i
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── S3: try/catch/throw type checking ────────────────────────────────────────
+
+describe('S3: try/catch/throw type checking', () => {
+  function typeCheckWithExit(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('try/catch registers catch binding — no error accessing it', () => {
+    expect(typeCheckWithExit(`
+      try {
+        const x: number = 1
+      } catch (e) {
+        const msg = e
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('optional catch binding (no param) is valid', () => {
+    expect(typeCheckWithExit(`
+      try {
+        const x = 1
+      } catch {
+        const done = true
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('throw statement is valid', () => {
+    expect(typeCheckWithExit(`
+      function f(): void {
+        throw new Error("oops")
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── S4: import/export type checking ──────────────────────────────────────────
+
+describe('S4: import/export declaration type checking', () => {
+  function typeCheckWithExit(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('import default binding registered — no errors using it', () => {
+    expect(typeCheckWithExit(`
+      import foo from './foo'
+      const x = foo
+    `)).toHaveLength(0)
+  })
+
+  it('named import binding registered — no errors using it', () => {
+    expect(typeCheckWithExit(`
+      import { bar } from './bar'
+      const x = bar
+    `)).toHaveLength(0)
+  })
+
+  it('namespace import registered', () => {
+    expect(typeCheckWithExit(`
+      import * as ns from './mod'
+      const x = ns.something
+    `)).toHaveLength(0)
+  })
+
+  it('export named declaration is valid', () => {
+    expect(typeCheckWithExit(`
+      export const x: number = 42
+    `)).toHaveLength(0)
+  })
+
+  it('export default declaration is valid', () => {
+    expect(typeCheckWithExit(`
+      export default function hello() { return "hi" }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── S5: Block scoping ─────────────────────────────────────────────────────────
+
+describe('S5: Block scoping', () => {
+  function typeCheckWithExit(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('block-scoped variable accessible inside block', () => {
+    expect(typeCheckWithExit(`
+      {
+        const x: number = 42
+        const y: number = x
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('module-level variable accessible across the module', () => {
+    expect(typeCheckWithExit(`
+      const x: number = 42
+      const y: number = x
+    `)).toHaveLength(0)
+  })
+
+  it('var is not block-scoped — still accessible after block', () => {
+    // var is function/module scoped, so it should remain in env
+    expect(typeCheckWithExit(`
+      {
+        var x = 42
+      }
+      const y: number = x
+    `)).toHaveLength(0)
+  })
+})

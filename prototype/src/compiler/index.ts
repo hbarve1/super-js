@@ -139,9 +139,8 @@ async function compileFile(
   log('Running type checker...');
   typeChecker.reset();
   traverse(ast, {
-    enter(path) {
-      typeChecker.check(path);
-    },
+    enter(path) { typeChecker.check(path); },
+    exit(path) { typeChecker.exit(path); },
   });
 
   // Surface type errors — ECMA-262 §14.3.1, §15.2 (via type-system.md rules)

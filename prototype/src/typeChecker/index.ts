@@ -517,6 +517,22 @@ function isConsistent(a: Type, b: Type): boolean {
   return false
 }
 
+// ── typeof string → Type helper ──────────────────────────────────────────────
+
+function typeNameToType(name: string): Type | null {
+  switch (name) {
+    case 'string':    return T_STRING
+    case 'number':    return T_NUMBER
+    case 'boolean':   return T_BOOLEAN
+    case 'bigint':    return { kind: 'bigint' }
+    case 'symbol':    return { kind: 'symbol' }
+    case 'undefined': return T_UNDEFINED
+    case 'function':  return { kind: 'function', params: [], returnType: T_ANY }
+    case 'object':    return T_NULL  // typeof null === 'object' edge case — use null
+    default:          return null
+  }
+}
+
 // ── TypeChecker class ─────────────────────────────────────────────────────────
 
 // ── TypeCheckerOptions ────────────────────────────────────────────────────────
@@ -540,8 +556,11 @@ export class TypeChecker {
   // maps type alias name → SumType (built from TSTypeAliasDeclaration with TSUnionType RHS)
   private sumTypeRegistry: Map<string, SumType> = new Map()
   // maps variant tag string → variant type name (e.g. "Ok" → "Ok")
-  // populated when we see constructor arrows: const Ok = (...): Ok => ({ _tag: "Ok" as const, ... })
   private variantTagRegistry: Map<string, string> = new Map()
+  // Block scoping: track which names are block-scoped at each nesting level
+  private blockVarStack: Set<string>[] = []
+  // Narrowing stack: saved types to restore when exiting narrowed scope
+  private narrowingStack: Array<Map<string, Type>> = []
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -556,6 +575,45 @@ export class TypeChecker {
     this.env = new Map()
     this.sumTypeRegistry = new Map()
     this.variantTagRegistry = new Map()
+    this.blockVarStack = []
+    this.narrowingStack = []
+  }
+
+  // ── Exit handler — called on node exit for scope cleanup ─────────────────────
+
+  /**
+   * Called on `exit` of each AST node.
+   * Pops block scope variables and narrowing overlays.
+   */
+  exit(path: NodePath): void {
+    const { node } = path
+    switch (node.type) {
+      case 'BlockStatement':
+        this.exitBlockStatement()
+        break
+      case 'IfStatement':
+        // Restore narrowings applied for this if statement
+        this.popNarrowing()
+        break
+    }
+  }
+
+  private exitBlockStatement(): void {
+    const blockVars = this.blockVarStack.pop()
+    if (blockVars) {
+      for (const name of blockVars) {
+        this.env.delete(name)
+      }
+    }
+  }
+
+  private popNarrowing(): void {
+    const saved = this.narrowingStack.pop()
+    if (saved) {
+      for (const [name, type] of saved) {
+        this.env.set(name, type)
+      }
+    }
   }
 
   // ── Main entry point — called for every AST node ────────────────────────────
@@ -594,7 +652,43 @@ export class TypeChecker {
       case 'BinaryExpression':
         this.checkBinaryExpression(path as NodePath<t.BinaryExpression>)
         break
+      case 'BlockStatement':
+        this.enterBlockStatement()
+        break
+      case 'IfStatement':
+        this.checkIfStatement(path as NodePath<t.IfStatement>)
+        break
+      case 'ForStatement':
+      case 'WhileStatement':
+      case 'DoWhileStatement':
+        // No variable registration needed — just let body be traversed
+        break
+      case 'ForOfStatement':
+        this.checkForOfStatement(path as NodePath<t.ForOfStatement>)
+        break
+      case 'ForInStatement':
+        this.checkForInStatement(path as NodePath<t.ForInStatement>)
+        break
+      case 'TryStatement':
+        this.checkTryStatement(path as NodePath<t.TryStatement>)
+        break
+      case 'ThrowStatement':
+        // ThrowStatement — check thrown expression (currently just ensures it's visited)
+        break
+      case 'ImportDeclaration':
+        this.checkImportDeclaration(path as NodePath<t.ImportDeclaration>)
+        break
+      case 'ExportNamedDeclaration':
+        this.checkExportNamedDeclaration(path as NodePath<t.ExportNamedDeclaration>)
+        break
+      case 'ExportDefaultDeclaration':
+        // Default exports don't need special handling in the type env
+        break
     }
+  }
+
+  private enterBlockStatement(): void {
+    this.blockVarStack.push(new Set())
   }
 
   // ── Rule TC-001 / TC-004: Variable declarations — ECMA-262 §14.3.1 ──────────
@@ -682,10 +776,19 @@ export class TypeChecker {
         // Unannotated variables get the INFERRED type so that downstream property
         // access and member expressions can resolve property types (e.g. obj.name).
         // If inference yields `any` (unknown initializer), the binding stays gradual.
-        this.env.set(name, hasAnnotation ? declared : inferred)
+        this.registerVar(name, hasAnnotation ? declared : inferred, path.node.kind)
       } else {
-        this.env.set(name, declared)
+        this.registerVar(name, declared, path.node.kind)
       }
+    }
+  }
+
+  /** Register a variable binding, tracking block scope if let/const. */
+  private registerVar(name: string, type: Type, kind: string): void {
+    this.env.set(name, type)
+    // let/const are block-scoped — track for removal when block exits
+    if ((kind === 'let' || kind === 'const') && this.blockVarStack.length > 0) {
+      this.blockVarStack[this.blockVarStack.length - 1].add(name)
     }
   }
 
@@ -1241,6 +1344,189 @@ export class TypeChecker {
         specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md#45-pattern-matching',
       })
     }
+  }
+
+  // ── S1: if/else statement — ECMA-262 §14.6 ───────────────────────────────────
+
+  /**
+   * Checks an if/else statement.
+   * Applies simple type narrowing in the then-branch based on the condition.
+   * Narrowings are tracked and restored when the IfStatement exits.
+   *
+   * ECMA-262 §14.6 The if Statement:
+   * https://tc39.es/ecma262/#sec-if-statement
+   */
+  private checkIfStatement(path: NodePath<t.IfStatement>): void {
+    const { node } = path
+    // Check condition expression for type errors (e.g. calling non-function)
+    inferExprType(node.test as t.Expression, this.env)
+
+    // Apply type narrowing from the condition
+    const saved = new Map<string, Type>()
+    const narrowings = this.extractNarrowings(node.test)
+    for (const [name, narrowed] of narrowings) {
+      const current = this.env.get(name)
+      if (current !== undefined) {
+        saved.set(name, current)
+        this.env.set(name, narrowed)
+      }
+    }
+    this.narrowingStack.push(saved)
+  }
+
+  /**
+   * Extracts simple type narrowings from a condition expression.
+   * Returns a Map of name → narrowed type.
+   * Only handles common patterns: `typeof x === 'T'`, `x !== null`, `x != null`.
+   */
+  private extractNarrowings(cond: t.Node): Map<string, Type> {
+    const result = new Map<string, Type>()
+    if (!t.isBinaryExpression(cond)) return result
+
+    const { operator, left, right } = cond
+
+    // `typeof x === 'string'` style narrowing
+    if ((operator === '===' || operator === '==') &&
+        t.isUnaryExpression(left) && left.operator === 'typeof' &&
+        t.isIdentifier(left.argument) && t.isStringLiteral(right)) {
+      const name = (left.argument as t.Identifier).name
+      const typeName = right.value
+      const narrowed = typeNameToType(typeName)
+      if (narrowed) result.set(name, narrowed)
+    }
+
+    // `x !== null` — narrow to non-null
+    if ((operator === '!==' || operator === '!=') && t.isNullLiteral(right) && t.isIdentifier(left)) {
+      const name = (left as t.Identifier).name
+      const current = this.env.get(name)
+      if (current) {
+        result.set(name, stripNullable(current) === T_ANY ? current : stripNullable(current))
+      }
+    }
+
+    // `x !== undefined` — narrow to defined
+    if ((operator === '!==' || operator === '!=') &&
+        t.isIdentifier(right, { name: 'undefined' }) && t.isIdentifier(left)) {
+      const name = (left as t.Identifier).name
+      const current = this.env.get(name)
+      if (current) {
+        result.set(name, stripNullable(current) === T_ANY ? current : stripNullable(current))
+      }
+    }
+
+    return result
+  }
+
+  // ── S2: Loop statements — ECMA-262 §14.7 ─────────────────────────────────────
+
+  /**
+   * Handles `for (const x of iterable)` — registers loop variable with element type.
+   *
+   * ECMA-262 §14.7.5 The for-of Statement:
+   * https://tc39.es/ecma262/#sec-for-in-and-for-of-statements
+   */
+  private checkForOfStatement(path: NodePath<t.ForOfStatement>): void {
+    const { node } = path
+    if (!t.isVariableDeclaration(node.left)) return
+
+    const rightType = t.isExpression(node.right)
+      ? inferExprType(node.right, this.env)
+      : T_ANY
+
+    let elemType: Type = T_ANY
+    if (rightType.kind === 'array') {
+      elemType = (rightType as ArrayType).elementType
+    } else if (rightType.kind === 'string') {
+      elemType = T_STRING
+    }
+
+    for (const decl of node.left.declarations) {
+      if (t.isIdentifier(decl.id)) {
+        this.env.set(decl.id.name, elemType)
+        // Loop vars are block-scoped — track for cleanup
+        if (this.blockVarStack.length > 0) {
+          this.blockVarStack[this.blockVarStack.length - 1].add(decl.id.name)
+        }
+      }
+    }
+  }
+
+  /**
+   * Handles `for (const key in obj)` — loop variable is typed as `string`.
+   *
+   * ECMA-262 §14.7.5 The for-in Statement:
+   * https://tc39.es/ecma262/#sec-for-in-and-for-of-statements
+   */
+  private checkForInStatement(path: NodePath<t.ForInStatement>): void {
+    const { node } = path
+    if (!t.isVariableDeclaration(node.left)) return
+
+    for (const decl of node.left.declarations) {
+      if (t.isIdentifier(decl.id)) {
+        this.env.set(decl.id.name, T_STRING)
+        if (this.blockVarStack.length > 0) {
+          this.blockVarStack[this.blockVarStack.length - 1].add(decl.id.name)
+        }
+      }
+    }
+  }
+
+  // ── S3: try/catch/throw — ECMA-262 §14.15 ────────────────────────────────────
+
+  /**
+   * Handles try/catch — registers catch binding.
+   * In strict mode, catch binding is typed as `unknown` (approximated as any for now).
+   * In non-strict mode, catch binding is typed as `any`.
+   *
+   * ECMA-262 §14.15 The try Statement:
+   * https://tc39.es/ecma262/#sec-try-statement
+   */
+  private checkTryStatement(path: NodePath<t.TryStatement>): void {
+    const { node } = path
+    if (!node.handler) return
+
+    const param = node.handler.param
+    if (!param) return  // optional catch binding (ES2019)
+
+    if (t.isIdentifier(param)) {
+      // Catch binding is unknown/any — we use any for prototype compatibility
+      this.env.set(param.name, T_ANY)
+    }
+  }
+
+  // ── S4: import/export — ECMA-262 §16.2 ───────────────────────────────────────
+
+  /**
+   * Handles import declarations — registers imported bindings in the type env.
+   * Cross-file type resolution is not implemented; all imports get type `any`.
+   *
+   * ECMA-262 §16.2.2 Imports:
+   * https://tc39.es/ecma262/#sec-imports
+   */
+  private checkImportDeclaration(path: NodePath<t.ImportDeclaration>): void {
+    for (const specifier of path.node.specifiers) {
+      let localName: string | null = null
+      if (t.isImportDefaultSpecifier(specifier)) {
+        localName = specifier.local.name
+      } else if (t.isImportNamespaceSpecifier(specifier)) {
+        localName = specifier.local.name
+      } else if (t.isImportSpecifier(specifier)) {
+        localName = specifier.local.name
+      }
+      if (localName) {
+        this.env.set(localName, T_ANY)
+      }
+    }
+  }
+
+  /**
+   * Handles named exports — type-checks the declaration if present.
+   *
+   * ECMA-262 §16.2.3 Exports:
+   * https://tc39.es/ecma262/#sec-exports
+   */
+  private checkExportNamedDeclaration(_path: NodePath<t.ExportNamedDeclaration>): void {
+    // The declaration (if present) is handled by its own handler (VariableDeclaration, etc.)
   }
 
   // ── Diagnostic helper ─────────────────────────────────────────────────────────
