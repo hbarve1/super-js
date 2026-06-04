@@ -96,13 +96,34 @@ function resolveType(node: t.TSType | null | undefined): Type {
       const types = node.types.map(resolveType)
       return { kind: 'union', types } satisfies UnionType
     }
+    // Tuple type — e.g. [string, number] — ECMA-262 §23.1 (Array objects)
+    case 'TSTupleType': {
+      const elements = (node as t.TSTupleType).elementTypes.map(el => {
+        // Handle rest elements and optional elements
+        if (t.isTSRestType(el)) return resolveType(el.typeAnnotation)
+        if (t.isTSOptionalType(el)) return resolveType(el.typeAnnotation)
+        if (el.type === 'TSNamedTupleMember') return resolveType((el as t.TSNamedTupleMember).elementType)
+        return resolveType(el as t.TSType)
+      })
+      return { kind: 'tuple', elements }
+    }
     // Array — e.g. number[]
     case 'TSArrayType':
       return { kind: 'array', elementType: resolveType(node.elementType) }
     // Object type literal — e.g. { name: string; age: number }
+    // Also handles index signatures: { [key: string]: number }
     case 'TSTypeLiteral': {
       const properties = new Map<string, Type>()
+      let indexValueType: Type | null = null
       for (const member of node.members) {
+        if (member.type === 'TSIndexSignature') {
+          // Index signature — { [key: string]: number }
+          const sig = member as t.TSIndexSignature
+          indexValueType = sig.typeAnnotation
+            ? resolveType((sig.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+            : T_ANY
+          continue
+        }
         if (member.type !== 'TSPropertySignature') continue
         const prop = member as t.TSPropertySignature
         const key = t.isIdentifier(prop.key) ? prop.key.name
@@ -114,7 +135,12 @@ function resolveType(node: t.TSType | null | undefined): Type {
           : T_ANY
         properties.set(key, valueType)
       }
-      return { kind: 'object', properties } satisfies ObjectType
+      const result: ObjectType = { kind: 'object', properties }
+      if (indexValueType !== null) {
+        // Store index signature info for computed access
+        ;(result as any).__indexType = indexValueType
+      }
+      return result
     }
     // Function type — e.g. (x: number) => string
     case 'TSFunctionType': {
@@ -196,6 +222,42 @@ function resolveType(node: t.TSType | null | undefined): Type {
     // Parenthesized type — e.g. (string | number)
     case 'TSParenthesizedType':
       return resolveType(node.typeAnnotation)
+
+    // Type predicate — e.g. `x is string` (user-defined type guard)
+    // Returns boolean; narrowing is handled separately.
+    case 'TSTypePredicate':
+      return T_BOOLEAN
+
+    // Readonly modifier — e.g. `readonly T` or `Readonly<T>`
+    case 'TSTypeOperator': {
+      const inner = (node as t.TSTypeOperator).typeAnnotation
+      return resolveType(inner)
+    }
+
+    // Indexed access type — e.g. `T[K]`
+    case 'TSIndexedAccessType':
+      return T_ANY
+
+    // Mapped type — e.g. `{ [K in T]: V }`
+    case 'TSMappedType':
+      return { kind: 'object', properties: new Map() }
+
+    // Template literal type — e.g. `${string}-${number}`
+    case 'TSTemplateLiteralType':
+      return T_STRING
+
+    // Conditional type — e.g. `T extends U ? X : Y`
+    case 'TSConditionalType':
+      return T_ANY
+
+    // Type query — e.g. `typeof x`
+    case 'TSTypeQuery':
+      return T_ANY
+
+    // Infer type — e.g. `infer T`
+    case 'TSInferType':
+      return { kind: 'typeParam', name: 'infer' }
+
     default:
       return T_ANY  // gradual fallback — unknown annotation treated as any
   }
@@ -704,20 +766,39 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         t.isExpression(node.object) ? node.object : null, env
       )
       if (node.computed) {
+        // Tuple index access: tuple[0] → element type at index 0
+        if (objType.kind === 'tuple') {
+          if (t.isNumericLiteral(node.property)) {
+            const idx = node.property.value
+            return (objType as import('./types').TupleType).elements[idx] ?? T_ANY
+          }
+          return T_ANY
+        }
         if (objType.kind === 'array') return (objType as ArrayType).elementType
         if (objType.kind === 'string') return T_STRING
+        // Index signature lookup
+        if (objType.kind === 'object' && (objType as any).__indexType) {
+          return (objType as any).__indexType as Type
+        }
         return T_ANY
       }
       // Static property access
       const propName = t.isIdentifier(node.property) ? node.property.name : null
       if (!propName) return T_ANY
 
+      // Tuple length
+      if (propName === 'length' && objType.kind === 'tuple') return T_NUMBER
+
       // Stdlib property inference
       const stdlibProp = inferStdlibProp(objType, node.object, propName)
       if (stdlibProp !== null) return stdlibProp
 
       if (objType.kind === 'object') {
-        return (objType as ObjectType).properties.get(propName) ?? T_ANY
+        const propType = (objType as ObjectType).properties.get(propName)
+        if (propType !== undefined) return propType
+        // Try index signature
+        if ((objType as any).__indexType) return (objType as any).__indexType as Type
+        return T_ANY
       }
       return T_ANY
     }
@@ -836,6 +917,10 @@ function isConsistent(a: Type, b: Type): boolean {
   if (a.kind === 'never' || b.kind === 'never') return false
   // Type parameters are consistent with any type (gradual generic instantiation)
   if (a.kind === 'typeParam' || b.kind === 'typeParam') return true
+
+  // Tuple is consistent with array (tuple is a subtype of array)
+  if (a.kind === 'tuple' && b.kind === 'array') return true
+  if (a.kind === 'array' && b.kind === 'tuple') return true
 
   // Exact match
   if (a.kind === b.kind) {
@@ -1158,12 +1243,15 @@ export class TypeChecker {
 
     const inferred: Type = decl.init ? inferExprType(decl.init, this.env) : T_ANY
 
-    // Determine element type: prefer declared annotation, fall back to inferred.
+    // Determine element type or tuple elements
+    const sourceType = declared.kind !== 'any' ? declared : inferred
+    const isTuple = sourceType.kind === 'tuple'
+    const tupleElements = isTuple ? (sourceType as import('./types').TupleType).elements : null
     let elementType: Type = T_ANY
-    if (declared.kind === 'array') {
-      elementType = (declared as import('./types').ArrayType).elementType
-    } else if (inferred.kind === 'array') {
-      elementType = (inferred as import('./types').ArrayType).elementType
+    if (!isTuple) {
+      if (sourceType.kind === 'array') {
+        elementType = (sourceType as import('./types').ArrayType).elementType
+      }
     }
 
     // Check overall initializer consistency when we have a declared type.
@@ -1180,14 +1268,20 @@ export class TypeChecker {
     }
 
     // Register each element identifier in env.
-    for (const elem of pattern.elements) {
+    for (let i = 0; i < pattern.elements.length; i++) {
+      const elem = pattern.elements[i]
       if (!elem) continue
       if (t.isIdentifier(elem)) {
-        this.env.set(elem.name, elementType)
+        // For tuples, each position has its own type
+        const elemT = tupleElements ? (tupleElements[i] ?? T_ANY) : elementType
+        this.env.set(elem.name, elemT)
+      } else if (t.isAssignmentPattern(elem) && t.isIdentifier(elem.left)) {
+        const elemT = tupleElements ? (tupleElements[i] ?? T_ANY) : elementType
+        this.env.set(elem.left.name, elemT)
       } else if (t.isRestElement(elem) && t.isIdentifier(elem.argument)) {
         // rest element gets the same array type as the source
-        const restType: Type = declared.kind === 'array' ? declared
-          : inferred.kind === 'array' ? inferred
+        const restType: Type = sourceType.kind === 'array' ? sourceType
+          : sourceType.kind === 'tuple' ? { kind: 'array', elementType: T_ANY }
           : T_ANY
         this.env.set(elem.argument.name, restType)
       }

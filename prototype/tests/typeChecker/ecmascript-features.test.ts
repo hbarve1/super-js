@@ -2072,3 +2072,130 @@ describe('L6: Error/JSON/console/RegExp signatures', () => {
     expect(errors('const b: boolean = Error.isError(new Error())')).toHaveLength(0)
   })
 })
+
+// ── T1: Tuple types ───────────────────────────────────────────────────────────
+
+describe('T1: Tuple types', () => {
+  it('tuple type annotation accepted', () => {
+    expect(errors('const pair: [string, number] = ["hello", 42]')).toHaveLength(0)
+  })
+
+  it('tuple index 0 returns first element type', () => {
+    expect(errors(`
+      const pair: [string, number] = ["hello", 42]
+      const s: string = pair[0]
+    `)).toHaveLength(0)
+  })
+
+  it('tuple index 1 returns second element type', () => {
+    expect(errors(`
+      const pair: [string, number] = ["hello", 42]
+      const n: number = pair[1]
+    `)).toHaveLength(0)
+  })
+
+  it('tuple destructuring — each element gets correct type', () => {
+    expect(errors(`
+      const pair: [string, number] = ["hello", 42]
+      const [s, n]: [string, number] = pair
+    `)).toHaveLength(0)
+  })
+
+  it('tuple length is number', () => {
+    expect(errors(`
+      const pair: [string, number] = ["hello", 42]
+      const len: number = pair.length
+    `)).toHaveLength(0)
+  })
+
+  it('tuple is consistent with array', () => {
+    expect(errors(`
+      const t: [number, number] = [1, 2]
+      const arr: number[] = t
+    `)).toHaveLength(0)
+  })
+})
+
+// ── T2: Index signatures ──────────────────────────────────────────────────────
+
+describe('T2: Index signatures', () => {
+  it('index signature type resolves in type literal', () => {
+    expect(errors(`
+      const map: { [key: string]: number } = {}
+      const n: number = map["key"]
+    `)).toHaveLength(0)
+  })
+
+  it('Record<string, number> resolves correctly', () => {
+    expect(errors('const r: Record<string, number> = { a: 1, b: 2 }')).toHaveLength(0)
+  })
+})
+
+// ── T3: User-defined type guards ──────────────────────────────────────────────
+
+describe('T3: User-defined type guards (TSTypePredicate)', () => {
+  it('type predicate function resolves to boolean', () => {
+    expect(errors(`
+      function isString(x: any): x is string { return typeof x === "string" }
+      const b: boolean = isString(42)
+    `)).toHaveLength(0)
+  })
+
+  it('Array.isArray type guard works', () => {
+    expect(errors(`
+      const val: any = [1, 2, 3]
+      const b: boolean = Array.isArray(val)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── T5: T? null safety ────────────────────────────────────────────────────────
+
+describe('T5: T? null safety syntax', () => {
+  it('T? preprocessor transforms to T | null | undefined', () => {
+    const { transformNullSafety } = require('../../src/preprocessor/nullSafety')
+    expect(transformNullSafety('const x: string? = null')).toBe('const x: string | null | undefined = null')
+  })
+
+  it('T? in parameter transforms correctly', () => {
+    const { transformNullSafety } = require('../../src/preprocessor/nullSafety')
+    const result = transformNullSafety('function f(x: number?): void {}')
+    expect(result).toContain('number | null | undefined')
+  })
+
+  it('does not transform optional chaining ?.', () => {
+    const { transformNullSafety } = require('../../src/preprocessor/nullSafety')
+    const result = transformNullSafety('const y = obj?.prop')
+    expect(result).toBe('const y = obj?.prop')
+  })
+
+  it('T? preprocessor used in full pipeline', () => {
+    const { preprocessSJS } = require('../../src/preprocessor')
+    const result = preprocessSJS('const x: string? = null')
+    expect(result).toContain('null | undefined')
+  })
+})
+
+// ── T6: new expression type inference ─────────────────────────────────────────
+
+describe('T6: new expression type inference', () => {
+  it('new Map() returns Map type', () => {
+    expect(errors('const m = new Map()')).toHaveLength(0)
+  })
+
+  it('new Set() returns Set type', () => {
+    expect(errors('const s = new Set()')).toHaveLength(0)
+  })
+
+  it('new Error() returns object with message', () => {
+    expect(errors('const e = new Error("oops")')).toHaveLength(0)
+  })
+
+  it('new Promise() returns promise type', () => {
+    expect(errors('const p: Promise<number> = new Promise<number>((resolve) => resolve(1))')).toHaveLength(0)
+  })
+
+  it('new RegExp() is valid', () => {
+    expect(errors('const r = new RegExp("pattern")')).toHaveLength(0)
+  })
+})
