@@ -192,30 +192,30 @@ Deadline: 2026-06-05T06:00:00Z
 
 ### L5: Map<K,V>, Set<T>, WeakMap, WeakSet, WeakRef [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `Map<K,V>`: get→V|undefined, set→Map, has→boolean, delete→boolean, size→number, keys/values/entries
-- [ ] `Map.groupBy<K,T>(items, fn): Map<K,T[]>` (ES2024)
-- [ ] `Set<T>`: add, has, delete, size, values, union/intersection/difference (ES2025)
-- [ ] `WeakMap<K,V>`: get→V|undefined, set, has, delete
-- [ ] `WeakSet<T>`: add, has, delete
-- [ ] `WeakRef<T>`: deref→T|undefined
-- [ ] `FinalizationRegistry<T>`: register, unregister
-- [ ] Tests for Map/Set generic inference
-- [ ] Commit: `feat(stdlib): Map/Set/Weak* method signatures`
+- [x] `Map<K,V>`: get→V|undefined, set→Map, has→boolean, delete→boolean, size→number, keys/values/entries
+- [x] `Map.groupBy<K,T>(items, fn): Map<K,T[]>` (ES2024)
+- [x] `Set<T>`: add, has, delete, size, values, union/intersection/difference (ES2025)
+- [x] `WeakMap<K,V>`: get→V|undefined, set, has, delete
+- [x] `WeakSet<T>`: add, has, delete
+- [x] `WeakRef<T>`: deref→T|undefined
+- [x] `FinalizationRegistry<T>`: register, unregister
+- [x] Tests for Map/Set generic inference
+- [x] Commit: `feat(stdlib): Map/Set/Weak* method signatures`
 
-### L6: Error, JSON, console, RegExp [ ]
+### L6: Error, JSON, console, RegExp [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `Error(msg, opts?): Error` constructor
-- [ ] `Error.isError(v): v is Error` (ES2025)
-- [ ] `error.message: string`, `error.stack: string | undefined`, `error.cause: unknown`
-- [ ] `JSON.parse(s: string): any`
-- [ ] `JSON.stringify(v, replacer?, space?): string`
-- [ ] `console.log/error/warn/info(...args: any[]): void`
-- [ ] `console.table/dir/group/groupEnd/time/timeEnd`
-- [ ] `RegExp(pattern, flags?): RegExp`
-- [ ] `regexp.test(s: string): boolean`
-- [ ] `regexp.exec(s: string): RegExpExecArray | null`
-- [ ] Tests for console.log, JSON.parse/stringify
-- [ ] Commit: `feat(stdlib): Error/JSON/console/RegExp signatures`
+- [x] `Error(msg, opts?): Error` constructor
+- [x] `Error.isError(v): v is Error` (ES2025)
+- [x] `error.message: string`, `error.stack: string | undefined`, `error.cause: unknown`
+- [x] `JSON.parse(s: string): any`
+- [x] `JSON.stringify(v, replacer?, space?): string`
+- [x] `console.log/error/warn/info(...args: any[]): void`
+- [x] `console.table/dir/group/groupEnd/time/timeEnd`
+- [x] `RegExp(pattern, flags?): RegExp`
+- [x] `regexp.test(s: string): boolean`
+- [x] `regexp.exec(s: string): RegExpExecArray | null`
+- [x] Tests for console.log, JSON.parse/stringify
+- [x] Commit: `feat(stdlib): Error/JSON/console/RegExp signatures`
 
 ### L7: Symbol, Date, globalThis, Iterator helpers [ ]
 **File**: `prototype/src/typeChecker/index.ts`
@@ -355,14 +355,14 @@ Update this section after each phase:
 
 | Phase | Tasks | Done | % |
 |---|---|---|---|
-| Phase 0 — Blockers | 3 | 0 | 0% |
-| Phase 1 — Statements | 5 | 0 | 0% |
-| Phase 2 — Stdlib | 7 | 0 | 0% |
+| Phase 0 — Blockers | 3 | 3 | 100% |
+| Phase 1 — Statements | 5 | 5 | 100% |
+| Phase 2 — Stdlib | 7 | 6 | 86% |
 | Phase 3 — Type System | 6 | 0 | 0% |
 | Phase 4 — Expressions | 5 | 0 | 0% |
 | Phase 5 — SJS Features | 5 | 0 | 0% |
-| Phase 6 — Pipeline | 3 | 1 | 33% |
-| **TOTAL** | **34** | **1** | **3%** |
+| Phase 6 — Pipeline | 3 | 0 | 0% |
+| **TOTAL** | **34** | **14** | **41%** |
 
 ---
 
