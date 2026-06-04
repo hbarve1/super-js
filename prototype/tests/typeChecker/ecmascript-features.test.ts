@@ -1314,3 +1314,88 @@ describe('Gap 6: Property access type inference (ECMA-262 §13.3.2)', () => {
     `)).toContain('SJS-E001')
   })
 })
+
+// ── Gap 7 — Async function return type ───────────────────────────────────────
+
+describe('Gap 7: Async function return type (ECMA-262 §27.2)', () => {
+  // Async function with Promise<T> return type annotation
+  it('async function returning T consistent with Promise<T>', () => {
+    expect(errors(`
+      async function getNumber(): Promise<number> {
+        return 42
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('async function returning string consistent with Promise<string>', () => {
+    expect(errors(`
+      async function getMessage(): Promise<string> {
+        return "hello"
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('async function returning wrong inner type emits SJS-E002', () => {
+    expect(errors(`
+      async function getBad(): Promise<number> {
+        return "not a number"
+      }
+    `).filter(d => d.code === 'SJS-E002').length).toBeGreaterThan(0)
+  })
+
+  it('async function returning boolean when Promise<number> emits SJS-E002', () => {
+    expect(errors(`
+      async function getBad(): Promise<number> {
+        return true
+      }
+    `).filter(d => d.code === 'SJS-E002').length).toBeGreaterThan(0)
+  })
+
+  // Async arrow function
+  it('async arrow with Promise<number> return accepts number', () => {
+    expect(errors('const f = async (): Promise<number> => 42')).toHaveLength(0)
+  })
+
+  it('async arrow with Promise<string> return accepts string', () => {
+    expect(errors('const f = async (): Promise<string> => "hi"')).toHaveLength(0)
+  })
+
+  it('async arrow with Promise<number> returning string emits SJS-E002', () => {
+    expect(errors('const f = async (): Promise<number> => "oops"')
+      .filter(d => d.code === 'SJS-E002').length).toBeGreaterThan(0)
+  })
+
+  // await unwraps Promise<T> — handled by gradual typing
+  it('await in async function produces no false errors', () => {
+    expect(errors(`
+      async function main() {
+        const p: Promise<string> = new Promise<string>((r) => r("hi"))
+        const s: string = await p
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('await Promise.resolve inside async — no SJS-E009', () => {
+    const src = 'async function f() { return await Promise.resolve(1) }'
+    expect(errorCodes(src)).not.toContain('SJS-E009')
+  })
+
+  // Multiple return paths in async function
+  it('async function with multiple return paths — consistent inner types', () => {
+    expect(errors(`
+      async function pick(flag: boolean): Promise<number> {
+        if (flag) return 1
+        return 2
+      }
+    `)).toHaveLength(0)
+  })
+
+  // Promise<void>
+  it('async function with Promise<void> allows bare return', () => {
+    expect(errors(`
+      async function doWork(): Promise<void> {
+        const x = 1
+      }
+    `)).toHaveLength(0)
+  })
+})
