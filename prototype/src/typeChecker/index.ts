@@ -56,6 +56,8 @@ const SPEC = {
   CONDITIONAL:    'https://tc39.es/ecma262/#sec-conditional-operator',
   // Array initializer — ECMA-262 §13.2.4
   ARRAY_INIT:     'https://tc39.es/ecma262/#sec-array-initializer',
+  // Unary operators — ECMA-262 §13.5
+  UNARY_OPS:      'https://tc39.es/ecma262/#sec-unary-operators',
   // Object initializer — ECMA-262 §13.2.5
   OBJECT_INIT:    'https://tc39.es/ecma262/#sec-object-initializer',
   // Property accessors — ECMA-262 §13.3.2
@@ -278,6 +280,22 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const firstKind = elTypes[0].kind
       const allSame = elTypes.every(et => et.kind === firstKind)
       return { kind: 'array', elementType: allSame ? elTypes[0] : T_ANY } satisfies ArrayType
+    }
+
+    // Unary expression — ECMA-262 §13.5 Unary Operators
+    case 'UnaryExpression': {
+      const operand = inferExprType(node.argument as t.Expression, env)
+      switch (node.operator) {
+        case 'typeof': return T_STRING
+        case '!':      return T_BOOLEAN
+        case 'void':   return T_UNDEFINED
+        case '-':
+        case '+':
+          if (operand.kind === 'bigint') return { kind: 'bigint' }
+          return T_NUMBER
+        case '~':      return T_NUMBER
+        default:       return T_ANY
+      }
     }
 
     // Object literal — ECMA-262 §13.2.5 Object Initializer

@@ -293,3 +293,58 @@ describe('Static MemberExpression inference — ECMA-262 §13.3.2', () => {
     expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
   })
 })
+
+// ── Task 3.1: Unary expression type inference ─────────────────────────────────
+
+describe('UnaryExpression type inference — ECMA-262 §13.5', () => {
+  it('typeof always returns string', () => {
+    expect(errors('const x: string = typeof 42')).toHaveLength(0)
+    expect(errors('const x: string = typeof "hello"')).toHaveLength(0)
+    expect(errors('const x: string = typeof true')).toHaveLength(0)
+  })
+
+  it('! (logical not) returns boolean', () => {
+    expect(errors('const x: boolean = !true')).toHaveLength(0)
+    expect(errors('const x: boolean = !0')).toHaveLength(0)
+  })
+
+  it('void expr returns undefined', () => {
+    expect(errors('const x: undefined = void 0')).toHaveLength(0)
+  })
+
+  it('-number returns number', () => {
+    expect(errors('const x: number = -42')).toHaveLength(0)
+  })
+
+  it('+number returns number', () => {
+    expect(errors('const x: number = +3.14')).toHaveLength(0)
+  })
+
+  it('-bigint returns bigint', () => {
+    expect(errors('const x: bigint = -10n')).toHaveLength(0)
+  })
+
+  it('~ (bitwise not) on number returns number', () => {
+    expect(errors('const x: number = ~5')).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when typeof result assigned to non-string', () => {
+    const diags = errors('const x: number = typeof 42')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('reports SJS-E001 when ! result assigned to non-boolean', () => {
+    const diags = errors('const x: string = !true')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('reports SJS-E001 when void result assigned to non-undefined', () => {
+    const diags = errors('const x: string = void 0')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('reports SJS-E001 when negation result assigned to wrong type', () => {
+    const diags = errors('const x: string = -5')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+})

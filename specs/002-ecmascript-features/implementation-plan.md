@@ -133,10 +133,10 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
    - `~expr` where expr is `number` → `number`
    - `void expr` → `undefined`
 
-- [ ] Implement UnaryExpression inference
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Implement UnaryExpression inference
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 
