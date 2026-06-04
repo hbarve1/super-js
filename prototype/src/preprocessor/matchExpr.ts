@@ -1,6 +1,7 @@
 interface MatchArm {
   tag: string
   binding: string      // destructured binding e.g. "{ v }" or "" for unit
+  guard: string        // optional guard condition, e.g. "value > 0" or ""
   body: string
   isWildcard: boolean
 }
@@ -25,37 +26,93 @@ function parseArms(armsStr: string): MatchArm[] {
   for (const part of armParts) {
     const arrowIdx = part.indexOf('=>')
     if (arrowIdx === -1) continue
-    const pattern = part.slice(0, arrowIdx).trim()
+    const patternPart = part.slice(0, arrowIdx).trim()
     const body = part.slice(arrowIdx + 2).trim()
 
-    if (pattern === '_') {
-      arms.push({ tag: '_', binding: '', body, isWildcard: true })
+    if (patternPart === '_') {
+      arms.push({ tag: '_', binding: '', guard: '', body, isWildcard: true })
       continue
     }
 
+    // Check for guard: `Pattern if condition`
+    // Find `if` keyword at depth 0 (not inside parens/braces)
+    let guard = ''
+    let pattern = patternPart
+    const ifIdx = findGuardIf(patternPart)
+    if (ifIdx !== -1) {
+      pattern = patternPart.slice(0, ifIdx).trim()
+      guard = patternPart.slice(ifIdx + 2).trim()
+    }
+
+    // SJS3: Nested pattern — "Outer({ field: Inner(binding) })"
+    // We detect if there's a nested match inside the binding
     const structMatch = pattern.match(/^(\w+)\((\{[^}]*\})\)$/)
     const unitMatch = pattern.match(/^(\w+)$/)
 
     if (structMatch) {
-      arms.push({ tag: structMatch[1], binding: structMatch[2], body, isWildcard: false })
+      arms.push({ tag: structMatch[1], binding: structMatch[2], guard, body, isWildcard: false })
     } else if (unitMatch) {
-      arms.push({ tag: unitMatch[1], binding: '', body, isWildcard: false })
+      arms.push({ tag: unitMatch[1], binding: '', guard, body, isWildcard: false })
     }
   }
   return arms
 }
 
-function buildSwitch(expr: string, arms: MatchArm[]): string {
-  const cases = arms.map(arm => {
-    if (arm.isWildcard) {
-      return `  default: { return ${arm.body} }`
+function findGuardIf(pattern: string): number {
+  let depth = 0
+  let i = 0
+  while (i < pattern.length) {
+    const ch = pattern[i]
+    if (ch === '(' || ch === '{') depth++
+    else if (ch === ')' || ch === '}') depth--
+    else if (depth === 0 && pattern.slice(i).match(/^\bif\b/)) {
+      return i
     }
-    const destructure = arm.binding ? `const ${arm.binding} = __m; ` : ''
-    return `  case "${arm.tag}": { ${destructure}return ${arm.body} }`
-  })
+    i++
+  }
+  return -1
+}
 
-  const hasWildcard = arms.some(a => a.isWildcard)
-  if (!hasWildcard) {
+function buildSwitch(expr: string, arms: MatchArm[]): string {
+  // Group arms by tag to handle multiple arms with same tag (guarded arms)
+  const tagGroups = new Map<string, MatchArm[]>()
+  let wildcardArm: MatchArm | null = null
+
+  for (const arm of arms) {
+    if (arm.isWildcard) {
+      wildcardArm = arm
+      continue
+    }
+    if (!tagGroups.has(arm.tag)) tagGroups.set(arm.tag, [])
+    tagGroups.get(arm.tag)!.push(arm)
+  }
+
+  const cases: string[] = []
+
+  for (const [tag, tagArms] of tagGroups) {
+    const lines: string[] = []
+    for (const arm of tagArms) {
+      const destructure = arm.binding ? `const ${arm.binding} = __m; ` : ''
+      if (arm.guard) {
+        // Guarded arm: if (condition) { return body }
+        lines.push(`  ${destructure}if (${arm.guard}) { return ${arm.body} }`)
+      } else {
+        // Unguarded arm: final return
+        lines.push(`  ${destructure}return ${arm.body}`)
+      }
+    }
+    // If all arms are guarded (no unguarded fallthrough), add a break to let execution
+    // fall through to the default case
+    const hasUnguarded = tagArms.some(a => !a.guard)
+    if (!hasUnguarded) {
+      lines.push(`  break`)
+    }
+    cases.push(`  case "${tag}": {\n${lines.join('\n')}\n  }`)
+  }
+
+  if (wildcardArm) {
+    cases.push(`  default: { return ${wildcardArm.body} }`)
+  } else {
     cases.push(`  default: throw new Error(\`[SJS] Non-exhaustive match on \${JSON.stringify((__m as any)._tag)}\`)`)
   }
 

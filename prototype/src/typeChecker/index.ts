@@ -1188,6 +1188,18 @@ export class TypeChecker {
       case 'ExportDefaultDeclaration':
         // Default exports don't need special handling in the type env
         break
+      case 'TSNonNullExpression':
+        // SJS-E006: non-null assertion `!` used (should be banned in strict mode)
+        if (this.strict) {
+          this.report({
+            code: 'SJS-E006',
+            severity: 'error',
+            message: `Non-null assertion '!' is not allowed in strict mode. Use a null check or optional chaining '?.' instead.`,
+            node: path.node,
+            specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md',
+          })
+        }
+        break
     }
   }
 

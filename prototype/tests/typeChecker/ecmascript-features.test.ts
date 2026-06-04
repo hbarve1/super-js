@@ -2289,3 +2289,22 @@ describe('E5: TSAsExpression, TSNonNullExpression', () => {
     expect(errors('const n: number = (1, 2, 3)')).toHaveLength(0)
   })
 })
+
+// ── SJS1: Missing error codes ─────────────────────────────────────────────────
+
+describe('SJS1: Missing error codes', () => {
+  it('SJS-E006: non-null assertion banned in strict mode', () => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse('const x: number | null = 42; const n = x!', { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker({ strict: true })
+    traverse(ast, { enter(p: any) { checker.check(p) } })
+    const codes = checker.getDiagnostics().filter((d: any) => d.severity === 'error').map((d: any) => d.code)
+    expect(codes).toContain('SJS-E006')
+  })
+
+  it('SJS-E006: non-null assertion NOT emitted in non-strict mode', () => {
+    expect(errors('const x: number | null = 42; const n = x!')).toHaveLength(0)
+  })
+})
