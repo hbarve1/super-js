@@ -3066,3 +3066,182 @@ describe('Proxy — ECMA-262 §28.2', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── Class private fields — ECMA-262 §15.7.1 ─────────────────────────────────
+
+describe('Class private fields (#field) — ECMA-262 §15.7.1', () => {
+  it('class with private field declaration — no error', () => {
+    expect(errors(`
+      class Counter {
+        #count: number = 0
+        increment() { this.#count++ }
+        get() { return this.#count }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('class with private method — no error', () => {
+    expect(errors(`
+      class Logger {
+        #log(msg: string) { console.log(msg) }
+        info(msg: string) { this.#log(msg) }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('class field type inference — this.x returns declared type', () => {
+    expect(errors(`
+      class Box {
+        value: number = 0
+        getValue(): number { return this.value }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('class methods registered as function types', () => {
+    expect(errors(`
+      class Adder {
+        add(a: number, b: number): number { return a + b }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── ThisExpression type inference ─────────────────────────────────────────────
+
+describe('this expression type inference in class methods', () => {
+  it('this.field access returns correct type', () => {
+    expect(errors(`
+      class Person {
+        name: string = 'Alice'
+        greet(): string { return this.name }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('this.method() call — no error', () => {
+    expect(errors(`
+      class Calc {
+        double(n: number): number { return n * 2 }
+        quad(n: number): number { return this.double(this.double(n)) }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Tagged template literals — ECMA-262 §13.2.9 ──────────────────────────────
+
+describe('Tagged template literals — ECMA-262 §13.2.9', () => {
+  it('String.raw returns string', () => {
+    expect(errors(`
+      const path: string = String.raw\`C:\\Users\\name\`
+    `)).toHaveLength(0)
+  })
+
+  it('custom tag function — infers return type', () => {
+    expect(errors(`
+      function html(strings: TemplateStringsArray, ...values: any[]): string {
+        return strings.join('')
+      }
+      const result: string = html\`<div>\${'hello'}</div>\`
+    `)).toHaveLength(0)
+  })
+
+  it('tagged template with any return — no error', () => {
+    expect(errors(`
+      const gql = (strings: any, ...args: any[]) => ({})
+      const query = gql\`query { user { name } }\`
+    `)).toHaveLength(0)
+  })
+})
+
+// ── OptionalCallExpression — ECMA-262 §13.5.1 ────────────────────────────────
+
+describe('Optional call expression (obj?.method()) — ECMA-262 §13.5.1', () => {
+  it('optional method call — no error', () => {
+    expect(errors(`
+      const arr: number[] | null = null
+      const len = arr?.map(x => x * 2)
+    `)).toHaveLength(0)
+  })
+
+  it('optional call on function — no error', () => {
+    expect(errors(`
+      const fn: ((x: number) => string) | undefined = undefined
+      const result = fn?.(42)
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Iterator helpers — ES2025 ─────────────────────────────────────────────────
+
+describe('Iterator helpers — ES2025', () => {
+  it('generator.toArray() returns array of yield type', () => {
+    expect(errors(`
+      function* nums(): Generator<number, void, unknown> { yield 1; yield 2 }
+      const g = nums()
+      const arr: number[] = g.toArray()
+    `)).toHaveLength(0)
+  })
+
+  it('generator.map() returns new generator', () => {
+    expect(errors(`
+      function* strs(): Generator<string, void, unknown> { yield 'a' }
+      const g = strs()
+      const mapped = g.map(s => s.length)
+    `)).toHaveLength(0)
+  })
+
+  it('generator.take() returns generator', () => {
+    expect(errors(`
+      function* inf(): Generator<number, void, unknown> { let i = 0; while(true) yield i++ }
+      const limited = inf().take(5)
+    `)).toHaveLength(0)
+  })
+
+  it('generator.forEach() — no error', () => {
+    expect(errors(`
+      function* items(): Generator<string, void, unknown> { yield 'a'; yield 'b' }
+      items().forEach(s => console.log(s))
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Array.from improvements ───────────────────────────────────────────────────
+
+describe('Array.from with mapper and iterable inference', () => {
+  it('Array.from(string) returns string array', () => {
+    expect(errors(`
+      const chars: string[] = Array.from('hello')
+    `)).toHaveLength(0)
+  })
+
+  it('Array.from(generator) infers yield type', () => {
+    expect(errors(`
+      function* nums(): Generator<number, void, unknown> { yield 1 }
+      const arr: number[] = Array.from(nums())
+    `)).toHaveLength(0)
+  })
+
+  it('Array.from(arr, mapper) infers mapped type', () => {
+    expect(errors(`
+      const strs: string[] = Array.from([1, 2, 3], n => String(n))
+    `)).toHaveLength(0)
+  })
+})
+
+// ── String static methods ─────────────────────────────────────────────────────
+
+describe('String static methods — ECMA-262 §22.1', () => {
+  it('String.fromCharCode returns string', () => {
+    expect(errors(`
+      const ch: string = String.fromCharCode(65)
+    `)).toHaveLength(0)
+  })
+
+  it('String.fromCodePoint returns string', () => {
+    expect(errors(`
+      const emoji: string = String.fromCodePoint(128512)
+    `)).toHaveLength(0)
+  })
+})

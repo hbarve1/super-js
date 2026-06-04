@@ -637,9 +637,43 @@ function inferStdlibMethodCall(
     if (globalName === 'Array') {
       switch (methodName) {
         case 'isArray': return T_BOOLEAN
-        case 'from': return { kind: 'array', elementType: T_ANY }
+        case 'from': {
+          // Array.from(iterable, mapper?) — infer element type from mapper if present
+          if (callArgs && callArgs.length >= 2) {
+            const sourceArg = callArgs[0]
+            const mapperArg = callArgs[1]
+            let elemType: Type = T_ANY
+            if (sourceArg && t.isExpression(sourceArg)) {
+              const srcType = inferExprType(sourceArg as t.Expression, env)
+              if (srcType.kind === 'array') elemType = (srcType as ArrayType).elementType
+              else if (srcType.kind === 'generator') elemType = (srcType as GeneratorType).yieldType
+              else if (srcType.kind === 'string') elemType = T_STRING
+            }
+            const cbRet = inferCallbackReturnType([mapperArg as any], elemType, env)
+            return { kind: 'array', elementType: cbRet }
+          }
+          // Array.from with single iterable arg — infer element type from source
+          if (callArgs && callArgs.length >= 1) {
+            const sourceArg = callArgs[0]
+            if (sourceArg && t.isExpression(sourceArg)) {
+              const srcType = inferExprType(sourceArg as t.Expression, env)
+              if (srcType.kind === 'array') return srcType
+              if (srcType.kind === 'generator') return { kind: 'array', elementType: (srcType as GeneratorType).yieldType }
+              if (srcType.kind === 'string') return { kind: 'array', elementType: T_STRING }
+            }
+          }
+          return { kind: 'array', elementType: T_ANY }
+        }
         case 'of': return { kind: 'array', elementType: T_ANY }
         case 'fromAsync': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+      }
+    }
+
+    // String static methods — ECMA-262 §22.1
+    if (globalName === 'String') {
+      switch (methodName) {
+        case 'raw': return T_STRING
+        case 'fromCharCode': case 'fromCodePoint': return T_STRING
       }
     }
 
@@ -919,7 +953,7 @@ function inferStdlibMethodCall(
     if (methodName === 'toString' || methodName === 'toJSON') return T_STRING
   }
 
-  // ── Generator instance methods — ECMA-262 §27.5 ────────────────────────────
+  // ── Generator/Iterator instance methods — ECMA-262 §27.5, ES2025 Iterator helpers ──
   if (objType.kind === 'generator') {
     const gen = objType as GeneratorType
     switch (methodName) {
@@ -933,6 +967,19 @@ function inferStdlibMethodCall(
       case 'throw': return { kind: 'object', properties: new Map<string, Type>([
         ['value', T_ANY], ['done', T_BOOLEAN],
       ]) }
+      // ES2025 Iterator helpers
+      case 'map': {
+        const cbRet = inferCallbackReturnType(callArgs, gen.yieldType, env)
+        return { kind: 'generator', yieldType: cbRet, returnType: T_VOID, nextType: T_ANY, async: gen.async } as GeneratorType
+      }
+      case 'filter': return { kind: 'generator', yieldType: gen.yieldType, returnType: T_VOID, nextType: T_ANY, async: gen.async } as GeneratorType
+      case 'take': case 'drop': return { kind: 'generator', yieldType: gen.yieldType, returnType: T_VOID, nextType: T_ANY, async: gen.async } as GeneratorType
+      case 'flatMap': return { kind: 'generator', yieldType: T_ANY, returnType: T_VOID, nextType: T_ANY, async: gen.async } as GeneratorType
+      case 'toArray': return { kind: 'array', elementType: gen.yieldType }
+      case 'forEach': return T_VOID
+      case 'some': case 'every': return T_BOOLEAN
+      case 'find': return makeUnion(gen.yieldType, T_UNDEFINED)
+      case 'reduce': return T_ANY
     }
   }
 
@@ -1049,6 +1096,10 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       if (node.name === 'undefined') return T_UNDEFINED
       return env.get(node.name) ?? T_ANY
     }
+
+    // ThisExpression — return the class's field object type if inside a method
+    case 'ThisExpression':
+      return env.get('this') ?? T_ANY
 
     // Binary expression — ECMA-262 §13.15
     case 'BinaryExpression': {
@@ -1193,8 +1244,10 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         }
         return T_ANY
       }
-      // Static property access
-      const propName = t.isIdentifier(node.property) ? node.property.name : null
+      // Static property access — including private names (#field)
+      const propName = t.isIdentifier(node.property) ? node.property.name
+        : t.isPrivateName(node.property) ? '#' + (node.property as t.PrivateName).id.name
+        : null
       if (!propName) return T_ANY
 
       // Tuple length
@@ -1252,6 +1305,25 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         if (fnType?.kind === 'function') return (fnType as FunctionType).returnType
       }
       // AwaitExpression unwraps Promise<T> — handled separately but also here for nested calls
+      return T_ANY
+    }
+
+    // OptionalCallExpression — obj?.method() — ECMA-262 §13.5.1
+    case 'OptionalCallExpression': {
+      const oce = node as t.OptionalCallExpression
+      if (t.isMemberExpression(oce.callee) && !oce.callee.computed) {
+        const callee = oce.callee as t.MemberExpression
+        const objType = inferExprType(t.isExpression(callee.object) ? callee.object : null, env)
+        const propName = t.isIdentifier(callee.property) ? callee.property.name : null
+        if (propName) {
+          const result = inferStdlibMethodCall(objType, callee.object, propName, env, oce.arguments)
+          if (result !== null) return makeUnion(result, T_UNDEFINED)
+        }
+      }
+      if (t.isIdentifier(oce.callee)) {
+        const fnType = env.get((oce.callee as t.Identifier).name)
+        if (fnType?.kind === 'function') return makeUnion((fnType as import('./types').FunctionType).returnType, T_UNDEFINED)
+      }
       return T_ANY
     }
 
@@ -1385,9 +1457,29 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return inferExprType(exprs[exprs.length - 1], env)
     }
 
-    // TaggedTemplateExpression — `tag\`template\``
-    case 'TaggedTemplateExpression':
+    // TaggedTemplateExpression — `tag\`template\`` — ECMA-262 §13.2.9
+    // Return type comes from the tag function. String.raw returns string.
+    case 'TaggedTemplateExpression': {
+      const tte = node as t.TaggedTemplateExpression
+      // Direct identifier tag: fn`...` — infer from fn's type
+      if (t.isIdentifier(tte.tag)) {
+        const tagType = env.get((tte.tag as t.Identifier).name)
+        if (tagType?.kind === 'function') return (tagType as import('./types').FunctionType).returnType
+      }
+      // Member expression tag: String.raw`...`, css`...`
+      if (t.isMemberExpression(tte.tag)) {
+        const obj = (tte.tag as t.MemberExpression).object
+        const prop = (tte.tag as t.MemberExpression).property
+        if (t.isIdentifier(obj) && t.isIdentifier(prop)) {
+          if (obj.name === 'String' && prop.name === 'raw') return T_STRING
+          // Look up the method's return type
+          const objType = inferExprType(obj, env)
+          const result = inferStdlibMethodCall(objType, obj, prop.name, env)
+          if (result !== null) return result
+        }
+      }
       return T_ANY
+    }
 
     // AssignmentExpression — result type is the RHS type
     case 'AssignmentExpression': {
@@ -1562,6 +1654,8 @@ export class TypeChecker {
   private currentClassMethodName: string | null = null
   // Interface registry: interfaceName → Set of required member names (SJS5)
   private interfaceRegistry: Map<string, Set<string>> = new Map()
+  // Class field types: className → fieldName → Type (for this.field inference)
+  private classFieldTypes: Map<string, Map<string, Type>> = new Map()
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1585,6 +1679,7 @@ export class TypeChecker {
     this.classInstanceBindings = new Map()
     this.currentClassMethodName = null
     this.interfaceRegistry = new Map()
+    this.classFieldTypes = new Map()
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1615,6 +1710,7 @@ export class TypeChecker {
       case 'ClassMethod':
         if ((node as t.ClassMethod).async) this.asyncDepth--
         this.currentClassMethodName = null
+        this.env.delete('this')
         break
       case 'ObjectMethod':
         if ((node as t.ObjectMethod).async) this.asyncDepth--
@@ -1674,9 +1770,14 @@ export class TypeChecker {
         break
       case 'ClassMethod':
         if ((path.node as t.ClassMethod).async) this.asyncDepth++
-        // Track which class method we're in for SJS-E011 access checks
         if (this.classContextStack.length > 0) {
-          this.currentClassMethodName = this.classContextStack[this.classContextStack.length - 1]
+          const className = this.classContextStack[this.classContextStack.length - 1]
+          this.currentClassMethodName = className
+          // Register 'this' type for field inference inside method bodies
+          const fieldTypes = this.classFieldTypes.get(className)
+          if (fieldTypes && fieldTypes.size > 0) {
+            this.env.set('this', { kind: 'object', properties: new Map(fieldTypes) } as ObjectType)
+          }
         }
         break
       case 'ObjectMethod':
@@ -1701,18 +1802,54 @@ export class TypeChecker {
       case 'ClassExpression': {
         const cls = path.node as t.ClassDeclaration | t.ClassExpression
         const className = cls.id?.name ?? '__anonymous__'
-        // Collect member visibility into persistent registry
         if (!this.classRegistry.has(className)) {
           const members = new Map<string, string>()
+          const fieldTypes = new Map<string, Type>()
           for (const member of cls.body.body) {
             if ((t.isClassMethod(member) || t.isClassProperty(member)) && t.isIdentifier(member.key)) {
-              members.set(member.key.name, member.accessibility ?? 'public')
+              const mKey = (member.key as t.Identifier).name
+              members.set(mKey, (member as any).accessibility ?? 'public')
+              if (t.isClassProperty(member)) {
+                const ann = (member as t.ClassProperty).typeAnnotation
+                const init = (member as t.ClassProperty).value
+                fieldTypes.set(mKey, ann && t.isTSTypeAnnotation(ann)
+                  ? resolveType((ann as t.TSTypeAnnotation).typeAnnotation)
+                  : (init && t.isExpression(init) ? inferExprType(init as t.Expression, this.env) : T_ANY))
+              }
+              if (t.isClassMethod(member)) {
+                const meth = member as t.ClassMethod
+                const retAnn = meth.returnType
+                const params = meth.params.map(p => ({
+                  name: t.isIdentifier(p) ? p.name : '_',
+                  type: t.isIdentifier(p) && p.typeAnnotation
+                    ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
+                  optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
+                }))
+                fieldTypes.set(mKey, {
+                  kind: 'function', params,
+                  returnType: retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
+                } as import('./types').FunctionType)
+              }
+            }
+            // Private fields — ECMA-262 §15.7.1
+            if (t.isClassPrivateProperty(member)) {
+              const privateName = '#' + (member.key as t.PrivateName).id.name
+              members.set(privateName, 'private')
+              const ann = (member as t.ClassPrivateProperty).typeAnnotation
+              const init = (member as t.ClassPrivateProperty).value
+              fieldTypes.set(privateName, ann && t.isTSTypeAnnotation(ann)
+                ? resolveType((ann as t.TSTypeAnnotation).typeAnnotation)
+                : (init && t.isExpression(init) ? inferExprType(init as t.Expression, this.env) : T_ANY))
+            }
+            if (t.isClassPrivateMethod(member)) {
+              const privateName = '#' + (member.key as t.PrivateName).id.name
+              members.set(privateName, 'private')
             }
           }
           this.classRegistry.set(className, members)
+          this.classFieldTypes.set(className, fieldTypes)
         }
         this.classContextStack.push(className)
-        // SJS5: verify implements clauses
         this.checkImplementsClauses(path as NodePath<t.ClassDeclaration | t.ClassExpression>)
         break
       }
