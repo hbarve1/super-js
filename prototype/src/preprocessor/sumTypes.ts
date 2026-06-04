@@ -26,7 +26,7 @@ function splitByPipe(rhs: string): string[] {
     if (ch === '{' || ch === '(' || ch === '<') depth++
     else if (ch === '}' || ch === ')' || ch === '>') depth--
     if (ch === '|' && depth === 0) {
-      parts.push(current.trim())
+      if (current.trim()) parts.push(current.trim())
       current = ''
     } else {
       current += ch
@@ -117,7 +117,8 @@ function variantToTS(v: Variant, typeParams: string): string {
     const typeDecl = `type ${v.name}${tp} = { _tag: "${v.name}"${fieldPart} }`
 
     if (v.namedFields.length === 0) {
-      const ctor = `const ${v.name} = (): ${returnType} => ({ _tag: "${v.name}" as const })`
+      // Empty struct = unit variant — a constant value, not a function
+      const ctor = `const ${v.name}: ${returnType} = { _tag: "${v.name}" as const }`
       return `${typeDecl}\n${ctor}`
     }
 
@@ -138,15 +139,29 @@ function variantToTS(v: Variant, typeParams: string): string {
   const ctorArgsPart = ctorArgs ? `, ${ctorArgs}` : ''
   const bareTP = tp ? tp.replace(/\s+extends\s+[^,>]+/g, '') : ''
   const returnType = `${v.name}${bareTP}`
+  // Unit variants (no fields) are constant values, not constructor functions.
+  // This lets `None`, `Increment`, etc. be used directly as values without `()`.
   const ctor = v.fields.length === 0
-    ? `const ${v.name} = (): ${returnType} => ({ _tag: "${v.name}" as const })`
+    ? `const ${v.name}: ${returnType} = { _tag: "${v.name}" as const }`
     : `const ${v.name} = ${tp}(${ctorParams}): ${returnType} => ({ _tag: "${v.name}" as const${ctorArgsPart} })`
 
   return `${typeDecl}\n${ctor}`
 }
 
 export function transformSumTypes(source: string): string {
-  return source.split('\n').map(line => {
+  // Join multi-line type declarations: `type X =\n  | A\n  | B` → `type X = | A | B`
+  const joined = source.replace(
+    /^(type\s+\w+(?:<[^>]+>)?\s*=\s*)$((?:\n\s*\|[^\n]*)+)/gm,
+    (_m, prefix, continuation) => {
+      const variants = continuation.replace(/\n\s*/g, ' ').trim()
+      return `${prefix}${variants}`
+    },
+  )
+
+  // Track unit variant names so we can strip no-arg calls like `None()` → `None`
+  const unitVariantNames = new Set<string>()
+
+  const transformed = joined.split('\n').map(line => {
     const m = line.match(SUM_TYPE_LINE)
     if (!m) return line
 
@@ -154,6 +169,13 @@ export function transformSumTypes(source: string): string {
     const typeParams = rawTP.trim()
     const variants = parseVariants(rhs.trim())
     if (!variants || variants.length < 1) return line
+
+    // Record unit variant names
+    for (const v of variants) {
+      if (v.fields.length === 0 && (!v.namedFields || v.namedFields.length === 0)) {
+        unitVariantNames.add(v.name)
+      }
+    }
 
     const variantLines = variants.map(v => variantToTS(v, typeParams)).join('\n')
     const variantRefs = variants.map(v => {
@@ -167,4 +189,11 @@ export function transformSumTypes(source: string): string {
     const typeAlias = `type ${name}${typeParams} = ${variantRefs}`
     return `${variantLines}\n${typeAlias}`
   }).join('\n')
+
+  if (unitVariantNames.size === 0) return transformed
+
+  // Strip no-arg calls to unit variants: `None()` → `None`
+  const namesPattern = Array.from(unitVariantNames).join('|')
+  const callRe = new RegExp(`\\b(${namesPattern})\\s*\\(\\s*\\)`, 'g')
+  return transformed.replace(callRe, '$1')
 }

@@ -6,7 +6,7 @@ describe('Sum type preprocessor', () => {
     const out = transformSumTypes(input)
     expect(out).toContain('_tag: "Red"')
     expect(out).toContain('_tag: "Green"')
-    expect(out).toContain('const Red = (): Red => ({ _tag: "Red" as const })')
+    expect(out).toContain('const Red: Red = { _tag: "Red" as const }')
   })
 
   it('transforms a single-field variant', () => {
@@ -47,7 +47,7 @@ describe('B2: Struct variant syntax', () => {
     const out = transformSumTypes(`type Option<T> = Some { value: T } | None`)
     expect(out).toContain('_tag: "Some"; value: T')
     expect(out).toContain('const Some = <T>(value: T): Some<T>')
-    expect(out).toContain('const None = (): None')
+    expect(out).toContain('const None: None = { _tag: "None" as const }')
   })
 
   it('mixed tuple and struct variants', () => {
@@ -61,6 +61,6 @@ describe('B2: Struct variant syntax', () => {
   it('struct variant with no fields is a unit variant', () => {
     const out = transformSumTypes(`type Status = Active { } | Inactive`)
     // Empty struct acts like unit variant
-    expect(out).toContain('const Active = (): Active')
+    expect(out).toContain('const Active: Active = { _tag: "Active" as const }')
   })
 })

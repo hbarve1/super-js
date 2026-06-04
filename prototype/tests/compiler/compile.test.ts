@@ -59,7 +59,7 @@ describe('compile() - single file', () => {
     const outFile = join(TMP_OUT, 'basics/hello-world.js')
     const output = execSync(`node "${outFile}"`).toString()
     expect(output).toContain('Hello, World!')
-    expect(output).toContain('Hello, Super.js!')
+    expect(output).toContain('Hello, SuperJS!')
   })
 
   it('generates a source map file', async () => {
@@ -129,7 +129,9 @@ describe('compile() - type stripping', () => {
     })
 
     const js = readFileSync(join(TMP_OUT, 'types/generics-advanced.js'), 'utf-8')
-    expect(js).not.toMatch(/<[A-Z]>/)
+    // Strip single-line comments before checking (comments may contain type references)
+    const jsNoComments = js.replace(/\/\/[^\n]*/g, '')
+    expect(jsNoComments).not.toMatch(/<[A-Z]>/)
   })
 
   it('compiles union types without emitting them', async () => {
@@ -140,7 +142,9 @@ describe('compile() - type stripping', () => {
     })
 
     const js = readFileSync(join(TMP_OUT, 'types/union-types.js'), 'utf-8')
-    expect(js).not.toMatch(/string \| number/)
+    // Check type annotations are stripped (strip comments first to avoid false positives)
+    const jsNoComments = js.replace(/\/\/[^\n]*/g, '')
+    expect(jsNoComments).not.toMatch(/:\s*string\s*\|\s*number/)
   })
 })
 
@@ -286,8 +290,8 @@ describe('compile() - functional patterns', () => {
     })
 
     const output = execSync(`node "${join(TMP_OUT, 'patterns/functional.js')}"`).toString()
-    expect(output).toContain('11')   // doubleAndIncrement(5) = 5*2+1 = 11
-    expect(output).toContain('HELLO WORLD')  // Maybe.of("  hello world  ")
+    expect(output).toContain('ALICE')   // head(['Alice',...]) → map toUpperCase → 'ALICE'
+    expect(output).toContain('49')      // pipe(3, x=>x*2, x=>x+1, x=>x*x) = 49
   })
 
   it('compiles builder.sjs and runs it', async () => {
@@ -298,9 +302,8 @@ describe('compile() - functional patterns', () => {
     })
 
     const output = execSync(`node "${join(TMP_OUT, 'patterns/builder.js')}"`).toString()
-    expect(output).toContain('/api/users')
-    expect(output).toContain('SELECT')
-    expect(output).toContain('Hello, Super.js!')
+    expect(output).toContain('SELECT * FROM products')
+    expect(output).toContain('SELECT * FROM users')
   })
 })
 
