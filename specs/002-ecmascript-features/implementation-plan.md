@@ -107,11 +107,11 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
    - If object type is `ObjectType` and property key exists, return its type
    - If object type is `ArrayType` and property is `length`, return `number`
 
-- [ ] Implement ObjectExpression inference
-- [ ] Implement static MemberExpression inference
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Implement ObjectExpression inference
+- [x] Implement static MemberExpression inference
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 

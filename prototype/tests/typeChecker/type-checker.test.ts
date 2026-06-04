@@ -237,3 +237,59 @@ describe('Computed MemberExpression inference — ECMA-262 §13.3.2', () => {
     expect(errors('const x: number = (someUnknown as any)[0]')).toHaveLength(0)
   })
 })
+
+// ── Task 2.2: Object literal type inference + static property access ──────────
+
+describe('ObjectExpression type inference — ECMA-262 §13.2.5', () => {
+  it('infers property type from object literal — string property', () => {
+    expect(errors('const obj = { name: "Alice" }; const x: string = obj.name')).toHaveLength(0)
+  })
+
+  it('infers property type from object literal — number property', () => {
+    expect(errors('const obj = { age: 30 }; const x: number = obj.age')).toHaveLength(0)
+  })
+
+  it('infers property type from object literal — boolean property', () => {
+    expect(errors('const obj = { active: true }; const x: boolean = obj.active')).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when property type mismatches declared variable type', () => {
+    const diags = errors('const obj = { count: 42 }; const x: string = obj.count')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('returns any for unknown property on object literal (gradual)', () => {
+    expect(errors('const obj = { a: 1 }; const x: number = obj.missing')).toHaveLength(0)
+  })
+
+  it('infers nested property type', () => {
+    expect(errors('const obj = { inner: { value: 99 } }; const x: number = obj.inner.value')).toHaveLength(0)
+  })
+
+  it('accepts assigning object literal result to any-typed variable (gradual)', () => {
+    expect(errors('const obj = { x: 1, y: 2 }')).toHaveLength(0)
+  })
+})
+
+describe('Static MemberExpression inference — ECMA-262 §13.3.2', () => {
+  it('infers number for .length on array variable', () => {
+    expect(errors('const arr: number[] = [1, 2, 3]; const n: number = arr.length')).toHaveLength(0)
+  })
+
+  it('infers number for .length on string variable', () => {
+    expect(errors('const s: string = "hello"; const n: number = s.length')).toHaveLength(0)
+  })
+
+  it('returns any for unknown property on identifier with no obj type', () => {
+    expect(errors('const x: number = someUnknown.prop')).toHaveLength(0)
+  })
+
+  it('infers property from computed-inferred object variable', () => {
+    expect(errors('const p = { x: 1, y: 2 }; const n: number = p.x')).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when .length result (number) assigned to string', () => {
+    const diags = errors('const arr: number[] = []; const s: string = arr.length')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+})

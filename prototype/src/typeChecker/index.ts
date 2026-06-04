@@ -18,7 +18,7 @@ import type {
   Type, PrototypeDiagnostic, TypeEnvironment,
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
-  UnionType, FunctionType, SumType, SumVariantType, ArrayType,
+  UnionType, FunctionType, SumType, SumVariantType, ArrayType, ObjectType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -56,6 +56,8 @@ const SPEC = {
   CONDITIONAL:    'https://tc39.es/ecma262/#sec-conditional-operator',
   // Array initializer — ECMA-262 §13.2.4
   ARRAY_INIT:     'https://tc39.es/ecma262/#sec-array-initializer',
+  // Object initializer — ECMA-262 §13.2.5
+  OBJECT_INIT:    'https://tc39.es/ecma262/#sec-object-initializer',
   // Property accessors — ECMA-262 §13.3.2
   PROP_ACCESS:    'https://tc39.es/ecma262/#sec-property-accessors',
 } as const
@@ -278,15 +280,44 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return { kind: 'array', elementType: allSame ? elTypes[0] : T_ANY } satisfies ArrayType
     }
 
+    // Object literal — ECMA-262 §13.2.5 Object Initializer
+    // Build ObjectType with properties map from key → inferred value type.
+    case 'ObjectExpression': {
+      const properties = new Map<string, Type>()
+      for (const prop of node.properties) {
+        if (!t.isObjectProperty(prop)) continue
+        let key: string | null = null
+        if (t.isIdentifier(prop.key)) key = prop.key.name
+        else if (t.isStringLiteral(prop.key)) key = prop.key.value
+        if (!key) continue
+        const valType = t.isExpression(prop.value)
+          ? inferExprType(prop.value, env)
+          : T_ANY
+        properties.set(key, valType)
+      }
+      return { kind: 'object', properties } satisfies ObjectType
+    }
+
     // Member expression — ECMA-262 §13.3.2 Property Accessors
-    // Computed access (arr[i]): if object is an ArrayType, return its elementType.
-    // Static access (obj.prop) is handled in Task 2.2; falls through to any for now.
+    // Computed access (arr[i]): if object is ArrayType, return elementType.
+    // Static access (obj.prop): look up property in ObjectType; `length` on arrays.
     case 'MemberExpression': {
-      if (!node.computed) return T_ANY
       const objType = inferExprType(
         t.isExpression(node.object) ? node.object : null, env
       )
-      if (objType.kind === 'array') return (objType as ArrayType).elementType
+      if (node.computed) {
+        if (objType.kind === 'array') return (objType as ArrayType).elementType
+        return T_ANY
+      }
+      // Static property access
+      const propName = t.isIdentifier(node.property) ? node.property.name : null
+      if (!propName) return T_ANY
+      if (propName === 'length' && (objType.kind === 'array' || objType.kind === 'string')) {
+        return T_NUMBER
+      }
+      if (objType.kind === 'object') {
+        return (objType as ObjectType).properties.get(propName) ?? T_ANY
+      }
       return T_ANY
     }
 
@@ -490,9 +521,11 @@ export class TypeChecker {
             specUrl: SPEC.LET_CONST,
           })
         }
-        // Register binding as declared type. Unannotated variables get `any` (gradual),
-        // preserving the invariant that only annotated positions are checked.
-        this.env.set(name, declared)
+        // Register binding. Annotated variables get the declared type.
+        // Unannotated variables get the INFERRED type so that downstream property
+        // access and member expressions can resolve property types (e.g. obj.name).
+        // If inference yields `any` (unknown initializer), the binding stays gradual.
+        this.env.set(name, hasAnnotation ? declared : inferred)
       } else {
         this.env.set(name, declared)
       }
