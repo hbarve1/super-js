@@ -186,13 +186,15 @@ function resolveType(node: t.TSType | null | undefined): Type {
         case 'ReadonlyArray':
           return { kind: 'array', elementType: args[0] ?? T_ANY }
         case 'Map':
-          return { kind: 'object', properties: new Map<string, Type>([['size', T_NUMBER]]) }
+          return { kind: 'object', brand: 'Map', mapKeyType: args[0] ?? T_ANY, mapValueType: args[1] ?? T_ANY, properties: new Map<string, Type>([['size', T_NUMBER]]) }
         case 'Set':
-          return { kind: 'object', properties: new Map<string, Type>([['size', T_NUMBER]]) }
+          return { kind: 'object', brand: 'Set', setElementType: args[0] ?? T_ANY, properties: new Map<string, Type>([['size', T_NUMBER]]) }
         case 'WeakMap':
+          return { kind: 'object', brand: 'WeakMap', mapKeyType: args[0] ?? T_ANY, mapValueType: args[1] ?? T_ANY, properties: new Map() }
         case 'WeakSet':
+          return { kind: 'object', brand: 'WeakSet', setElementType: args[0] ?? T_ANY, properties: new Map() }
         case 'WeakRef':
-          return { kind: 'object', properties: new Map() }
+          return { kind: 'object', brand: 'WeakRef', weakRefType: args[0] ?? T_ANY, properties: new Map() }
         case 'Record':
           return { kind: 'object', properties: new Map() }
         case 'Partial':
@@ -212,10 +214,13 @@ function resolveType(node: t.TSType | null | undefined): Type {
         case 'IterableIterator':
         case 'AsyncIterable':
           return { kind: 'array', elementType: args[0] ?? T_ANY }
-        case 'RegExp': return { kind: 'object', properties: new Map() }
-        case 'Date': return { kind: 'object', properties: new Map() }
+        case 'RegExp': return { kind: 'object', brand: 'RegExp', properties: new Map<string, Type>([
+          ['source', T_STRING], ['flags', T_STRING], ['global', T_BOOLEAN],
+          ['ignoreCase', T_BOOLEAN], ['multiline', T_BOOLEAN], ['lastIndex', T_NUMBER],
+        ]) }
+        case 'Date': return { kind: 'object', brand: 'Date', properties: new Map() }
         case 'Error': case 'TypeError': case 'RangeError': case 'SyntaxError':
-          return { kind: 'object', properties: new Map<string, Type>([
+          return { kind: 'object', brand: 'Error', properties: new Map<string, Type>([
             ['message', T_STRING], ['stack', makeUnion(T_STRING, T_UNDEFINED)], ['cause', T_ANY]
           ]) }
         default:
@@ -356,6 +361,41 @@ function stripNullable(t: Type): Type {
 // ── Stdlib type inference ─────────────────────────────────────────────────────
 
 /**
+ * Infers the return type of a callback function arg when it is an inline arrow/function.
+ * Used for Array.map, flatMap etc. to propagate element types through callbacks.
+ * Falls back to T_ANY when the callback body is too complex to infer.
+ */
+function inferCallbackReturnType(
+  callArgs: ReadonlyArray<t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder> | undefined,
+  paramType: Type,
+  env: TypeEnvironment,
+): Type {
+  const cb = callArgs?.[0]
+  if (!cb || !t.isExpression(cb)) return T_ANY
+  if (!t.isArrowFunctionExpression(cb) && !t.isFunctionExpression(cb)) return T_ANY
+  const cbFn = cb as t.ArrowFunctionExpression | t.FunctionExpression
+
+  // Build a child env with the first parameter bound to the element type
+  const cbEnv = new Map(env)
+  const firstParam = cbFn.params[0]
+  if (t.isIdentifier(firstParam)) {
+    cbEnv.set(firstParam.name, paramType)
+  } else if (t.isAssignmentPattern(firstParam) && t.isIdentifier(firstParam.left)) {
+    cbEnv.set(firstParam.left.name, paramType)
+  }
+
+  // Infer the body expression for concise arrow functions
+  if (t.isExpression(cbFn.body)) return inferExprType(cbFn.body, cbEnv)
+
+  // For block-body functions, use the declared return type if present
+  if (cbFn.returnType) {
+    return resolveType((cbFn.returnType as t.TSTypeAnnotation).typeAnnotation)
+  }
+
+  return T_ANY
+}
+
+/**
  * Infers the return type of a method call on a known stdlib type.
  * Returns null if the method is not recognized (caller falls through to generic handling).
  *
@@ -365,7 +405,8 @@ function inferStdlibMethodCall(
   objType: Type,
   objNode: t.Expression | t.Super | null,
   methodName: string,
-  _env: TypeEnvironment,
+  env: TypeEnvironment,
+  callArgs?: ReadonlyArray<t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder>,
 ): Type | null {
   // ── Array<T> methods — ECMA-262 §23.1 ──────────────────────────────────────
   if (objType.kind === 'array') {
@@ -375,10 +416,21 @@ function inferStdlibMethodCall(
       case 'pop': return makeUnion(elemType, T_UNDEFINED)
       case 'shift': return makeUnion(elemType, T_UNDEFINED)
       case 'unshift': return T_NUMBER
-      case 'map': return { kind: 'array', elementType: T_ANY }
-      case 'flatMap': return { kind: 'array', elementType: T_ANY }
+      case 'map': {
+        const cbReturnType = inferCallbackReturnType(callArgs, elemType, env)
+        return { kind: 'array', elementType: cbReturnType }
+      }
+      case 'flatMap': {
+        const cbReturnType = inferCallbackReturnType(callArgs, elemType, env)
+        return { kind: 'array', elementType: cbReturnType }
+      }
       case 'filter': return { kind: 'array', elementType: elemType }
-      case 'reduce': return T_ANY
+      case 'reduce': {
+        // Infer accumulator type from initial value (second arg) if present
+        const initArg = callArgs?.[1]
+        if (initArg && t.isExpression(initArg)) return inferExprType(initArg, env)
+        return T_ANY
+      }
       case 'find': return makeUnion(elemType, T_UNDEFINED)
       case 'findIndex': return T_NUMBER
       case 'findLast': return makeUnion(elemType, T_UNDEFINED)
@@ -576,6 +628,91 @@ function inferStdlibMethodCall(
     }
   }
 
+  // ── Map<K,V> instance methods — ECMA-262 §24.1 ─────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'Map') {
+    const o = objType as ObjectType
+    const V = o.mapValueType ?? T_ANY
+    switch (methodName) {
+      case 'get':    return makeUnion(V, T_UNDEFINED)
+      case 'set':    return objType
+      case 'has':    return T_BOOLEAN
+      case 'delete': return T_BOOLEAN
+      case 'clear':  return T_VOID
+      case 'forEach': return T_VOID
+      case 'keys': case 'values': case 'entries': return T_ANY
+    }
+  }
+
+  // ── Set<T> instance methods — ECMA-262 §24.2 ───────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'Set') {
+    switch (methodName) {
+      case 'add':    return objType
+      case 'has':    return T_BOOLEAN
+      case 'delete': return T_BOOLEAN
+      case 'clear':  return T_VOID
+      case 'forEach': return T_VOID
+      case 'keys': case 'values': case 'entries': return T_ANY
+      // ES2025 Set methods
+      case 'union': case 'intersection': case 'difference': case 'symmetricDifference': return objType
+      case 'isSubsetOf': case 'isSupersetOf': case 'isDisjointFrom': return T_BOOLEAN
+    }
+  }
+
+  // ── WeakMap<K,V> instance methods — ECMA-262 §24.3 ─────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'WeakMap') {
+    const o = objType as ObjectType
+    const V = o.mapValueType ?? T_ANY
+    switch (methodName) {
+      case 'get':    return makeUnion(V, T_UNDEFINED)
+      case 'set':    return objType
+      case 'has':    return T_BOOLEAN
+      case 'delete': return T_BOOLEAN
+    }
+  }
+
+  // ── WeakSet<T> instance methods — ECMA-262 §24.4 ───────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'WeakSet') {
+    switch (methodName) {
+      case 'add':    return objType
+      case 'has':    return T_BOOLEAN
+      case 'delete': return T_BOOLEAN
+    }
+  }
+
+  // ── WeakRef<T> instance method — ECMA-262 §26.1 ────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'WeakRef') {
+    const o = objType as ObjectType
+    if (methodName === 'deref') return makeUnion(o.weakRefType ?? T_ANY, T_UNDEFINED)
+  }
+
+  // ── Date instance methods — ECMA-262 §21.4 ─────────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'Date') {
+    switch (methodName) {
+      case 'getFullYear': case 'getMonth': case 'getDate': case 'getDay':
+      case 'getHours': case 'getMinutes': case 'getSeconds': case 'getMilliseconds':
+      case 'getTime': case 'getTimezoneOffset':
+      case 'getUTCFullYear': case 'getUTCMonth': case 'getUTCDate': case 'getUTCDay':
+      case 'getUTCHours': case 'getUTCMinutes': case 'getUTCSeconds': case 'getUTCMilliseconds':
+      case 'setTime': case 'setFullYear': case 'setMonth': case 'setDate':
+      case 'setHours': case 'setMinutes': case 'setSeconds': case 'setMilliseconds':
+        return T_NUMBER
+      case 'toString': case 'toDateString': case 'toTimeString':
+      case 'toISOString': case 'toUTCString': case 'toLocaleDateString':
+      case 'toLocaleTimeString': case 'toLocaleString': case 'toJSON':
+        return T_STRING
+      case 'valueOf': return T_NUMBER
+    }
+  }
+
+  // ── RegExp instance methods — ECMA-262 §22.2 ───────────────────────────────
+  if (objType.kind === 'object' && (objType as ObjectType).brand === 'RegExp') {
+    switch (methodName) {
+      case 'test': return T_BOOLEAN
+      case 'exec': return T_ANY  // RegExpExecArray | null — too complex for now
+      case 'toString': return T_STRING
+    }
+  }
+
   // ── Object-type method resolution ───────────────────────────────────────────
   if (objType.kind === 'object') {
     const methodType = (objType as ObjectType).properties.get(methodName)
@@ -664,6 +801,14 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     // null literal — ECMA-262 §6.1.2
     case 'NullLiteral':
       return T_NULL
+
+    // RegExp literal — /pattern/flags — ECMA-262 §13.2.8
+    case 'RegExpLiteral':
+      return { kind: 'object', brand: 'RegExp', properties: new Map([
+        ['source', T_STRING as Type], ['flags', T_STRING as Type],
+        ['global', T_BOOLEAN as Type], ['ignoreCase', T_BOOLEAN as Type],
+        ['multiline', T_BOOLEAN as Type], ['lastIndex', T_NUMBER as Type],
+      ]) }
 
     // Identifier — look up in type environment
     case 'Identifier': {
@@ -844,7 +989,7 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         const objType = inferExprType(objNode, env)
         const propName = t.isIdentifier(callee.property) ? callee.property.name : null
         if (propName) {
-          const stdlibResult = inferStdlibMethodCall(objType, callee.object, propName, env)
+          const stdlibResult = inferStdlibMethodCall(objType, callee.object, propName, env, node.arguments)
           if (stdlibResult !== null) return stdlibResult
         }
       }
@@ -875,10 +1020,15 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       if (t.isIdentifier(node.callee)) {
         const name = (node.callee as t.Identifier).name
         switch (name) {
-          case 'Map': return { kind: 'object', properties: new Map([['size', T_NUMBER as Type]]) }
-          case 'Set': return { kind: 'object', properties: new Map([['size', T_NUMBER as Type]]) }
-          case 'WeakMap': return { kind: 'object', properties: new Map() }
-          case 'WeakSet': return { kind: 'object', properties: new Map() }
+          case 'Map': return { kind: 'object', brand: 'Map', mapKeyType: T_ANY, mapValueType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
+          case 'Set': return { kind: 'object', brand: 'Set', setElementType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
+          case 'WeakMap': return { kind: 'object', brand: 'WeakMap', mapKeyType: T_ANY, mapValueType: T_ANY, properties: new Map() }
+          case 'WeakSet': return { kind: 'object', brand: 'WeakSet', setElementType: T_ANY, properties: new Map() }
+          case 'WeakRef': {
+            const refArg = node.arguments?.[0]
+            const refType = (refArg && t.isExpression(refArg)) ? inferExprType(refArg as t.Expression, env) : T_ANY
+            return { kind: 'object', brand: 'WeakRef', weakRefType: refType, properties: new Map() }
+          }
           case 'Error': case 'TypeError': case 'RangeError':
           case 'SyntaxError': case 'ReferenceError':
             return { kind: 'object', properties: new Map([
@@ -887,10 +1037,11 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
               ['cause', T_ANY as Type],
             ]) }
           case 'Promise': return { kind: 'promise', valueType: T_ANY }
-          case 'Date': return { kind: 'object', properties: new Map() }
-          case 'RegExp': return { kind: 'object', properties: new Map([
-            ['source', T_STRING as Type],
-            ['flags', T_STRING as Type],
+          case 'Date': return { kind: 'object', brand: 'Date', properties: new Map() }
+          case 'RegExp': return { kind: 'object', brand: 'RegExp', properties: new Map([
+            ['source', T_STRING as Type], ['flags', T_STRING as Type],
+            ['global', T_BOOLEAN as Type], ['ignoreCase', T_BOOLEAN as Type],
+            ['multiline', T_BOOLEAN as Type], ['lastIndex', T_NUMBER as Type],
           ]) }
           case 'URL': return { kind: 'object', properties: new Map() }
         }

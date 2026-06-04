@@ -2043,6 +2043,109 @@ describe('L5: Map/Set/Weak* method signatures', () => {
   it('Map type resolves from type annotation', () => {
     expect(errors('const m: Map<string, number> = new Map()')).toHaveLength(0)
   })
+
+  it('Map.set() returns Map type (no error)', () => {
+    expect(errors(`
+      const m = new Map()
+      m.set("key", 42)
+    `)).toHaveLength(0)
+  })
+
+  it('Map.has() returns boolean', () => {
+    expect(errors(`
+      const m = new Map()
+      const b: boolean = m.has("key")
+    `)).toHaveLength(0)
+  })
+
+  it('Map.delete() returns boolean', () => {
+    expect(errors(`
+      const m = new Map()
+      const b: boolean = m.delete("key")
+    `)).toHaveLength(0)
+  })
+
+  it('Map.get() returns V | undefined', () => {
+    expect(errors(`
+      const m: Map<string, number> = new Map()
+      const v = m.get("key")
+    `)).toHaveLength(0)
+  })
+
+  it('Map.clear() returns void', () => {
+    expect(errors(`
+      const m = new Map()
+      m.clear()
+    `)).toHaveLength(0)
+  })
+
+  it('Set.add() returns Set type (no error)', () => {
+    expect(errors(`
+      const s = new Set()
+      s.add("hello")
+    `)).toHaveLength(0)
+  })
+
+  it('Set.has() returns boolean', () => {
+    expect(errors(`
+      const s = new Set()
+      const b: boolean = s.has("hello")
+    `)).toHaveLength(0)
+  })
+
+  it('Set.delete() returns boolean', () => {
+    expect(errors(`
+      const s = new Set()
+      const b: boolean = s.delete("hello")
+    `)).toHaveLength(0)
+  })
+
+  it('WeakMap.set/get/has/delete all callable (no error)', () => {
+    expect(errors(`
+      const wm = new WeakMap()
+      const key = {}
+      wm.set(key, 1)
+      wm.has(key)
+      wm.delete(key)
+    `)).toHaveLength(0)
+  })
+
+  it('WeakSet.add/has/delete all callable (no error)', () => {
+    expect(errors(`
+      const ws = new WeakSet()
+      const key = {}
+      ws.add(key)
+      ws.has(key)
+      ws.delete(key)
+    `)).toHaveLength(0)
+  })
+
+  it('WeakRef.deref() returns value | undefined', () => {
+    expect(errors(`
+      const obj = { x: 1 }
+      const ref = new WeakRef(obj)
+      const v = ref.deref()
+    `)).toHaveLength(0)
+  })
+
+  it('Set.union/intersection/difference return Set (ES2025)', () => {
+    expect(errors(`
+      const a = new Set()
+      const b = new Set()
+      a.union(b)
+      a.intersection(b)
+      a.difference(b)
+    `)).toHaveLength(0)
+  })
+
+  it('Set.isSubsetOf/isSupersetOf return boolean (ES2025)', () => {
+    expect(errors(`
+      const a = new Set()
+      const b = new Set()
+      const r1: boolean = a.isSubsetOf(b)
+      const r2: boolean = a.isSupersetOf(b)
+    `)).toHaveLength(0)
+  })
 })
 
 // ── L6: Error/JSON/console/RegExp signatures ──────────────────────────────────
@@ -2522,5 +2625,105 @@ describe('SJS5: implements clause structural conformance', () => {
     `
     const codes = typeCheckWithExit(src).map((d: any) => d.code)
     expect(codes).toContain('SJS-E012')
+  })
+})
+
+// ── Date instance methods ─────────────────────────────────────────────────────
+
+describe('Date instance methods — ECMA-262 §21.4', () => {
+  it('new Date() toISOString() returns string', () => {
+    expect(errors(`
+      const d = new Date()
+      const s: string = d.toISOString()
+    `)).toHaveLength(0)
+  })
+
+  it('new Date() getFullYear() returns number', () => {
+    expect(errors(`
+      const d = new Date()
+      const y: number = d.getFullYear()
+    `)).toHaveLength(0)
+  })
+
+  it('new Date() getTime() returns number', () => {
+    expect(errors(`
+      const d = new Date()
+      const t: number = d.getTime()
+    `)).toHaveLength(0)
+  })
+
+  it('new Date() toLocaleDateString() returns string', () => {
+    expect(errors(`
+      const d = new Date()
+      const s: string = d.toLocaleDateString()
+    `)).toHaveLength(0)
+  })
+
+  it('Date.now() returns number', () => {
+    expect(errors('const t: number = Date.now()')).toHaveLength(0)
+  })
+})
+
+// ── RegExp instance methods ───────────────────────────────────────────────────
+
+describe('RegExp instance methods — ECMA-262 §22.2', () => {
+  it('new RegExp .test() returns boolean', () => {
+    expect(errors(`
+      const re = new RegExp("d+")
+      const b: boolean = re.test("abc123")
+    `)).toHaveLength(0)
+  })
+
+  it('new RegExp .exec() is callable', () => {
+    expect(errors(`
+      const re = new RegExp("d+")
+      const result = re.exec("abc123")
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Array.map callback return type inference ──────────────────────────────────
+
+describe('Array.map/reduce callback inference', () => {
+  it('arr.map(n => n.toString()) returns string[]', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const strs: string[] = nums.map(n => n.toString())
+    `)).toHaveLength(0)
+  })
+
+  it('arr.map inferred string[] assignable to string[] annotation', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const strs: string[] = nums.map(n => n.toString())
+    `)).toHaveLength(0)
+  })
+
+  it('arr.map(n => n * 2) returns number[]', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const doubled: number[] = nums.map(n => n * 2)
+    `)).toHaveLength(0)
+  })
+
+  it('arr.flatMap(n => [n, n]) returns number[]', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const flat: number[] = nums.flatMap(n => [n, n])
+    `)).toHaveLength(0)
+  })
+
+  it('arr.reduce(acc, n => acc + n, 0) infers number from initial', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const total: number = nums.reduce((acc, n) => acc + n, 0)
+    `)).toHaveLength(0)
+  })
+
+  it('arr.reduce with string initial infers string', () => {
+    expect(errors(`
+      const words: string[] = ['a', 'b']
+      const joined: string = words.reduce((acc, w) => acc + w, "")
+    `)).toHaveLength(0)
   })
 })

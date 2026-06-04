@@ -24,6 +24,16 @@ export interface ObjectType {
   kind: 'object'
   properties: Map<string, Type>
   typeParams?: string[]
+  /** Identifies branded stdlib objects (Map, Set, WeakMap, WeakSet, WeakRef, Date, RegExp, Error). */
+  brand?: string
+  /** Map<K,V> / WeakMap<K,V> — key type */
+  mapKeyType?: Type
+  /** Map<K,V> / WeakMap<K,V> — value type */
+  mapValueType?: Type
+  /** Set<T> / WeakSet<T> — element type */
+  setElementType?: Type
+  /** WeakRef<T> — inner type */
+  weakRefType?: Type
 }
 
 // ── Composite types ───────────────────────────────────────────────────────────
