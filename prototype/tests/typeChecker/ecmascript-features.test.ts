@@ -942,3 +942,85 @@ describe('Gap 2: Logical/conditional expression type inference (ECMA-262 §13.13
     expect(errors('const x: string = true ? "a" : "b"')).toHaveLength(0)
   })
 })
+
+// ── Gap 3 — Array literal and index type inference ────────────────────────────
+
+describe('Gap 3: Array literal and index type inference (ECMA-262 §13.2.4)', () => {
+  // Homogeneous arrays infer element type
+  it('[1, 2, 3] infers as number[]', () => {
+    expect(errors('const arr: number[] = [1, 2, 3]')).toHaveLength(0)
+  })
+
+  it('["a", "b"] infers as string[]', () => {
+    expect(errors('const arr: string[] = ["a", "b"]')).toHaveLength(0)
+  })
+
+  it('[true, false] infers as boolean[]', () => {
+    expect(errors('const arr: boolean[] = [true, false]')).toHaveLength(0)
+  })
+
+  it('[1n, 2n] infers as bigint[]', () => {
+    expect(errors('const arr: bigint[] = [1n, 2n]')).toHaveLength(0)
+  })
+
+  // Array assigned to non-array type emits SJS-E001
+  it('array literal assigned to string (not array) emits SJS-E001', () => {
+    expect(errorCodes('const s: string = [1, 2, 3]')).toContain('SJS-E001')
+  })
+
+  // Empty array — element type is any (gradual)
+  it('empty array [] is consistent with any array annotation', () => {
+    expect(errors('const arr: number[] = []')).toHaveLength(0)
+  })
+
+  // Subscript access (computed MemberExpression)
+  it('arr[i] where arr: number[] returns number', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const n: number = arr[0]
+    `)).toHaveLength(0)
+  })
+
+  it('arr[i] where arr: string[] returns string', () => {
+    expect(errors(`
+      const arr: string[] = ["a", "b"]
+      const s: string = arr[0]
+    `)).toHaveLength(0)
+  })
+
+  it('arr[i] where arr: number[] assigned to string emits SJS-E001', () => {
+    expect(errorCodes(`
+      const arr: number[] = [1, 2, 3]
+      const s: string = arr[0]
+    `)).toContain('SJS-E001')
+  })
+
+  // Inferred array from literal then subscript
+  it('subscript of inferred number[] returns number', () => {
+    expect(errors(`
+      const arr = [10, 20, 30]
+      const n: number = arr[1]
+    `)).toHaveLength(0)
+  })
+
+  it('subscript of inferred string[] returns string', () => {
+    expect(errors(`
+      const arr = ["x", "y", "z"]
+      const s: string = arr[0]
+    `)).toHaveLength(0)
+  })
+
+  // Array.length — ECMA-262 §23.1.3.16
+  it('arr.length infers as number', () => {
+    expect(errors('const arr = [1, 2, 3]; const n: number = arr.length')).toHaveLength(0)
+  })
+
+  it('arr.length assigned to string emits SJS-E001', () => {
+    expect(errorCodes('const arr = [1, 2, 3]; const s: string = arr.length')).toContain('SJS-E001')
+  })
+
+  // Mixed element types — element type falls back to any
+  it('mixed array [1, "a"] is assignable to any[]', () => {
+    expect(errors('const arr: any[] = [1, "a"]')).toHaveLength(0)
+  })
+})
