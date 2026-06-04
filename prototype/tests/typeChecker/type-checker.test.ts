@@ -183,3 +183,57 @@ describe('ConditionalExpression (ternary) type inference — ECMA-262 §13.14', 
     expect(errors('const x: number = (foo as any) ? (bar as any) : (baz as any)')).toHaveLength(0)
   })
 })
+
+// ── Task 2.1: Array literal type inference — ECMA-262 §13.2.4 ────────────────
+
+describe('ArrayExpression type inference — ECMA-262 §13.2.4', () => {
+  it('infers number[] from homogeneous number array', () => {
+    expect(errors('const x: number[] = [1, 2, 3]')).toHaveLength(0)
+  })
+
+  it('infers string[] from homogeneous string array', () => {
+    expect(errors('const x: string[] = ["a", "b", "c"]')).toHaveLength(0)
+  })
+
+  it('infers boolean[] from homogeneous boolean array', () => {
+    expect(errors('const x: boolean[] = [true, false]')).toHaveLength(0)
+  })
+
+  it('reports error when assigning array to a non-array type', () => {
+    const diags = errors('const x: number = [1, 2, 3]')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('infers any[] for empty array — assignable to any array type', () => {
+    expect(errors('const x: number[] = []')).toHaveLength(0)
+  })
+
+  it('infers any[] for mixed-type array — assignable via gradual typing', () => {
+    // any[] is consistent with any[] annotation (gradual)
+    expect(errors('const x: number[] = [1, "two"]')).toHaveLength(0)
+  })
+})
+
+describe('Computed MemberExpression inference — ECMA-262 §13.3.2', () => {
+  it('infers element type from annotated number[] array variable', () => {
+    expect(errors('const arr: number[] = [1, 2]; const x: number = arr[0]')).toHaveLength(0)
+  })
+
+  it('infers element type from annotated string[] array variable', () => {
+    expect(errors('const arr: string[] = ["a"]; const x: string = arr[0]')).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when element type mismatches declared type', () => {
+    const diags = errors('const arr: string[] = ["a"]; const x: number = arr[0]')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('infers number from inline number[] literal access', () => {
+    expect(errors('const x: number = [10, 20, 30][1]')).toHaveLength(0)
+  })
+
+  it('returns any for access on non-array (gradual)', () => {
+    // unknown variable → any → no error
+    expect(errors('const x: number = (someUnknown as any)[0]')).toHaveLength(0)
+  })
+})

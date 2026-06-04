@@ -18,7 +18,7 @@ import type {
   Type, PrototypeDiagnostic, TypeEnvironment,
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
-  UnionType, FunctionType, SumType, SumVariantType,
+  UnionType, FunctionType, SumType, SumVariantType, ArrayType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -54,6 +54,10 @@ const SPEC = {
   LOGICAL_OPS:    'https://tc39.es/ecma262/#sec-binary-logical-operators',
   // Conditional operator — ECMA-262 §13.14
   CONDITIONAL:    'https://tc39.es/ecma262/#sec-conditional-operator',
+  // Array initializer — ECMA-262 §13.2.4
+  ARRAY_INIT:     'https://tc39.es/ecma262/#sec-array-initializer',
+  // Property accessors — ECMA-262 §13.3.2
+  PROP_ACCESS:    'https://tc39.es/ecma262/#sec-property-accessors',
 } as const
 
 // ── Resolve: TSType node → Type ───────────────────────────────────────────────
@@ -260,6 +264,30 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const consequent = inferExprType(node.consequent, env)
       const alternate  = inferExprType(node.alternate,  env)
       return makeUnion(consequent, alternate)
+    }
+
+    // Array literal — ECMA-262 §13.2.4 Array Initializer
+    // If all elements share the same type T, infer Array<T>; otherwise Array<any>.
+    case 'ArrayExpression': {
+      if (node.elements.length === 0) return { kind: 'array', elementType: T_ANY }
+      const elTypes = node.elements.map(el =>
+        el && t.isExpression(el) ? inferExprType(el, env) : T_ANY
+      )
+      const firstKind = elTypes[0].kind
+      const allSame = elTypes.every(et => et.kind === firstKind)
+      return { kind: 'array', elementType: allSame ? elTypes[0] : T_ANY } satisfies ArrayType
+    }
+
+    // Member expression — ECMA-262 §13.3.2 Property Accessors
+    // Computed access (arr[i]): if object is an ArrayType, return its elementType.
+    // Static access (obj.prop) is handled in Task 2.2; falls through to any for now.
+    case 'MemberExpression': {
+      if (!node.computed) return T_ANY
+      const objType = inferExprType(
+        t.isExpression(node.object) ? node.object : null, env
+      )
+      if (objType.kind === 'array') return (objType as ArrayType).elementType
+      return T_ANY
     }
 
     // Arrow function — ECMA-262 §15.3 (arrow function definitions)

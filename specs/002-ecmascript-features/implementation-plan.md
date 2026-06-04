@@ -84,11 +84,11 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
 2. `MemberExpression` (computed, e.g., `arr[0]`):
    - If object type is `ArrayType`, return its `elementType`
 
-- [ ] Implement ArrayExpression inference
-- [ ] Implement computed MemberExpression inference
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Implement ArrayExpression inference
+- [x] Implement computed MemberExpression inference
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 
