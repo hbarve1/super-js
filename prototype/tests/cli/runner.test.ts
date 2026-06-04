@@ -111,3 +111,45 @@ describe('runTests() — result shape', () => {
     expect(failed?.error).toContain('test error message')
   })
 })
+
+// ── P2: Watch mode + coverage stub ───────────────────────────────────────────
+
+describe('P2: --coverage stub', () => {
+  it('logs "use `jest --coverage`" message when coverage=true', async () => {
+    const logged: string[] = []
+    const origLog = console.log
+    console.log = (...args: unknown[]) => { logged.push(args.join(' ')) }
+    try {
+      await runTests({ directory: TMP, coverage: true })
+    } finally {
+      console.log = origLog
+    }
+    const combined = logged.join('\n')
+    expect(combined).toContain('jest --coverage')
+  })
+
+  it('still runs tests when coverage=true', async () => {
+    write('cov.test.sjs', 'import assert from "assert"\nassert.ok(true)')
+    const r = await runTests({ directory: TMP, coverage: true, silent: true })
+    expect(r.total).toBe(1)
+    expect(r.passed).toBe(1)
+  })
+})
+
+describe('P2: --watch mode', () => {
+  it('runs tests initially and returns a result with watch=true', async () => {
+    write('watch.test.sjs', 'import assert from "assert"\nassert.ok(true)')
+    const r = await runTests({ directory: TMP, watch: true, silent: true })
+    expect(r.total).toBe(1)
+    expect(r.passed).toBe(1)
+  })
+
+  it('returns correct result shape in watch mode', async () => {
+    write('w2.test.sjs', 'import assert from "assert"\nassert.strictEqual(1, 1)')
+    const r = await runTests({ directory: TMP, watch: true, silent: true })
+    expect(r).toHaveProperty('total')
+    expect(r).toHaveProperty('passed')
+    expect(r).toHaveProperty('failed')
+    expect(r).toHaveProperty('files')
+  })
+})

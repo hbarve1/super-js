@@ -2336,4 +2336,191 @@ describe('SJS1: Missing error codes', () => {
   it('SJS-E009: regular import used as value is valid', () => {
     expect(errors(`import { Foo } from './foo'; const x = Foo`)).toHaveLength(0)
   })
+
+  it('SJS-E005: member access on null union type emits warning', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x.length')
+    const codes = diags.map(d => d.code)
+    expect(codes).toContain('SJS-E005')
+  })
+
+  it('SJS-E005: member access on undefined union type emits warning', () => {
+    const diags = typeCheck('const x: number | undefined = 1; const n = x.toString()')
+    const codes = diags.map(d => d.code)
+    expect(codes).toContain('SJS-E005')
+  })
+
+  it('SJS-E005: optional chaining on nullable is safe (no warning)', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x?.length')
+    expect(diags.map(d => d.code)).not.toContain('SJS-E005')
+  })
+
+  it('SJS-E005: member access on non-nullable type is safe', () => {
+    const diags = typeCheck('const x: string = "hello"; const n = x.length')
+    expect(diags.map(d => d.code)).not.toContain('SJS-E005')
+  })
+
+  it('SJS-E005: diagnostic message mentions optional chaining', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x.length')
+    const e005 = diags.filter(d => d.code === 'SJS-E005')
+    expect(e005.length).toBeGreaterThan(0)
+    expect(e005[0].message).toContain('?.')
+  })
+})
+
+// ── SJS4: pub/priv/prot access modifiers ──────────────────────────────────────
+
+describe('SJS4: access modifier preprocessor + SJS-E011 type checker', () => {
+  it('preprocessor converts priv → private', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { priv x: number = 0 }'
+    expect(transformAccessModifiers(src)).toContain('private x')
+  })
+
+  it('preprocessor converts pub → public', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { pub greet() {} }'
+    expect(transformAccessModifiers(src)).toContain('public greet')
+  })
+
+  it('preprocessor converts prot → protected', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'class Foo { prot value: string = "" }'
+    expect(transformAccessModifiers(src)).toContain('protected value')
+  })
+
+  it('preprocessor does not replace pub/priv as substrings of identifiers', () => {
+    const { transformAccessModifiers } = require('../../src/preprocessor/accessModifiers')
+    const src = 'const publish = "pub"'
+    expect(transformAccessModifiers(src)).not.toContain('publiclish')
+  })
+
+  it('SJS-E011: accessing private member from instance outside class emits error', () => {
+    const typeCheckWithExit = (source: string) => {
+      const { parse } = require('@babel/parser')
+      const traverse = require('@babel/traverse').default
+      const { TypeChecker } = require('../../src/typeChecker')
+      const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+      const checker = new TypeChecker()
+      traverse(ast, {
+        enter(p: any) { checker.check(p) },
+        exit(p: any) { checker.exit(p) },
+      })
+      return checker.getDiagnostics().filter((d: any) => d.severity === 'error').map((d: any) => d.code)
+    }
+
+    const src = `
+      class Counter {
+        private count: number = 0
+        increment() { this.count++ }
+      }
+      const c = new Counter()
+      const n = c.count
+    `
+    expect(typeCheckWithExit(src)).toContain('SJS-E011')
+  })
+
+  it('SJS-E011: accessing own private member from within class method is valid', () => {
+    const typeCheckWithExit = (source: string) => {
+      const { parse } = require('@babel/parser')
+      const traverse = require('@babel/traverse').default
+      const { TypeChecker } = require('../../src/typeChecker')
+      const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+      const checker = new TypeChecker()
+      traverse(ast, {
+        enter(p: any) { checker.check(p) },
+        exit(p: any) { checker.exit(p) },
+      })
+      return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+    }
+
+    const src = `
+      class Counter {
+        private count: number = 0
+        getCount(): number { return this.count }
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+})
+
+// ── SJS5: implements clause checking ──────────────────────────────────────────
+
+describe('SJS5: implements clause structural conformance', () => {
+  const typeCheckWithExit = (source: string) => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
+    const checker = new TypeChecker()
+    traverse(ast, {
+      enter(p: any) { checker.check(p) },
+      exit(p: any) { checker.exit(p) },
+    })
+    return checker.getDiagnostics().filter((d: any) => d.severity === 'error')
+  }
+
+  it('SJS-E012: class missing method required by interface', () => {
+    const src = `
+      interface Greeter {
+        greet(name: string): string
+      }
+      class BadGreeter implements Greeter {
+        // Missing: greet method
+        sayHello(): string { return "hello" }
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
+
+  it('class with all interface members is valid', () => {
+    const src = `
+      interface Greeter {
+        greet(name: string): string
+      }
+      class HelloGreeter implements Greeter {
+        greet(name: string): string { return "Hello " + name }
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+
+  it('SJS-E012: class missing property required by interface', () => {
+    const src = `
+      interface Named {
+        name: string
+      }
+      class Unnamed implements Named {
+        // Missing: name property
+        id: number = 0
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
+
+  it('class implementing multiple interfaces — all members required', () => {
+    const src = `
+      interface A { foo(): void }
+      interface B { bar(): void }
+      class C implements A, B {
+        foo(): void {}
+        bar(): void {}
+      }
+    `
+    expect(typeCheckWithExit(src)).toHaveLength(0)
+  })
+
+  it('SJS-E012: class missing one of two interface members', () => {
+    const src = `
+      interface A { foo(): void }
+      interface B { bar(): void }
+      class C implements A, B {
+        foo(): void {}
+        // Missing: bar
+      }
+    `
+    const codes = typeCheckWithExit(src).map((d: any) => d.code)
+    expect(codes).toContain('SJS-E012')
+  })
 })

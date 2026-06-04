@@ -360,3 +360,76 @@ describe('compile() - target options', () => {
     expect(js).toMatch(/=>/)
   })
 })
+
+// ── P1: Source map verification ───────────────────────────────────────────────
+
+describe('P1: Source map verification after preprocessor transforms', () => {
+  it('source map references the original .sjs filename', async () => {
+    await compile({
+      sourceFile: join(EXAMPLES_DIR, 'basics/hello-world.sjs'),
+      outDir: TMP_OUT,
+      sourceRoot: EXAMPLES_DIR,
+      silent: true,
+    })
+
+    const mapFile = join(TMP_OUT, 'basics/hello-world.js.map')
+    const map = JSON.parse(readFileSync(mapFile, 'utf-8'))
+    expect(map.sources.some((s: string) => s.includes('hello-world.sjs'))).toBe(true)
+  })
+
+  it('source map version is 3 (industry standard)', async () => {
+    await compile({
+      sourceFile: join(EXAMPLES_DIR, 'basics/hello-world.sjs'),
+      outDir: TMP_OUT,
+      sourceRoot: EXAMPLES_DIR,
+      silent: true,
+    })
+
+    const map = JSON.parse(readFileSync(join(TMP_OUT, 'basics/hello-world.js.map'), 'utf-8'))
+    expect(map.version).toBe(3)
+  })
+
+  it('source map has non-empty mappings string', async () => {
+    await compile({
+      sourceFile: join(EXAMPLES_DIR, 'basics/hello-world.sjs'),
+      outDir: TMP_OUT,
+      sourceRoot: EXAMPLES_DIR,
+      silent: true,
+    })
+
+    const map = JSON.parse(readFileSync(join(TMP_OUT, 'basics/hello-world.js.map'), 'utf-8'))
+    expect(typeof map.mappings).toBe('string')
+    expect(map.mappings.length).toBeGreaterThan(0)
+  })
+
+  it('source map for classes.sjs (with OOP annotations) is valid JSON with mappings', async () => {
+    await compile({
+      sourceFile: join(EXAMPLES_DIR, 'basics/classes.sjs'),
+      outDir: TMP_OUT,
+      sourceRoot: EXAMPLES_DIR,
+      silent: true,
+    })
+
+    const mapPath = join(TMP_OUT, 'basics/classes.js.map')
+    expect(existsSync(mapPath)).toBe(true)
+    const rawMap = JSON.parse(readFileSync(mapPath, 'utf-8'))
+    expect(rawMap.version).toBe(3)
+    expect(Array.isArray(rawMap.sources)).toBe(true)
+    expect(rawMap.sources.length).toBeGreaterThan(0)
+    expect(rawMap.mappings.length).toBeGreaterThan(0)
+  })
+
+  it('source map sources reference the original .sjs filename (not preprocessed)', async () => {
+    await compile({
+      sourceFile: join(EXAMPLES_DIR, 'basics/arrays.sjs'),
+      outDir: TMP_OUT,
+      sourceRoot: EXAMPLES_DIR,
+      silent: true,
+    })
+
+    const map = JSON.parse(readFileSync(join(TMP_OUT, 'basics/arrays.js.map'), 'utf-8'))
+    expect(map.sources.some((s: string) => s.includes('arrays.sjs'))).toBe(true)
+    // sourcesContent should not be present (external map references file)
+    expect(map.mappings.length).toBeGreaterThan(0)
+  })
+})

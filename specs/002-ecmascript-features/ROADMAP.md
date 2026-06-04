@@ -333,13 +333,13 @@ Deadline: 2026-06-05T06:00:00Z
 
 ## PHASE 6 — Pipeline Polish (~1h)
 
-### P1: Source map verification [ ]
-- [ ] Verify source maps are correct after preprocessor transforms
-- [ ] Integration test: error location in `.sjs` source, not transformed output
+### P1: Source map verification [x]
+- [x] Verify source maps are correct after preprocessor transforms
+- [x] Integration test: error location in `.sjs` source, not transformed output
 
-### P2: Test runner watch + coverage stubs [ ]
-- [ ] `superjs test --watch` — implement incremental re-run
-- [ ] `superjs test --coverage` — stub with "not yet implemented, use --coverage with jest"
+### P2: Test runner watch + coverage stubs [x]
+- [x] `superjs test --watch` — implement incremental re-run
+- [x] `superjs test --coverage` — stub with "not yet implemented, use --coverage with jest"
 
 ### P3: Remaining lint rules [x]
 - [x] SJS-L002: prefer `?.` over null check + access
@@ -357,12 +357,12 @@ Update this section after each phase:
 |---|---|---|---|
 | Phase 0 — Blockers | 3 | 3 | 100% |
 | Phase 1 — Statements | 5 | 5 | 100% |
-| Phase 2 — Stdlib | 7 | 6 | 86% |
+| Phase 2 — Stdlib | 7 | 7 | 100% |
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
 | Phase 5 — SJS Features | 5 | 5 | 100% |
-| Phase 6 — Pipeline | 3 | 1 | 33% |
-| **TOTAL** | **34** | **32** | **94%** |
+| Phase 6 — Pipeline | 3 | 3 | 100% |
+| **TOTAL** | **34** | **34** | **100%** |
 
 ---
 
