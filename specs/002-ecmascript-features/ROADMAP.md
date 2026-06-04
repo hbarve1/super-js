@@ -337,9 +337,9 @@ Deadline: 2026-06-05T06:00:00Z
 - [ ] Verify source maps are correct after preprocessor transforms
 - [ ] Integration test: error location in `.sjs` source, not transformed output
 
-### P2: Test runner watch + coverage stubs [ ]
-- [ ] `superjs test --watch` — implement incremental re-run
-- [ ] `superjs test --coverage` — stub with "not yet implemented, use --coverage with jest"
+### P2: Test runner watch + coverage stubs [x]
+- [x] `superjs test --watch` — implement incremental re-run
+- [x] `superjs test --coverage` — stub with "not yet implemented, use --coverage with jest"
 
 ### P3: Remaining lint rules [x]
 - [x] SJS-L002: prefer `?.` over null check + access
@@ -361,8 +361,8 @@ Update this section after each phase:
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
 | Phase 5 — SJS Features | 5 | 3 | 60% |
-| Phase 6 — Pipeline | 3 | 1 | 33% |
-| **TOTAL** | **34** | **29** | **85%** |
+| Phase 6 — Pipeline | 3 | 2 | 67% |
+| **TOTAL** | **34** | **30** | **88%** |
 
 ---
 
