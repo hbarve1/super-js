@@ -217,85 +217,85 @@ Deadline: 2026-06-05T06:00:00Z
 - [x] Tests for console.log, JSON.parse/stringify
 - [x] Commit: `feat(stdlib): Error/JSON/console/RegExp signatures`
 
-### L7: Symbol, Date, globalThis, Iterator helpers [ ]
+### L7: Symbol, Date, globalThis, Iterator helpers [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `Symbol(desc?): symbol`
-- [ ] `Symbol.iterator`, `Symbol.asyncIterator`, `Symbol.toPrimitive`
-- [ ] `Date`: constructor overloads, `Date.now(): number`, key instance methods
-- [ ] `globalThis` typed as `{ [key: string]: unknown }`
-- [ ] `Iterator<T>` protocol: `.map/.filter/.take/.drop/.toArray` (ES2025)
-- [ ] `Iterator.from<T>(iterable): Iterator<T>`
-- [ ] Tests for Symbol, Date.now(), Iterator.from()
-- [ ] Commit: `feat(stdlib): Symbol/Date/globalThis/Iterator signatures`
+- [x] `Symbol(desc?): symbol`
+- [x] `Symbol.iterator`, `Symbol.asyncIterator`, `Symbol.toPrimitive`
+- [x] `Date`: constructor overloads, `Date.now(): number`, key instance methods
+- [x] `globalThis` typed as `{ [key: string]: unknown }`
+- [x] `Iterator<T>` protocol: `.map/.filter/.take/.drop/.toArray` (ES2025)
+- [x] `Iterator.from<T>(iterable): Iterator<T>`
+- [x] Tests for Symbol, Date.now(), Iterator.from()
+- [x] Commit: `feat(stdlib): Symbol/Date/globalThis/Iterator signatures`
 
 ---
 
 ## PHASE 3 — Type System Completions (~3h)
 
-### T1: Tuple types [ ]
-- [ ] `TSTypeTuple` in `resolveType` → `{ kind: 'tuple', elements: SjsType[] }`
-- [ ] Array destructuring from tuple: each element gets correct type
-- [ ] `tuple[0]` → element type at index 0
-- [ ] Rest in tuple: `[string, ...number[]]`
-- [ ] Commit: `feat(typecheck): tuple type support`
+### T1: Tuple types [x]
+- [x] `TSTypeTuple` in `resolveType` → `{ kind: 'tuple', elements: SjsType[] }`
+- [x] Array destructuring from tuple: each element gets correct type
+- [x] `tuple[0]` → element type at index 0
+- [x] Rest in tuple: `[string, ...number[]]`
+- [x] Commit: `feat(typecheck): tuple type support`
 
-### T2: Index signatures [ ]
-- [ ] `TSIndexSignature` in resolveType → `{ kind: 'record', keyType, valueType }`
-- [ ] `obj[key]` where obj has index signature → valueType
-- [ ] `Record<K,V>` type reference → index signature type
-- [ ] Commit: `feat(typecheck): index signature types`
+### T2: Index signatures [x]
+- [x] `TSIndexSignature` in resolveType → `{ kind: 'record', keyType, valueType }`
+- [x] `obj[key]` where obj has index signature → valueType
+- [x] `Record<K,V>` type reference → index signature type
+- [x] Commit: `feat(typecheck): index signature types`
 
-### T3: User-defined type guards [ ]
-- [ ] `TSTypePredicate` in resolveType → store as function with `guards` field
-- [ ] When calling type guard fn, narrow type in true branch
-- [ ] `Array.isArray(x)` narrows to `any[]`
-- [ ] Commit: `feat(typecheck): user-defined type guards`
+### T3: User-defined type guards [x]
+- [x] `TSTypePredicate` in resolveType → store as function with `guards` field
+- [x] When calling type guard fn, narrow type in true branch
+- [x] `Array.isArray(x)` narrows to `any[]`
+- [x] Commit: `feat(typecheck): user-defined type guards`
 
-### T4: readonly modifier [ ]
-- [ ] `TSReadonlyKeyword` on properties → mark property as readonly
-- [ ] Assignment to readonly → SJS-E010 error
-- [ ] `ReadonlyArray<T>` → array that rejects mutating methods
-- [ ] Commit: `feat(typecheck): readonly modifier`
+### T4: readonly modifier [x]
+- [x] `TSReadonlyKeyword` on properties → mark property as readonly
+- [x] Assignment to readonly → SJS-E010 error
+- [x] `ReadonlyArray<T>` → array that rejects mutating methods
+- [x] Commit: `feat(typecheck): readonly modifier`
 
-### T5: Null safety `T?` syntax (SJS-specific) [ ]
-- [ ] Preprocessor: `T?` type syntax → `T | null | undefined`
-- [ ] Type checker: `T?` resolves to union
-- [ ] Error SJS-E001 when accessing `T?` without null check or `?.`
-- [ ] Non-null by default: `T` (not `T?`) rejects null assignment
-- [ ] Commit: `feat(typecheck): T? null safety syntax`
+### T5: Null safety `T?` syntax (SJS-specific) [x]
+- [x] Preprocessor: `T?` type syntax → `T | null | undefined`
+- [x] Type checker: `T?` resolves to union
+- [x] Error SJS-E001 when accessing `T?` without null check or `?.`
+- [x] Non-null by default: `T` (not `T?`) rejects null assignment
+- [x] Commit: `feat(typecheck): T? null safety syntax`
 
-### T6: `new` expression type inference [ ]
-- [ ] `NewExpression` in `inferExprType`
-- [ ] Look up class/constructor in env → return instance type
-- [ ] Built-in constructors: `new Map()`, `new Set()`, `new Error()`, `new Promise()`
-- [ ] Commit: `feat(typecheck): new expression type inference`
+### T6: `new` expression type inference [x]
+- [x] `NewExpression` in `inferExprType`
+- [x] Look up class/constructor in env → return instance type
+- [x] Built-in constructors: `new Map()`, `new Set()`, `new Error()`, `new Promise()`
+- [x] Commit: `feat(typecheck): new expression type inference`
 
 ---
 
 ## PHASE 4 — Expression Completions (~2h)
 
-### E1: Increment/decrement operators [ ]
-- [ ] `UpdateExpression` (++/--) in `inferExprType`
-- [ ] Operand must be `number` or `bigint`
-- [ ] Returns same type as operand
+### E1: Increment/decrement operators [x]
+- [x] `UpdateExpression` (++/--) in `inferExprType`
+- [x] Operand must be `number` or `bigint`
+- [x] Returns same type as operand
 
-### E2: Logical assignment `&&=` `||=` `??=` [ ]
-- [ ] `AssignmentExpression` with operator `&&=`, `||=`, `??=`
-- [ ] Type-check same as `a = a && b` etc.
+### E2: Logical assignment `&&=` `||=` `??=` [x]
+- [x] `AssignmentExpression` with operator `&&=`, `||=`, `??=`
+- [x] Type-check same as `a = a && b` etc.
 
-### E3: Compound assignment operators [ ]
-- [ ] `+=`, `-=`, `*=`, `/=`, `%=`, `**=`
-- [ ] Type-check operands like binary op
+### E3: Compound assignment operators [x]
+- [x] `+=`, `-=`, `*=`, `/=`, `%=`, `**=`
+- [x] Type-check operands like binary op
 
-### E4: `new.target`, `import.meta` [ ]
-- [ ] `MetaProperty` nodes
-- [ ] `import.meta` → `{ url: string; [key: string]: unknown }`
-- [ ] `new.target` → constructor type or undefined
+### E4: `new.target`, `import.meta` [x]
+- [x] `MetaProperty` nodes
+- [x] `import.meta` → `{ url: string; [key: string]: unknown }`
+- [x] `new.target` → constructor type or undefined
 
-### E5: Yield expression [ ]
-- [ ] `YieldExpression` in generators
-- [ ] Infer yield type from generator's `Generator<Y,R,N>` type
-- [ ] `yield*` delegates to nested iterable
+### E5: Yield expression [x]
+- [x] `YieldExpression` in generators
+- [x] Infer yield type from generator's `Generator<Y,R,N>` type
+- [x] `yield*` delegates to nested iterable
 
 ---
 
@@ -358,11 +358,11 @@ Update this section after each phase:
 | Phase 0 — Blockers | 3 | 3 | 100% |
 | Phase 1 — Statements | 5 | 5 | 100% |
 | Phase 2 — Stdlib | 7 | 6 | 86% |
-| Phase 3 — Type System | 6 | 0 | 0% |
-| Phase 4 — Expressions | 5 | 0 | 0% |
+| Phase 3 — Type System | 6 | 6 | 100% |
+| Phase 4 — Expressions | 5 | 5 | 100% |
 | Phase 5 — SJS Features | 5 | 0 | 0% |
-| Phase 6 — Pipeline | 3 | 0 | 0% |
-| **TOTAL** | **34** | **14** | **41%** |
+| Phase 6 — Pipeline | 3 | 1 | 33% |
+| **TOTAL** | **34** | **26** | **76%** |
 
 ---
 
