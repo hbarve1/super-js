@@ -889,6 +889,78 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return T_ANY
     }
 
+    // MetaProperty — import.meta, new.target — ECMA-262 §13.3.12, §15.5
+    case 'MetaProperty': {
+      const meta = (node as t.MetaProperty).meta.name
+      const prop = (node as t.MetaProperty).property.name
+      if (meta === 'import' && prop === 'meta') {
+        // import.meta → { url: string; [key: string]: unknown }
+        const properties = new Map<string, Type>([['url', T_STRING]])
+        return { kind: 'object', properties }
+      }
+      if (meta === 'new' && prop === 'target') {
+        // new.target → function type or undefined
+        return makeUnion({ kind: 'function', params: [], returnType: T_ANY }, T_UNDEFINED)
+      }
+      return T_ANY
+    }
+
+    // YieldExpression — ECMA-262 §15.5
+    case 'YieldExpression':
+      return T_ANY  // Generator yield type inference requires tracking the generator type
+
+    // SequenceExpression — `a, b, c` → type of last expression
+    case 'SequenceExpression': {
+      const exprs = (node as t.SequenceExpression).expressions
+      if (exprs.length === 0) return T_ANY
+      return inferExprType(exprs[exprs.length - 1], env)
+    }
+
+    // TaggedTemplateExpression — `tag\`template\``
+    case 'TaggedTemplateExpression':
+      return T_ANY
+
+    // AssignmentExpression — result type is the RHS type
+    case 'AssignmentExpression': {
+      return inferExprType((node as t.AssignmentExpression).right, env)
+    }
+
+    // TSNonNullExpression (x!) — same type as inner (non-null assertion)
+    case 'TSNonNullExpression':
+      return inferExprType((node as t.TSNonNullExpression).expression, env)
+
+    // TSAsExpression (x as T) — the cast target type
+    case 'TSAsExpression':
+      return resolveType((node as t.TSAsExpression).typeAnnotation)
+
+    // TSSatisfiesExpression (x satisfies T) — the expression type
+    case 'TSSatisfiesExpression':
+      return inferExprType((node as any).expression, env)
+
+    // TSTypeAssertion (<T>x) — the cast target type
+    case 'TSTypeAssertion':
+      return resolveType((node as t.TSTypeAssertion).typeAnnotation)
+
+    // FunctionExpression — infer return type from annotation
+    case 'FunctionExpression': {
+      const fe = node as t.FunctionExpression
+      const returnAnnotation = fe.returnType
+        ? (fe.returnType as t.TSTypeAnnotation).typeAnnotation
+        : null
+      const params = fe.params.map(p => ({
+        name: t.isIdentifier(p) ? p.name : '_',
+        type: t.isIdentifier(p) && p.typeAnnotation
+          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+          : T_ANY,
+        optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
+      }))
+      return {
+        kind: 'function',
+        params,
+        returnType: resolveType(returnAnnotation),
+      }
+    }
+
     default:
       return T_ANY
   }
@@ -1359,11 +1431,46 @@ export class TypeChecker {
   private checkAssignment(path: NodePath<t.AssignmentExpression>): void {
     if (!t.isIdentifier(path.node.left)) return
 
+    const op = path.node.operator
     const name = (path.node.left as t.Identifier).name
     const declaredType = this.env.get(name)
     if (!declaredType || declaredType.kind === 'any') return
 
+    // Logical assignment (&&=, ||=, ??=) and compound assignment (+=, -=, etc.)
+    // treat the RHS as if computing `a = a OP b`. For type checking purposes,
+    // the RHS type must still be consistent with the declared variable type.
     const rhsType = inferExprType(path.node.right, this.env)
+
+    // For compound arithmetic ops, check operand type compatibility
+    const COMPOUND_ARITH = new Set(['+=', '-=', '*=', '/=', '%=', '**=', '<<=', '>>=', '>>>=', '&=', '|=', '^='])
+    if (COMPOUND_ARITH.has(op)) {
+      // The declared type must support arithmetic
+      if (!isConsistent(rhsType, declaredType)) {
+        this.report({
+          code: 'SJS-E001',
+          severity: 'error',
+          message: `I cannot apply '${op}' with a value of type '${rhsType.kind}' to '${name}' declared as '${declaredType.kind}'.`,
+          node: path.node.right,
+          specUrl: 'https://tc39.es/ecma262/#sec-assignment-operators',
+        })
+      }
+      return
+    }
+
+    // Logical assignment (&&=, ||=, ??=) — RHS type must be consistent with declared
+    if (op === '&&=' || op === '||=' || op === '??=') {
+      if (!isConsistent(rhsType, declaredType)) {
+        this.report({
+          code: 'SJS-E001',
+          severity: 'error',
+          message: `I cannot use '${op}' to assign a value of type '${rhsType.kind}' to '${name}' declared as '${declaredType.kind}'.`,
+          node: path.node.right,
+          specUrl: 'https://tc39.es/ecma262/#sec-assignment-operators',
+        })
+      }
+      return
+    }
+
     if (!isConsistent(rhsType, declaredType)) {
       this.report({
         code: 'SJS-E001',

@@ -2199,3 +2199,93 @@ describe('T6: new expression type inference', () => {
     expect(errors('const r = new RegExp("pattern")')).toHaveLength(0)
   })
 })
+
+// ── E1: Increment/decrement operators ────────────────────────────────────────
+
+describe('E1: Increment/decrement operators', () => {
+  it('++ on number returns number', () => {
+    expect(errors('let x: number = 5; const n: number = x++')).toHaveLength(0)
+  })
+
+  it('-- on number returns number', () => {
+    expect(errors('let x: number = 5; const n: number = x--')).toHaveLength(0)
+  })
+
+  it('++ is valid on number variable', () => {
+    expect(errors('let x: number = 0; x++')).toHaveLength(0)
+  })
+})
+
+// ── E2: Logical assignment operators ─────────────────────────────────────────
+
+describe('E2: Logical assignment operators', () => {
+  it('&&= is valid', () => {
+    expect(errors('let x: number = 5; x &&= 10')).toHaveLength(0)
+  })
+
+  it('||= is valid', () => {
+    expect(errors('let x: number = 0; x ||= 42')).toHaveLength(0)
+  })
+
+  it('??= is valid', () => {
+    expect(errors(`let x: number | null = null; x ??= 42`)).toHaveLength(0)
+  })
+})
+
+// ── E3: Compound assignment operators ────────────────────────────────────────
+
+describe('E3: Compound assignment operators', () => {
+  it('+= is valid', () => {
+    expect(errors('let x: number = 5; x += 10')).toHaveLength(0)
+  })
+
+  it('-= is valid', () => {
+    expect(errors('let x: number = 5; x -= 3')).toHaveLength(0)
+  })
+
+  it('*= is valid', () => {
+    expect(errors('let x: number = 5; x *= 2')).toHaveLength(0)
+  })
+
+  it('/= is valid', () => {
+    expect(errors('let x: number = 10; x /= 2')).toHaveLength(0)
+  })
+
+  it('%=, **= are valid', () => {
+    expect(errors('let x: number = 10; x %= 3')).toHaveLength(0)
+    expect(errors('let x: number = 2; x **= 3')).toHaveLength(0)
+  })
+})
+
+// ── E4: import.meta and new.target ────────────────────────────────────────────
+
+describe('E4: import.meta and new.target', () => {
+  it('import.meta.url is string', () => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse('const url: string = import.meta.url', {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(p: any) { checker.check(p) } })
+    expect(checker.getDiagnostics().filter((d: any) => d.severity === 'error')).toHaveLength(0)
+  })
+})
+
+// ── E5: TSAsExpression and TSNonNullExpression ────────────────────────────────
+
+describe('E5: TSAsExpression, TSNonNullExpression', () => {
+  it('x as T returns type T', () => {
+    expect(errors('const x: any = 42; const n: number = x as number')).toHaveLength(0)
+  })
+
+  it('x! non-null assertion is valid', () => {
+    expect(errors('const x: number | null = 42; const n = x!')).toHaveLength(0)
+  })
+
+  it('sequence expression returns type of last', () => {
+    expect(errors('const n: number = (1, 2, 3)')).toHaveLength(0)
+  })
+})
