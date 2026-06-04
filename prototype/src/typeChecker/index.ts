@@ -298,6 +298,27 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       }
     }
 
+    // Optional member expression — ECMA-262 §13.5.1 Optional Chains
+    // `obj?.prop` → T | undefined where T is the property type on non-null obj.
+    // When obj is `any`, the result is `any` (gradual).
+    case 'OptionalMemberExpression': {
+      const objType = inferExprType(
+        t.isExpression(node.object) ? node.object : null, env
+      )
+      if (objType.kind === 'any') return T_ANY  // gradual: any?.x is any
+
+      const propName = !node.computed && t.isIdentifier(node.property)
+        ? node.property.name
+        : null
+
+      let propType: Type = T_ANY
+      if (propName && objType.kind === 'object') {
+        propType = (objType as ObjectType).properties.get(propName) ?? T_ANY
+      }
+      // `?.` always adds undefined to the result (short-circuits to undefined when nullish)
+      return makeUnion(propType, T_UNDEFINED)
+    }
+
     // Object literal — ECMA-262 §13.2.5 Object Initializer
     // Build ObjectType with properties map from key → inferred value type.
     case 'ObjectExpression': {

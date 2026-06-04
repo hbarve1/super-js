@@ -153,11 +153,11 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
 2. Improve `??` inference in `LogicalExpression` (from Task 1.2) to narrow union types:
    - `(T | null | undefined) ?? U` → `T | U`
 
-- [ ] Implement OptionalMemberExpression inference
-- [ ] Refine nullish coalescing narrowing
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Implement OptionalMemberExpression inference
+- [x] Refine nullish coalescing narrowing
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 

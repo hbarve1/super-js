@@ -348,3 +348,53 @@ describe('UnaryExpression type inference — ECMA-262 §13.5', () => {
     expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
   })
 })
+
+// ── Task 3.2: Optional chaining type inference ────────────────────────────────
+
+describe('OptionalMemberExpression type inference — ECMA-262 §13.5.1', () => {
+  it('returns property type | undefined for known object property', () => {
+    // string | undefined is consistent with string | undefined
+    expect(errors('const obj = { name: "Alice" }; const x: string | undefined = obj?.name')).toHaveLength(0)
+  })
+
+  it('reports error when optional chain result (T | undefined) assigned to T only', () => {
+    // string | undefined is NOT consistent with string (undefined is not string)
+    const diags = errors('const obj = { name: "Alice" }; const x: string = obj?.name')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('returns any for optional chain on any-typed object (gradual)', () => {
+    expect(errors('const obj: any = {}; const x: string = obj?.name')).toHaveLength(0)
+  })
+
+  it('returns any | undefined (= any) for unknown property on inferred object', () => {
+    // unknown property → T_ANY; makeUnion(any, undefined) = any
+    expect(errors('const obj = { a: 1 }; const x: string = obj?.missing')).toHaveLength(0)
+  })
+
+  it('chains correctly: obj?.a returns number | undefined, consistent with number | undefined', () => {
+    expect(errors('const obj = { a: 42 }; const x: number | undefined = obj?.a')).toHaveLength(0)
+  })
+})
+
+describe('Nullish coalescing narrowing — ECMA-262 §13.13', () => {
+  it('(string | null) ?? string → string (null stripped, string | string = string)', () => {
+    expect(errors('const x: string = (null as string | null) ?? "default"')).toHaveLength(0)
+  })
+
+  it('(string | undefined) ?? string → string', () => {
+    expect(errors('const x: string = (undefined as string | undefined) ?? "fallback"')).toHaveLength(0)
+  })
+
+  it('null ?? number → number', () => {
+    expect(errors('const x: number = null ?? 42')).toHaveLength(0)
+  })
+
+  it('undefined ?? string → string', () => {
+    expect(errors('const x: string = undefined ?? "hello"')).toHaveLength(0)
+  })
+
+  it('string ?? number → string | number when string is not nullable', () => {
+    expect(errors('const x: string | number = "a" ?? 42')).toHaveLength(0)
+  })
+})
