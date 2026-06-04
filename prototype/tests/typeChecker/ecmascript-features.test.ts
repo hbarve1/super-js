@@ -3245,3 +3245,223 @@ describe('String static methods — ECMA-262 §22.1', () => {
     `)).toHaveLength(0)
   })
 })
+
+describe('super() and super.method() — ECMA-262 §13.3.7', () => {
+  it('super() call in constructor — no error', () => {
+    expect(errors(`
+      class Animal {
+        name: string = 'animal'
+        constructor(name: string) { this.name = name }
+      }
+      class Dog extends Animal {
+        constructor() { super('dog') }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('super.method() call — no error', () => {
+    expect(errors(`
+      class Animal {
+        speak(): string { return 'animal' }
+      }
+      class Dog extends Animal {
+        speak(): string { return super.speak() + '!' }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('super.method() result — callable without error', () => {
+    expect(errors(`
+      class Base {
+        greet(name: string): string { return 'hello ' + name }
+      }
+      class Child extends Base {
+        greet(name: string): string {
+          const base = super.greet(name)
+          return 'child: ' + base
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('#field in obj — ES2022 brand check — ECMA-262 §13.5.6', () => {
+  it('#field in obj returns boolean — no error', () => {
+    expect(errors(`
+      class Measurement {
+        #value: number = 0
+        static isMeasurement(obj: unknown): boolean {
+          return #value in (obj as object)
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('#field in obj assignable to boolean', () => {
+    expect(errors(`
+      class Counter {
+        #count: number = 0
+        hasBrand(obj: object): boolean {
+          return #count in obj
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Class static blocks — ES2022 — ECMA-262 §15.7.1', () => {
+  it('static block — no error', () => {
+    expect(errors(`
+      class Config {
+        static version: string = '1.0'
+        static {
+          Config.version = '2.0'
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('static block with variable — no error', () => {
+    expect(errors(`
+      class Registry {
+        static count: number = 0
+        static {
+          const init = 42
+          Registry.count = init
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('RegExp.escape — ES2025 — ECMA-262 §22.2.x', () => {
+  it('RegExp.escape returns string', () => {
+    expect(errors(`
+      const escaped: string = RegExp.escape('hello.world')
+    `)).toHaveLength(0)
+  })
+
+  it('RegExp.escape result usable as string', () => {
+    expect(errors(`
+      function safeSearch(term: string): RegExp {
+        const pattern: string = RegExp.escape(term)
+        return new RegExp(pattern, 'gi')
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Abstract class members — ECMA-262 §15.7.2', () => {
+  it('abstract class declaration — no error', () => {
+    expect(errors(`
+      abstract class Shape {
+        abstract area(): number
+        perimeter(): number { return 0 }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('abstract method registered in class registry — concrete subclass satisfies', () => {
+    expect(errors(`
+      abstract class Animal {
+        abstract speak(): string
+        breathe(): void {}
+      }
+      class Dog extends Animal {
+        speak(): string { return 'woof' }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('abstract class with typed abstract property — no error', () => {
+    expect(errors(`
+      abstract class Repository {
+        abstract readonly name: string
+        describe(): string { return 'repo' }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('String.prototype ES2024 well-formed methods — ECMA-262 §22.1.3', () => {
+  it('isWellFormed() returns boolean', () => {
+    expect(errors(`
+      const s: string = 'hello'
+      const ok: boolean = s.isWellFormed()
+    `)).toHaveLength(0)
+  })
+
+  it('toWellFormed() returns string', () => {
+    expect(errors(`
+      const s: string = 'hello\uD800'
+      const clean: string = s.toWellFormed()
+    `)).toHaveLength(0)
+  })
+
+  it('String.prototype.concat returns string', () => {
+    expect(errors(`
+      const s: string = 'hello'
+      const joined: string = s.concat(' world')
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Math.f16round — ES2025 — ECMA-262 §21.3', () => {
+  it('Math.f16round returns number', () => {
+    expect(errors(`
+      const rounded: number = Math.f16round(3.14159)
+    `)).toHaveLength(0)
+  })
+})
+
+describe('for-await-of — ES2018 — ECMA-262 §14.7.5', () => {
+  it('for-await-of over async generator — no error', () => {
+    expect(errors(`
+      async function consume(gen: AsyncGenerator<number>): Promise<void> {
+        for await (const n of gen) {
+          const x: number = n
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for-await-of over any — no error', () => {
+    expect(errors(`
+      async function f(items: any): Promise<void> {
+        for await (const item of items) {}
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Namespace imports (import * as ns) — ECMA-262 §16.2.2', () => {
+  it('import * as ns — no error on ns usage', () => {
+    expect(errors(`
+      import * as fs from 'fs'
+      const content = fs.readFileSync('file.txt', 'utf-8')
+    `)).toHaveLength(0)
+  })
+})
+
+describe('ArrayBuffer instance methods — ES2024 — ECMA-262 §25.1', () => {
+  it('ArrayBuffer.prototype.resize — no error', () => {
+    expect(errors(`
+      const buf = new ArrayBuffer(1024)
+      buf.resize(2048)
+    `)).toHaveLength(0)
+  })
+
+  it('ArrayBuffer.prototype.transfer returns ArrayBuffer', () => {
+    expect(errors(`
+      const buf = new ArrayBuffer(1024)
+      const moved = buf.transfer()
+    `)).toHaveLength(0)
+  })
+
+  it('ArrayBuffer.isView returns boolean', () => {
+    expect(errors(`
+      const arr = new Int32Array(4)
+      const isView: boolean = ArrayBuffer.isView(arr)
+    `)).toHaveLength(0)
+  })
+})

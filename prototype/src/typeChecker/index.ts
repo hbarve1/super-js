@@ -553,6 +553,12 @@ function inferStdlibMethodCall(
       case 'charCodeAt':
       case 'codePointAt': return T_NUMBER
       case 'charAt': return T_STRING
+      // ES2024 §22.1.3 — well-formed string methods
+      case 'isWellFormed': return T_BOOLEAN
+      case 'toWellFormed': return T_STRING
+      // String.prototype.concat
+      case 'concat': return T_STRING
+      case 'localeCompare': return T_NUMBER
     }
   }
 
@@ -611,7 +617,7 @@ function inferStdlibMethodCall(
         case 'tan': case 'asin': case 'acos': case 'atan': case 'atan2':
         case 'sign': case 'clz32': case 'imul': case 'fround': case 'cbrt':
         case 'hypot': case 'sinh': case 'cosh': case 'tanh': case 'expm1':
-        case 'log1p': case 'random': case 'sumPrecise': return T_NUMBER
+        case 'log1p': case 'random': case 'sumPrecise': case 'f16round': return T_NUMBER
       }
     }
 
@@ -698,6 +704,11 @@ function inferStdlibMethodCall(
     // Error static methods — ES2025
     if (globalName === 'Error') {
       if (methodName === 'isError') return T_BOOLEAN
+    }
+
+    // RegExp static methods — ES2025 §22.2
+    if (globalName === 'RegExp') {
+      if (methodName === 'escape') return T_STRING
     }
 
     // Symbol static methods — ECMA-262 §20.4
@@ -999,6 +1010,8 @@ function inferStdlibMethodCall(
 function inferStdlibProp(objType: Type, objNode: t.Expression | t.Super | null, propName: string): Type | null {
   // Array.length, String.length
   if (propName === 'length' && (objType.kind === 'array' || objType.kind === 'string')) return T_NUMBER
+  // Symbol.prototype.description — ES2019 §20.4.3.2
+  if (propName === 'description' && objType.kind === 'symbol') return makeUnion(T_STRING, T_UNDEFINED)
   // Array.at() — property access (not call)
   if (propName === 'at' && objType.kind === 'array') {
     return makeUnion((objType as ArrayType).elementType, T_UNDEFINED)
@@ -1101,8 +1114,17 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     case 'ThisExpression':
       return env.get('this') ?? T_ANY
 
+    // Super expression — parent class reference — ECMA-262 §13.3.7
+    case 'Super':
+      return T_ANY
+
     // Binary expression — ECMA-262 §13.15
     case 'BinaryExpression': {
+      // #field in obj — ES2022 brand check — ECMA-262 §13.5.6
+      // PrivateName left operand means this is a brand check; result is boolean.
+      if ((node as t.BinaryExpression).operator === 'in' && t.isPrivateName((node as t.BinaryExpression).left)) {
+        return T_BOOLEAN
+      }
       if (!t.isExpression(node.left)) return T_ANY
       const left  = inferExprType(node.left,  env)
       const right = inferExprType(node.right, env)
@@ -1844,6 +1866,23 @@ export class TypeChecker {
             if (t.isClassPrivateMethod(member)) {
               const privateName = '#' + (member.key as t.PrivateName).id.name
               members.set(privateName, 'private')
+            }
+            // Abstract methods (TSDeclareMethod) — ECMA-262 §15.7.2 / TS abstract
+            if (t.isTSDeclareMethod(member) && t.isIdentifier(member.key)) {
+              const mKey = (member.key as t.Identifier).name
+              members.set(mKey, (member as any).accessibility ?? 'public')
+              const meth = member as t.TSDeclareMethod
+              const retAnn = meth.returnType
+              const params = meth.params.map(p => ({
+                name: t.isIdentifier(p) ? p.name : '_',
+                type: t.isIdentifier(p) && p.typeAnnotation
+                  ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
+                optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
+              }))
+              fieldTypes.set(mKey, {
+                kind: 'function', params,
+                returnType: retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
+              } as import('./types').FunctionType)
             }
           }
           this.classRegistry.set(className, members)
