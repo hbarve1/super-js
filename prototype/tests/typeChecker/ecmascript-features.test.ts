@@ -1515,3 +1515,35 @@ describe('Gap 8: Destructuring patterns (ECMA-262 §14.3.3)', () => {
     `)).toContain('SJS-E001')
   })
 })
+
+// ── B1: dynamic type keyword ─────────────────────────────────────────────────
+
+describe('B1: dynamic type keyword', () => {
+  it('const x: dynamic = anything — no error', () => {
+    expect(errors('const x: dynamic = 42')).toHaveLength(0)
+    expect(errors('const x: dynamic = "hello"')).toHaveLength(0)
+    expect(errors('const x: dynamic = true')).toHaveLength(0)
+  })
+
+  it('dynamic is consistent with all types', () => {
+    expect(errors('const x: number = 42; const y: dynamic = x')).toHaveLength(0)
+  })
+
+  it('non-dynamic type is consistent with dynamic', () => {
+    expect(errors('const x: dynamic = 42; const y: number = x')).toHaveLength(0)
+  })
+
+  it('strict mode warns when dynamic used', () => {
+    const ast = require('@babel/parser').parse('const x: dynamic = 42', { sourceType: 'module', plugins: ['typescript'] })
+    const { TypeChecker } = require('../../src/typeChecker')
+    const checker = new TypeChecker({ strict: true })
+    require('@babel/traverse').default(ast, { enter(p: any) { checker.check(p) } })
+    const warnings = checker.getDiagnostics().filter((d: any) => d.severity === 'warning' && d.code === 'SJS-W001')
+    expect(warnings.length).toBeGreaterThan(0)
+  })
+
+  it('non-strict mode no warning for dynamic', () => {
+    const diags = typeCheck('const x: dynamic = 42')
+    expect(diags.filter(d => d.severity === 'warning')).toHaveLength(0)
+  })
+})

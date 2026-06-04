@@ -19,7 +19,7 @@ import type {
   AnyType, NumberType, StringType, BooleanType,
   NullType, UndefinedType, VoidType,
   UnionType, FunctionType, SumType, SumVariantType, ArrayType, ObjectType,
-  PromiseType,
+  PromiseType, DynamicType,
 } from './types'
 
 // ── Singleton primitive types ─────────────────────────────────────────────────
@@ -31,6 +31,7 @@ const T_BOOLEAN:   BooleanType   = { kind: 'boolean' }
 const T_NULL:      NullType      = { kind: 'null' }
 const T_UNDEFINED: UndefinedType = { kind: 'undefined' }
 const T_VOID:      VoidType      = { kind: 'void' }
+const T_DYNAMIC:   DynamicType   = { kind: 'dynamic' }
 
 // ── Spec URLs ─────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,8 @@ function resolveType(node: t.TSType | null | undefined): Type {
       const typeArgs = node.typeParameters?.params ?? []
       const args = typeArgs.map(resolveType)
       switch (name) {
+        case 'dynamic':
+          return T_DYNAMIC
         case 'Promise':
           return { kind: 'promise', valueType: args[0] ?? T_ANY }
         case 'Array':
@@ -479,6 +482,8 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
  */
 function isConsistent(a: Type, b: Type): boolean {
   if (a.kind === 'any' || b.kind === 'any') return true
+  // dynamic ~ T and T ~ dynamic for all T (runtime-checked escape hatch)
+  if (a.kind === 'dynamic' || b.kind === 'dynamic') return true
   // never is only inconsistent with non-never types; never ~ never is trivially true
   if (a.kind === 'never' && b.kind === 'never') return true
   if (a.kind === 'never' || b.kind === 'never') return false
@@ -645,6 +650,16 @@ export class TypeChecker {
           code: 'SJS-W001',
           severity: 'warning',
           message: `'${name}' implicitly has type 'any' because it lacks a type annotation.`,
+          node: decl.id,
+          specUrl: 'https://www.typescriptlang.org/tsconfig/#noImplicitAny',
+        })
+      }
+      // SJS-W001: explicit dynamic in strict mode — warns that dynamic bypasses type safety
+      if (this.strict && declared.kind === 'dynamic') {
+        this.report({
+          code: 'SJS-W001',
+          severity: 'warning',
+          message: `'${name}' is typed as 'dynamic' which bypasses type safety. Prefer a precise type annotation in strict mode.`,
           node: decl.id,
           specUrl: 'https://www.typescriptlang.org/tsconfig/#noImplicitAny',
         })
