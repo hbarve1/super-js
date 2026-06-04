@@ -2336,6 +2336,35 @@ describe('SJS1: Missing error codes', () => {
   it('SJS-E009: regular import used as value is valid', () => {
     expect(errors(`import { Foo } from './foo'; const x = Foo`)).toHaveLength(0)
   })
+
+  it('SJS-E005: member access on null union type emits warning', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x.length')
+    const codes = diags.map(d => d.code)
+    expect(codes).toContain('SJS-E005')
+  })
+
+  it('SJS-E005: member access on undefined union type emits warning', () => {
+    const diags = typeCheck('const x: number | undefined = 1; const n = x.toString()')
+    const codes = diags.map(d => d.code)
+    expect(codes).toContain('SJS-E005')
+  })
+
+  it('SJS-E005: optional chaining on nullable is safe (no warning)', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x?.length')
+    expect(diags.map(d => d.code)).not.toContain('SJS-E005')
+  })
+
+  it('SJS-E005: member access on non-nullable type is safe', () => {
+    const diags = typeCheck('const x: string = "hello"; const n = x.length')
+    expect(diags.map(d => d.code)).not.toContain('SJS-E005')
+  })
+
+  it('SJS-E005: diagnostic message mentions optional chaining', () => {
+    const diags = typeCheck('const x: string | null = null; const n = x.length')
+    const e005 = diags.filter(d => d.code === 'SJS-E005')
+    expect(e005.length).toBeGreaterThan(0)
+    expect(e005[0].message).toContain('?.')
+  })
 })
 
 // ── SJS4: pub/priv/prot access modifiers ──────────────────────────────────────

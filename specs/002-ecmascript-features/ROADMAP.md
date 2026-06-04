@@ -302,7 +302,7 @@ Deadline: 2026-06-05T06:00:00Z
 ## PHASE 5 — SJS Feature Completions (~2h)
 
 ### SJS1: Missing error codes [x]
-- [ ] SJS-E005: access `T?` without null check
+- [x] SJS-E005: access `T?` without null check
 - [x] SJS-E006: non-null assertion `!` used (should be banned)
 - [x] SJS-E008: `await` outside async function
 - [x] SJS-E009: type-only import used at runtime

@@ -1310,6 +1310,9 @@ export class TypeChecker {
       case 'ExportDefaultDeclaration':
         // Default exports don't need special handling in the type env
         break
+      case 'MemberExpression':
+        this.checkNullableMemberAccess(path as NodePath<t.MemberExpression>)
+        break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
         break
@@ -2302,6 +2305,34 @@ export class TypeChecker {
    */
   private checkExportNamedDeclaration(_path: NodePath<t.ExportNamedDeclaration>): void {
     // The declaration (if present) is handled by its own handler (VariableDeclaration, etc.)
+  }
+
+  // ── Rule SJS-E005: Nullable member access ────────────────────────────────────
+
+  private checkNullableMemberAccess(path: NodePath<t.MemberExpression>): void {
+    const node = path.node
+    // Optional chaining (obj?.prop) is safe — skip
+    if (node.optional) return
+
+    const objExpr = t.isExpression(node.object) ? node.object : null
+    if (!objExpr) return
+
+    const objType = inferExprType(objExpr, this.env)
+    // Only flag union types that explicitly include null or undefined
+    if (objType.kind !== 'union') return
+
+    const types = (objType as UnionType).types
+    const hasNull = types.some((m: Type) => m.kind === 'null')
+    const hasUndefined = types.some((m: Type) => m.kind === 'undefined')
+    if (!hasNull && !hasUndefined) return
+
+    this.report({
+      code: 'SJS-E005',
+      severity: 'warning',
+      message: `Unsafe member access on nullable type. Use '?.' optional chaining or an explicit null check.`,
+      node: path.node,
+      specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+    })
   }
 
   // ── Rule SJS-E006: Non-null assertion ban ─────────────────────────────────────
