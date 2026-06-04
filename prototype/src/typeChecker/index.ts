@@ -33,6 +33,31 @@ const T_UNDEFINED: UndefinedType = { kind: 'undefined' }
 const T_VOID:      VoidType      = { kind: 'void' }
 const T_DYNAMIC:   DynamicType   = { kind: 'dynamic' }
 
+// ── Class member visibility info ──────────────────────────────────────────────
+
+interface ClassMemberInfo {
+  type: Type
+  visibility: 'public' | 'private' | 'protected'
+  isStatic: boolean
+}
+
+interface ClassInfo {
+  name: string
+  members: Map<string, ClassMemberInfo>
+  superClass?: string
+  interfaces: string[]
+}
+
+// ── Nullable type helper ──────────────────────────────────────────────────────
+
+function isNullableType(tp: Type): boolean {
+  if (tp.kind === 'null' || tp.kind === 'undefined') return true
+  if (tp.kind === 'union') {
+    return (tp as UnionType).types.some(m => m.kind === 'null' || m.kind === 'undefined')
+  }
+  return false
+}
+
 // ── Spec URLs ─────────────────────────────────────────────────────────────────
 
 const SPEC = {
@@ -884,7 +909,11 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         }
         // Look up constructor in env — for user-defined classes
         const ctorType = env.get(name)
-        if (ctorType?.kind === 'function') return { kind: 'object', properties: new Map() }
+        if (ctorType?.kind === 'function') {
+          const obj: ObjectType = { kind: 'object', properties: new Map() }
+          ;(obj as any).__className = name
+          return obj
+        }
       }
       return T_ANY
     }
@@ -1069,6 +1098,12 @@ export class TypeChecker {
   private asyncDepth: number = 0
   // Type-only import bindings (for SJS-E009)
   private typeOnlyBindings: Set<string> = new Set()
+  // Class registry — SJS4: pub/priv/prot access modifiers
+  private classRegistry: Map<string, ClassInfo> = new Map()
+  // Current class stack (class name being traversed)
+  private classStack: string[] = []
+  // Interface registry — SJS5: implements clause checking
+  private interfaceRegistry: Map<string, Map<string, Type>> = new Map()
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1087,6 +1122,9 @@ export class TypeChecker {
     this.narrowingStack = []
     this.asyncDepth = 0
     this.typeOnlyBindings = new Set()
+    this.classRegistry = new Map()
+    this.classStack = []
+    this.interfaceRegistry = new Map()
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1117,6 +1155,10 @@ export class TypeChecker {
       case 'ClassMethod':
       case 'ObjectMethod':
         if ((node as t.ClassMethod | t.ObjectMethod).async) this.asyncDepth--
+        break
+      case 'ClassDeclaration':
+      case 'ClassExpression':
+        if (this.classStack.length > 0) this.classStack.pop()
         break
     }
   }
@@ -1245,6 +1287,16 @@ export class TypeChecker {
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
+        break
+      case 'MemberExpression':
+        this.checkMemberExpression(path as NodePath<t.MemberExpression>)
+        break
+      case 'ClassDeclaration':
+      case 'ClassExpression':
+        this.checkClassDeclaration(path as NodePath<t.ClassDeclaration | t.ClassExpression>)
+        break
+      case 'TSInterfaceDeclaration':
+        this.registerInterface(path as NodePath<t.TSInterfaceDeclaration>)
         break
     }
   }
@@ -1967,6 +2019,28 @@ export class TypeChecker {
     // Check condition expression for type errors (e.g. calling non-function)
     inferExprType(node.test as t.Expression, this.env)
 
+    // Early-exit guard: `if (!x) return/throw` narrows x to non-null in continuation
+    if (t.isUnaryExpression(node.test) &&
+        (node.test as t.UnaryExpression).operator === '!' &&
+        t.isIdentifier((node.test as t.UnaryExpression).argument)) {
+      const name = ((node.test as t.UnaryExpression).argument as t.Identifier).name
+      const isEarlyExit = this.isEarlyExitBlock(node.consequent)
+      if (isEarlyExit) {
+        const current = this.env.get(name)
+        if (current && isNullableType(current)) {
+          const narrowed = stripNullable(current)
+          this.env.set(name, narrowed)
+          // Track in block scope for cleanup
+          if (this.blockVarStack.length > 0) {
+            this.blockVarStack[this.blockVarStack.length - 1].add(name)
+          }
+        }
+        // Push empty saved state so exit handler doesn't crash
+        this.narrowingStack.push(new Map())
+        return
+      }
+    }
+
     // Apply type narrowing from the condition
     const saved = new Map<string, Type>()
     const narrowings = this.extractNarrowings(node.test)
@@ -1980,13 +2054,45 @@ export class TypeChecker {
     this.narrowingStack.push(saved)
   }
 
+  /** Returns true if a statement is an early exit (return/throw) or a block containing only those. */
+  private isEarlyExitBlock(stmt: t.Statement): boolean {
+    if (t.isReturnStatement(stmt) || t.isThrowStatement(stmt)) return true
+    if (t.isBlockStatement(stmt)) {
+      return stmt.body.length > 0 &&
+        stmt.body.every(s => t.isReturnStatement(s) || t.isThrowStatement(s))
+    }
+    return false
+  }
+
   /**
    * Extracts simple type narrowings from a condition expression.
    * Returns a Map of name → narrowed type.
-   * Only handles common patterns: `typeof x === 'T'`, `x !== null`, `x != null`.
+   * Handles: `typeof x === 'T'`, `x !== null`, `x != null`, `if (x)` truthy.
    */
   private extractNarrowings(cond: t.Node): Map<string, Type> {
     const result = new Map<string, Type>()
+
+    // `if (x)` — truthy check narrows away null/undefined
+    if (t.isIdentifier(cond)) {
+      const name = (cond as t.Identifier).name
+      const current = this.env.get(name)
+      if (current && isNullableType(current)) {
+        const narrowed = stripNullable(current)
+        result.set(name, narrowed)
+      }
+      return result
+    }
+
+    // `if (x && y)` — both sides get truthy narrowing
+    if (t.isLogicalExpression(cond) && (cond as t.LogicalExpression).operator === '&&') {
+      const le = cond as t.LogicalExpression
+      const leftNarrowings = this.extractNarrowings(le.left)
+      const rightNarrowings = this.extractNarrowings(le.right)
+      for (const [k, v] of leftNarrowings) result.set(k, v)
+      for (const [k, v] of rightNarrowings) result.set(k, v)
+      return result
+    }
+
     if (!t.isBinaryExpression(cond)) return result
 
     const { operator, left, right } = cond
@@ -2152,6 +2258,231 @@ export class TypeChecker {
       node: path.node,
       specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
     })
+  }
+
+  // ── Rule SJS-E005: Member access on nullable type ─────────────────────────────
+
+  private checkMemberExpression(path: NodePath<t.MemberExpression>): void {
+    const node = path.node
+    // Skip optional chaining — ?.  is safe
+    if (node.optional) return
+
+    const objNode = t.isExpression(node.object) ? node.object : null
+    if (!objNode) return
+    const objType = inferExprType(objNode, this.env)
+
+    // SJS-E005: property access on nullable type
+    if (isNullableType(objType)) {
+      const propName = !node.computed && t.isIdentifier(node.property)
+        ? node.property.name : '?'
+      this.report({
+        code: 'SJS-E005',
+        severity: 'error',
+        message: `Property '${propName}' accessed on nullable type '${objType.kind}'. Use optional chaining '?.' or an explicit null check first.`,
+        node,
+        specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+      })
+      return
+    }
+
+    // SJS-E011: private/protected member access outside class — SJS4
+    const propName = !node.computed && t.isIdentifier(node.property)
+      ? node.property.name : null
+    if (!propName) return
+
+    // Determine the class name for the object type
+    let className: string | null = null
+    if (objType.kind === 'object' && (objType as any).__className) {
+      className = (objType as any).__className as string
+    }
+    if (!className) return
+
+    const classInfo = this.classRegistry.get(className)
+    if (!classInfo) return
+
+    const member = classInfo.members.get(propName)
+    if (!member) return
+
+    const currentClass = this.classStack.length > 0
+      ? this.classStack[this.classStack.length - 1] : null
+
+    if (member.visibility === 'private' && currentClass !== className) {
+      this.report({
+        code: 'SJS-E011',
+        severity: 'error',
+        message: `Property '${propName}' is private to class '${className}' and cannot be accessed from outside.`,
+        node,
+        specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+      })
+    } else if (member.visibility === 'protected') {
+      // Protected: accessible in class and subclasses
+      const isInSubclass = currentClass !== null && (
+        currentClass === className ||
+        this.isSubclassOf(currentClass, className)
+      )
+      if (!isInSubclass) {
+        this.report({
+          code: 'SJS-E011',
+          severity: 'error',
+          message: `Property '${propName}' is protected in class '${className}' and cannot be accessed from outside the class hierarchy.`,
+          node,
+          specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+        })
+      }
+    }
+  }
+
+  private isSubclassOf(className: string, targetClass: string): boolean {
+    const info = this.classRegistry.get(className)
+    if (!info) return false
+    if (info.superClass === targetClass) return true
+    if (info.superClass) return this.isSubclassOf(info.superClass, targetClass)
+    return false
+  }
+
+  // ── SJS4: Class declaration — register members with visibility ────────────────
+
+  private checkClassDeclaration(
+    path: NodePath<t.ClassDeclaration | t.ClassExpression>
+  ): void {
+    const node = path.node
+    const name = t.isIdentifier((node as t.ClassDeclaration).id)
+      ? (node as t.ClassDeclaration).id!.name : null
+    if (!name) return
+
+    const members = new Map<string, ClassMemberInfo>()
+
+    for (const member of node.body.body) {
+      let key: string | null = null
+      let accessibility: 'public' | 'private' | 'protected' = 'public'
+      let isStatic = false
+      let memberType: Type = T_ANY
+
+      if (t.isClassMethod(member)) {
+        key = t.isIdentifier(member.key) ? member.key.name : null
+        accessibility = (member.accessibility as 'public' | 'private' | 'protected') ?? 'public'
+        isStatic = member.static ?? false
+        const returnAnnotation = member.returnType
+          ? (member.returnType as t.TSTypeAnnotation).typeAnnotation : null
+        const params = (member.params as t.Node[]).map(p => ({
+          name: t.isIdentifier(p) ? (p as t.Identifier).name : '_',
+          type: t.isIdentifier(p) && (p as t.Identifier).typeAnnotation
+            ? resolveType(((p as t.Identifier).typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+            : T_ANY,
+          optional: t.isIdentifier(p) ? ((p as t.Identifier).optional ?? false) : false,
+        }))
+        memberType = { kind: 'function', params, returnType: resolveType(returnAnnotation) }
+      } else if (t.isClassProperty(member)) {
+        key = t.isIdentifier(member.key) ? (member.key as t.Identifier).name : null
+        accessibility = (member.accessibility as 'public' | 'private' | 'protected') ?? 'public'
+        isStatic = member.static ?? false
+        memberType = member.typeAnnotation
+          ? resolveType((member.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY
+      }
+
+      if (key) members.set(key, { type: memberType, visibility: accessibility, isStatic })
+    }
+
+    // Extract implements clause names
+    const interfaces: string[] = []
+    const classNode = node as t.ClassDeclaration
+    if (classNode.implements) {
+      for (const impl of classNode.implements) {
+        if (t.isTSExpressionWithTypeArguments(impl) && t.isIdentifier(impl.expression)) {
+          interfaces.push((impl.expression as t.Identifier).name)
+        }
+      }
+    }
+
+    const superClass = node.superClass && t.isIdentifier(node.superClass)
+      ? (node.superClass as t.Identifier).name : undefined
+
+    const classInfo: ClassInfo = { name, members, superClass, interfaces }
+    this.classRegistry.set(name, classInfo)
+
+    // Register constructor in env so new Foo() returns a typed object
+    const constructorFn: FunctionType = { kind: 'function', params: [], returnType: T_ANY }
+    this.env.set(name, constructorFn)
+
+    // Push class to context stack
+    this.classStack.push(name)
+
+    // SJS5: Check implements clauses
+    this.checkImplements(classInfo, node)
+  }
+
+  // ── SJS5: implements clause checking ─────────────────────────────────────────
+
+  private registerInterface(path: NodePath<t.TSInterfaceDeclaration>): void {
+    const node = path.node
+    const name = node.id.name
+    const members = new Map<string, Type>()
+
+    for (const member of node.body.body) {
+      if (member.type === 'TSMethodSignature') {
+        const sig = member as t.TSMethodSignature
+        const key = t.isIdentifier(sig.key) ? sig.key.name : null
+        if (!key) continue
+        const returnAnnotation = sig.typeAnnotation
+          ? (sig.typeAnnotation as t.TSTypeAnnotation).typeAnnotation : null
+        const params = (sig.parameters ?? []).map((p: t.Node) => ({
+          name: t.isIdentifier(p) ? (p as t.Identifier).name : '_',
+          type: t.isIdentifier(p) && (p as t.Identifier).typeAnnotation
+            ? resolveType(((p as t.Identifier).typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+            : T_ANY,
+          optional: t.isIdentifier(p) ? ((p as t.Identifier).optional ?? false) : false,
+        }))
+        members.set(key, {
+          kind: 'function',
+          params,
+          returnType: resolveType(returnAnnotation),
+        })
+      } else if (member.type === 'TSPropertySignature') {
+        const sig = member as t.TSPropertySignature
+        const key = t.isIdentifier(sig.key) ? sig.key.name
+          : t.isStringLiteral(sig.key) ? sig.key.value : null
+        if (!key) continue
+        const valueType = sig.typeAnnotation
+          ? resolveType((sig.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY
+        members.set(key, valueType)
+      }
+    }
+
+    this.interfaceRegistry.set(name, members)
+  }
+
+  private checkImplements(
+    classInfo: ClassInfo,
+    node: t.ClassDeclaration | t.ClassExpression
+  ): void {
+    for (const ifaceName of classInfo.interfaces) {
+      const ifaceMembers = this.interfaceRegistry.get(ifaceName)
+      if (!ifaceMembers) continue
+
+      for (const [memberName, requiredType] of ifaceMembers) {
+        const classMember = classInfo.members.get(memberName)
+        if (!classMember) {
+          this.report({
+            code: 'SJS-E012',
+            severity: 'error',
+            message: `Class '${classInfo.name}' declares 'implements ${ifaceName}' but is missing required member '${memberName}'.`,
+            node,
+            specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+          })
+          continue
+        }
+        // Check type compatibility
+        if (!isConsistent(classMember.type, requiredType)) {
+          this.report({
+            code: 'SJS-E012',
+            severity: 'error',
+            message: `Class '${classInfo.name}' member '${memberName}' has type '${classMember.type.kind}' but interface '${ifaceName}' requires '${requiredType.kind}'.`,
+            node,
+            specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+          })
+        }
+      }
+    }
   }
 
   // ── Diagnostic helper ─────────────────────────────────────────────────────────
