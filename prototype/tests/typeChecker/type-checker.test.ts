@@ -398,3 +398,70 @@ describe('Nullish coalescing narrowing — ECMA-262 §13.13', () => {
     expect(errors('const x: string | number = "a" ?? 42')).toHaveLength(0)
   })
 })
+
+// ── Task 4.1: Array destructuring type inference ──────────────────────────────
+
+describe('Array destructuring type inference — ECMA-262 §14.3.3', () => {
+  it('binds element identifiers to array element type from annotation', () => {
+    expect(errors('const [a, b]: number[] = [1, 2]; const x: number = a')).toHaveLength(0)
+  })
+
+  it('binds element identifiers to inferred element type when no annotation', () => {
+    expect(errors('const [a, b] = [1, 2]; const x: number = a')).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when element type mismatches declared variable type', () => {
+    const diags = errors('const [a]: number[] = [1]; const x: string = a')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('handles rest element — binds rest as array type', () => {
+    expect(errors('const [first, ...rest]: number[] = [1,2,3]; const x: number = first')).toHaveLength(0)
+  })
+
+  it('skips holes (sparse array pattern)', () => {
+    // [, b] — first element is hole (null in AST), second is b
+    expect(errors('const [, b]: string[] = ["a", "b"]; const x: string = b')).toHaveLength(0)
+  })
+
+  it('elements are any when destructuring an untyped non-literal', () => {
+    // unknown → any; element bindings should be any
+    expect(errors('const [a, b] = (someUnknown as any); const x: string = a')).toHaveLength(0)
+  })
+})
+
+// ── Task 4.2: Object destructuring type inference ─────────────────────────────
+
+describe('Object destructuring type inference — ECMA-262 §14.3.3', () => {
+  it('binds properties from TSTypeLiteral annotation', () => {
+    const src = 'const { name, age }: { name: string; age: number } = { name: "Alice", age: 30 }; const s: string = name; const n: number = age'
+    expect(errors(src)).toHaveLength(0)
+  })
+
+  it('reports SJS-E001 when destructured property type mismatches declared', () => {
+    const src = 'const { name }: { name: string } = { name: "Alice" }; const n: number = name'
+    const diags = errors(src)
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('binds properties from inferred object literal when no annotation', () => {
+    const src = 'const { x, y } = { x: 10, y: 20 }; const n: number = x'
+    expect(errors(src)).toHaveLength(0)
+  })
+
+  it('inferred property type mismatch reports SJS-E001', () => {
+    const src = 'const { count } = { count: 42 }; const s: string = count'
+    const diags = errors(src)
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('unknown property binds as any (gradual)', () => {
+    const src = 'const { missing } = { a: 1 }; const n: number = missing'
+    expect(errors(src)).toHaveLength(0)
+  })
+
+  it('handles rest element gracefully', () => {
+    const src = 'const { a, ...rest } = { a: 1, b: 2 }'
+    expect(errors(src)).toHaveLength(0)
+  })
+})

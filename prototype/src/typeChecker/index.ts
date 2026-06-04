@@ -97,6 +97,23 @@ function resolveType(node: t.TSType | null | undefined): Type {
     // Array — e.g. number[]
     case 'TSArrayType':
       return { kind: 'array', elementType: resolveType(node.elementType) }
+    // Object type literal — e.g. { name: string; age: number }
+    case 'TSTypeLiteral': {
+      const properties = new Map<string, Type>()
+      for (const member of node.members) {
+        if (member.type !== 'TSPropertySignature') continue
+        const prop = member as t.TSPropertySignature
+        const key = t.isIdentifier(prop.key) ? prop.key.name
+          : t.isStringLiteral(prop.key) ? prop.key.value
+          : null
+        if (!key) continue
+        const valueType = prop.typeAnnotation
+          ? resolveType((prop.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+          : T_ANY
+        properties.set(key, valueType)
+      }
+      return { kind: 'object', properties } satisfies ObjectType
+    }
     // Function type — e.g. (x: number) => string
     case 'TSFunctionType': {
       const params = node.parameters.map(p => ({
@@ -514,6 +531,18 @@ export class TypeChecker {
    */
   private checkVariableDeclaration(path: NodePath<t.VariableDeclaration>): void {
     for (const decl of path.node.declarations) {
+      // ── Array destructuring — ECMA-262 §14.3.3 ─────────────────────────────
+      if (t.isArrayPattern(decl.id)) {
+        this.checkArrayDestructuring(decl)
+        continue
+      }
+
+      // ── Object destructuring — ECMA-262 §14.3.3 ────────────────────────────
+      if (t.isObjectPattern(decl.id)) {
+        this.checkObjectDestructuring(decl)
+        continue
+      }
+
       if (!t.isIdentifier(decl.id)) continue
 
       const annotation = decl.id.typeAnnotation
@@ -568,6 +597,108 @@ export class TypeChecker {
       } else {
         this.env.set(name, declared)
       }
+    }
+  }
+
+  // ── Array destructuring — ECMA-262 §14.3.3 ───────────────────────────────────
+
+  /**
+   * Checks `const [a, b, ...rest]: T[] = expr` array destructuring patterns.
+   *
+   * Resolves the element type from the declared annotation (if any) or from the
+   * inferred initializer type.  Registers each element binding in `env`.
+   *
+   * ECMA-262 §14.3.3 Destructuring Binding Patterns:
+   * https://tc39.es/ecma262/#sec-destructuring-binding-patterns
+   */
+  private checkArrayDestructuring(decl: t.VariableDeclarator): void {
+    const pattern = decl.id as t.ArrayPattern
+    const annotation = pattern.typeAnnotation
+    const hasAnnotation = annotation && t.isTSTypeAnnotation(annotation)
+    const declared: Type = hasAnnotation ? resolveType(annotation.typeAnnotation) : T_ANY
+
+    const inferred: Type = decl.init ? inferExprType(decl.init, this.env) : T_ANY
+
+    // Determine element type: prefer declared annotation, fall back to inferred.
+    let elementType: Type = T_ANY
+    if (declared.kind === 'array') {
+      elementType = (declared as import('./types').ArrayType).elementType
+    } else if (inferred.kind === 'array') {
+      elementType = (inferred as import('./types').ArrayType).elementType
+    }
+
+    // Check overall initializer consistency when we have a declared type.
+    if (hasAnnotation && !isConsistent(inferred, declared)) {
+      if (decl.init) {
+        this.report({
+          code: 'SJS-E001',
+          severity: 'error',
+          message: `I cannot destructure a value of type '${inferred.kind}' using an array pattern declared as '${declared.kind}'.`,
+          node: decl.init,
+          specUrl: SPEC.LET_CONST,
+        })
+      }
+    }
+
+    // Register each element identifier in env.
+    for (const elem of pattern.elements) {
+      if (!elem) continue
+      if (t.isIdentifier(elem)) {
+        this.env.set(elem.name, elementType)
+      } else if (t.isRestElement(elem) && t.isIdentifier(elem.argument)) {
+        // rest element gets the same array type as the source
+        const restType: Type = declared.kind === 'array' ? declared
+          : inferred.kind === 'array' ? inferred
+          : T_ANY
+        this.env.set(elem.argument.name, restType)
+      }
+    }
+  }
+
+  // ── Object destructuring — ECMA-262 §14.3.3 ──────────────────────────────────
+
+  /**
+   * Checks `const { x, y }: T = expr` object destructuring patterns.
+   *
+   * Resolves property types from the declared annotation (TSTypeLiteral) or from
+   * the inferred initializer ObjectType.  Registers each binding in `env`.
+   *
+   * ECMA-262 §14.3.3 Destructuring Binding Patterns:
+   * https://tc39.es/ecma262/#sec-destructuring-binding-patterns
+   */
+  private checkObjectDestructuring(decl: t.VariableDeclarator): void {
+    const pattern = decl.id as t.ObjectPattern
+    const annotation = pattern.typeAnnotation
+    const hasAnnotation = annotation && t.isTSTypeAnnotation(annotation)
+    const declared: Type = hasAnnotation ? resolveType(annotation.typeAnnotation) : T_ANY
+
+    const inferred: Type = decl.init ? inferExprType(decl.init, this.env) : T_ANY
+
+    // Prefer declared annotation's object type; fall back to inferred ObjectType.
+    const objType: Type = declared.kind === 'object' ? declared
+      : inferred.kind === 'object' ? inferred
+      : T_ANY
+
+    for (const prop of pattern.properties) {
+      if (t.isRestElement(prop)) {
+        if (t.isIdentifier(prop.argument)) {
+          this.env.set(prop.argument.name, T_ANY)
+        }
+        continue
+      }
+      if (!t.isObjectProperty(prop)) continue
+
+      const key = t.isIdentifier(prop.key) ? prop.key.name
+        : t.isStringLiteral(prop.key) ? prop.key.value
+        : null
+      const binding = t.isIdentifier(prop.value) ? prop.value.name : null
+      if (!key || !binding) continue
+
+      const propType = objType.kind === 'object'
+        ? (objType as ObjectType).properties.get(key) ?? T_ANY
+        : T_ANY
+
+      this.env.set(binding, propType)
     }
   }
 

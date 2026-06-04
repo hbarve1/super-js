@@ -176,10 +176,10 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
    - Otherwise bind to `any`
 2. Report SJS-E002 if initializer type is not an array when pattern is `ArrayPattern`
 
-- [ ] Handle ArrayPattern in checkVariableDeclaration
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Handle ArrayPattern in checkVariableDeclaration
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
 
 ---
 
@@ -196,7 +196,7 @@ The ECMAScript spec §6.1.6.2 explicitly prohibits mixing BigInt and Number in a
    - Otherwise bind all extracted names to `any`
 2. Report SJS-E002 if initializer is not an `ObjectType` and has a declared annotation
 
-- [ ] Handle ObjectPattern in checkVariableDeclaration
-- [ ] Add tests
-- [ ] Add example .sjs file
-- [ ] Commit and push
+- [x] Handle ObjectPattern in checkVariableDeclaration
+- [x] Add tests
+- [x] Add example .sjs file
+- [x] Commit and push
