@@ -1779,3 +1779,296 @@ describe('S5: Block scoping', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── L1: Array<T> method signatures ───────────────────────────────────────────
+
+describe('L1: Array<T> method signatures', () => {
+  it('arr.push() returns number', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2]
+      const n: number = arr.push(3)
+    `)).toHaveLength(0)
+  })
+
+  it('arr.pop() returns T | undefined', () => {
+    expect(errors('const arr: number[] = [1]; const x = arr.pop()')).toHaveLength(0)
+  })
+
+  it('arr.map() returns array', () => {
+    expect(errors('const arr: number[] = [1,2,3]; const mapped = arr.map(x => x + 1)')).toHaveLength(0)
+  })
+
+  it('arr.filter() returns array of same type', () => {
+    expect(errors('const arr: number[] = [1,2,3]; const filtered: number[] = arr.filter(x => x > 1)')).toHaveLength(0)
+  })
+
+  it('arr.find() returns T | undefined', () => {
+    expect(errors('const arr: number[] = [1,2]; const x = arr.find(n => n > 1)')).toHaveLength(0)
+  })
+
+  it('arr.findIndex() returns number', () => {
+    expect(errors('const arr: number[] = [1,2]; const i: number = arr.findIndex(n => n > 1)')).toHaveLength(0)
+  })
+
+  it('arr.includes() returns boolean', () => {
+    expect(errors('const arr: number[] = [1,2]; const has: boolean = arr.includes(1)')).toHaveLength(0)
+  })
+
+  it('arr.indexOf() returns number', () => {
+    expect(errors('const arr: number[] = [1,2]; const i: number = arr.indexOf(1)')).toHaveLength(0)
+  })
+
+  it('arr.slice() returns same array type', () => {
+    expect(errors('const arr: number[] = [1,2,3]; const sliced: number[] = arr.slice(0, 2)')).toHaveLength(0)
+  })
+
+  it('arr.forEach() returns void', () => {
+    expect(errors('const arr: number[] = [1,2]; const r: void = arr.forEach(x => {})')).toHaveLength(0)
+  })
+
+  it('arr.some() returns boolean', () => {
+    expect(errors('const arr: number[] = [1,2]; const b: boolean = arr.some(x => x > 1)')).toHaveLength(0)
+  })
+
+  it('arr.every() returns boolean', () => {
+    expect(errors('const arr: number[] = [1,2]; const b: boolean = arr.every(x => x > 0)')).toHaveLength(0)
+  })
+
+  it('arr.join() returns string', () => {
+    expect(errors('const arr: number[] = [1,2]; const s: string = arr.join(",")')).toHaveLength(0)
+  })
+
+  it('arr.sort() returns array of same type', () => {
+    expect(errors('const arr: number[] = [3,1,2]; const sorted: number[] = arr.sort()')).toHaveLength(0)
+  })
+
+  it('arr.reverse() returns array', () => {
+    expect(errors('const arr: number[] = [1,2]; const rev: number[] = arr.reverse()')).toHaveLength(0)
+  })
+
+  it('arr.at() returns T | undefined', () => {
+    expect(errors('const arr: number[] = [1,2]; const x = arr.at(0)')).toHaveLength(0)
+  })
+
+  it('arr.length is number', () => {
+    expect(errors('const arr: number[] = [1,2]; const n: number = arr.length')).toHaveLength(0)
+  })
+
+  it('Array.isArray() returns boolean', () => {
+    expect(errors('const b: boolean = Array.isArray([1,2,3])')).toHaveLength(0)
+  })
+})
+
+// ── L2: String method signatures ─────────────────────────────────────────────
+
+describe('L2: String method signatures', () => {
+  it('str.includes() returns boolean', () => {
+    expect(errors('const s: string = "hello"; const b: boolean = s.includes("ell")')).toHaveLength(0)
+  })
+
+  it('str.startsWith() returns boolean', () => {
+    expect(errors('const s: string = "hello"; const b: boolean = s.startsWith("he")')).toHaveLength(0)
+  })
+
+  it('str.endsWith() returns boolean', () => {
+    expect(errors('const s: string = "hello"; const b: boolean = s.endsWith("lo")')).toHaveLength(0)
+  })
+
+  it('str.indexOf() returns number', () => {
+    expect(errors('const s: string = "hello"; const n: number = s.indexOf("e")')).toHaveLength(0)
+  })
+
+  it('str.slice() returns string', () => {
+    expect(errors('const s: string = "hello"; const t: string = s.slice(1, 3)')).toHaveLength(0)
+  })
+
+  it('str.split() returns string[]', () => {
+    expect(errors('const s: string = "a,b,c"; const parts: string[] = s.split(",")')).toHaveLength(0)
+  })
+
+  it('str.replace() returns string', () => {
+    expect(errors('const s: string = "hello"; const t: string = s.replace("l", "r")')).toHaveLength(0)
+  })
+
+  it('str.trim() returns string', () => {
+    expect(errors('const s: string = "  hello  "; const t: string = s.trim()')).toHaveLength(0)
+  })
+
+  it('str.toUpperCase() returns string', () => {
+    expect(errors('const s: string = "hello"; const t: string = s.toUpperCase()')).toHaveLength(0)
+  })
+
+  it('str.toLowerCase() returns string', () => {
+    expect(errors('const s: string = "HELLO"; const t: string = s.toLowerCase()')).toHaveLength(0)
+  })
+
+  it('str.length is number', () => {
+    expect(errors('const s: string = "hello"; const n: number = s.length')).toHaveLength(0)
+  })
+
+  it('str.at() returns string | undefined', () => {
+    expect(errors('const s: string = "hello"; const c = s.at(0)')).toHaveLength(0)
+  })
+
+  it('str.charCodeAt() returns number', () => {
+    expect(errors('const s: string = "hello"; const n: number = s.charCodeAt(0)')).toHaveLength(0)
+  })
+
+  it('str.repeat() returns string', () => {
+    expect(errors('const s: string = "ha"; const t: string = s.repeat(3)')).toHaveLength(0)
+  })
+})
+
+// ── L3: Object/Number/Math static methods ────────────────────────────────────
+
+describe('L3: Object/Number/Math static method signatures', () => {
+  it('Object.keys() returns string[]', () => {
+    expect(errors('const obj = {a: 1}; const keys: string[] = Object.keys(obj)')).toHaveLength(0)
+  })
+
+  it('Object.values() returns any[]', () => {
+    expect(errors('const obj = {a: 1}; const vals = Object.values(obj)')).toHaveLength(0)
+  })
+
+  it('Object.entries() returns array', () => {
+    expect(errors('const obj = {a: 1}; const entries = Object.entries(obj)')).toHaveLength(0)
+  })
+
+  it('Object.hasOwn() returns boolean', () => {
+    expect(errors('const b: boolean = Object.hasOwn({a:1}, "a")')).toHaveLength(0)
+  })
+
+  it('Object.assign() returns any', () => {
+    expect(errors('const merged = Object.assign({}, {a: 1}, {b: 2})')).toHaveLength(0)
+  })
+
+  it('Number.isNaN() returns boolean', () => {
+    expect(errors('const b: boolean = Number.isNaN(NaN)')).toHaveLength(0)
+  })
+
+  it('Number.isFinite() returns boolean', () => {
+    expect(errors('const b: boolean = Number.isFinite(42)')).toHaveLength(0)
+  })
+
+  it('Number.isInteger() returns boolean', () => {
+    expect(errors('const b: boolean = Number.isInteger(42)')).toHaveLength(0)
+  })
+
+  it('Number.parseFloat() returns number', () => {
+    expect(errors('const n: number = Number.parseFloat("3.14")')).toHaveLength(0)
+  })
+
+  it('Math.abs() returns number', () => {
+    expect(errors('const n: number = Math.abs(-5)')).toHaveLength(0)
+  })
+
+  it('Math.floor() returns number', () => {
+    expect(errors('const n: number = Math.floor(3.7)')).toHaveLength(0)
+  })
+
+  it('Math.random() returns number', () => {
+    expect(errors('const n: number = Math.random()')).toHaveLength(0)
+  })
+
+  it('Math.min/max() returns number', () => {
+    expect(errors('const n: number = Math.min(1, 2, 3)')).toHaveLength(0)
+    expect(errors('const n: number = Math.max(1, 2, 3)')).toHaveLength(0)
+  })
+
+  it('Math.sqrt() returns number', () => {
+    expect(errors('const n: number = Math.sqrt(16)')).toHaveLength(0)
+  })
+
+  it('Math.PI is number', () => {
+    expect(errors('const n: number = Math.PI')).toHaveLength(0)
+  })
+})
+
+// ── L4: Promise<T> method signatures ─────────────────────────────────────────
+
+describe('L4: Promise<T> method signatures', () => {
+  it('Promise.resolve() returns promise', () => {
+    expect(errors('const p: Promise<number> = Promise.resolve(42)')).toHaveLength(0)
+  })
+
+  it('Promise.reject() returns promise', () => {
+    expect(errors('const p = Promise.reject(new Error("oops"))')).toHaveLength(0)
+  })
+
+  it('Promise.all() returns promise', () => {
+    expect(errors('const p = Promise.all([Promise.resolve(1)])')).toHaveLength(0)
+  })
+
+  it('Promise.race() returns promise', () => {
+    expect(errors('const p = Promise.race([Promise.resolve(1)])')).toHaveLength(0)
+  })
+
+  it('.then() returns promise', () => {
+    expect(errors(`
+      const p: Promise<number> = Promise.resolve(42)
+      const p2 = p.then(n => n + 1)
+    `)).toHaveLength(0)
+  })
+
+  it('.catch() returns promise', () => {
+    expect(errors(`
+      const p: Promise<number> = Promise.resolve(42)
+      const p2 = p.catch(e => 0)
+    `)).toHaveLength(0)
+  })
+
+  it('.finally() returns promise', () => {
+    expect(errors(`
+      const p: Promise<number> = Promise.resolve(42)
+      const p2 = p.finally(() => {})
+    `)).toHaveLength(0)
+  })
+})
+
+// ── L5: Map/Set/Weak* method signatures ──────────────────────────────────────
+
+describe('L5: Map/Set/Weak* method signatures', () => {
+  it('new Map() creates Map type', () => {
+    expect(errors('const m: Map<string, number> = new Map()')).toHaveLength(0)
+  })
+
+  it('new Set() creates Set type', () => {
+    expect(errors('const s: Set<string> = new Set()')).toHaveLength(0)
+  })
+
+  it('new WeakMap() is valid', () => {
+    expect(errors('const wm: WeakMap<object, number> = new WeakMap()')).toHaveLength(0)
+  })
+
+  it('Map type resolves from type annotation', () => {
+    expect(errors('const m: Map<string, number> = new Map()')).toHaveLength(0)
+  })
+})
+
+// ── L6: Error/JSON/console/RegExp signatures ──────────────────────────────────
+
+describe('L6: Error/JSON/console/RegExp signatures', () => {
+  it('JSON.parse() returns any', () => {
+    expect(errors('const x = JSON.parse("{}")')).toHaveLength(0)
+  })
+
+  it('JSON.stringify() returns string', () => {
+    expect(errors('const s: string = JSON.stringify({a: 1})')).toHaveLength(0)
+  })
+
+  it('console.log() returns void', () => {
+    expect(errors('const v: void = console.log("hello")')).toHaveLength(0)
+  })
+
+  it('console.error() returns void', () => {
+    expect(errors('console.error("error")')).toHaveLength(0)
+  })
+
+  it('new Error() creates Error object', () => {
+    expect(errors('const e = new Error("oops")')).toHaveLength(0)
+  })
+
+  it('Error.isError() returns boolean', () => {
+    expect(errors('const b: boolean = Error.isError(new Error())')).toHaveLength(0)
+  })
+})

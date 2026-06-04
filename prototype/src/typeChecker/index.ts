@@ -147,9 +147,44 @@ function resolveType(node: t.TSType | null | undefined): Type {
         case 'Array':
         case 'ReadonlyArray':
           return { kind: 'array', elementType: args[0] ?? T_ANY }
+        case 'Map':
+          return { kind: 'object', properties: new Map<string, Type>([['size', T_NUMBER]]) }
+        case 'Set':
+          return { kind: 'object', properties: new Map<string, Type>([['size', T_NUMBER]]) }
+        case 'WeakMap':
+        case 'WeakSet':
+        case 'WeakRef':
+          return { kind: 'object', properties: new Map() }
+        case 'Record':
+          return { kind: 'object', properties: new Map() }
+        case 'Partial':
+        case 'Required':
+        case 'Readonly':
+        case 'Pick':
+        case 'Omit':
+        case 'Exclude':
+        case 'Extract':
+        case 'NonNullable':
+        case 'ReturnType':
+        case 'Parameters':
+        case 'InstanceType':
+        case 'ConstructorParameters':
+          return T_ANY
+        case 'Iterable':
+        case 'IterableIterator':
+        case 'AsyncIterable':
+          return { kind: 'array', elementType: args[0] ?? T_ANY }
+        case 'RegExp': return { kind: 'object', properties: new Map() }
+        case 'Date': return { kind: 'object', properties: new Map() }
+        case 'Error': case 'TypeError': case 'RangeError': case 'SyntaxError':
+          return { kind: 'object', properties: new Map<string, Type>([
+            ['message', T_STRING], ['stack', makeUnion(T_STRING, T_UNDEFINED)], ['cause', T_ANY]
+          ]) }
         default:
           // Single uppercase letter → type parameter (gradual)
           if (/^[A-Z]$/.test(name)) return { kind: 'typeParam', name }
+          // Multi-char generic type param (e.g., T2, TKey, TValue)
+          if (/^[A-Z][a-zA-Z0-9]*$/.test(name)) return { kind: 'typeParam', name }
           return T_ANY
       }
     }
@@ -242,6 +277,282 @@ function stripNullable(t: Type): Type {
   if (members.length === 0) return T_ANY
   if (members.length === 1) return members[0]
   return { kind: 'union', types: members } satisfies UnionType
+}
+
+// ── Stdlib type inference ─────────────────────────────────────────────────────
+
+/**
+ * Infers the return type of a method call on a known stdlib type.
+ * Returns null if the method is not recognized (caller falls through to generic handling).
+ *
+ * ECMA-262 §23 Indexed Collections, §24 Keyed Collections, §21 Text Processing
+ */
+function inferStdlibMethodCall(
+  objType: Type,
+  objNode: t.Expression | t.Super | null,
+  methodName: string,
+  _env: TypeEnvironment,
+): Type | null {
+  // ── Array<T> methods — ECMA-262 §23.1 ──────────────────────────────────────
+  if (objType.kind === 'array') {
+    const elemType = (objType as ArrayType).elementType
+    switch (methodName) {
+      case 'push': return T_NUMBER
+      case 'pop': return makeUnion(elemType, T_UNDEFINED)
+      case 'shift': return makeUnion(elemType, T_UNDEFINED)
+      case 'unshift': return T_NUMBER
+      case 'map': return { kind: 'array', elementType: T_ANY }
+      case 'flatMap': return { kind: 'array', elementType: T_ANY }
+      case 'filter': return { kind: 'array', elementType: elemType }
+      case 'reduce': return T_ANY
+      case 'find': return makeUnion(elemType, T_UNDEFINED)
+      case 'findIndex': return T_NUMBER
+      case 'findLast': return makeUnion(elemType, T_UNDEFINED)
+      case 'findLastIndex': return T_NUMBER
+      case 'flat': return { kind: 'array', elementType: T_ANY }
+      case 'at': return makeUnion(elemType, T_UNDEFINED)
+      case 'includes': return T_BOOLEAN
+      case 'indexOf': return T_NUMBER
+      case 'lastIndexOf': return T_NUMBER
+      case 'slice': return { kind: 'array', elementType: elemType }
+      case 'splice': return { kind: 'array', elementType: elemType }
+      case 'forEach': return T_VOID
+      case 'some': return T_BOOLEAN
+      case 'every': return T_BOOLEAN
+      case 'sort': return { kind: 'array', elementType: elemType }
+      case 'reverse': return { kind: 'array', elementType: elemType }
+      case 'toSorted': return { kind: 'array', elementType: elemType }
+      case 'toReversed': return { kind: 'array', elementType: elemType }
+      case 'toSpliced': return { kind: 'array', elementType: elemType }
+      case 'with': return { kind: 'array', elementType: elemType }
+      case 'join': return T_STRING
+      case 'concat': return { kind: 'array', elementType: elemType }
+      case 'keys': return T_ANY
+      case 'values': return T_ANY
+      case 'entries': return T_ANY
+      case 'fill': return { kind: 'array', elementType: elemType }
+      case 'copyWithin': return { kind: 'array', elementType: elemType }
+    }
+  }
+
+  // ── String methods — ECMA-262 §21.1 ────────────────────────────────────────
+  if (objType.kind === 'string') {
+    switch (methodName) {
+      case 'includes':
+      case 'startsWith':
+      case 'endsWith': return T_BOOLEAN
+      case 'indexOf':
+      case 'lastIndexOf': return T_NUMBER
+      case 'slice':
+      case 'substring':
+      case 'toLowerCase':
+      case 'toUpperCase':
+      case 'toLocaleLowerCase':
+      case 'toLocaleUpperCase':
+      case 'trim':
+      case 'trimStart':
+      case 'trimEnd':
+      case 'padStart':
+      case 'padEnd':
+      case 'repeat':
+      case 'replace':
+      case 'replaceAll':
+      case 'normalize': return T_STRING
+      case 'split': return { kind: 'array', elementType: T_STRING }
+      case 'match':
+      case 'matchAll': return T_ANY
+      case 'search': return T_NUMBER
+      case 'at': return makeUnion(T_STRING, T_UNDEFINED)
+      case 'charCodeAt':
+      case 'codePointAt': return T_NUMBER
+      case 'charAt': return T_STRING
+    }
+  }
+
+  // ── Promise<T> instance methods — ECMA-262 §27.2 ───────────────────────────
+  if (objType.kind === 'promise') {
+    switch (methodName) {
+      case 'then': return { kind: 'promise', valueType: T_ANY }
+      case 'catch': return { kind: 'promise', valueType: T_ANY }
+      case 'finally': return { kind: 'promise', valueType: (objType as PromiseType).valueType }
+    }
+  }
+
+  // ── Static methods: check if obj is a known global ─────────────────────────
+  if (t.isIdentifier(objNode)) {
+    const globalName = (objNode as t.Identifier).name
+
+    // Object static methods — ECMA-262 §20.1
+    if (globalName === 'Object') {
+      switch (methodName) {
+        case 'keys': return { kind: 'array', elementType: T_STRING }
+        case 'values': return { kind: 'array', elementType: T_ANY }
+        case 'entries': return { kind: 'array', elementType: T_ANY }
+        case 'fromEntries': return { kind: 'object', properties: new Map() }
+        case 'assign': return T_ANY
+        case 'hasOwn': return T_BOOLEAN
+        case 'create': return { kind: 'object', properties: new Map() }
+        case 'freeze': return T_ANY
+        case 'isFrozen': return T_BOOLEAN
+        case 'keys_': return { kind: 'array', elementType: T_STRING }
+        case 'groupBy': return { kind: 'object', properties: new Map() }
+        case 'is': return T_BOOLEAN
+        case 'defineProperty': return { kind: 'object', properties: new Map() }
+        case 'getOwnPropertyNames': return { kind: 'array', elementType: T_STRING }
+        case 'getPrototypeOf': return T_ANY
+      }
+    }
+
+    // Number static methods — ECMA-262 §21.1
+    if (globalName === 'Number') {
+      switch (methodName) {
+        case 'isNaN':
+        case 'isFinite':
+        case 'isInteger':
+        case 'isSafeInteger': return T_BOOLEAN
+        case 'parseFloat':
+        case 'parseInt': return T_NUMBER
+      }
+    }
+
+    // Math static methods — ECMA-262 §21.3
+    if (globalName === 'Math') {
+      switch (methodName) {
+        case 'abs': case 'floor': case 'ceil': case 'round': case 'trunc':
+        case 'min': case 'max': case 'sqrt': case 'pow': case 'log':
+        case 'log2': case 'log10': case 'exp': case 'sin': case 'cos':
+        case 'tan': case 'asin': case 'acos': case 'atan': case 'atan2':
+        case 'sign': case 'clz32': case 'imul': case 'fround': case 'cbrt':
+        case 'hypot': case 'sinh': case 'cosh': case 'tanh': case 'expm1':
+        case 'log1p': case 'random': case 'sumPrecise': return T_NUMBER
+      }
+    }
+
+    // Promise static methods — ECMA-262 §27.2
+    if (globalName === 'Promise') {
+      switch (methodName) {
+        case 'resolve': return { kind: 'promise', valueType: T_ANY }
+        case 'reject': return { kind: 'promise', valueType: { kind: 'never' } }
+        case 'all':
+        case 'allSettled': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+        case 'race':
+        case 'any': return { kind: 'promise', valueType: T_ANY }
+        case 'withResolvers': return { kind: 'object', properties: new Map([
+          ['promise', { kind: 'promise', valueType: T_ANY } as Type],
+          ['resolve', { kind: 'function', params: [], returnType: T_VOID } as Type],
+          ['reject', { kind: 'function', params: [], returnType: T_VOID } as Type],
+        ]) }
+        case 'try': return { kind: 'promise', valueType: T_ANY }
+      }
+    }
+
+    // Array static methods — ECMA-262 §23.1
+    if (globalName === 'Array') {
+      switch (methodName) {
+        case 'isArray': return T_BOOLEAN
+        case 'from': return { kind: 'array', elementType: T_ANY }
+        case 'of': return { kind: 'array', elementType: T_ANY }
+        case 'fromAsync': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+      }
+    }
+
+    // JSON static methods — ECMA-262 §25.5
+    if (globalName === 'JSON') {
+      switch (methodName) {
+        case 'parse': return T_ANY
+        case 'stringify': return T_STRING
+      }
+    }
+
+    // console methods — not in ECMA-262, but universally available
+    if (globalName === 'console') {
+      switch (methodName) {
+        case 'log': case 'error': case 'warn': case 'info': case 'debug':
+        case 'table': case 'dir': case 'trace': case 'group': case 'groupEnd':
+        case 'groupCollapsed': case 'time': case 'timeEnd': case 'timeLog':
+        case 'count': case 'countReset': case 'clear': case 'assert': return T_VOID
+      }
+    }
+
+    // Error static methods — ES2025
+    if (globalName === 'Error') {
+      if (methodName === 'isError') return T_BOOLEAN
+    }
+
+    // Symbol static methods — ECMA-262 §20.4
+    if (globalName === 'Symbol') {
+      if (methodName === 'for' || methodName === 'keyFor') return { kind: 'symbol' }
+    }
+
+    // Date static methods — ECMA-262 §21.4
+    if (globalName === 'Date') {
+      if (methodName === 'now') return T_NUMBER
+      if (methodName === 'parse') return T_NUMBER
+      if (methodName === 'UTC') return T_NUMBER
+    }
+
+    // Map static methods
+    if (globalName === 'Map') {
+      if (methodName === 'groupBy') return { kind: 'object', properties: new Map() }
+    }
+
+    // Iterator static methods — ES2025
+    if (globalName === 'Iterator') {
+      if (methodName === 'from') return T_ANY
+    }
+  }
+
+  // ── Object-type method resolution ───────────────────────────────────────────
+  if (objType.kind === 'object') {
+    const methodType = (objType as ObjectType).properties.get(methodName)
+    if (methodType?.kind === 'function') return (methodType as FunctionType).returnType
+  }
+
+  return null
+}
+
+/**
+ * Infers the type of a static property access on a known stdlib object.
+ * Returns null if not recognized.
+ */
+function inferStdlibProp(objType: Type, objNode: t.Expression | t.Super | null, propName: string): Type | null {
+  // Array.length, String.length
+  if (propName === 'length' && (objType.kind === 'array' || objType.kind === 'string')) return T_NUMBER
+  // Array.at() — property access (not call)
+  if (propName === 'at' && objType.kind === 'array') {
+    return makeUnion((objType as ArrayType).elementType, T_UNDEFINED)
+  }
+
+  // Map/Set instance properties
+  if (propName === 'size' && t.isIdentifier(objNode)) return T_NUMBER
+
+  // Static properties on globals
+  if (t.isIdentifier(objNode)) {
+    const globalName = (objNode as t.Identifier).name
+
+    if (globalName === 'Math') {
+      if (propName === 'PI' || propName === 'E' || propName === 'LN2' ||
+          propName === 'LN10' || propName === 'LOG2E' || propName === 'LOG10E' ||
+          propName === 'SQRT2') return T_NUMBER
+    }
+
+    if (globalName === 'Number') {
+      if (propName === 'MAX_VALUE' || propName === 'MIN_VALUE' ||
+          propName === 'POSITIVE_INFINITY' || propName === 'NEGATIVE_INFINITY' ||
+          propName === 'NaN' || propName === 'EPSILON' ||
+          propName === 'MAX_SAFE_INTEGER' || propName === 'MIN_SAFE_INTEGER') return T_NUMBER
+      if (propName === 'isNaN' || propName === 'isFinite' || propName === 'isInteger' ||
+          propName === 'isSafeInteger') return { kind: 'function', params: [], returnType: T_BOOLEAN }
+    }
+
+    if (globalName === 'Symbol') {
+      if (propName === 'iterator' || propName === 'asyncIterator' ||
+          propName === 'toPrimitive' || propName === 'toStringTag' ||
+          propName === 'species' || propName === 'hasInstance') return { kind: 'symbol' }
+    }
+  }
+
+  return null
 }
 
 // ── Infer: Expression → Type (synthesis / bottom-up) ─────────────────────────
@@ -394,19 +705,17 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       )
       if (node.computed) {
         if (objType.kind === 'array') return (objType as ArrayType).elementType
+        if (objType.kind === 'string') return T_STRING
         return T_ANY
       }
       // Static property access
       const propName = t.isIdentifier(node.property) ? node.property.name : null
       if (!propName) return T_ANY
-      if (propName === 'length' && (objType.kind === 'array' || objType.kind === 'string')) {
-        return T_NUMBER
-      }
-      // Array.prototype.at() — ES2022, returns T | undefined (ECMA-262 §23.1.3.3)
-      if (propName === 'at' && objType.kind === 'array') {
-        const elemType = (objType as ArrayType).elementType
-        return makeUnion(elemType, T_UNDEFINED)
-      }
+
+      // Stdlib property inference
+      const stdlibProp = inferStdlibProp(objType, node.object, propName)
+      if (stdlibProp !== null) return stdlibProp
+
       if (objType.kind === 'object') {
         return (objType as ObjectType).properties.get(propName) ?? T_ANY
       }
@@ -437,26 +746,64 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     // For direct calls (fn()), look up in env. Falls back to `any` (gradual).
     case 'CallExpression': {
       if (t.isMemberExpression(node.callee) && !node.callee.computed) {
-        const objType = inferExprType(
-          t.isExpression(node.callee.object) ? node.callee.object : null, env
-        )
-        const propName = t.isIdentifier(node.callee.property)
-          ? node.callee.property.name
-          : null
+        const callee = node.callee
+        const objNode = t.isExpression(callee.object) ? callee.object : null
+        const objType = inferExprType(objNode, env)
+        const propName = t.isIdentifier(callee.property) ? callee.property.name : null
         if (propName) {
-          // Special: array.at() returns T | undefined
-          if (propName === 'at' && objType.kind === 'array') {
-            return makeUnion((objType as ArrayType).elementType, T_UNDEFINED)
-          }
-          if (objType.kind === 'object') {
-            const methodType = (objType as ObjectType).properties.get(propName)
-            if (methodType?.kind === 'function') return (methodType as FunctionType).returnType
-          }
+          const stdlibResult = inferStdlibMethodCall(objType, callee.object, propName, env)
+          if (stdlibResult !== null) return stdlibResult
         }
       }
       if (t.isIdentifier(node.callee)) {
         const fnType = env.get(node.callee.name)
         if (fnType?.kind === 'function') return (fnType as FunctionType).returnType
+      }
+      // AwaitExpression unwraps Promise<T> — handled separately but also here for nested calls
+      return T_ANY
+    }
+
+    // Await expression — ECMA-262 §15.10.4 Await
+    case 'AwaitExpression': {
+      const argType = inferExprType(node.argument, env)
+      if (argType.kind === 'promise') return (argType as PromiseType).valueType
+      return argType  // non-promise await returns the value as-is
+    }
+
+    // Update expression (++/--) — ECMA-262 §13.4
+    case 'UpdateExpression': {
+      const operandType = inferExprType(node.argument as t.Expression, env)
+      if (operandType.kind === 'bigint') return { kind: 'bigint' }
+      return T_NUMBER
+    }
+
+    // New expression — ECMA-262 §13.3.5.1
+    case 'NewExpression': {
+      if (t.isIdentifier(node.callee)) {
+        const name = (node.callee as t.Identifier).name
+        switch (name) {
+          case 'Map': return { kind: 'object', properties: new Map([['size', T_NUMBER as Type]]) }
+          case 'Set': return { kind: 'object', properties: new Map([['size', T_NUMBER as Type]]) }
+          case 'WeakMap': return { kind: 'object', properties: new Map() }
+          case 'WeakSet': return { kind: 'object', properties: new Map() }
+          case 'Error': case 'TypeError': case 'RangeError':
+          case 'SyntaxError': case 'ReferenceError':
+            return { kind: 'object', properties: new Map([
+              ['message', T_STRING as Type],
+              ['stack', makeUnion(T_STRING, T_UNDEFINED) as Type],
+              ['cause', T_ANY as Type],
+            ]) }
+          case 'Promise': return { kind: 'promise', valueType: T_ANY }
+          case 'Date': return { kind: 'object', properties: new Map() }
+          case 'RegExp': return { kind: 'object', properties: new Map([
+            ['source', T_STRING as Type],
+            ['flags', T_STRING as Type],
+          ]) }
+          case 'URL': return { kind: 'object', properties: new Map() }
+        }
+        // Look up constructor in env — for user-defined classes
+        const ctorType = env.get(name)
+        if (ctorType?.kind === 'function') return { kind: 'object', properties: new Map() }
       }
       return T_ANY
     }
