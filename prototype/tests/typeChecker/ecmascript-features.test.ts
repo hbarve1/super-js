@@ -1399,3 +1399,119 @@ describe('Gap 7: Async function return type (ECMA-262 §27.2)', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── Gap 8 — Destructuring patterns ───────────────────────────────────────────
+
+describe('Gap 8: Destructuring patterns (ECMA-262 §14.3.3)', () => {
+  // Array destructuring — basic
+  it('array destructuring binds elements from annotated source', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const [a, b] = arr
+      const n1: number = a
+      const n2: number = b
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring with type annotation on pattern', () => {
+    expect(errors(`
+      const [x, y]: number[] = [1, 2]
+      const n1: number = x
+      const n2: number = y
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring from literal infers element type', () => {
+    expect(errors(`
+      const [s1, s2] = ["hello", "world"]
+      const a: string = s1
+      const b: string = s2
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring non-array with annotation emits SJS-E001', () => {
+    expect(errorCodes(`
+      const [a]: number[] = "not an array"
+    `)).toContain('SJS-E001')
+  })
+
+  // Rest element in array destructuring
+  it('rest element in array destructuring gets array type', () => {
+    expect(errors(`
+      const [head, ...tail] = [1, 2, 3]
+    `)).toHaveLength(0)
+  })
+
+  // Object destructuring — basic
+  it('object destructuring binds named properties', () => {
+    expect(errors(`
+      const obj = { name: "Alice", age: 30 }
+      const { name, age } = obj
+      const s: string = name
+      const n: number = age
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring with type annotation on pattern', () => {
+    expect(errors(`
+      const { x, y }: { x: number; y: string } = { x: 1, y: "hi" }
+      const n: number = x
+      const s: string = y
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring registers bindings for subsequent use', () => {
+    expect(errors(`
+      const { x }: { x: number } = { x: 1 }
+      const n: number = x
+    `)).toHaveLength(0)
+  })
+
+  it('object destructuring non-object with annotation emits SJS-E001', () => {
+    expect(errorCodes(`
+      const { x }: { x: number } = "not an object"
+    `)).toContain('SJS-E001')
+  })
+
+  it('object destructuring rest element is valid', () => {
+    expect(errors(`
+      const { a, ...rest } = { a: 1, b: 2, c: 3 }
+    `)).toHaveLength(0)
+  })
+
+  // Destructuring from function parameter context (gradual)
+  it('destructuring from any-typed source is gradual', () => {
+    expect(errors(`
+      const data: any = { x: 1 }
+      const { x } = data
+    `)).toHaveLength(0)
+  })
+
+  // Object destructuring with multiple properties
+  it('object destructuring multiple props from annotated type', () => {
+    expect(errors(`
+      const point: { x: number; y: number; z: number } = { x: 1, y: 2, z: 3 }
+      const { x, y, z } = point
+      const nx: number = x
+      const ny: number = y
+      const nz: number = z
+    `)).toHaveLength(0)
+  })
+
+  // Nested object destructuring
+  it('nested object destructuring works at each level', () => {
+    expect(errors(`
+      const outer = { inner: { value: 42 } }
+      const { inner } = outer
+      const n: number = inner.value
+    `)).toHaveLength(0)
+  })
+
+  // Array destructuring with explicit element annotation mismatch
+  it('array destructuring bound var assigned to wrong type emits SJS-E001', () => {
+    expect(errorCodes(`
+      const [a]: string[] = ["hello"]
+      const n: number = a
+    `)).toContain('SJS-E001')
+  })
+})
