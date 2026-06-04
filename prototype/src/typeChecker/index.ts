@@ -593,6 +593,9 @@ function inferStdlibMethodCall(
         case 'defineProperty': return { kind: 'object', properties: new Map() }
         case 'getOwnPropertyNames': return { kind: 'array', elementType: T_STRING }
         case 'getPrototypeOf': return T_ANY
+        case 'setPrototypeOf': return T_ANY
+        case 'getOwnPropertyDescriptor': return T_ANY
+        case 'getOwnPropertyDescriptors': return { kind: 'object', properties: new Map() }
       }
     }
 
@@ -605,6 +608,13 @@ function inferStdlibMethodCall(
         case 'isSafeInteger': return T_BOOLEAN
         case 'parseFloat':
         case 'parseInt': return T_NUMBER
+      }
+    }
+
+    // BigInt static methods — ECMA-262 §21.2
+    if (globalName === 'BigInt') {
+      switch (methodName) {
+        case 'asIntN': case 'asUintN': return { kind: 'bigint' }
       }
     }
 
@@ -688,6 +698,8 @@ function inferStdlibMethodCall(
       switch (methodName) {
         case 'parse': return T_ANY
         case 'stringify': return T_STRING
+        case 'rawJSON': return T_ANY        // ES2024 §25.5.x
+        case 'isRawJSON': return T_BOOLEAN  // ES2024 §25.5.x
       }
     }
 
@@ -994,10 +1006,42 @@ function inferStdlibMethodCall(
     }
   }
 
+  // ── Number instance methods — ECMA-262 §21.1 ─────────────────────────────────
+  if (objType.kind === 'number') {
+    switch (methodName) {
+      case 'toFixed': case 'toPrecision': case 'toExponential':
+      case 'toString': case 'toLocaleString': return T_STRING
+      case 'valueOf': return T_NUMBER
+    }
+  }
+
+  // ── BigInt instance methods — ECMA-262 §21.2 ─────────────────────────────────
+  if (objType.kind === 'bigint') {
+    switch (methodName) {
+      case 'toString': case 'toLocaleString': return T_STRING
+      case 'valueOf': return { kind: 'bigint' }
+    }
+  }
+
+  // ── Function instance methods — ECMA-262 §20.2 ───────────────────────────────
+  if (objType.kind === 'function') {
+    switch (methodName) {
+      case 'call': case 'apply': return T_ANY
+      case 'bind': return { kind: 'function', params: [], returnType: T_ANY } as import('./types').FunctionType
+      case 'toString': return T_STRING
+    }
+  }
+
   // ── Object-type method resolution ───────────────────────────────────────────
   if (objType.kind === 'object') {
     const methodType = (objType as ObjectType).properties.get(methodName)
     if (methodType?.kind === 'function') return (methodType as FunctionType).returnType
+    // Object.prototype methods available on all objects — ECMA-262 §20.1.3
+    switch (methodName) {
+      case 'hasOwnProperty': case 'isPrototypeOf': case 'propertyIsEnumerable': return T_BOOLEAN
+      case 'toString': case 'toLocaleString': return T_STRING
+      case 'valueOf': return T_ANY
+    }
   }
 
   return null
@@ -1187,6 +1231,7 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           if (operand.kind === 'bigint') return { kind: 'bigint' }
           return T_NUMBER
         case '~':      return T_NUMBER
+        case 'delete': return T_BOOLEAN  // §13.5.1 delete operator always returns boolean
         default:       return T_ANY
       }
     }
@@ -1225,6 +1270,27 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
             for (const [k, v] of (spreadType as ObjectType).properties) {
               properties.set(k, v)
             }
+          }
+          continue
+        }
+        // Shorthand method: { foo() {}, get bar() {} } — ECMA-262 §13.2.5
+        if (t.isObjectMethod(prop)) {
+          let key: string | null = null
+          if (t.isIdentifier(prop.key)) key = prop.key.name
+          else if (t.isStringLiteral(prop.key)) key = prop.key.value
+          if (!key) continue
+          const retAnn = prop.returnType
+          const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
+          const params = prop.params.map(p => ({
+            name: t.isIdentifier(p) ? p.name : '_',
+            type: t.isIdentifier(p) && p.typeAnnotation
+              ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
+            optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
+          }))
+          if (prop.kind === 'get') {
+            properties.set(key, retType)
+          } else {
+            properties.set(key, { kind: 'function', params, returnType: retType } as import('./types').FunctionType)
           }
           continue
         }
@@ -1325,6 +1391,18 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       if (t.isIdentifier(node.callee)) {
         const fnType = env.get(node.callee.name)
         if (fnType?.kind === 'function') return (fnType as FunctionType).returnType
+        // Known global functions — ECMA-262 §19.2
+        switch (node.callee.name) {
+          case 'decodeURI': case 'encodeURI':
+          case 'decodeURIComponent': case 'encodeURIComponent': return T_STRING
+          case 'structuredClone': return T_ANY
+          case 'queueMicrotask': return T_VOID
+          case 'parseInt': case 'parseFloat': return T_NUMBER
+          case 'isNaN': case 'isFinite': return T_BOOLEAN
+          case 'String': return T_STRING
+          case 'Number': return T_NUMBER
+          case 'Boolean': return T_BOOLEAN
+        }
       }
       // AwaitExpression unwraps Promise<T> — handled separately but also here for nested calls
       return T_ANY
@@ -1379,7 +1457,9 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           }
           case 'Error': case 'TypeError': case 'RangeError':
           case 'SyntaxError': case 'ReferenceError':
-            return { kind: 'object', properties: new Map([
+          case 'EvalError': case 'URIError':
+          case 'AggregateError': case 'SuppressedError':
+            return { kind: 'object', brand: 'Error', properties: new Map([
               ['message', T_STRING as Type],
               ['stack', makeUnion(T_STRING, T_UNDEFINED) as Type],
               ['cause', T_ANY as Type],
@@ -1827,30 +1907,46 @@ export class TypeChecker {
         if (!this.classRegistry.has(className)) {
           const members = new Map<string, string>()
           const fieldTypes = new Map<string, Type>()
+          const staticFieldTypes = new Map<string, Type>()
           for (const member of cls.body.body) {
+            const isStatic = (member as any).static === true
+            const targetMap = isStatic ? staticFieldTypes : fieldTypes
+
             if ((t.isClassMethod(member) || t.isClassProperty(member)) && t.isIdentifier(member.key)) {
               const mKey = (member.key as t.Identifier).name
               members.set(mKey, (member as any).accessibility ?? 'public')
               if (t.isClassProperty(member)) {
                 const ann = (member as t.ClassProperty).typeAnnotation
                 const init = (member as t.ClassProperty).value
-                fieldTypes.set(mKey, ann && t.isTSTypeAnnotation(ann)
+                targetMap.set(mKey, ann && t.isTSTypeAnnotation(ann)
                   ? resolveType((ann as t.TSTypeAnnotation).typeAnnotation)
                   : (init && t.isExpression(init) ? inferExprType(init as t.Expression, this.env) : T_ANY))
               }
               if (t.isClassMethod(member)) {
                 const meth = member as t.ClassMethod
                 const retAnn = meth.returnType
+                const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
                 const params = meth.params.map(p => ({
                   name: t.isIdentifier(p) ? p.name : '_',
                   type: t.isIdentifier(p) && p.typeAnnotation
                     ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
                   optional: t.isIdentifier(p) ? (p.optional ?? false) : false,
                 }))
-                fieldTypes.set(mKey, {
-                  kind: 'function', params,
-                  returnType: retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY,
-                } as import('./types').FunctionType)
+                // Getter: property type is the return type; setter: param type; method: function
+                if (meth.kind === 'get') {
+                  targetMap.set(mKey, retType)
+                } else if (meth.kind === 'set') {
+                  const setParam = meth.params[0]
+                  const setParamType = setParam && t.isIdentifier(setParam) && setParam.typeAnnotation
+                    ? resolveType((setParam.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+                    : T_ANY
+                  targetMap.set(mKey, setParamType)
+                } else {
+                  targetMap.set(mKey, {
+                    kind: 'function', params,
+                    returnType: retType,
+                  } as import('./types').FunctionType)
+                }
               }
             }
             // Private fields — ECMA-262 §15.7.1
@@ -1887,6 +1983,10 @@ export class TypeChecker {
           }
           this.classRegistry.set(className, members)
           this.classFieldTypes.set(className, fieldTypes)
+          // Register class name in env so ClassName.staticMethod() resolves — §15.7
+          if (staticFieldTypes.size > 0) {
+            this.env.set(className, { kind: 'object', properties: staticFieldTypes } as import('./types').ObjectType)
+          }
         }
         this.classContextStack.push(className)
         this.checkImplementsClauses(path as NodePath<t.ClassDeclaration | t.ClassExpression>)

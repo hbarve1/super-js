@@ -3465,3 +3465,193 @@ describe('ArrayBuffer instance methods — ES2024 — ECMA-262 §25.1', () => {
     `)).toHaveLength(0)
   })
 })
+
+describe('delete operator — ECMA-262 §13.5.1', () => {
+  it('delete expr returns boolean', () => {
+    expect(errors(`const obj = { x: 1 }; const d: boolean = delete obj.x`)).toHaveLength(0)
+  })
+
+  it('delete on object property — no error', () => {
+    expect(errors(`const o: any = {}; delete o.foo`)).toHaveLength(0)
+  })
+})
+
+describe('Object shorthand methods — ECMA-262 §13.2.5', () => {
+  it('shorthand method inferred as function', () => {
+    expect(errors(`
+      const obj = {
+        greet(name: string): string { return 'hello ' + name },
+      }
+      const g = obj.greet
+    `)).toHaveLength(0)
+  })
+
+  it('shorthand getter returns value type', () => {
+    expect(errors(`
+      const obj = {
+        get value(): number { return 42 },
+      }
+      const v: number = obj.value
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Global functions — ECMA-262 §19.2', () => {
+  it('encodeURIComponent returns string', () => {
+    expect(errors(`const s: string = encodeURIComponent('hello world')`)).toHaveLength(0)
+  })
+
+  it('decodeURIComponent returns string', () => {
+    expect(errors(`const s: string = decodeURIComponent('%20')`)).toHaveLength(0)
+  })
+
+  it('encodeURI returns string', () => {
+    expect(errors(`const s: string = encodeURI('https://example.com')`)).toHaveLength(0)
+  })
+
+  it('decodeURI returns string', () => {
+    expect(errors(`const s: string = decodeURI('https://example.com')`)).toHaveLength(0)
+  })
+
+  it('structuredClone returns any', () => {
+    expect(errors(`const copy = structuredClone({ x: 1 })`)).toHaveLength(0)
+  })
+
+  it('queueMicrotask returns void', () => {
+    expect(errors(`queueMicrotask(() => { console.log('queued') })`)).toHaveLength(0)
+  })
+})
+
+describe('Number instance methods — ECMA-262 §21.1', () => {
+  it('toFixed returns string', () => {
+    expect(errors(`const n: number = 3.14159; const s: string = n.toFixed(2)`)).toHaveLength(0)
+  })
+
+  it('toPrecision returns string', () => {
+    expect(errors(`const n: number = 3.14159; const s: string = n.toPrecision(4)`)).toHaveLength(0)
+  })
+
+  it('toExponential returns string', () => {
+    expect(errors(`const n: number = 12345; const s: string = n.toExponential(2)`)).toHaveLength(0)
+  })
+})
+
+describe('BigInt static methods — ECMA-262 §21.2', () => {
+  it('BigInt.asIntN returns bigint', () => {
+    expect(errors(`const n: bigint = BigInt.asIntN(8, 127n)`)).toHaveLength(0)
+  })
+
+  it('BigInt.asUintN returns bigint', () => {
+    expect(errors(`const n: bigint = BigInt.asUintN(8, 255n)`)).toHaveLength(0)
+  })
+
+  it('bigint.toString returns string', () => {
+    expect(errors(`const n = 42n; const s: string = n.toString()`)).toHaveLength(0)
+  })
+})
+
+describe('Error subtypes — ECMA-262 §20.5', () => {
+  it('new EvalError() is an Error', () => {
+    expect(errors(`const e = new EvalError('bad eval')`)).toHaveLength(0)
+  })
+
+  it('new URIError() has message property', () => {
+    expect(errors(`const e = new URIError('bad uri'); const m: string = e.message`)).toHaveLength(0)
+  })
+
+  it('new AggregateError() — ES2021', () => {
+    expect(errors(`const e = new AggregateError([], 'all failed')`)).toHaveLength(0)
+  })
+
+  it('new SuppressedError() — ES2024', () => {
+    expect(errors(`const e = new SuppressedError(new Error(), new Error(), 'suppressed')`)).toHaveLength(0)
+  })
+})
+
+describe('Object static additions — ECMA-262 §20.1', () => {
+  it('Object.setPrototypeOf', () => {
+    expect(errors(`Object.setPrototypeOf({}, null)`)).toHaveLength(0)
+  })
+
+  it('Object.getOwnPropertyDescriptor', () => {
+    expect(errors(`const d = Object.getOwnPropertyDescriptor({ x: 1 }, 'x')`)).toHaveLength(0)
+  })
+
+  it('Object.prototype.hasOwnProperty returns boolean', () => {
+    expect(errors(`const o = { x: 1 }; const h: boolean = o.hasOwnProperty('x')`)).toHaveLength(0)
+  })
+})
+
+describe('JSON ES2024 additions — ECMA-262 §25.5', () => {
+  it('JSON.rawJSON returns any', () => {
+    expect(errors(`const r = JSON.rawJSON(42)`)).toHaveLength(0)
+  })
+
+  it('JSON.isRawJSON returns boolean', () => {
+    expect(errors(`const b: boolean = JSON.isRawJSON(JSON.rawJSON(1))`)).toHaveLength(0)
+  })
+})
+
+describe('Function instance methods — ECMA-262 §20.2', () => {
+  it('fn.call returns any', () => {
+    expect(errors(`function add(a: number, b: number): number { return a + b }
+      const r = add.call(null, 1, 2)`)).toHaveLength(0)
+  })
+
+  it('fn.apply returns any', () => {
+    expect(errors(`function sum(...args: number[]): number { return 0 }
+      const r = sum.apply(null, [1, 2, 3])`)).toHaveLength(0)
+  })
+
+  it('fn.bind returns function', () => {
+    expect(errors(`function greet(msg: string): string { return msg }
+      const bound = greet.bind(null)`)).toHaveLength(0)
+  })
+})
+
+describe('Class static methods and fields — ECMA-262 §15.7', () => {
+  it('static method callable via ClassName.method()', () => {
+    expect(errors(`
+      class Counter {
+        static count: number = 0
+        static increment(): number { return ++Counter.count }
+      }
+      const n: number = Counter.increment()
+    `)).toHaveLength(0)
+  })
+
+  it('static field accessible via ClassName.field', () => {
+    expect(errors(`
+      class Config {
+        static defaultTimeout: number = 5000
+      }
+      const t: number = Config.defaultTimeout
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Class getters and setters — ECMA-262 §15.7', () => {
+  it('getter return type used in property access', () => {
+    expect(errors(`
+      class Person {
+        private _name: string = ''
+        get name(): string { return this._name }
+      }
+      const p = new Person()
+      const n: string = p.name
+    `)).toHaveLength(0)
+  })
+
+  it('setter param type used for assignment check', () => {
+    expect(errors(`
+      class Box {
+        private _val: number = 0
+        set value(v: number) { this._val = v }
+        get value(): number { return this._val }
+      }
+      const b = new Box()
+      b.value = 42
+    `)).toHaveLength(0)
+  })
+})
+
