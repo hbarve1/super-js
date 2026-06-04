@@ -12,16 +12,24 @@
  * Prettier's TypeScript parser handles JSX via the babel-ts / typescript plugins.
  */
 
-// Prettier v3 is ESM-only; require() gives us the CJS-compatible synchronous surface.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const prettier = require('prettier') as typeof import('prettier')
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
+import type { Options } from 'prettier'
+
+// Use prettier standalone + plugins to avoid --experimental-vm-modules issues in Jest.
+// prettier/index.cjs uses a dynamic import() internally which Jest CJS mode doesn't support.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const prettierStandalone = require('prettier/standalone') as typeof import('prettier/standalone')
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pluginEstree = require('prettier/plugins/estree')
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pluginTypeScript = require('prettier/plugins/typescript')
 
 // ── Style guide options ───────────────────────────────────────────────────────
 
-const PRETTIER_OPTIONS: import('prettier').Options = {
+const PRETTIER_OPTIONS: Options = {
   parser: 'typescript',
+  plugins: [pluginEstree, pluginTypeScript],
   tabWidth: 2,
   useTabs: false,
   semi: true,
@@ -36,7 +44,7 @@ const PRETTIER_OPTIONS: import('prettier').Options = {
 
 /** Format a source string in-memory. Returns the formatted code. */
 export async function formatSource(source: string): Promise<string> {
-  return prettier.format(source, PRETTIER_OPTIONS)
+  return prettierStandalone.format(source, PRETTIER_OPTIONS)
 }
 
 /** Format a file in-place. */
