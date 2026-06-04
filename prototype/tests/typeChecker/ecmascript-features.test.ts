@@ -1208,3 +1208,109 @@ describe('Gap 5: Unary expression type inference (ECMA-262 §13.5)', () => {
     expect(errors('const n: number = ~5')).toHaveLength(0)
   })
 })
+
+// ── Gap 6 — Property access type inference ────────────────────────────────────
+
+describe('Gap 6: Property access type inference (ECMA-262 §13.3.2)', () => {
+  // Static member access on annotated object type
+  it('obj.prop where obj: { x: number } infers number', () => {
+    expect(errors(`
+      const obj: { x: number } = { x: 1 }
+      const n: number = obj.x
+    `)).toHaveLength(0)
+  })
+
+  it('obj.prop where obj: { name: string } infers string', () => {
+    expect(errors(`
+      const obj: { name: string } = { name: "Alice" }
+      const s: string = obj.name
+    `)).toHaveLength(0)
+  })
+
+  it('obj.prop with wrong declared type emits SJS-E001', () => {
+    expect(errorCodes(`
+      const obj: { x: number } = { x: 1 }
+      const s: string = obj.x
+    `)).toContain('SJS-E001')
+  })
+
+  // Static member access on inferred object type
+  it('obj.prop on inferred object returns inferred property type', () => {
+    expect(errors(`
+      const obj = { score: 100 }
+      const n: number = obj.score
+    `)).toHaveLength(0)
+  })
+
+  // arr.length on array — ECMA-262 §23.1.3.16
+  it('arr.length on annotated array infers number', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const n: number = arr.length
+    `)).toHaveLength(0)
+  })
+
+  it('arr.length on inferred array infers number', () => {
+    expect(errors(`
+      const arr = [1, 2, 3]
+      const n: number = arr.length
+    `)).toHaveLength(0)
+  })
+
+  it('arr.length assigned to boolean emits SJS-E001', () => {
+    expect(errorCodes(`
+      const arr = [1, 2, 3]
+      const b: boolean = arr.length
+    `)).toContain('SJS-E001')
+  })
+
+  // string.length — ECMA-262 §22.1.4.1
+  it('str.length on string variable infers number', () => {
+    expect(errors(`
+      const s: string = "hello"
+      const n: number = s.length
+    `)).toHaveLength(0)
+  })
+
+  it('string literal .length infers number', () => {
+    expect(errors('const n: number = "hello".length')).toHaveLength(0)
+  })
+
+  // Unknown property access — gradual (any)
+  it('unknown property access on typed object is gradual (any)', () => {
+    expect(errors(`
+      const obj: { x: number } = { x: 1 }
+      const u: any = (obj as any).unknownProp
+    `)).toHaveLength(0)
+  })
+
+  // Optional chaining — obj?.prop
+  it('obj?.prop on object type adds undefined to result', () => {
+    expect(errors(`
+      const obj: { x: number } = { x: 1 }
+      const val: number | undefined = obj?.x
+    `)).toHaveLength(0)
+  })
+
+  it('obj?.prop without undefined in target type emits SJS-E001', () => {
+    expect(errorCodes(`
+      const obj: { x: number } = { x: 1 }
+      const n: number = obj?.x
+    `)).toContain('SJS-E001')
+  })
+
+  // Array.prototype.at() — ES2022 returns T | undefined
+  it('arr.at() on annotated array returns T | undefined', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const item: number | undefined = arr.at(0)
+    `)).toHaveLength(0)
+  })
+
+  it('arr.at() on annotated array NOT assignable to just T', () => {
+    expect(errorCodes(`
+      const arr: number[] = [1, 2, 3]
+      const item: number = arr.at(0)
+    `)).toContain('SJS-E001')
+  })
+})
