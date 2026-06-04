@@ -357,12 +357,12 @@ Update this section after each phase:
 |---|---|---|---|
 | Phase 0 — Blockers | 3 | 3 | 100% |
 | Phase 1 — Statements | 5 | 5 | 100% |
-| Phase 2 — Stdlib | 7 | 6 | 86% |
+| Phase 2 — Stdlib | 7 | 7 | 100% |
 | Phase 3 — Type System | 6 | 6 | 100% |
 | Phase 4 — Expressions | 5 | 5 | 100% |
 | Phase 5 — SJS Features | 5 | 5 | 100% |
 | Phase 6 — Pipeline | 3 | 3 | 100% |
-| **TOTAL** | **34** | **33** | **97%** |
+| **TOTAL** | **34** | **34** | **100%** |
 
 ---
 
