@@ -1247,6 +1247,7 @@ export class TypeChecker {
         break
       case 'MemberExpression':
         this.checkMemberAccess(path as NodePath<t.MemberExpression>)
+        this.checkNullableMemberAccess(path as NodePath<t.MemberExpression>)
         break
       case 'Identifier':
         // SJS-E009: type-only import binding used at runtime
@@ -1309,9 +1310,6 @@ export class TypeChecker {
         break
       case 'ExportDefaultDeclaration':
         // Default exports don't need special handling in the type env
-        break
-      case 'MemberExpression':
-        this.checkNullableMemberAccess(path as NodePath<t.MemberExpression>)
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
