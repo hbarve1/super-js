@@ -1116,3 +1116,95 @@ describe('Gap 4: Object literal type inference (ECMA-262 §13.2.5)', () => {
     `)).toHaveLength(0)
   })
 })
+
+// ── Gap 5 — Unary expression type inference ───────────────────────────────────
+
+describe('Gap 5: Unary expression type inference (ECMA-262 §13.5)', () => {
+  // typeof — always returns string (ECMA-262 §13.5.3)
+  it('typeof x always infers string', () => {
+    expect(errors('const s: string = typeof 42')).toHaveLength(0)
+  })
+
+  it('typeof x always infers string even for booleans', () => {
+    expect(errors('const s: string = typeof true')).toHaveLength(0)
+  })
+
+  it('typeof x always infers string even for undefined', () => {
+    expect(errors('const s: string = typeof undefined')).toHaveLength(0)
+  })
+
+  it('typeof x assigned to number emits SJS-E001', () => {
+    expect(errorCodes('const n: number = typeof 42')).toContain('SJS-E001')
+  })
+
+  // ! (logical NOT) — always returns boolean (ECMA-262 §13.5.7)
+  it('!x infers boolean', () => {
+    expect(errors('const b: boolean = !true')).toHaveLength(0)
+  })
+
+  it('!x infers boolean for number operand', () => {
+    expect(errors('const b: boolean = !0')).toHaveLength(0)
+  })
+
+  it('!x infers boolean for string operand', () => {
+    expect(errors('const b: boolean = !""')).toHaveLength(0)
+  })
+
+  it('!x assigned to string emits SJS-E001', () => {
+    expect(errorCodes('const s: string = !true')).toContain('SJS-E001')
+  })
+
+  // - (unary minus) — returns number for number, bigint for bigint (ECMA-262 §13.5.5)
+  it('-number infers number', () => {
+    expect(errors('const n: number = -5')).toHaveLength(0)
+  })
+
+  it('-bigint infers bigint', () => {
+    expect(errors('const n: bigint = -5n')).toHaveLength(0)
+  })
+
+  it('-number assigned to string emits SJS-E001', () => {
+    expect(errorCodes('const s: string = -5')).toContain('SJS-E001')
+  })
+
+  it('-bigint assigned to number emits SJS-E001', () => {
+    expect(errorCodes('const n: number = -5n')).toContain('SJS-E001')
+  })
+
+  it('-variable-number infers number', () => {
+    expect(errors(`
+      const x: number = 10
+      const n: number = -x
+    `)).toHaveLength(0)
+  })
+
+  it('-variable-bigint infers bigint', () => {
+    expect(errors(`
+      const x: bigint = 10n
+      const n: bigint = -x
+    `)).toHaveLength(0)
+  })
+
+  // void — always returns undefined (ECMA-262 §13.5.2)
+  it('void x infers undefined', () => {
+    expect(errors('const u: undefined = void 0')).toHaveLength(0)
+  })
+
+  it('void x infers undefined for expression operand', () => {
+    expect(errors('const u: undefined = void "hello"')).toHaveLength(0)
+  })
+
+  it('void x assigned to string emits SJS-E001', () => {
+    expect(errorCodes('const s: string = void 0')).toContain('SJS-E001')
+  })
+
+  // + (unary plus) — coerces to number
+  it('+x infers number', () => {
+    expect(errors('const n: number = +"42"')).toHaveLength(0)
+  })
+
+  // ~ (bitwise NOT) — returns number
+  it('~x infers number', () => {
+    expect(errors('const n: number = ~5')).toHaveLength(0)
+  })
+})
