@@ -68,53 +68,38 @@ function parseStructContent(content: string): { plainBinding: string; nestedPatt
 
 function parseArms(armsStr: string): MatchArm[] {
   const arms: MatchArm[] = []
-  const armParts: string[] = []
-
-  // Detect separator style: commas/semicolons take priority; fall back to newlines.
-  let hasInlineSep = false
-  let scanDepth = 0
+  let armParts: string[] = []
+  let depth = 0
+  let current = ''
   for (const ch of armsStr) {
-    if (ch === '{' || ch === '(') scanDepth++
-    else if (ch === '}' || ch === ')') scanDepth--
-    if ((ch === ',' || ch === ';') && scanDepth === 0) { hasInlineSep = true; break }
+    if (ch === '{' || ch === '(') depth++
+    else if (ch === '}' || ch === ')') depth--
+    if (ch === ',' && depth === 0) {
+      armParts.push(current.trim())
+      current = ''
+    } else {
+      current += ch
+    }
   }
+  if (current.trim()) armParts.push(current.trim())
 
-  if (hasInlineSep) {
-    let depth = 0
-    let current = ''
-    for (const ch of armsStr) {
-      if (ch === '{' || ch === '(') depth++
-      else if (ch === '}' || ch === ')') depth--
-      if ((ch === ',' || ch === ';') && depth === 0) {
-        if (current.trim()) armParts.push(current.trim())
-        current = ''
+  // If only one part but armsStr has multiple lines containing `=>`,
+  // treat as newline-separated arms (each arm on its own line).
+  if (armParts.length <= 1 && armsStr.includes('\n')) {
+    const lines = armsStr.split('\n').map(l => l.trim()).filter(Boolean)
+    const lineArms: string[] = []
+    let acc = ''
+    for (const line of lines) {
+      // A new arm starts with an uppercase letter or _ and contains =>
+      if (acc && /^[A-Z_].*=>/.test(line)) {
+        lineArms.push(acc.trim())
+        acc = line
       } else {
-        current += ch
+        acc += (acc ? '\n' : '') + line
       }
     }
-    if (current.trim()) armParts.push(current.trim())
-  } else {
-    // Newline-separated arms: split by lines, accumulate multi-line arm bodies.
-    // A new arm starts when a line at depth 0 contains '=>'.
-    let depth = 0
-    let current = ''
-    for (const line of armsStr.split('\n')) {
-      const trimmed = line.trim()
-      if (!trimmed) continue
-      // Track brace depth for this line
-      for (const ch of trimmed) {
-        if (ch === '{' || ch === '(') depth++
-        else if (ch === '}' || ch === ')') depth--
-      }
-      if (depth === 0 && trimmed.includes('=>') && current.trim()) {
-        // New arm at depth 0 — flush previous
-        armParts.push(current.trim())
-        current = trimmed
-      } else {
-        current += (current ? ' ' : '') + trimmed
-      }
-    }
-    if (current.trim()) armParts.push(current.trim())
+    if (acc.trim()) lineArms.push(acc.trim())
+    if (lineArms.length > 1) armParts = lineArms
   }
 
   for (const part of armParts) {
@@ -139,18 +124,23 @@ function parseArms(armsStr: string): MatchArm[] {
 
     // Match Tag({ ... }) — struct or nested pattern (with parens)
     const structMatch = pattern.match(/^(\w+)\((\{.*\})\)$/)
-    // Match Tag { field1; field2 } — struct pattern without parens
-    const structNoParen = pattern.match(/^(\w+)\s*\{([^}]*)\}$/)
+    // Match Tag { field, field2 } — struct pattern without parens (SJS syntax)
+    const directStructMatch = pattern.match(/^(\w+)\s*\{([^}]*)\}$/)
     const tupleMatch = pattern.match(/^(\w+)\(([^)]*)\)$/)
     const unitMatch = pattern.match(/^(\w+)$/)
 
     if (structMatch) {
       const { plainBinding, nestedPatterns } = parseStructContent(structMatch[2])
       arms.push({ tag: structMatch[1], binding: plainBinding, nestedPatterns, guard, body, isWildcard: false })
-    } else if (structNoParen) {
-      const fields = structNoParen[2].split(/[,;]/).map((f: string) => f.trim()).filter(Boolean).join(', ')
-      const plainBinding = fields ? `{ ${fields} }` : ''
-      arms.push({ tag: structNoParen[1], binding: plainBinding, nestedPatterns: [], guard, body, isWildcard: false })
+    } else if (directStructMatch) {
+      // `Pending { since }` or `Rect { width: number; height: number }` — struct pattern without parens
+      // Split by , or ; and strip type annotations (keep only field name before :)
+      const fields = directStructMatch[2]
+        .split(/[,;]/)
+        .map(f => f.trim().split(':')[0].trim())
+        .filter(Boolean)
+      const binding = `{ ${fields.join(', ')} }`
+      arms.push({ tag: directStructMatch[1], binding, nestedPatterns: [], guard, body, isWildcard: false })
     } else if (tupleMatch) {
       arms.push({ tag: tupleMatch[1], binding: tupleMatch[2].trim(), nestedPatterns: [], guard, body, isWildcard: false })
     } else if (unitMatch) {
@@ -175,23 +165,19 @@ function findGuardIf(pattern: string): number {
   return -1
 }
 
-// Build the destructure statement for a match arm binding.
-// Struct bindings: `{ field }` → `const { field } = __m`
-// Tuple bindings: `x` → `const x = __m._0`; `x, y` → `const { _0: x, _1: y } = __m`
+// Generate a destructure statement for a match arm binding.
+// Struct bindings ({ field }) destructure from __m directly.
+// Tuple bindings (field1, field2) bind to positional __m._0, __m._1, etc.
 function buildDestructure(binding: string): string {
   if (!binding) return ''
   if (binding.startsWith('{')) {
-    // Struct binding: `{ field }` — destructure directly from __m
     return `const ${binding} = __m; `
   }
-  // Tuple binding: one or more comma-separated identifiers
   const fields = binding.split(',').map(f => f.trim()).filter(Boolean)
   if (fields.length === 1) {
     return `const ${fields[0]} = __m._0; `
   }
-  // Multiple positional fields
-  const destructureFields = fields.map((f, i) => `_${i}: ${f}`).join(', ')
-  return `const { ${destructureFields} } = __m; `
+  return fields.map((f, i) => `const ${f} = __m._${i}`).join('; ') + '; '
 }
 
 // Build the body lines for a single arm, accounting for nested patterns.
@@ -281,6 +267,26 @@ function buildSwitch(expr: string, arms: MatchArm[]): string {
   return `((): any => { const __m = ${expr}; switch (__m._tag) {\n${cases.join('\n')}\n}})()`
 }
 
+function isInsideVoidFunction(source: string, pos: number): boolean {
+  const before = source.slice(0, pos)
+  // Walk backwards to find the innermost enclosing '{', then check if the
+  // function signature before it declares ': void'.
+  let depth = 0
+  for (let i = before.length - 1; i >= 0; i--) {
+    const ch = before[i]
+    if (ch === '}') depth++
+    else if (ch === '{') {
+      if (depth === 0) {
+        // This is the enclosing block's opening '{'. Check the 300 chars before it.
+        const funcSig = before.slice(Math.max(0, i - 300), i)
+        return /\)\s*:\s*void\s*$/.test(funcSig.trimEnd())
+      }
+      depth--
+    }
+  }
+  return false
+}
+
 function findMatchBlocks(source: string): Array<{ start: number; exprStart: number; exprEnd: number; bodyStart: number; bodyEnd: number }> {
   const results = []
   const matchRe = /match\s+/g
@@ -328,18 +334,14 @@ export function transformMatch(source: string): string {
       const arms = parseArms(body)
       if (arms.length === 0) continue
       const replacement = buildSwitch(expr, arms)
-      // Detect if the match keyword is at statement position (not RHS of = or inside an expression).
-      // If so, prepend `return` so the outer function returns the match result,
-      // UNLESS the enclosing function is declared `: void`.
-      const beforeMatch = result.slice(0, b.start).trimEnd()
-      const lastChar = beforeMatch[beforeMatch.length - 1] ?? ''
-      const lastWord = beforeMatch.match(/\b(\w+)\s*$/)?.[1] ?? ''
-      const isExprPos = /[=(:,\[?]$/.test(lastChar) || lastWord === 'return'
-      // Check if we're inside a void function: look backward for `): void` before the opening {
-      const lookback = result.slice(Math.max(0, b.start - 300), b.start)
-      const inVoidFn = /\):\s*void\s*\{[^}]*$/.test(lookback)
-      const prefix = (isExprPos || inVoidFn) ? '' : 'return '
-      result = result.slice(0, b.start) + prefix + replacement + result.slice(b.bodyEnd + 1)
+      // Detect statement position: if nothing meaningful precedes 'match' on this line,
+      // the IIFE result must be returned so the enclosing function returns a value.
+      // But NOT for void-declared functions — returning any value would trigger SJS-E002.
+      const prefix = result.slice(0, b.start).trimEnd()
+      const isExprPosition = prefix.endsWith('=') || /\breturn$/.test(prefix) || prefix.endsWith('(') || prefix.endsWith(',')
+      const isVoidFunction = !isExprPosition && isInsideVoidFunction(result, b.start)
+      const finalReplacement = (isExprPosition || isVoidFunction) ? replacement : 'return ' + replacement
+      result = result.slice(0, b.start) + finalReplacement + result.slice(b.bodyEnd + 1)
       // After replacing one block, re-scan from scratch for this pass
       break
     }
