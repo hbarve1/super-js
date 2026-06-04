@@ -735,3 +735,107 @@ describe('Regression: pre-existing type checking', () => {
     `).filter(e => e.code === 'SJS-E007').length).toBeGreaterThan(0)
   })
 })
+
+// ── Gap 1 — Binary expression type checking (SJS-E004) ───────────────────────
+
+describe('Gap 1: Binary expression type checking (ECMA-262 §13.15)', () => {
+  // Correct arithmetic — no errors
+  it('number + number infers number', () => {
+    expect(errors('const n: number = 1 + 2')).toHaveLength(0)
+  })
+
+  it('number - number infers number', () => {
+    expect(errors('const n: number = 10 - 3')).toHaveLength(0)
+  })
+
+  it('number * number infers number', () => {
+    expect(errors('const n: number = 3 * 4')).toHaveLength(0)
+  })
+
+  it('number / number infers number', () => {
+    expect(errors('const n: number = 10 / 2')).toHaveLength(0)
+  })
+
+  it('number % number infers number', () => {
+    expect(errors('const n: number = 7 % 3')).toHaveLength(0)
+  })
+
+  it('number ** number infers number', () => {
+    expect(errors('const n: number = 2 ** 8')).toHaveLength(0)
+  })
+
+  it('bigint + bigint infers bigint', () => {
+    expect(errors('const n: bigint = 1n + 2n')).toHaveLength(0)
+  })
+
+  it('bigint - bigint infers bigint', () => {
+    expect(errors('const n: bigint = 10n - 3n')).toHaveLength(0)
+  })
+
+  it('bigint * bigint infers bigint', () => {
+    expect(errors('const n: bigint = 2n * 3n')).toHaveLength(0)
+  })
+
+  it('string + string infers string', () => {
+    expect(errors('const s: string = "hello" + " world"')).toHaveLength(0)
+  })
+
+  it('string + number infers string (+ concatenation coercion)', () => {
+    expect(errors('const s: string = "count: " + 42')).toHaveLength(0)
+  })
+
+  it('number + string infers string', () => {
+    expect(errors('const s: string = 42 + " items"')).toHaveLength(0)
+  })
+
+  // Arithmetic result assigned to wrong type — SJS-E001
+  it('number + number assigned to string emits SJS-E001', () => {
+    expect(errorCodes('const s: string = 1 + 2')).toContain('SJS-E001')
+  })
+
+  it('bigint + bigint assigned to number emits SJS-E001', () => {
+    expect(errorCodes('const n: number = 1n + 2n')).toContain('SJS-E001')
+  })
+
+  // BigInt + Number mixing — SJS-E004 (ECMA-262 §6.1.6.2)
+  it('SJS-E004: bigint + number emits SJS-E004', () => {
+    expect(errorCodes('const x = 1n + 2')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: number + bigint emits SJS-E004', () => {
+    expect(errorCodes('const x = 1 + 2n')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint - number emits SJS-E004', () => {
+    expect(errorCodes('const x = 5n - 1')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint * number emits SJS-E004', () => {
+    expect(errorCodes('const x = 2n * 3')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint / number emits SJS-E004', () => {
+    expect(errorCodes('const x = 10n / 2')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint % number emits SJS-E004', () => {
+    expect(errorCodes('const x = 7n % 3')).toContain('SJS-E004')
+  })
+
+  it('SJS-E004: bigint ** number emits SJS-E004', () => {
+    expect(errorCodes('const x = 2n ** 8')).toContain('SJS-E004')
+  })
+
+  // Relational operators always return boolean
+  it('comparison operators infer boolean', () => {
+    expect(errors('const b: boolean = 1 < 2')).toHaveLength(0)
+    expect(errors('const b: boolean = "a" === "b"')).toHaveLength(0)
+    expect(errors('const b: boolean = 1 !== 2')).toHaveLength(0)
+    expect(errors('const b: boolean = 1 >= 0')).toHaveLength(0)
+  })
+
+  it('comparison operators do not trigger SJS-E004', () => {
+    expect(errorCodes('const b = 1n > 2')).not.toContain('SJS-E004')
+    expect(errorCodes('const b = 1n < 2')).not.toContain('SJS-E004')
+  })
+})
