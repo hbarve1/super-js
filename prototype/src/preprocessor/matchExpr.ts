@@ -94,7 +94,7 @@ function parseArms(armsStr: string): MatchArm[] {
       continue
     }
 
-    // Check for guard: `Pattern if condition`
+    // Check for guard: `Pattern if condition` — find `if` at depth 0
     let guard = ''
     let pattern = patternPart
     const ifIdx = findGuardIf(patternPart)
@@ -105,11 +105,14 @@ function parseArms(armsStr: string): MatchArm[] {
 
     // Match Tag({ ... }) — struct or nested pattern
     const structMatch = pattern.match(/^(\w+)\((\{.*\})\)$/)
+    const tupleMatch = pattern.match(/^(\w+)\(([^)]*)\)$/)
     const unitMatch = pattern.match(/^(\w+)$/)
 
     if (structMatch) {
       const { plainBinding, nestedPatterns } = parseStructContent(structMatch[2])
       arms.push({ tag: structMatch[1], binding: plainBinding, nestedPatterns, guard, body, isWildcard: false })
+    } else if (tupleMatch) {
+      arms.push({ tag: tupleMatch[1], binding: tupleMatch[2].trim(), nestedPatterns: [], guard, body, isWildcard: false })
     } else if (unitMatch) {
       arms.push({ tag: unitMatch[1], binding: '', nestedPatterns: [], guard, body, isWildcard: false })
     }
@@ -213,7 +216,7 @@ function buildSwitch(expr: string, arms: MatchArm[]): string {
   if (wildcardArm) {
     cases.push(`  default: { return ${wildcardArm.body} }`)
   } else {
-    cases.push(`  default: throw new Error(\`[SJS] Non-exhaustive match on \${JSON.stringify((__m as any)._tag)}\`)`)
+    cases.push(`  default: throw new Error(\`[SJS] Non-exhaustive pattern on \${JSON.stringify((__m as any)._tag)}\`)`)
   }
 
   return `((): any => { const __m = ${expr}; switch (__m._tag) {\n${cases.join('\n')}\n}})()`
@@ -246,18 +249,30 @@ function findMatchBlocks(source: string): Array<{ start: number; exprStart: numb
 
 export function transformMatch(source: string): string {
   if (!source.includes('match ')) return source
-  const blocks = findMatchBlocks(source)
-  if (blocks.length === 0) return source
-  // Replace from right to left to preserve indices
+
+  // Multi-pass: each pass replaces only innermost match blocks (those whose bodies
+  // don't contain nested match expressions). This handles SJS3 nested patterns.
   let result = source
-  for (let k = blocks.length - 1; k >= 0; k--) {
-    const b = blocks[k]
-    const expr = result.slice(b.exprStart, b.exprEnd).trim()
-    const body = result.slice(b.bodyStart, b.bodyEnd)
-    const arms = parseArms(body)
-    if (arms.length === 0) continue
-    const replacement = buildSwitch(expr, arms)
-    result = result.slice(0, b.start) + replacement + result.slice(b.bodyEnd + 1)
+  let prev = ''
+  while (result !== prev && result.includes('match ')) {
+    prev = result
+    const blocks = findMatchBlocks(result)
+    if (blocks.length === 0) break
+
+    // Process from right to left, but only blocks whose body has no nested 'match '
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      const b = blocks[k]
+      const body = result.slice(b.bodyStart, b.bodyEnd)
+      // Skip blocks that still contain nested match expressions — handle them next pass
+      if (body.includes('match ')) continue
+      const expr = result.slice(b.exprStart, b.exprEnd).trim()
+      const arms = parseArms(body)
+      if (arms.length === 0) continue
+      const replacement = buildSwitch(expr, arms)
+      result = result.slice(0, b.start) + replacement + result.slice(b.bodyEnd + 1)
+      // After replacing one block, re-scan from scratch for this pass
+      break
+    }
   }
   return result
 }

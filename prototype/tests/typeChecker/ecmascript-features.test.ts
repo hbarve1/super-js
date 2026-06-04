@@ -2281,8 +2281,8 @@ describe('E5: TSAsExpression, TSNonNullExpression', () => {
     expect(errors('const x: any = 42; const n: number = x as number')).toHaveLength(0)
   })
 
-  it('x! non-null assertion is valid', () => {
-    expect(errors('const x: number | null = 42; const n = x!')).toHaveLength(0)
+  it('x! non-null assertion emits SJS-E006 (banned in SJS)', () => {
+    expect(errorCodes('const x: number | null = 42; const n = x!')).toContain('SJS-E006')
   })
 
   it('sequence expression returns type of last', () => {
@@ -2293,19 +2293,23 @@ describe('E5: TSAsExpression, TSNonNullExpression', () => {
 // ── SJS1: Missing error codes ─────────────────────────────────────────────────
 
 describe('SJS1: Missing error codes', () => {
-  it('SJS-E006: non-null assertion banned in strict mode', () => {
-    const { parse } = require('@babel/parser')
-    const traverse = require('@babel/traverse').default
-    const { TypeChecker } = require('../../src/typeChecker')
-    const ast = parse('const x: number | null = 42; const n = x!', { sourceType: 'module', plugins: ['typescript'] })
-    const checker = new TypeChecker({ strict: true })
-    traverse(ast, { enter(p: any) { checker.check(p) } })
-    const codes = checker.getDiagnostics().filter((d: any) => d.severity === 'error').map((d: any) => d.code)
-    expect(codes).toContain('SJS-E006')
+  it('SJS-E006: non-null assertion is banned', () => {
+    expect(errorCodes('const x: string | null = null; const s = x!')).toContain('SJS-E006')
   })
 
-  it('SJS-E006: non-null assertion NOT emitted in non-strict mode', () => {
-    expect(errors('const x: number | null = 42; const n = x!')).toHaveLength(0)
+  it('SJS-E006: chained non-null assertion is banned', () => {
+    expect(errorCodes('const obj: { x: number } | null = null; const n = obj!.x')).toContain('SJS-E006')
+  })
+
+  it('no SJS-E006 for regular ! (logical NOT)', () => {
+    expect(errorCodes('const b = !true')).not.toContain('SJS-E006')
+  })
+
+  it('SJS-E006 error message mentions optional chaining', () => {
+    const diags = typeCheck('const x: string | null = null; const s = x!')
+    const e006 = diags.filter(d => d.code === 'SJS-E006')
+    expect(e006.length).toBeGreaterThan(0)
+    expect(e006[0].message).toContain('?.')
   })
 
   it('SJS-E008: await outside async function emits error', () => {

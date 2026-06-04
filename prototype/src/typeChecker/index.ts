@@ -1244,16 +1244,7 @@ export class TypeChecker {
         // Default exports don't need special handling in the type env
         break
       case 'TSNonNullExpression':
-        // SJS-E006: non-null assertion `!` used (should be banned in strict mode)
-        if (this.strict) {
-          this.report({
-            code: 'SJS-E006',
-            severity: 'error',
-            message: `Non-null assertion '!' is not allowed in strict mode. Use a null check or optional chaining '?.' instead.`,
-            node: path.node,
-            specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system-v2.md',
-          })
-        }
+        this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
         break
     }
   }
@@ -2149,6 +2140,18 @@ export class TypeChecker {
    */
   private checkExportNamedDeclaration(_path: NodePath<t.ExportNamedDeclaration>): void {
     // The declaration (if present) is handled by its own handler (VariableDeclaration, etc.)
+  }
+
+  // ── Rule SJS-E006: Non-null assertion ban ─────────────────────────────────────
+
+  private checkNonNullAssertion(path: NodePath<t.TSNonNullExpression>): void {
+    this.report({
+      code: 'SJS-E006',
+      severity: 'error',
+      message: `Non-null assertion '!' is banned in SJS. Use optional chaining '?.' or an explicit null check instead.`,
+      node: path.node,
+      specUrl: 'https://github.com/hbarve1/super-js/blob/master/specs/001-superjs-core-language/type-system.md',
+    })
   }
 
   // ── Diagnostic helper ─────────────────────────────────────────────────────────

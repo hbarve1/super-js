@@ -34,7 +34,6 @@ describe('Match expression preprocessor', () => {
 
 describe('SJS2: Match guard syntax', () => {
   it('parses arm with guard condition', () => {
-    const { transformMatch } = require('../../src/preprocessor/matchExpr')
     const input = `
       const result = match x {
         Ok({ value }) if value > 0 => "positive",
@@ -49,28 +48,82 @@ describe('SJS2: Match guard syntax', () => {
   })
 
   it('guard arms are checked before unguarded arms', () => {
-    const { transformMatch } = require('../../src/preprocessor/matchExpr')
     const input = `match x {
       Some({ v }) if v > 10 => "big",
       Some({ v }) => "small",
       None => "empty",
     }`
     const output = transformMatch(input)
-    // Guard should come before unguarded return
     const bigIdx = output.indexOf('"big"')
     const smallIdx = output.indexOf('"small"')
     expect(bigIdx).toBeLessThan(smallIdx)
   })
 
+  it('parses Pattern if condition => body (tuple binding)', () => {
+    const out = transformMatch(`match val { Some(x) if x > 0 => x, Some(x) => 0, None => -1 }`)
+    expect(out).toContain('case "Some"')
+    expect(out).toContain('if (x > 0)')
+  })
+
+  it('guard condition is emitted as if check inside case', () => {
+    const out = transformMatch(`match n { Value(x) if x > 10 => "big", Value(x) => "small" }`)
+    expect(out).toContain('if (x > 10)')
+    expect(out).toContain('"big"')
+    expect(out).toContain('"small"')
+  })
+
+  it('unit variant with guard', () => {
+    const out = transformMatch(`match s { Ok if true => 1, Ok => 0 }`)
+    expect(out).toContain('case "Ok"')
+    expect(out).toContain('if (true)')
+  })
+
+  it('guard does not affect arms without a guard (no if in output for them)', () => {
+    const out = transformMatch(`match x { A => 1, B => 2 }`)
+    expect(out).not.toContain(' if (')
+    expect(out).toContain('case "A"')
+    expect(out).toContain('case "B"')
+  })
+
   it('wildcard arm still works with guards present', () => {
-    const { transformMatch } = require('../../src/preprocessor/matchExpr')
-    const input = `match x {
-      Ok({ v }) if v > 0 => "ok",
-      _ => "default",
-    }`
-    const output = transformMatch(input)
-    expect(output).toContain('default:')
-    expect(output).toContain('"default"')
+    const out = transformMatch(`match v { A if cond => 1, _ => 0 }`)
+    expect(out).toContain('default:')
+    expect(out).toContain('if (cond)')
+  })
+})
+
+// ── SJS3: Nested pattern matching ─────────────────────────────────────────────
+
+describe('SJS3: Nested pattern matching', () => {
+  it('transforms nested match expression', () => {
+    const input = `match r { Ok(v) => match v { Some(x) => x, None => 0 }, Err(e) => -1 }`
+    const out = transformMatch(input)
+    expect(out).toContain('case "Ok"')
+    expect(out).toContain('case "Some"')
+    expect(out).toContain('case "None"')
+    expect(out).toContain('case "Err"')
+  })
+
+  it('inner match is fully expanded (no match keyword left)', () => {
+    const input = `match outer { A => match inner { X => 1, Y => 2 }, B => 0 }`
+    const out = transformMatch(input)
+    expect(out).not.toContain('match ')
+  })
+
+  it('generates nested switch IIFEs', () => {
+    const input = `match r { Ok(v) => match v { Just(x) => x, Nothing => 0 }, Err(e) => -1 }`
+    const out = transformMatch(input)
+    const switchCount = (out.match(/switch\s*\(/g) || []).length
+    expect(switchCount).toBe(2)
+  })
+
+  it('deeply nested match (three levels)', () => {
+    const input = `match a { A(x) => match x { B(y) => match y { C => 1, D => 2 }, E => 3 }, F => 0 }`
+    const out = transformMatch(input)
+    expect(out).not.toContain('match ')
+    expect(out).toContain('case "A"')
+    expect(out).toContain('case "B"')
+    expect(out).toContain('case "C"')
   })
 })
 
