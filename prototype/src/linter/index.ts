@@ -16,6 +16,18 @@
  *     An import specifier that is never referenced in the file body.
  *     ECMA-262 §16.2.2 — Imports
  *     https://tc39.es/ecma262/#sec-imports
+ *
+ *   SJS-L002  prefer-optional-chain
+ *     Prefer `?.` over null-check + property access pattern.
+ *
+ *   SJS-L003  prefer-nullish-coalescing
+ *     Prefer `??` over `|| undefined` / `|| null` pattern.
+ *
+ *   SJS-L004  no-any
+ *     Disallow explicit `any` type annotation; use `dynamic` instead.
+ *
+ *   SJS-L005  no-non-null-assertion
+ *     Disallow TypeScript non-null assertion operator `!`.
  */
 
 import { parse } from '@babel/parser'
@@ -124,6 +136,83 @@ export async function lintSource(source: string): Promise<LintDiagnostic[]> {
 
       if (importedNames.has(name)) {
         importReferenced.add(name)
+      }
+    },
+
+    // SJS-L004: no-any — TSAnyKeyword in type position
+    TSAnyKeyword(path) {
+      const loc = path.node.loc?.start
+      diagnostics.push({
+        code: 'SJS-L004',
+        severity: 'warning',
+        message: `Avoid 'any' type annotation. Use 'dynamic' for runtime-checked escape hatches, or provide a precise type.`,
+        line: loc?.line ?? 0,
+        column: loc?.column ?? 0,
+        fix: { description: `Replace 'any' with 'dynamic'` },
+      })
+    },
+
+    // SJS-L005: no-non-null-assertion — TSNonNullExpression (expr!)
+    TSNonNullExpression(path) {
+      const loc = path.node.loc?.start
+      diagnostics.push({
+        code: 'SJS-L005',
+        severity: 'warning',
+        message: `Non-null assertion '!' is banned. Use optional chaining '?.' or a null check instead.`,
+        line: loc?.line ?? 0,
+        column: loc?.column ?? 0,
+      })
+    },
+
+    // SJS-L002: prefer-optional-chain — `x !== null && x.prop` pattern
+    LogicalExpression(path) {
+      const { operator, left, right } = path.node
+
+      // SJS-L002: x !== null && x.prop
+      if (operator === '&&' && t.isBinaryExpression(left)) {
+        if (
+          (left.operator === '!==' || left.operator === '!=') &&
+          t.isIdentifier(left.left) &&
+          (t.isNullLiteral(left.right) || (t.isIdentifier(left.right) && left.right.name === 'undefined'))
+        ) {
+          const checkedName = left.left.name
+          const rhsObj = t.isMemberExpression(right) ? right.object
+            : (t.isCallExpression(right) && t.isMemberExpression(right.callee)) ? (right.callee as t.MemberExpression).object
+            : null
+          if (rhsObj && t.isIdentifier(rhsObj) && rhsObj.name === checkedName) {
+            const propName = t.isMemberExpression(right) && t.isIdentifier((right as t.MemberExpression).property)
+              ? ((right as t.MemberExpression).property as t.Identifier).name
+              : '...'
+            const loc = path.node.loc?.start
+            diagnostics.push({
+              code: 'SJS-L002',
+              severity: 'warning',
+              message: `Prefer optional chaining '${checkedName}?.${propName}' over null check + property access.`,
+              line: loc?.line ?? 0,
+              column: loc?.column ?? 0,
+              fix: { description: `Replace null check + access with optional chaining` },
+            })
+          }
+        }
+      }
+
+      // SJS-L003: x || null / x || undefined
+      if (operator === '||') {
+        if (
+          t.isNullLiteral(right) ||
+          (t.isIdentifier(right) && right.name === 'undefined')
+        ) {
+          const rhsStr = t.isNullLiteral(right) ? 'null' : 'undefined'
+          const loc = path.node.loc?.start
+          diagnostics.push({
+            code: 'SJS-L003',
+            severity: 'warning',
+            message: `Prefer nullish coalescing '??' over '|| ${rhsStr}'. Use '??' to handle only null/undefined, not other falsy values.`,
+            line: loc?.line ?? 0,
+            column: loc?.column ?? 0,
+            fix: { description: `Replace '||' with '??'` },
+          })
+        }
       }
     },
   })

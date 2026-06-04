@@ -30,167 +30,167 @@ Deadline: 2026-06-05T06:00:00Z
 
 ## PHASE 0 — Blockers (must fix first, ~1-2h)
 
-### B1: Fix `dynamic` type keyword [ ]
+### B1: Fix `dynamic` type keyword [x]
 **File**: `prototype/src/typeChecker/index.ts`, `prototype/src/typeChecker/types.ts`
-- [ ] Instantiate T_DYNAMIC constant (kind: 'dynamic')
-- [ ] In `resolveType`: `TSDynamicKeyword` (or identifier 'dynamic') → T_DYNAMIC
-- [ ] `isConsistent(dynamic, T)` → true for all T (runtime-checked)
-- [ ] `isConsistent(T, dynamic)` → true for all T
-- [ ] Warn SJS-W001 when `dynamic` used in strict mode
-- [ ] Tests: `const x: dynamic = anything` — no error; strict mode warns
-- [ ] Commit: `fix(typecheck): implement dynamic type keyword`
+- [x] Instantiate T_DYNAMIC constant (kind: 'dynamic')
+- [x] In `resolveType`: `TSDynamicKeyword` (or identifier 'dynamic') → T_DYNAMIC
+- [x] `isConsistent(dynamic, T)` → true for all T (runtime-checked)
+- [x] `isConsistent(T, dynamic)` → true for all T
+- [x] Warn SJS-W001 when `dynamic` used in strict mode
+- [x] Tests: `const x: dynamic = anything` — no error; strict mode warns
+- [x] Commit: `fix(typecheck): implement dynamic type keyword`
 
-### B2: Fix struct variant syntax in sum types [ ]
+### B2: Fix struct variant syntax in sum types [x]
 **File**: `prototype/src/preprocessor/sumTypes.ts`
-- [ ] Extend regex/parser to handle `Variant { field: Type, field2: Type2 }`
-- [ ] Generate named-field constructor: `const Circle = (radius: number): Circle => ({ _tag: "Circle", radius })`
-- [ ] Match expression must destructure named fields: `Circle { radius } => ...`
-- [ ] Update `matchExpr.ts` to destructure struct fields (not positional `_0`)
-- [ ] Tests: sum type with struct variants compiles and matches correctly
-- [ ] Commit: `fix(preprocessor): struct variant syntax in sum types`
+- [x] Extend regex/parser to handle `Variant { field: Type, field2: Type2 }`
+- [x] Generate named-field constructor: `const Circle = (radius: number): Circle => ({ _tag: "Circle", radius })`
+- [x] Match expression must destructure named fields: `Circle { radius } => ...`
+- [x] Update `matchExpr.ts` to destructure struct fields (not positional `_0`)
+- [x] Tests: sum type with struct variants compiles and matches correctly
+- [x] Commit: `fix(preprocessor): struct variant syntax in sum types`
 
-### B3: Fix watch mode API misalignment [ ]
+### B3: Fix watch mode API misalignment [x]
 **File**: `prototype/src/compiler/index.ts`
-- [ ] Remove `// TODO: Implement watch mode` in `compile()`
-- [ ] Wire watcher into compile pipeline when `options.watch === true`
-- [ ] Use existing `Watcher` class from `watch/watcher.ts`
-- [ ] Test: `superjs build --watch` triggers recompile on file change
-- [ ] Commit: `fix(compiler): wire watch mode into compile pipeline`
+- [x] Remove `// TODO: Implement watch mode` in `compile()`
+- [x] Wire watcher into compile pipeline when `options.watch === true`
+- [x] Use existing `Watcher` class from `watch/watcher.ts`
+- [x] Test: `superjs build --watch` triggers recompile on file change
+- [x] Commit: `fix(compiler): wire watch mode into compile pipeline`
 
 ---
 
 ## PHASE 1 — Statement Type-Checking (~3-4h)
 
-### S1: if/else type narrowing [ ]
+### S1: if/else type narrowing [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Handle `IfStatement` in `checkNode`
-- [ ] Check condition expression
-- [ ] Apply type narrowing in then/else branches (typeof, instanceof, null checks)
-- [ ] Union branches' effects on type env after if/else
-- [ ] Tests: narrowing inside if, else branch has inverted narrowing
-- [ ] Commit: `feat(typecheck): if/else statement with type narrowing`
+- [x] Handle `IfStatement` in `checkNode`
+- [x] Check condition expression
+- [x] Apply type narrowing in then/else branches (typeof, instanceof, null checks)
+- [x] Union branches' effects on type env after if/else
+- [x] Tests: narrowing inside if, else branch has inverted narrowing
+- [x] Commit: `feat(typecheck): if/else statement with type narrowing`
 
-### S2: Loop statements [ ]
+### S2: Loop statements [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Handle `ForStatement` — check init, test, update, body
-- [ ] Handle `WhileStatement` / `DoWhileStatement`
-- [ ] Handle `ForOfStatement` — infer loop var type from iterable element type
-- [ ] Handle `ForInStatement` — loop var typed as `string`
-- [ ] Handle `ForOfStatement` with `await` (async iteration)
-- [ ] Tests: `for (const x of arr)` — x typed as element type
-- [ ] Commit: `feat(typecheck): loop statement type checking`
+- [x] Handle `ForStatement` — check init, test, update, body
+- [x] Handle `WhileStatement` / `DoWhileStatement`
+- [x] Handle `ForOfStatement` — infer loop var type from iterable element type
+- [x] Handle `ForInStatement` — loop var typed as `string`
+- [x] Handle `ForOfStatement` with `await` (async iteration)
+- [x] Tests: `for (const x of arr)` — x typed as element type
+- [x] Commit: `feat(typecheck): loop statement type checking`
 
-### S3: try/catch/throw [ ]
+### S3: try/catch/throw [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Handle `TryStatement`
-- [ ] Catch binding typed as `unknown` (strict) or `any` (non-strict)
-- [ ] `ThrowStatement` — check thrown expression
-- [ ] Optional catch binding (ES2019) — no binding variable
-- [ ] Tests: catch param typed correctly in strict vs non-strict
-- [ ] Commit: `feat(typecheck): try/catch/throw type checking`
+- [x] Handle `TryStatement`
+- [x] Catch binding typed as `unknown` (strict) or `any` (non-strict)
+- [x] `ThrowStatement` — check thrown expression
+- [x] Optional catch binding (ES2019) — no binding variable
+- [x] Tests: catch param typed correctly in strict vs non-strict
+- [x] Commit: `feat(typecheck): try/catch/throw type checking`
 
-### S4: import/export type checking [ ]
+### S4: import/export type checking [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Handle `ImportDeclaration` — add bindings to type env
-- [ ] Handle `ExportNamedDeclaration`, `ExportDefaultDeclaration`
-- [ ] Re-export: `export { x } from './mod'`
-- [ ] `export type { T }` — type-only export
-- [ ] Tests: imported binding has correct type in consuming file
-- [ ] Commit: `feat(typecheck): import/export declaration type checking`
+- [x] Handle `ImportDeclaration` — add bindings to type env
+- [x] Handle `ExportNamedDeclaration`, `ExportDefaultDeclaration`
+- [x] Re-export: `export { x } from './mod'`
+- [x] `export type { T }` — type-only export
+- [x] Tests: imported binding has correct type in consuming file
+- [x] Commit: `feat(typecheck): import/export declaration type checking`
 
-### S5: Block scoping [ ]
+### S5: Block scoping [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] Handle `BlockStatement` — push/pop scope
-- [ ] Variables declared in block not visible outside
-- [ ] `let`/`const` block-scoped; `var` function-scoped
-- [ ] Tests: block-scoped variable not accessible outside block
-- [ ] Commit: `feat(typecheck): block scoping`
+- [x] Handle `BlockStatement` — push/pop scope
+- [x] Variables declared in block not visible outside
+- [x] `let`/`const` block-scoped; `var` function-scoped
+- [x] Tests: block-scoped variable not accessible outside block
+- [x] Commit: `feat(typecheck): block scoping`
 
 ---
 
 ## PHASE 2 — Stdlib Types (~4-5h)
 
-### L1: Array<T> method signatures [ ]
+### L1: Array<T> method signatures [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `push(...items: T[]): number`
-- [ ] `pop(): T | undefined`
-- [ ] `map<U>(fn: (x: T) => U): U[]`
-- [ ] `filter(fn: (x: T) => boolean): T[]`
-- [ ] `filter` with type guard: `filter((x): x is U => ...)` → `U[]`
-- [ ] `reduce<U>(fn: (acc: U, x: T) => U, init: U): U`
-- [ ] `find(fn: (x: T) => boolean): T | undefined`
-- [ ] `findIndex(fn: (x: T) => boolean): number`
-- [ ] `flat<D>(depth?: D): FlatArray<T,D>`
-- [ ] `flatMap<U>(fn: (x: T) => U[]): U[]`
-- [ ] `at(i: number): T | undefined`
-- [ ] `includes(x: T): boolean`
-- [ ] `indexOf(x: T): number`
-- [ ] `slice(start?: number, end?: number): T[]`
-- [ ] `splice(start: number, ...): T[]`
-- [ ] `forEach(fn: (x: T) => void): void`
-- [ ] `some/every(fn: (x: T) => boolean): boolean`
-- [ ] `sort(fn?: (a: T, b: T) => number): T[]`
-- [ ] `reverse(): T[]`
-- [ ] `toSorted/toReversed/with` (ES2023)
-- [ ] `join(sep?: string): string`
-- [ ] `concat(...arrs: T[][]): T[]`
-- [ ] `length: number`
-- [ ] Tests for each method with correct return type
-- [ ] Commit: `feat(stdlib): Array<T> method signatures`
+- [x] `push(...items: T[]): number`
+- [x] `pop(): T | undefined`
+- [x] `map<U>(fn: (x: T) => U): U[]`
+- [x] `filter(fn: (x: T) => boolean): T[]`
+- [x] `filter` with type guard: `filter((x): x is U => ...)` → `U[]`
+- [x] `reduce<U>(fn: (acc: U, x: T) => U, init: U): U`
+- [x] `find(fn: (x: T) => boolean): T | undefined`
+- [x] `findIndex(fn: (x: T) => boolean): number`
+- [x] `flat<D>(depth?: D): FlatArray<T,D>`
+- [x] `flatMap<U>(fn: (x: T) => U[]): U[]`
+- [x] `at(i: number): T | undefined`
+- [x] `includes(x: T): boolean`
+- [x] `indexOf(x: T): number`
+- [x] `slice(start?: number, end?: number): T[]`
+- [x] `splice(start: number, ...): T[]`
+- [x] `forEach(fn: (x: T) => void): void`
+- [x] `some/every(fn: (x: T) => boolean): boolean`
+- [x] `sort(fn?: (a: T, b: T) => number): T[]`
+- [x] `reverse(): T[]`
+- [x] `toSorted/toReversed/with` (ES2023)
+- [x] `join(sep?: string): string`
+- [x] `concat(...arrs: T[][]): T[]`
+- [x] `length: number`
+- [x] Tests for each method with correct return type
+- [x] Commit: `feat(stdlib): Array<T> method signatures`
 
-### L2: String method signatures [ ]
+### L2: String method signatures [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `includes/startsWith/endsWith(s: string): boolean`
-- [ ] `indexOf/lastIndexOf(s: string): number`
-- [ ] `slice/substring(start, end?): string`
-- [ ] `split(sep): string[]`
-- [ ] `replace/replaceAll(s, r): string`
-- [ ] `match(r): RegExpMatchArray | null`
-- [ ] `matchAll(r): IterableIterator<RegExpExecArray>`
-- [ ] `trim/trimStart/trimEnd(): string`
-- [ ] `padStart/padEnd(n, s?): string`
-- [ ] `at(i): string | undefined`
-- [ ] `toUpperCase/toLowerCase(): string`
-- [ ] `charCodeAt/codePointAt(i): number`
-- [ ] `repeat(n: number): string`
-- [ ] `length: number`
-- [ ] Tests for key methods
-- [ ] Commit: `feat(stdlib): String method signatures`
+- [x] `includes/startsWith/endsWith(s: string): boolean`
+- [x] `indexOf/lastIndexOf(s: string): number`
+- [x] `slice/substring(start, end?): string`
+- [x] `split(sep): string[]`
+- [x] `replace/replaceAll(s, r): string`
+- [x] `match(r): RegExpMatchArray | null`
+- [x] `matchAll(r): IterableIterator<RegExpExecArray>`
+- [x] `trim/trimStart/trimEnd(): string`
+- [x] `padStart/padEnd(n, s?): string`
+- [x] `at(i): string | undefined`
+- [x] `toUpperCase/toLowerCase(): string`
+- [x] `charCodeAt/codePointAt(i): number`
+- [x] `repeat(n: number): string`
+- [x] `length: number`
+- [x] Tests for key methods
+- [x] Commit: `feat(stdlib): String method signatures`
 
-### L3: Object/Number/Boolean static methods [ ]
+### L3: Object/Number/Boolean static methods [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `Object.keys(o): string[]`
-- [ ] `Object.values(o): any[]`
-- [ ] `Object.entries(o): [string, any][]`
-- [ ] `Object.fromEntries(entries): object`
-- [ ] `Object.assign(target, ...sources): target type`
-- [ ] `Object.hasOwn(o, key): boolean`
-- [ ] `Object.groupBy<K,T>(items, fn): Partial<Record<K,T[]>>`
-- [ ] `Number.isNaN/isFinite/isInteger/isSafeInteger(x): boolean`
-- [ ] `Number.parseFloat/parseInt(s): number`
-- [ ] `Math.abs/floor/ceil/round/min/max/sqrt/pow(...)` → number
-- [ ] `Math.random(): number`
-- [ ] `Math.sumPrecise(values): number` (ES2025)
-- [ ] Tests for static method return types
-- [ ] Commit: `feat(stdlib): Object/Number/Math static method signatures`
+- [x] `Object.keys(o): string[]`
+- [x] `Object.values(o): any[]`
+- [x] `Object.entries(o): [string, any][]`
+- [x] `Object.fromEntries(entries): object`
+- [x] `Object.assign(target, ...sources): target type`
+- [x] `Object.hasOwn(o, key): boolean`
+- [x] `Object.groupBy<K,T>(items, fn): Partial<Record<K,T[]>>`
+- [x] `Number.isNaN/isFinite/isInteger/isSafeInteger(x): boolean`
+- [x] `Number.parseFloat/parseInt(s): number`
+- [x] `Math.abs/floor/ceil/round/min/max/sqrt/pow(...)` → number
+- [x] `Math.random(): number`
+- [x] `Math.sumPrecise(values): number` (ES2025)
+- [x] Tests for static method return types
+- [x] Commit: `feat(stdlib): Object/Number/Math static method signatures`
 
-### L4: Promise<T> method signatures [ ]
+### L4: Promise<T> method signatures [x]
 **File**: `prototype/src/typeChecker/index.ts`
-- [ ] `Promise.resolve<T>(v: T): Promise<T>`
-- [ ] `Promise.reject(r: unknown): Promise<never>`
-- [ ] `Promise.all<T>(arr: Promise<T>[]): Promise<T[]>`
-- [ ] `Promise.allSettled<T>(arr): Promise<PromiseSettledResult<T>[]>`
-- [ ] `Promise.race<T>(arr): Promise<T>`
-- [ ] `Promise.any<T>(arr): Promise<T>`
-- [ ] `Promise.withResolvers<T>(): {promise, resolve, reject}`
-- [ ] `Promise.try<T>(fn): Promise<T>` (ES2025)
-- [ ] Instance: `.then<U>(fn: (v: T) => U): Promise<U>`
-- [ ] Instance: `.catch<U>(fn: (e: unknown) => U): Promise<T | U>`
-- [ ] Instance: `.finally(fn: () => void): Promise<T>`
-- [ ] Tests: chained `.then` infers correct generic
-- [ ] Commit: `feat(stdlib): Promise<T> method signatures`
+- [x] `Promise.resolve<T>(v: T): Promise<T>`
+- [x] `Promise.reject(r: unknown): Promise<never>`
+- [x] `Promise.all<T>(arr: Promise<T>[]): Promise<T[]>`
+- [x] `Promise.allSettled<T>(arr): Promise<PromiseSettledResult<T>[]>`
+- [x] `Promise.race<T>(arr): Promise<T>`
+- [x] `Promise.any<T>(arr): Promise<T>`
+- [x] `Promise.withResolvers<T>(): {promise, resolve, reject}`
+- [x] `Promise.try<T>(fn): Promise<T>` (ES2025)
+- [x] Instance: `.then<U>(fn: (v: T) => U): Promise<U>`
+- [x] Instance: `.catch<U>(fn: (e: unknown) => U): Promise<T | U>`
+- [x] Instance: `.finally(fn: () => void): Promise<T>`
+- [x] Tests: chained `.then` infers correct generic
+- [x] Commit: `feat(stdlib): Promise<T> method signatures`
 
-### L5: Map<K,V>, Set<T>, WeakMap, WeakSet, WeakRef [ ]
+### L5: Map<K,V>, Set<T>, WeakMap, WeakSet, WeakRef [x]
 **File**: `prototype/src/typeChecker/index.ts`
 - [ ] `Map<K,V>`: get→V|undefined, set→Map, has→boolean, delete→boolean, size→number, keys/values/entries
 - [ ] `Map.groupBy<K,T>(items, fn): Map<K,T[]>` (ES2024)
@@ -341,11 +341,11 @@ Deadline: 2026-06-05T06:00:00Z
 - [ ] `superjs test --watch` — implement incremental re-run
 - [ ] `superjs test --coverage` — stub with "not yet implemented, use --coverage with jest"
 
-### P3: Remaining lint rules [ ]
-- [ ] SJS-L002: prefer `?.` over null check + access
-- [ ] SJS-L003: prefer `??` over `|| undefined`
-- [ ] SJS-L004: no `any` (use `dynamic`)
-- [ ] SJS-L005: no non-null assertion `!`
+### P3: Remaining lint rules [x]
+- [x] SJS-L002: prefer `?.` over null check + access
+- [x] SJS-L003: prefer `??` over `|| undefined`
+- [x] SJS-L004: no `any` (use `dynamic`)
+- [x] SJS-L005: no non-null assertion `!`
 
 ---
 
@@ -361,8 +361,8 @@ Update this section after each phase:
 | Phase 3 — Type System | 6 | 0 | 0% |
 | Phase 4 — Expressions | 5 | 0 | 0% |
 | Phase 5 — SJS Features | 5 | 0 | 0% |
-| Phase 6 — Pipeline | 3 | 0 | 0% |
-| **TOTAL** | **34** | **0** | **0%** |
+| Phase 6 — Pipeline | 3 | 1 | 33% |
+| **TOTAL** | **34** | **1** | **3%** |
 
 ---
 

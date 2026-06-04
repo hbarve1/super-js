@@ -115,3 +115,107 @@ describe('LintDiagnostic structure', () => {
     expect(d.column).toBeGreaterThanOrEqual(0)
   })
 })
+
+// ── P3: SJS-L002 prefer-optional-chain ───────────────────────────────────────
+
+describe('P3 SJS-L002: prefer-optional-chain', () => {
+  it('flags x !== null && x.prop pattern', async () => {
+    expect(await codes('const x = { a: 1 }\nconst r = x !== null && x.a')).toContain('SJS-L002')
+  })
+
+  it('flags x !== undefined && x.prop pattern', async () => {
+    expect(await codes('const x = { a: 1 }\nconst r = x !== undefined && x.a')).toContain('SJS-L002')
+  })
+
+  it('does not flag x && y.prop (different objects)', async () => {
+    expect(await codes('const x = 1\nconst y = { a: 2 }\nconst r = x && y.a')).not.toContain('SJS-L002')
+  })
+
+  it('does not flag x !== null && doSomethingElse()', async () => {
+    expect(await codes('const x = 1\nconst y = 2\nconst r = x !== null && y')).not.toContain('SJS-L002')
+  })
+
+  it('message contains the variable name', async () => {
+    const diags = await lintSource('const obj = { n: 1 }\nconst r = obj !== null && obj.n')
+    const d = byCodes(diags, 'SJS-L002')
+    expect(d.length).toBeGreaterThan(0)
+    expect(d[0].message).toContain('obj')
+  })
+})
+
+// ── P3: SJS-L003 prefer-nullish-coalescing ────────────────────────────────────
+
+describe('P3 SJS-L003: prefer-nullish-coalescing', () => {
+  it('flags x || undefined pattern', async () => {
+    expect(await codes('const x = 1\nconst r = x || undefined')).toContain('SJS-L003')
+  })
+
+  it('flags x || null pattern', async () => {
+    expect(await codes('const x = 1\nconst r = x || null')).toContain('SJS-L003')
+  })
+
+  it('does not flag x || y where y is not null/undefined', async () => {
+    expect(await codes('const x = 1\nconst y = 2\nconst r = x || y')).not.toContain('SJS-L003')
+  })
+
+  it('does not flag x || "default"', async () => {
+    expect(await codes('const x = ""\nconst r = x || "default"')).not.toContain('SJS-L003')
+  })
+
+  it('message mentions ?? and ||', async () => {
+    const diags = await lintSource('const x = 1\nconst r = x || undefined')
+    const d = byCodes(diags, 'SJS-L003')
+    expect(d.length).toBeGreaterThan(0)
+    expect(d[0].message).toContain('??')
+  })
+})
+
+// ── P3: SJS-L004 no-any ───────────────────────────────────────────────────────
+
+describe('P3 SJS-L004: no-any', () => {
+  it('flags explicit any type annotation', async () => {
+    expect(await codes('const x: any = 42')).toContain('SJS-L004')
+  })
+
+  it('flags any in function parameter', async () => {
+    expect(await codes('function f(x: any): void {}')).toContain('SJS-L004')
+  })
+
+  it('flags any in return type', async () => {
+    expect(await codes('function f(): any { return 1 }')).toContain('SJS-L004')
+  })
+
+  it('does not flag dynamic type annotation', async () => {
+    expect(await codes('const x: dynamic = 42')).not.toContain('SJS-L004')
+  })
+
+  it('message mentions dynamic as alternative', async () => {
+    const diags = await lintSource('const x: any = 42')
+    const d = byCodes(diags, 'SJS-L004')
+    expect(d.length).toBeGreaterThan(0)
+    expect(d[0].message).toContain('dynamic')
+  })
+})
+
+// ── P3: SJS-L005 no-non-null-assertion ───────────────────────────────────────
+
+describe('P3 SJS-L005: no-non-null-assertion', () => {
+  it('flags non-null assertion operator !', async () => {
+    expect(await codes('const x: string | null = null\nconst s = x!')).toContain('SJS-L005')
+  })
+
+  it('flags chained non-null assertion', async () => {
+    expect(await codes('const obj: { x: string } | null = null\nconst s = obj!.x')).toContain('SJS-L005')
+  })
+
+  it('does not flag regular ! (logical NOT)', async () => {
+    expect(await codes('const b = true\nconst nb = !b')).not.toContain('SJS-L005')
+  })
+
+  it('message mentions optional chaining as alternative', async () => {
+    const diags = await lintSource('const x: string | null = null\nconst s = x!')
+    const d = byCodes(diags, 'SJS-L005')
+    expect(d.length).toBeGreaterThan(0)
+    expect(d[0].message).toContain('?.')
+  })
+})
