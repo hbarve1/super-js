@@ -1628,8 +1628,34 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       if (t.isIdentifier(node.callee)) {
         const name = (node.callee as t.Identifier).name
         switch (name) {
-          case 'Map': return { kind: 'object', brand: 'Map', mapKeyType: T_ANY, mapValueType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
-          case 'Set': return { kind: 'object', brand: 'Set', setElementType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
+          case 'Map': {
+            // new Map(entries?) — infer key/value types from entries array if provided
+            const mapArg = node.arguments?.[0]
+            if (mapArg && t.isExpression(mapArg)) {
+              const argType = inferExprType(mapArg as t.Expression, env)
+              if (argType.kind === 'array') {
+                const elem = (argType as ArrayType).elementType
+                if (elem.kind === 'tuple' && (elem as TupleType).elements.length >= 2) {
+                  const K = (elem as TupleType).elements[0]
+                  const V = (elem as TupleType).elements[1]
+                  return { kind: 'object', brand: 'Map', mapKeyType: K, mapValueType: V, properties: new Map([['size', T_NUMBER as Type]]) }
+                }
+              }
+            }
+            return { kind: 'object', brand: 'Map', mapKeyType: T_ANY, mapValueType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
+          }
+          case 'Set': {
+            // new Set(values?) — infer element type from values array if provided
+            const setArg = node.arguments?.[0]
+            if (setArg && t.isExpression(setArg)) {
+              const argType = inferExprType(setArg as t.Expression, env)
+              if (argType.kind === 'array') {
+                const elemType = (argType as ArrayType).elementType
+                return { kind: 'object', brand: 'Set', setElementType: elemType, properties: new Map([['size', T_NUMBER as Type]]) }
+              }
+            }
+            return { kind: 'object', brand: 'Set', setElementType: T_ANY, properties: new Map([['size', T_NUMBER as Type]]) }
+          }
           case 'WeakMap': return { kind: 'object', brand: 'WeakMap', mapKeyType: T_ANY, mapValueType: T_ANY, properties: new Map() }
           case 'WeakSet': return { kind: 'object', brand: 'WeakSet', setElementType: T_ANY, properties: new Map() }
           case 'WeakRef': {

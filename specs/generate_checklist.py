@@ -134,7 +134,7 @@ SECTIONS = {
     ("for loop",                        "§14.7.4",  DONE,    "ForStatement"),
     ("for...in loop",                   "§14.7.5",  DONE,    "ForInStatement; key: string"),
     ("for...of loop",                   "§14.7.5",  DONE,    "ForOfStatement; element type from array/iterable"),
-    ("for await...of loop",             "§14.7.5",  PARTIAL, "ForOfStatement await; no AsyncIterable protocol"),
+    ("for await...of loop",             "§14.7.5",  DONE,    "ForOfStatement await; AsyncGenerator<T> yieldType extracted correctly"),
     ("break statement",                 "§14.8",    DONE,    "No type check needed"),
     ("continue statement",              "§14.9",    DONE,    "No type check needed"),
     ("return statement",                "§14.10",   DONE,    "ReturnStatement; checks against fn return type"),

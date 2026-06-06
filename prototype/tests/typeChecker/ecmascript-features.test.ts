@@ -2183,6 +2183,22 @@ describe('L5: Map/Set/Weak* method signatures', () => {
     expect(errors('const m: Map<string, number> = new Map()')).toHaveLength(0)
   })
 
+  it('new Map(entries) infers key/value types from entries', () => {
+    expect(errors(`
+      const entries: [string, number][] = [['a', 1], ['b', 2]]
+      const m = new Map(entries)
+      const v: number | undefined = m.get('a')
+    `)).toHaveLength(0)
+  })
+
+  it('new Set(values) infers element type from values array', () => {
+    expect(errors(`
+      const values: string[] = ['a', 'b', 'c']
+      const s = new Set(values)
+      const has: boolean = s.has('a')
+    `)).toHaveLength(0)
+  })
+
   it('Map.set() returns Map type (no error)', () => {
     expect(errors(`
       const m = new Map()
