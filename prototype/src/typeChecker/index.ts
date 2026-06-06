@@ -638,7 +638,22 @@ function inferStdlibMethodCall(
           }
           return { kind: 'array', elementType: T_ANY }
         }
-        case 'fromEntries': return { kind: 'object', properties: new Map() }
+        case 'fromEntries': {
+          // Object.fromEntries(entries) — infer value type from entries array
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) {
+            const argType = inferExprType(arg as t.Expression, env)
+            if (argType.kind === 'array') {
+              const elemType = (argType as ArrayType).elementType
+              // If entries are [string, V][] tuples, extract V
+              if (elemType.kind === 'tuple' && (elemType as TupleType).elements.length >= 2) {
+                const valType = (elemType as TupleType).elements[1]
+                return { kind: 'object', properties: new Map(), __indexType: valType } as ObjectType & { __indexType: Type }
+              }
+            }
+          }
+          return { kind: 'object', properties: new Map() }
+        }
         case 'assign': {
           // Object.assign(target, ...sources) — merge all source properties into target
           if (!callArgs || callArgs.length === 0) return T_ANY
@@ -736,9 +751,26 @@ function inferStdlibMethodCall(
           }
           return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
         }
-        case 'allSettled': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+        case 'allSettled': {
+          // Promise.allSettled([p1,p2]) → Promise<Array<{status,value,reason}>>
+          const settledResult: ObjectType = { kind: 'object', properties: new Map<string, Type>([
+            ['status', T_STRING], ['value', T_ANY], ['reason', T_ANY]
+          ]) }
+          return { kind: 'promise', valueType: { kind: 'array', elementType: settledResult } }
+        }
         case 'race':
-        case 'any': return { kind: 'promise', valueType: T_ANY }
+        case 'any': {
+          // Promise.race/any([p1,p2]) → infer value type from first promise element
+          const arg0 = callArgs?.[0]
+          if (arg0 && t.isExpression(arg0)) {
+            const arrType = inferExprType(arg0 as t.Expression, env)
+            if (arrType.kind === 'array') {
+              const elem = (arrType as ArrayType).elementType
+              if (elem.kind === 'promise') return { kind: 'promise', valueType: (elem as PromiseType).valueType }
+            }
+          }
+          return { kind: 'promise', valueType: T_ANY }
+        }
         case 'withResolvers': return { kind: 'object', properties: new Map([
           ['promise', { kind: 'promise', valueType: T_ANY } as Type],
           ['resolve', { kind: 'function', params: [], returnType: T_VOID } as Type],
@@ -1086,7 +1118,9 @@ function inferStdlibMethodCall(
       case 'has': return T_BOOLEAN
       case 'set': case 'append': case 'delete': return T_VOID
       case 'toString': return T_STRING
-      case 'keys': case 'values': case 'entries': return T_ANY
+      case 'keys': return { kind: 'array', elementType: T_STRING }
+      case 'values': return { kind: 'array', elementType: T_STRING }
+      case 'entries': return { kind: 'array', elementType: { kind: 'tuple', elements: [T_STRING, T_STRING] } as TupleType }
       case 'forEach': return T_VOID
     }
   }
