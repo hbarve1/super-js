@@ -537,9 +537,9 @@ function inferStdlibMethodCall(
       case 'with': return { kind: 'array', elementType: elemType }
       case 'join': return T_STRING
       case 'concat': return { kind: 'array', elementType: elemType }
-      case 'keys': return T_ANY
-      case 'values': return T_ANY
-      case 'entries': return T_ANY
+      case 'keys': return { kind: 'array', elementType: T_NUMBER }
+      case 'values': return { kind: 'array', elementType: elemType }
+      case 'entries': return { kind: 'array', elementType: { kind: 'tuple', elements: [T_NUMBER, elemType] } as TupleType }
       case 'fill': return { kind: 'array', elementType: elemType }
       case 'copyWithin': return { kind: 'array', elementType: elemType }
     }
@@ -893,6 +893,7 @@ function inferStdlibMethodCall(
   // ── Map<K,V> instance methods — ECMA-262 §24.1 ─────────────────────────────
   if (objType.kind === 'object' && (objType as ObjectType).brand === 'Map') {
     const o = objType as ObjectType
+    const K = o.mapKeyType ?? T_ANY
     const V = o.mapValueType ?? T_ANY
     switch (methodName) {
       case 'get':    return makeUnion(V, T_UNDEFINED)
@@ -901,19 +902,24 @@ function inferStdlibMethodCall(
       case 'delete': return T_BOOLEAN
       case 'clear':  return T_VOID
       case 'forEach': return T_VOID
-      case 'keys': case 'values': case 'entries': return T_ANY
+      case 'keys':    return { kind: 'array', elementType: K }
+      case 'values':  return { kind: 'array', elementType: V }
+      case 'entries': return { kind: 'array', elementType: { kind: 'tuple', elements: [K, V] } as TupleType }
     }
   }
 
   // ── Set<T> instance methods — ECMA-262 §24.2 ───────────────────────────────
   if (objType.kind === 'object' && (objType as ObjectType).brand === 'Set') {
+    const SE = (objType as ObjectType & { setElementType?: Type }).setElementType ?? T_ANY
     switch (methodName) {
       case 'add':    return objType
       case 'has':    return T_BOOLEAN
       case 'delete': return T_BOOLEAN
       case 'clear':  return T_VOID
       case 'forEach': return T_VOID
-      case 'keys': case 'values': case 'entries': return T_ANY
+      case 'keys':    return { kind: 'array', elementType: SE }
+      case 'values':  return { kind: 'array', elementType: SE }
+      case 'entries': return { kind: 'array', elementType: { kind: 'tuple', elements: [SE, SE] } as TupleType }
       // ES2025 Set methods
       case 'union': case 'intersection': case 'difference': case 'symmetricDifference': return objType
       case 'isSubsetOf': case 'isSupersetOf': case 'isDisjointFrom': return T_BOOLEAN

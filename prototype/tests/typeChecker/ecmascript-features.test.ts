@@ -271,6 +271,34 @@ describe('Task 2.1: Iterator/AsyncIterator protocol — ES2015/ES2018', () => {
       const entries = m.entries()
     `)).toHaveLength(0)
   })
+
+  it('array.keys() returns number[]', () => {
+    expect(errors(`
+      const arr = ['a', 'b', 'c']
+      const keys: number[] = arr.keys()
+    `)).toHaveLength(0)
+  })
+
+  it('array.values() returns element type array', () => {
+    expect(errors(`
+      const arr: number[] = [1, 2, 3]
+      const vals: number[] = arr.values()
+    `)).toHaveLength(0)
+  })
+
+  it('map.keys() returns key type array', () => {
+    expect(errors(`
+      const m: Map<string, number> = new Map()
+      const keys: string[] = m.keys()
+    `)).toHaveLength(0)
+  })
+
+  it('map.values() returns value type array', () => {
+    expect(errors(`
+      const m: Map<string, number> = new Map()
+      const vals: number[] = m.values()
+    `)).toHaveLength(0)
+  })
 })
 
 // ── Task 2.2: WeakRef and FinalizationRegistry — ES2021 ──────────────────────
