@@ -451,8 +451,8 @@ SECTIONS = {
   "§27 — Control Abstraction": [
     # Iteration protocol
     ("Iterator protocol {next()}",       "§27.1",  DONE,    "for-of over {next(): {value:T,done:boolean}} infers T as element type"),
-    ("Iterable protocol [Symbol.iterator]","§27.1",MISSING, "Custom iterables not validated"),
-    ("AsyncIterator protocol",           "§27.1",  MISSING, "for-await-of protocol not validated"),
+    ("Iterable protocol [Symbol.iterator]","§27.1",DONE,    "ObjectExpression *[Symbol.iterator]() stores return type; for-of extracts yieldType"),
+    ("AsyncIterator protocol",           "§27.1",  DONE,    "ObjectExpression *[Symbol.asyncIterator]() stores return type; for-await-of extracts yieldType"),
     ("Iterator helpers ES2025",          "§27.1",  DONE,    "map/filter/take/drop/flatMap/toArray/forEach/some/every/find/reduce on GeneratorType"),
     ("Iterator.from()",                  "§27.1",  DONE,    "Infers yieldType from source array/generator element type"),
     ("iter.map/filter/take/drop",        "§27.1",  DONE,    "on GeneratorType → GeneratorType preserving yieldType"),

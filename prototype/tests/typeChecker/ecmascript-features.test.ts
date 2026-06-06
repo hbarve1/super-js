@@ -4401,6 +4401,72 @@ describe('iterator protocol', () => {
   })
 })
 
+// ── Iterable protocol [Symbol.iterator] — ECMA-262 §27.1 ─────────────────────
+
+describe('iterable protocol [Symbol.iterator]', () => {
+  it('*[Symbol.iterator]() generator method — for-of infers element type', () => {
+    expect(errors(`
+      const range = {
+        *[Symbol.iterator](): Generator<number> {
+          yield 1
+          yield 2
+        }
+      }
+      for (const n of range) {
+        const x: number = n
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('*[Symbol.iterator]() generator method — wrong loop type gives error', () => {
+    expect(errors(`
+      const range = {
+        *[Symbol.iterator](): Generator<number> {
+          yield 1
+        }
+      }
+      for (const n of range) {
+        const s: string = n
+      }
+    `)).toHaveLength(1)
+  })
+})
+
+// ── AsyncIterator protocol [Symbol.asyncIterator] — ECMA-262 §27.1 ────────────
+
+describe('AsyncIterator protocol [Symbol.asyncIterator]', () => {
+  it('*[Symbol.asyncIterator]() generator method — for-await-of infers element type', () => {
+    expect(errors(`
+      async function run() {
+        const asyncRange = {
+          async *[Symbol.asyncIterator](): AsyncGenerator<number> {
+            yield 1
+            yield 2
+          }
+        }
+        for await (const n of asyncRange) {
+          const x: number = n
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('*[Symbol.asyncIterator]() generator method — wrong loop type gives error', () => {
+    expect(errors(`
+      async function run() {
+        const asyncRange = {
+          async *[Symbol.asyncIterator](): AsyncGenerator<number> {
+            yield 1
+          }
+        }
+        for await (const n of asyncRange) {
+          const s: string = n
+        }
+      }
+    `)).toHaveLength(1)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`

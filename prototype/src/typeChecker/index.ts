@@ -1448,6 +1448,7 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     case 'ObjectExpression': {
       const properties = new Map<string, Type>()
       let symbolIteratorType: Type | null = null
+      let asyncSymbolIteratorType: Type | null = null
       let indexType: Type | null = null
       for (const prop of node.properties) {
         // Spread element: { ...src } — merge src's properties
@@ -1472,10 +1473,14 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
                 && t.isIdentifier(prop.key.object) && (prop.key.object as t.Identifier).name === 'Symbol'
                 && t.isIdentifier(prop.key.property)) {
               const symName = (prop.key.property as t.Identifier).name
-              if (symName === 'iterator' || symName === 'asyncIterator') {
+              if (symName === 'iterator') {
                 const retAnn = prop.returnType
                 const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
                 symbolIteratorType = retType
+              } else if (symName === 'asyncIterator') {
+                const retAnn = prop.returnType
+                const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
+                asyncSymbolIteratorType = retType
               }
               continue
             }
@@ -1527,6 +1532,7 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       }
       const objResult: ObjectType = { kind: 'object', properties }
       if (symbolIteratorType) (objResult as any).__symbolIterator__ = symbolIteratorType
+      if (asyncSymbolIteratorType) (objResult as any).__asyncSymbolIterator__ = asyncSymbolIteratorType
       if (indexType) (objResult as any).__indexType = indexType
       return objResult
     }
@@ -3765,14 +3771,13 @@ export class TypeChecker {
         // for (const x of set) — element is T
         elemType = (rightType as ObjectType & { setElementType?: Type }).setElementType ?? T_ANY
       } else {
-        // User-defined iterable: [Symbol.iterator]() method — ECMA-262 §27.1
-        const symIterType = (rightType as any).__symbolIterator__ as Type | undefined
-        if (symIterType) {
-          if (symIterType.kind === 'generator') {
-            elemType = (symIterType as GeneratorType).yieldType
-          } else if (symIterType.kind === 'object') {
-            // Iterator object: { next(): { value: T, done: boolean } }
-            const nextMethod = (symIterType as ObjectType).properties.get('next')
+        // User-defined async iterable: [Symbol.asyncIterator]() — ECMA-262 §27.1
+        const asyncSymIterType = (rightType as any).__asyncSymbolIterator__ as Type | undefined
+        if (asyncSymIterType) {
+          if (asyncSymIterType.kind === 'generator') {
+            elemType = (asyncSymIterType as GeneratorType).yieldType
+          } else if (asyncSymIterType.kind === 'object') {
+            const nextMethod = (asyncSymIterType as ObjectType).properties.get('next')
             if (nextMethod?.kind === 'function') {
               const retType = (nextMethod as FunctionType).returnType
               if (retType.kind === 'object') {
@@ -3782,14 +3787,32 @@ export class TypeChecker {
             }
           }
         } else {
-          // User-defined iterator protocol — check for next() directly — ECMA-262 §27.1
-          // If the object has a next() method returning {value: T, done: boolean}, use T
-          const nextMethod = (rightType as ObjectType).properties.get('next')
-          if (nextMethod?.kind === 'function') {
-            const retType = (nextMethod as FunctionType).returnType
-            if (retType.kind === 'object') {
-              const valueType = (retType as ObjectType).properties.get('value')
-              if (valueType) elemType = valueType
+          // User-defined iterable: [Symbol.iterator]() method — ECMA-262 §27.1
+          const symIterType = (rightType as any).__symbolIterator__ as Type | undefined
+          if (symIterType) {
+            if (symIterType.kind === 'generator') {
+              elemType = (symIterType as GeneratorType).yieldType
+            } else if (symIterType.kind === 'object') {
+              // Iterator object: { next(): { value: T, done: boolean } }
+              const nextMethod = (symIterType as ObjectType).properties.get('next')
+              if (nextMethod?.kind === 'function') {
+                const retType = (nextMethod as FunctionType).returnType
+                if (retType.kind === 'object') {
+                  const valueType = (retType as ObjectType).properties.get('value')
+                  if (valueType) elemType = valueType
+                }
+              }
+            }
+          } else {
+            // User-defined iterator protocol — check for next() directly — ECMA-262 §27.1
+            // If the object has a next() method returning {value: T, done: boolean}, use T
+            const nextMethod = (rightType as ObjectType).properties.get('next')
+            if (nextMethod?.kind === 'function') {
+              const retType = (nextMethod as FunctionType).returnType
+              if (retType.kind === 'object') {
+                const valueType = (retType as ObjectType).properties.get('value')
+                if (valueType) elemType = valueType
+              }
             }
           }
         }
