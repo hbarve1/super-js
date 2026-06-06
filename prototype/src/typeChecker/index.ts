@@ -3153,6 +3153,20 @@ export class TypeChecker {
       return result
     }
 
+    // `Array.isArray(x)` — narrow x to any[]
+    if (t.isCallExpression(cond)) {
+      const call = cond as t.CallExpression
+      if (t.isMemberExpression(call.callee) &&
+          t.isIdentifier((call.callee as t.MemberExpression).object, { name: 'Array' }) &&
+          t.isIdentifier((call.callee as t.MemberExpression).property, { name: 'isArray' })) {
+        const arg = call.arguments[0]
+        if (arg && t.isIdentifier(arg)) {
+          result.set((arg as t.Identifier).name, { kind: 'array', elementType: T_ANY } as ArrayType)
+        }
+      }
+      return result
+    }
+
     if (!t.isBinaryExpression(cond)) return result
 
     const { operator, left, right } = cond
@@ -3223,6 +3237,18 @@ export class TypeChecker {
       elemType = T_STRING
     } else if (rightType.kind === 'generator') {
       elemType = (rightType as GeneratorType).yieldType
+    } else if (rightType.kind === 'object') {
+      const brand = (rightType as ObjectType).brand
+      if (brand === 'Map') {
+        // for (const [k, v] of map) — element is [K, V] tuple
+        elemType = { kind: 'tuple', elements: [
+          (rightType as ObjectType & { mapKeyType?: Type }).mapKeyType ?? T_ANY,
+          (rightType as ObjectType & { mapValueType?: Type }).mapValueType ?? T_ANY,
+        ] } as TupleType
+      } else if (brand === 'Set') {
+        // for (const x of set) — element is T
+        elemType = (rightType as ObjectType & { setElementType?: Type }).setElementType ?? T_ANY
+      }
     }
 
     for (const decl of node.left.declarations) {

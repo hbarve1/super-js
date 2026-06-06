@@ -3721,6 +3721,52 @@ describe('Array.prototype.reduceRight', () => {
   })
 })
 
+// ── Map/Set iteration in for...of — ECMA-262 §24 ─────────────────────────────
+
+describe('Map/Set for...of iteration', () => {
+  it('for...of Map yields [K, V] tuples', () => {
+    expect(errors(`
+      const m = new Map<string, number>()
+      for (const [k, v] of m) {
+        const key: string = k
+        const val: number = v
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('for...of Set yields element type', () => {
+    expect(errors(`
+      const s = new Set<string>()
+      for (const item of s) {
+        const str: string = item
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Array.isArray() narrowing — ECMA-262 §23.1.2.2 ───────────────────────────
+
+describe('Array.isArray() narrowing', () => {
+  it('Array.isArray(x) narrows to any[] in then-branch', () => {
+    expect(errors(`
+      function process(val: unknown) {
+        if (Array.isArray(val)) {
+          const arr: any[] = val
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('Array.isArray on non-variable passes', () => {
+    expect(errors(`
+      const val: unknown[] | string = []
+      if (Array.isArray(val)) {
+        const a = val.length
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 // ── instanceof type narrowing — ECMA-262 §13.10 ───────────────────────────────
 
 describe('instanceof type narrowing', () => {
