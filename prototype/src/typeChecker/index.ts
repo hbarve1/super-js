@@ -551,8 +551,8 @@ function inferStdlibMethodCall(
       case 'replaceAll':
       case 'normalize': return T_STRING
       case 'split': return { kind: 'array', elementType: T_STRING }
-      case 'match':
-      case 'matchAll': return T_ANY
+      case 'match': return makeUnion({ kind: 'array', elementType: T_STRING } as ArrayType, T_NULL)
+      case 'matchAll': return { kind: 'array', elementType: { kind: 'array', elementType: T_STRING } as ArrayType } as ArrayType
       case 'search': return T_NUMBER
       case 'at': return makeUnion(T_STRING, T_UNDEFINED)
       case 'charCodeAt':
@@ -570,7 +570,31 @@ function inferStdlibMethodCall(
   // ── Promise<T> instance methods — ECMA-262 §27.2 ───────────────────────────
   if (objType.kind === 'promise') {
     switch (methodName) {
-      case 'then': return { kind: 'promise', valueType: T_ANY }
+      case 'then': {
+        // p.then(cb) → Promise<ReturnType of cb (from annotation or concise body)>
+        const cb = callArgs?.[0]
+        if (cb && t.isExpression(cb)) {
+          const cbType = inferExprType(cb as t.Expression, env)
+          if (cbType.kind === 'function') {
+            const ret = (cbType as import('./types').FunctionType).returnType
+            if (ret.kind === 'promise') return ret
+            return { kind: 'promise', valueType: ret }
+          }
+          if ((t.isArrowFunctionExpression(cb) || t.isFunctionExpression(cb)) && (cb as t.ArrowFunctionExpression).returnType) {
+            const fn = cb as t.ArrowFunctionExpression | t.FunctionExpression
+            const retType = resolveType((fn.returnType as t.TSTypeAnnotation).typeAnnotation)
+            if (retType.kind === 'promise') return retType
+            return { kind: 'promise', valueType: retType }
+          }
+          // Concise arrow body: p.then(x => expr) → Promise<typeof expr>
+          if (t.isArrowFunctionExpression(cb) && t.isExpression((cb as t.ArrowFunctionExpression).body)) {
+            const bodyType = inferExprType((cb as t.ArrowFunctionExpression).body as t.Expression, env)
+            if (bodyType.kind === 'promise') return bodyType
+            return { kind: 'promise', valueType: bodyType }
+          }
+        }
+        return { kind: 'promise', valueType: T_ANY }
+      }
       case 'catch': return { kind: 'promise', valueType: T_ANY }
       case 'finally': return { kind: 'promise', valueType: (objType as PromiseType).valueType }
     }

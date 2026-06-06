@@ -700,6 +700,20 @@ describe('String prototype methods — stdlib coverage', () => {
   it('string.at (ES2022) returns string | undefined', () => {
     expect(errors('const s = "hello"; const c: string | undefined = s.at(-1)')).toHaveLength(0)
   })
+
+  it('string.match returns string[] | null', () => {
+    expect(errors(`
+      const s = "hello 123"
+      const m = s.match(/\d+/)
+    `)).toHaveLength(0)
+  })
+
+  it('string.matchAll returns array of matches', () => {
+    expect(errors(`
+      const s = "foo bar foo"
+      const matches = s.matchAll(/foo/g)
+    `)).toHaveLength(0)
+  })
 })
 
 // ── Stdlib coverage: Object static methods ────────────────────────────────────
@@ -2096,6 +2110,20 @@ describe('L4: Promise<T> method signatures', () => {
     expect(errors(`
       const promises = [Promise.resolve(1), Promise.resolve(2)]
       const result = Promise.all(promises)
+    `)).toHaveLength(0)
+  })
+
+  it('.then() with concise arrow infers return type', () => {
+    expect(errors(`
+      const p = Promise.resolve(1)
+      const p2 = p.then(n => n + 1)
+    `)).toHaveLength(0)
+  })
+
+  it('.then() with annotated return type', () => {
+    expect(errors(`
+      const p = Promise.resolve(1)
+      const p2: Promise<string> = p.then((n): string => String(n))
     `)).toHaveLength(0)
   })
 })
