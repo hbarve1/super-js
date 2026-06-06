@@ -1672,7 +1672,28 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
               ['stack', makeUnion(T_STRING, T_UNDEFINED) as Type],
               ['cause', T_ANY as Type],
             ]) }
-          case 'Promise': return { kind: 'promise', valueType: T_ANY }
+          case 'Promise': {
+            // new Promise<T>() — use type argument if present
+            const typeArgs = (node as t.NewExpression).typeParameters?.params
+            if (typeArgs && typeArgs.length > 0) {
+              const resolvedT = resolveType(typeArgs[0])
+              return { kind: 'promise', valueType: resolvedT }
+            }
+            // new Promise((resolve) => resolve(expr)) — infer from resolve argument type
+            const execArg = node.arguments?.[0]
+            if (execArg && (t.isArrowFunctionExpression(execArg) || t.isFunctionExpression(execArg))) {
+              const fn = execArg as t.ArrowFunctionExpression | t.FunctionExpression
+              const resolveParam = fn.params?.[0]
+              if (resolveParam && t.isIdentifier(resolveParam) && (resolveParam as t.Identifier).typeAnnotation) {
+                const paramType = resolveType(((resolveParam as t.Identifier).typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+                if (paramType.kind === 'function') {
+                  const innerType = (paramType as import('./types').FunctionType).params[0]?.type ?? T_ANY
+                  return { kind: 'promise', valueType: innerType }
+                }
+              }
+            }
+            return { kind: 'promise', valueType: T_ANY }
+          }
           case 'Date': return { kind: 'object', brand: 'Date', properties: new Map() }
           case 'RegExp': return { kind: 'object', brand: 'RegExp', properties: new Map([
             ['source', T_STRING as Type], ['flags', T_STRING as Type],
