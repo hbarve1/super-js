@@ -507,8 +507,8 @@ SECTIONS = {
   "§TS — TypeScript / SJS Type System": [
     ("Type aliases type X = T",         "TS",     DONE,    "TSTypeAliasDeclaration → resolveType"),
     ("Interface declarations",          "TS",     DONE,    "TSInterfaceDeclaration → member registry"),
-    ("Generic type parameters <T>",     "TS",     PARTIAL, "TypeParam placeholder; no instantiation"),
-    ("Generic functions fn<T>(x:T):T",  "TS",     PARTIAL, "Type params erased to T_ANY; no instantiation"),
+    ("Generic type parameters <T>",     "TS",     DONE,    "TypeParamType placeholder; single-param instantiation at call site"),
+    ("Generic functions fn<T>(x:T):T",  "TS",     DONE,    "Single type param inferred from arg; return type substituted"),
     ("Conditional types T extends U?X:Y","TS",    DONE,    "→ T_ANY (gradual fallback); TSConditionalType handled"),
     ("Mapped types {[K in T]: V}",      "TS",     DONE,    "→ object stub; TSMappedType handled"),
     ("Template literal types `${T}`",   "TS",     DONE,    "→ T_STRING; TSTemplateLiteralType handled"),
