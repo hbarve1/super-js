@@ -1620,6 +1620,43 @@ describe('Gap 8: Destructuring patterns (ECMA-262 §14.3.3)', () => {
   })
 })
 
+// ── Destructuring assignment (not declaration) ────────────────────────────────
+
+describe('Destructuring assignment — ECMA-262 §13.15', () => {
+  it('object destructuring assignment updates binding types', () => {
+    expect(errors(`
+      let x: number = 0
+      let y: string = ''
+      const obj = { x: 42, y: 'hello' };
+      ({ x, y } = obj)
+      const a: number = x
+      const b: string = y
+    `)).toHaveLength(0)
+  })
+
+  it('array destructuring assignment updates binding types', () => {
+    expect(errors(`
+      let a: number = 0
+      let b: number = 0
+      const arr: number[] = [1, 2];
+      ([a, b] = arr)
+      const n1: number = a
+      const n2: number = b
+    `)).toHaveLength(0)
+  })
+
+  it('tuple destructuring assignment extracts correct types', () => {
+    expect(errors(`
+      let first: string = ''
+      let second: number = 0
+      const pair: [string, number] = ['hello', 42];
+      ([first, second] = pair)
+      const s: string = first
+      const n: number = second
+    `)).toHaveLength(0)
+  })
+})
+
 // ── B1: dynamic type keyword ─────────────────────────────────────────────────
 
 describe('B1: dynamic type keyword', () => {

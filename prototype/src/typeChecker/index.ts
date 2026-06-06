@@ -2766,6 +2766,40 @@ export class TypeChecker {
    * https://tc39.es/ecma262/#sec-assignment-operators
    */
   private checkAssignment(path: NodePath<t.AssignmentExpression>): void {
+    // Object destructuring assignment: { a, b } = obj
+    if (t.isObjectPattern(path.node.left)) {
+      const rhsType = inferExprType(path.node.right, this.env)
+      if (rhsType.kind === 'object') {
+        for (const prop of (path.node.left as t.ObjectPattern).properties) {
+          if (t.isObjectProperty(prop) && t.isIdentifier(prop.key) && t.isIdentifier(prop.value)) {
+            const key = (prop.key as t.Identifier).name
+            const bindName = (prop.value as t.Identifier).name
+            const propType = (rhsType as ObjectType).properties.get(key)
+            if (propType) this.env.set(bindName, propType)
+          }
+        }
+      }
+      return
+    }
+    // Array destructuring assignment: [a, b] = arr
+    if (t.isArrayPattern(path.node.left)) {
+      const rhsType = inferExprType(path.node.right, this.env)
+      const elemType = rhsType.kind === 'array' ? (rhsType as ArrayType).elementType
+        : rhsType.kind === 'tuple' ? T_ANY
+        : T_ANY
+      ;(path.node.left as t.ArrayPattern).elements.forEach((elem, idx) => {
+        if (!elem) return
+        let bindName: string | null = null
+        if (t.isIdentifier(elem)) bindName = (elem as t.Identifier).name
+        else if (t.isAssignmentPattern(elem) && t.isIdentifier((elem as t.AssignmentPattern).left))
+          bindName = ((elem as t.AssignmentPattern).left as t.Identifier).name
+        if (bindName) {
+          const elemT = rhsType.kind === 'tuple' ? ((rhsType as TupleType).elements[idx] ?? elemType) : elemType
+          this.env.set(bindName, elemT)
+        }
+      })
+      return
+    }
     if (!t.isIdentifier(path.node.left)) return
 
     const op = path.node.operator
