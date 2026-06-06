@@ -390,7 +390,7 @@ SECTIONS = {
     ("arr.fill()",                  "§23.1",  DONE,    "→ T[]"),
     ("arr.copyWithin()",            "§23.1",  DONE,    "→ T[]"),
     ("arr.keys/values/entries()",   "§23.1",  DONE,    "keys→number[], values→T[], entries→[number,T][]"),
-    ("arr[Symbol.iterator]()",      "§23.1",  MISSING, "Symbol.iterator call not typed"),
+    ("arr[Symbol.iterator]()",      "§23.1",  DONE,    "Returns GeneratorType with array elementType; str→string, Map→[K,V][], Set→element"),
     ("Destructuring from array",    "§23.1",  DONE,    "ArrayPattern in variable decl"),
     ("ReadonlyArray<T>",            "TS",     DONE,    "Readonly array; mutating methods blocked"),
     # TypedArrays
@@ -410,7 +410,7 @@ SECTIONS = {
     ("map.size",                "§24.1",  DONE,    "→ number"),
     ("map.forEach(fn)",         "§24.1",  DONE,    "→ void"),
     ("map.keys/values/entries()","§24.1", DONE,    "keys→K[], values→V[], entries→[K,V][]"),
-    ("map[Symbol.iterator]()",  "§24.1",  MISSING, "→ T_ANY"),
+    ("map[Symbol.iterator]()",  "§24.1",  DONE,    "Returns GeneratorType{yieldType: [K,V] tuple} via mapKeyType/mapValueType"),
     ("Map.groupBy() ES2024",    "§24.1",  DONE,    "→ Map object"),
     ("new Set()",               "§24.2",  DONE,    "→ ObjectType{brand:Set}"),
     ("set.add(val)",            "§24.2",  DONE,    "→ Set (chainable)"),
@@ -443,8 +443,8 @@ SECTIONS = {
   "§26 — Managing Memory": [
     ("new WeakRef(target)",             "§26.1",  DONE,    "→ ObjectType{brand:WeakRef,weakRefType}"),
     ("weakRef.deref()",                 "§26.1",  DONE,    "→ T | undefined"),
-    ("new FinalizationRegistry(fn)",    "§26.2",  PARTIAL, "→ object; register/unregister callable"),
-    ("registry.register(target,value)", "§26.2",  PARTIAL, "callable; return void"),
+    ("new FinalizationRegistry(fn)",    "§26.2",  DONE,    "Returns branded ObjectType{brand:'FinalizationRegistry'}"),
+    ("registry.register(target,value)", "§26.2",  DONE,    "register→void, unregister→boolean via brand dispatch in inferStdlibMethodCall"),
     ("registry.unregister(token)",      "§26.2",  DONE,    "→ boolean"),
   ],
 
