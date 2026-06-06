@@ -154,14 +154,14 @@ SECTIONS = {
     ("Arrow function (concise body)",   "§15.3",    DONE,    "ArrowFunctionExpression → infers return"),
     ("Arrow function (block body)",     "§15.3",    DONE,    "ArrowFunctionExpression → checks return"),
     ("Default parameters fn(x=5)",      "§15.2",    DONE,    "AssignmentPattern param; type annotation on left-side tracked; binding registered in body"),
-    ("Rest parameters fn(...args)",     "§15.2",    PARTIAL, "RestElement in params; type annotation used"),
+    ("Rest parameters fn(...args)",     "§15.2",    DONE,    "RestElement in params; type annotation → array type; without annotation → T_ANY[]"),
     ("Spread in call fn(...arr)",       "§13.3.8",  PARTIAL, "SpreadElement arg; no spread type expansion"),
     ("Named function parameters",       "§15.2",    DONE,    "Identifier params with type annotations"),
     ("Destructured parameters {a,b}",   "§15.2",    DONE,    "ObjectPattern/ArrayPattern params with type annotation → property types registered in body"),
     ("Optional parameters fn(x?)",      "TS",       DONE,    "param.optional flag tracked"),
     ("Async function",                  "§15.8",    DONE,    "async: wraps return in Promise<T>"),
     ("Generator function*",             "§15.5",    DONE,    "GeneratorType{yieldType,returnType,nextType,async}; for-of elem type inferred"),
-    ("Async generator function*",       "§15.8",    PARTIAL, "GeneratorType with async:true; yield/next types T_ANY"),
+    ("Async generator function*",       "§15.8",    DONE,    "GeneratorType{async:true}; yieldType from AsyncGenerator<T> annotation; for-await-of extracts correct type"),
     ("Function overloads",              "TS",       MISSING, "Multiple signatures not tracked"),
     # Classes
     ("Class declaration",               "§15.7",    DONE,    "ClassDeclaration; member registration"),
@@ -483,7 +483,7 @@ SECTIONS = {
     ("async arrow function",            "§27.7",  DONE,    "Return wrapped in Promise<T>"),
     ("await expression",                "§27.7",  DONE,    "Unwraps Promise<T>"),
     ("async function*",                 "§27.7",  DONE,    "GeneratorType{async:true}; AsyncGenerator<Y,R,N> resolved via TSTypeReference"),
-    ("for await...of",                  "§27.7",  PARTIAL, "No AsyncIterable protocol check"),
+    ("for await...of",                  "§27.7",  DONE,    "AsyncGenerator<T> yieldType correctly extracted; same handler as for-of"),
   ],
 
   "§28 — Reflection": [
