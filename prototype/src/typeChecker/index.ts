@@ -824,7 +824,25 @@ function inferStdlibMethodCall(
           }
           return { kind: 'array', elementType: T_ANY }
         }
-        case 'fromAsync': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+        case 'fromAsync': {
+          // Array.fromAsync(asyncIterable, mapFn?) → Promise<T[]> — ECMA-262 ES2024 §23.1
+          if (callArgs && callArgs.length >= 1) {
+            const sourceArg = callArgs[0]
+            if (sourceArg && t.isExpression(sourceArg)) {
+              const srcType = inferExprType(sourceArg as t.Expression, env)
+              let elemType: Type = T_ANY
+              if (srcType.kind === 'array') elemType = (srcType as ArrayType).elementType
+              else if (srcType.kind === 'generator') elemType = (srcType as GeneratorType).yieldType
+              else if (srcType.kind === 'promise') elemType = (srcType as import('./types').PromiseType).valueType
+              if (callArgs.length >= 2) {
+                const cbRet = inferCallbackReturnType([callArgs[1] as any], elemType, env)
+                return { kind: 'promise', valueType: { kind: 'array', elementType: cbRet } }
+              }
+              if (elemType.kind !== 'any') return { kind: 'promise', valueType: { kind: 'array', elementType: elemType } }
+            }
+          }
+          return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+        }
       }
     }
 
@@ -1993,6 +2011,8 @@ export class TypeChecker {
   private paramScopeStack: Array<Map<string, Type | undefined>> = []
   // Type guard registry: fnName → { paramIndex, narrowedType }
   private typeGuardRegistry: Map<string, { paramIndex: number; narrowedType: Type }> = new Map()
+  // Generator yield type stack: tracks declared yieldType of enclosing generator functions
+  private generatorYieldStack: Type[] = []
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -2018,6 +2038,7 @@ export class TypeChecker {
     this.interfaceRegistry = new Map()
     this.classFieldTypes = new Map()
     this.paramScopeStack = []
+    this.generatorYieldStack = []
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -2042,20 +2063,24 @@ export class TypeChecker {
         break
       case 'FunctionDeclaration':
         if ((node as t.FunctionDeclaration).async) this.asyncDepth--
+        if ((node as t.FunctionDeclaration).generator) this.generatorYieldStack.pop()
         this.exitFunctionParams()
         break
       case 'FunctionExpression':
         if ((node as t.FunctionExpression).async) this.asyncDepth--
+        if ((node as t.FunctionExpression).generator) this.generatorYieldStack.pop()
         this.exitFunctionParams()
         break
       case 'ClassMethod':
         if ((node as t.ClassMethod).async) this.asyncDepth--
+        if ((node as t.ClassMethod).generator) this.generatorYieldStack.pop()
         this.exitFunctionParams()
         this.currentClassMethodName = null
         this.env.delete('this')
         break
       case 'ObjectMethod':
         if ((node as t.ObjectMethod).async) this.asyncDepth--
+        if ((node as t.ObjectMethod).generator) this.generatorYieldStack.pop()
         this.exitFunctionParams()
         break
       case 'ClassDeclaration':
@@ -2197,6 +2222,11 @@ export class TypeChecker {
         if (fd.async) this.asyncDepth++
         this.registerFunctionDeclaration(path as NodePath<t.FunctionDeclaration>)
         this.enterFunctionParams(fd.params)
+        if (fd.generator && fd.id) {
+          const genType = this.env.get(fd.id.name)
+          const yieldType = genType?.kind === 'generator' ? (genType as GeneratorType).yieldType : T_ANY
+          this.generatorYieldStack.push(yieldType)
+        }
         break
       }
       case 'AssignmentExpression':
@@ -2216,6 +2246,12 @@ export class TypeChecker {
         const fex = path.node as t.FunctionExpression
         if (fex.async) this.asyncDepth++
         this.enterFunctionParams(fex.params)
+        if (fex.generator) {
+          const ann = fex.returnType ? (fex.returnType as t.TSTypeAnnotation).typeAnnotation : null
+          const resolvedRet = ann ? resolveType(ann) : T_ANY
+          const yieldType = resolvedRet.kind === 'generator' ? (resolvedRet as GeneratorType).yieldType : T_ANY
+          this.generatorYieldStack.push(yieldType)
+        }
         break
       }
       case 'ClassMethod': {
@@ -2231,12 +2267,24 @@ export class TypeChecker {
             this.env.set('this', { kind: 'object', properties: new Map(fieldTypes) } as ObjectType)
           }
         }
+        if (cm.generator) {
+          const ann = cm.returnType ? (cm.returnType as t.TSTypeAnnotation).typeAnnotation : null
+          const resolvedRet = ann ? resolveType(ann) : T_ANY
+          const yieldType = resolvedRet.kind === 'generator' ? (resolvedRet as GeneratorType).yieldType : T_ANY
+          this.generatorYieldStack.push(yieldType)
+        }
         break
       }
       case 'ObjectMethod': {
         const om = path.node as t.ObjectMethod
         if (om.async) this.asyncDepth++
         this.enterFunctionParams(om.params)
+        if (om.generator) {
+          const ann = om.returnType ? (om.returnType as t.TSTypeAnnotation).typeAnnotation : null
+          const resolvedRet = ann ? resolveType(ann) : T_ANY
+          const yieldType = resolvedRet.kind === 'generator' ? (resolvedRet as GeneratorType).yieldType : T_ANY
+          this.generatorYieldStack.push(yieldType)
+        }
         break
       }
       case 'TSInterfaceDeclaration': {
@@ -2477,6 +2525,9 @@ export class TypeChecker {
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
+        break
+      case 'YieldExpression':
+        this.checkYieldExpression(path as NodePath<t.YieldExpression>)
         break
     }
   }
@@ -2926,6 +2977,33 @@ export class TypeChecker {
   // ── Rule TC-006: Call expression argument types — ECMA-262 §13.3.8 ───────────
 
   /**
+   * Checks that `yield x` yields a value consistent with the enclosing generator's
+   * declared yield type (Generator<Y,R,N> annotation).
+   *
+   * ECMA-262 §15.5.1 (YieldExpression):
+   * https://tc39.es/ecma262/#sec-yield
+   */
+  private checkYieldExpression(path: NodePath<t.YieldExpression>): void {
+    const { node } = path
+    if (!node.argument) return
+    // yield* delegates to another iterable — argument is the iterable, not a single yield value
+    if (node.delegate) return
+    if (this.generatorYieldStack.length === 0) return
+    const declaredYieldType = this.generatorYieldStack[this.generatorYieldStack.length - 1]
+    if (declaredYieldType.kind === 'any') return
+    const argType = inferExprType(node.argument, this.env)
+    if (!isConsistent(argType, declaredYieldType)) {
+      this.report({
+        code: 'SJS-E006',
+        severity: 'error',
+        message: `Yield type mismatch: declared yield type is '${declaredYieldType.kind}' but got '${argType.kind}'.`,
+        node: node.argument,
+        specUrl: 'https://tc39.es/ecma262/#sec-yield',
+      })
+    }
+  }
+
+  /**
    * Checks that call arguments match the callee's declared parameter types.
    *
    * Only checked when the callee is a locally-known identifier with a declared
@@ -2956,13 +3034,16 @@ export class TypeChecker {
 
     const fnType = calleeType as FunctionType
     const requiredParams = fnType.params.filter(p => !p.optional)
+    // If any argument is a SpreadElement, arity cannot be statically determined
+    const hasSpread = path.node.arguments.some(a => t.isSpreadElement(a))
 
     for (let i = 0; i < fnType.params.length; i++) {
       const param = fnType.params[i]
       const arg = path.node.arguments[i]
 
       if (!arg) {
-        if (!param.optional) {
+        // Skip missing-argument errors when a spread is present (spread may cover the gap)
+        if (!param.optional && !hasSpread) {
           this.report({
             code: 'SJS-E003',
             severity: 'error',
@@ -2974,7 +3055,25 @@ export class TypeChecker {
         continue
       }
 
-      if (!t.isExpression(arg)) continue
+      if (!t.isExpression(arg)) {
+        // SpreadElement — check element type of the spread source against the expected param
+        if (t.isSpreadElement(arg)) {
+          const spreadSrcType = inferExprType((arg as t.SpreadElement).argument as t.Expression, this.env)
+          let elemType: Type = T_ANY
+          if (spreadSrcType.kind === 'array') elemType = (spreadSrcType as ArrayType).elementType
+          else if (spreadSrcType.kind === 'generator') elemType = (spreadSrcType as GeneratorType).yieldType
+          if (elemType.kind !== 'any' && !isConsistent(elemType, param.type)) {
+            this.report({
+              code: 'SJS-E003',
+              severity: 'error',
+              message: `Spread argument element type '${elemType.kind}' is not compatible with parameter '${param.name}' of type '${param.type.kind}'.`,
+              node: (arg as t.SpreadElement).argument as t.Expression,
+              specUrl: 'https://tc39.es/ecma262/#sec-runtime-semantics-argumentlistevaluation',
+            })
+          }
+        }
+        continue
+      }
 
       const argType = inferExprType(arg, this.env)
       if (!isConsistent(argType, param.type)) {

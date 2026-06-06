@@ -4207,3 +4207,103 @@ describe('ExportAllDeclaration', () => {
   })
 })
 
+// ── yield expression type checking — ECMA-262 §15.5.1 ────────────────────────
+
+describe('yield expression type checking', () => {
+  it('yield matching declared Generator<Y> yield type — no error', () => {
+    expect(errors(`
+      function* nums(): Generator<number> {
+        yield 1
+        yield 2
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('yield wrong type against declared Generator<Y> — error', () => {
+    expect(errors(`
+      function* nums(): Generator<number> {
+        yield 'hello'
+      }
+    `)).toHaveLength(1)
+  })
+
+  it('yield without annotation — no error (gradual)', () => {
+    expect(errors(`
+      function* gen() {
+        yield 1
+        yield 'hello'
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('yield* delegation — no error (gradual)', () => {
+    expect(errors(`
+      function* gen(): Generator<number> {
+        yield* [1, 2, 3]
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('generator function expression with annotation — yield type checked', () => {
+    expect(errors(`
+      const gen = function*(): Generator<string> {
+        yield 'hello'
+        yield 42
+      }
+    `)).toHaveLength(1)
+  })
+})
+
+// ── Spread in call arguments — ECMA-262 §13.3.8 ──────────────────────────────
+
+describe('spread in call arguments', () => {
+  it('fn(...arr) — no missing-argument error when spread present', () => {
+    expect(errors(`
+      function add(a: number, b: number): number { return a + b }
+      const nums: number[] = [1, 2]
+      add(...nums)
+    `)).toHaveLength(0)
+  })
+
+  it('fn(x, ...arr) — no false-positive arity error', () => {
+    expect(errors(`
+      function triple(a: number, b: number, c: number): number { return a + b + c }
+      const rest: number[] = [2, 3]
+      triple(1, ...rest)
+    `)).toHaveLength(0)
+  })
+
+  it('spread with wrong element type — error', () => {
+    expect(errors(`
+      function greet(name: string): void {}
+      const nums: number[] = [1, 2]
+      greet(...nums)
+    `)).toHaveLength(1)
+  })
+})
+
+// ── Array.fromAsync() element type inference — ES2024 §23.1 ──────────────────
+
+describe('Array.fromAsync element type inference', () => {
+  it('Array.fromAsync(numberArray) → Promise<number[]>', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const p: Promise<number[]> = Array.fromAsync(nums)
+    `)).toHaveLength(0)
+  })
+
+  it('Array.fromAsync(stringArray) → Promise<string[]>', () => {
+    expect(errors(`
+      const strs: string[] = ['a', 'b']
+      const p: Promise<string[]> = Array.fromAsync(strs)
+    `)).toHaveLength(0)
+  })
+
+  it('Array.fromAsync with mapper — infers mapped type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const p: Promise<string[]> = Array.fromAsync(nums, (n: number): string => String(n))
+    `)).toHaveLength(0)
+  })
+})
+
