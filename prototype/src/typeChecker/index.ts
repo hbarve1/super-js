@@ -903,7 +903,20 @@ function inferStdlibMethodCall(
 
     // Iterator static methods — ES2025
     if (globalName === 'Iterator') {
-      if (methodName === 'from') return T_ANY
+      if (methodName === 'from') {
+        // Iterator.from(iterable) → Iterator<T> — infer yield type from source
+        if (callArgs && callArgs.length >= 1) {
+          const sourceArg = callArgs[0]
+          if (sourceArg && t.isExpression(sourceArg)) {
+            const srcType = inferExprType(sourceArg as t.Expression, env)
+            let yieldType: Type = T_ANY
+            if (srcType.kind === 'array') yieldType = (srcType as ArrayType).elementType
+            else if (srcType.kind === 'generator') yieldType = (srcType as GeneratorType).yieldType
+            return { kind: 'generator', yieldType, returnType: T_VOID, nextType: T_ANY, async: false } as GeneratorType
+          }
+        }
+        return T_ANY
+      }
     }
 
     // Reflect static methods — ECMA-262 §28.1
@@ -2740,10 +2753,32 @@ export class TypeChecker {
       : inferred.kind === 'object' ? inferred
       : T_ANY
 
+    // Collect non-rest property keys for building the rest type
+    const extractedKeys = new Set(
+      pattern.properties
+        .filter(p => t.isObjectProperty(p))
+        .map(p => {
+          if (!t.isObjectProperty(p)) return null
+          return t.isIdentifier(p.key) ? (p.key as t.Identifier).name
+            : t.isStringLiteral(p.key) ? (p.key as t.StringLiteral).value
+            : null
+        })
+        .filter((k): k is string => k !== null)
+    )
+
     for (const prop of pattern.properties) {
       if (t.isRestElement(prop)) {
         if (t.isIdentifier(prop.argument)) {
-          this.env.set(prop.argument.name, T_ANY)
+          // Rest type: source ObjectType minus already-extracted properties
+          if (objType.kind === 'object') {
+            const restProps = new Map<string, Type>()
+            for (const [k, v] of (objType as ObjectType).properties) {
+              if (!extractedKeys.has(k)) restProps.set(k, v)
+            }
+            this.env.set((prop.argument as t.Identifier).name, { kind: 'object', properties: restProps } as ObjectType)
+          } else {
+            this.env.set((prop.argument as t.Identifier).name, T_ANY)
+          }
         }
         continue
       }
@@ -2817,9 +2852,15 @@ export class TypeChecker {
    * https://tc39.es/ecma262/#sec-assignment-operators
    */
   private checkAssignment(path: NodePath<t.AssignmentExpression>): void {
-    // Object destructuring assignment: { a, b } = obj
+    // Object destructuring assignment: { a, b, ...rest } = obj
     if (t.isObjectPattern(path.node.left)) {
       const rhsType = inferExprType(path.node.right, this.env)
+      const extractedObjKeys = new Set<string>()
+      for (const prop of (path.node.left as t.ObjectPattern).properties) {
+        if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+          extractedObjKeys.add((prop.key as t.Identifier).name)
+        }
+      }
       if (rhsType.kind === 'object') {
         for (const prop of (path.node.left as t.ObjectPattern).properties) {
           if (t.isObjectProperty(prop) && t.isIdentifier(prop.key) && t.isIdentifier(prop.value)) {
@@ -2827,12 +2868,26 @@ export class TypeChecker {
             const bindName = (prop.value as t.Identifier).name
             const propType = (rhsType as ObjectType).properties.get(key)
             if (propType) this.env.set(bindName, propType)
+          } else if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) {
+            // ...rest gets remaining properties from the source ObjectType
+            const restProps = new Map<string, Type>()
+            for (const [k, v] of (rhsType as ObjectType).properties) {
+              if (!extractedObjKeys.has(k)) restProps.set(k, v)
+            }
+            this.env.set((prop.argument as t.Identifier).name, { kind: 'object', properties: restProps } as ObjectType)
+          }
+        }
+      } else {
+        // Source is not a known ObjectType — give rest binding T_ANY
+        for (const prop of (path.node.left as t.ObjectPattern).properties) {
+          if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) {
+            this.env.set((prop.argument as t.Identifier).name, T_ANY)
           }
         }
       }
       return
     }
-    // Array destructuring assignment: [a, b] = arr
+    // Array destructuring assignment: [a, b, ...rest] = arr
     if (t.isArrayPattern(path.node.left)) {
       const rhsType = inferExprType(path.node.right, this.env)
       const elemType = rhsType.kind === 'array' ? (rhsType as ArrayType).elementType
@@ -2844,6 +2899,14 @@ export class TypeChecker {
         if (t.isIdentifier(elem)) bindName = (elem as t.Identifier).name
         else if (t.isAssignmentPattern(elem) && t.isIdentifier((elem as t.AssignmentPattern).left))
           bindName = ((elem as t.AssignmentPattern).left as t.Identifier).name
+        else if (t.isRestElement(elem) && t.isIdentifier((elem as t.RestElement).argument)) {
+          // ...rest gets the same array type as the source
+          const restArrType: Type = rhsType.kind === 'array' ? rhsType
+            : elemType.kind !== 'any' ? { kind: 'array', elementType: elemType } as ArrayType
+            : T_ANY
+          this.env.set(((elem as t.RestElement).argument as t.Identifier).name, restArrType)
+          return
+        }
         if (bindName) {
           const elemT = rhsType.kind === 'tuple' ? ((rhsType as TupleType).elements[idx] ?? elemType) : elemType
           this.env.set(bindName, elemT)

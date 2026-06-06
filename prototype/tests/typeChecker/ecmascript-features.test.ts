@@ -4193,6 +4193,78 @@ describe('RegExp.exec return type', () => {
 
 // ── export * from 'mod' — ECMA-262 §16.2 ─────────────────────────────────────
 
+// ── Rest in destructuring — ECMA-262 §14.3.3 ─────────────────────────────────
+
+describe('rest in destructuring', () => {
+  it('{ a, ...rest } = obj — rest gets remaining ObjectType properties', () => {
+    expect(errors(`
+      const obj = { x: 1, y: 'hello', z: true }
+      const { x, ...rest } = obj
+      const y: string = rest.y
+    `)).toHaveLength(0)
+  })
+
+  it('{ a, ...rest } = obj — rest type is the remaining object (y still accessible)', () => {
+    expect(errors(`
+      const obj = { x: 1, y: 'hello' }
+      const { x, ...rest } = obj
+      const s: string = rest.y
+    `)).toHaveLength(0)
+  })
+
+  it('[a, ...rest] = arr — rest gets array type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3, 4]
+      const [first, ...rest] = nums
+      const arr: number[] = rest
+    `)).toHaveLength(0)
+  })
+
+  it('rest in object destructuring assignment — rest gets remaining properties', () => {
+    expect(errors(`
+      let xVal: number
+      let rest: { y: string }
+      const obj = { x: 1, y: 'hello' }
+      ;({ x: xVal, ...rest } = obj)
+      const s: string = rest.y
+    `)).toHaveLength(0)
+  })
+
+  it('rest in array destructuring assignment — rest gets array type', () => {
+    expect(errors(`
+      let head: number
+      let tail: number[]
+      const arr: number[] = [1, 2, 3]
+      ;([head, ...tail] = arr)
+      const n: number[] = tail
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Iterator.from() type inference — ES2025 §27.1 ────────────────────────────
+
+describe('Iterator.from type inference', () => {
+  it('Iterator.from(array) → generator with element type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const iter = Iterator.from(nums)
+      for (const n of iter) {
+        const x: number = n
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('Iterator.from(generator) → generator with same yield type', () => {
+    expect(errors(`
+      function* gen(): Generator<string> { yield 'a' }
+      const iter = Iterator.from(gen())
+      for (const s of iter) {
+        const x: string = s
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`
