@@ -3748,6 +3748,43 @@ describe('instanceof type narrowing', () => {
   })
 })
 
+// ── eval() detection — SJS-E013 ──────────────────────────────────────────────
+
+describe('eval() detection — SJS-E013', () => {
+  it('eval() call emits SJS-E013', () => {
+    expect(errorCodes(`eval('1+1')`)).toContain('SJS-E013')
+  })
+
+  it('regular function calls are not affected', () => {
+    expect(errorCodes(`
+      function foo(x: string) { return x }
+      foo('hello')
+    `)).not.toContain('SJS-E013')
+  })
+})
+
+// ── Object.assign return type — ECMA-262 §20.1.2.1 ───────────────────────────
+
+describe('Object.assign return type', () => {
+  it('Object.assign returns target type', () => {
+    expect(errors(`
+      const target = { a: 1 }
+      const result: object = Object.assign(target, { b: 2 })
+    `)).toHaveLength(0)
+  })
+})
+
+// ── RegExp.exec return type — ECMA-262 §22.2.7.2 ─────────────────────────────
+
+describe('RegExp.exec return type', () => {
+  it('exec returns array|null union', () => {
+    expect(errors(`
+      const re = /foo/
+      const m = re.exec('foobar')
+    `)).toHaveLength(0)
+  })
+})
+
 // ── export * from 'mod' — ECMA-262 §16.2 ─────────────────────────────────────
 
 describe('ExportAllDeclaration', () => {

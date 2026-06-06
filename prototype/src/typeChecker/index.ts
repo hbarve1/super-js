@@ -605,7 +605,12 @@ function inferStdlibMethodCall(
         case 'values': return { kind: 'array', elementType: T_ANY }
         case 'entries': return { kind: 'array', elementType: T_ANY }
         case 'fromEntries': return { kind: 'object', properties: new Map() }
-        case 'assign': return T_ANY
+        case 'assign': {
+          // Object.assign(target, ...sources) returns the target type
+          const targetArg = callArgs?.[0]
+          if (targetArg && t.isExpression(targetArg)) return inferExprType(targetArg, env)
+          return T_ANY
+        }
         case 'hasOwn': return T_BOOLEAN
         case 'create': return { kind: 'object', properties: new Map() }
         case 'freeze': {
@@ -905,7 +910,10 @@ function inferStdlibMethodCall(
   if (objType.kind === 'object' && (objType as ObjectType).brand === 'RegExp') {
     switch (methodName) {
       case 'test': return T_BOOLEAN
-      case 'exec': return T_ANY  // RegExpExecArray | null — too complex for now
+      case 'exec': return makeUnion(
+        { kind: 'array', elementType: T_STRING } as ArrayType,  // RegExpExecArray (string[] with extra props)
+        T_NULL
+      )
       case 'toString': return T_STRING
     }
   }
@@ -2616,6 +2624,19 @@ export class TypeChecker {
     if (!t.isIdentifier(path.node.callee)) return
 
     const calleeName = (path.node.callee as t.Identifier).name
+
+    // SJS-E013: eval() is forbidden — dynamic code execution is a security risk
+    if (calleeName === 'eval') {
+      this.report({
+        code: 'SJS-E013',
+        severity: 'error',
+        message: `'eval()' is forbidden in SJS. Use explicit function calls or data structures instead.`,
+        node: path.node,
+        specUrl: 'https://tc39.es/ecma262/#sec-eval-x',
+      })
+      return
+    }
+
     const calleeType = this.env.get(calleeName)
     if (!calleeType || calleeType.kind !== 'function') return
 
