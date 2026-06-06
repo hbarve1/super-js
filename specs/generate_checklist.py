@@ -99,8 +99,8 @@ SECTIONS = {
     ("Compound assign += -= *= /= %= **=","§13.15", DONE,    "AssignmentExpression compound"),
     ("Logical assign &&= ||= ??=",      "§13.15",   DONE,    "AssignmentExpression logical"),
     ("Bitwise assign &= |= ^= <<= >>= >>>=","§13.15",DONE,   "AssignmentExpression bitwise compound"),
-    ("Destructuring assign {a}=obj",    "§13.15",   PARTIAL, "Flat object; no nested, no defaults"),
-    ("Destructuring assign [a]=arr",    "§13.15",   PARTIAL, "Flat array; no nested, no defaults"),
+    ("Destructuring assign {a}=obj",    "§13.15",   DONE,    "ObjectPattern in AssignmentExpression; updates bindings from source ObjectType properties"),
+    ("Destructuring assign [a]=arr",    "§13.15",   DONE,    "ArrayPattern in AssignmentExpression; updates bindings from array/tuple element types"),
     ("Spread in assignment ...rest",    "§13.15",   MISSING, "Rest in destructuring assign → T_ANY"),
     # Other
     ("Comma operator a, b",             "§13.16",   DONE,    "SequenceExpression → last type"),
