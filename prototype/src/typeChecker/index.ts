@@ -1447,6 +1447,8 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
     // Spread elements ({ ...src }) merge source properties into this object.
     case 'ObjectExpression': {
       const properties = new Map<string, Type>()
+      let symbolIteratorType: Type | null = null
+      let indexType: Type | null = null
       for (const prop of node.properties) {
         // Spread element: { ...src } — merge src's properties
         if (t.isSpreadElement(prop)) {
@@ -1465,6 +1467,18 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           if (prop.computed) {
             if (t.isStringLiteral(prop.key)) key = (prop.key as t.StringLiteral).value
             else if (t.isNumericLiteral(prop.key)) key = String((prop.key as t.NumericLiteral).value)
+            // Well-known symbol methods: [Symbol.iterator]() / [Symbol.asyncIterator]()
+            else if (t.isMemberExpression(prop.key) && !prop.key.computed
+                && t.isIdentifier(prop.key.object) && (prop.key.object as t.Identifier).name === 'Symbol'
+                && t.isIdentifier(prop.key.property)) {
+              const symName = (prop.key.property as t.Identifier).name
+              if (symName === 'iterator' || symName === 'asyncIterator') {
+                const retAnn = prop.returnType
+                const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
+                symbolIteratorType = retType
+              }
+              continue
+            }
           } else {
             if (t.isIdentifier(prop.key)) key = (prop.key as t.Identifier).name
             else if (t.isStringLiteral(prop.key)) key = (prop.key as t.StringLiteral).value
@@ -1497,7 +1511,7 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           // Dynamic computed key: set __indexType on the result object
           if (!key) {
             const dynValType = t.isExpression(op.value) ? inferExprType(op.value as t.Expression, env) : T_ANY
-            ;(properties as any).__indexType = dynValType
+            indexType = dynValType
             continue
           }
         } else {
@@ -1511,7 +1525,10 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           : T_ANY
         properties.set(key, valType)
       }
-      return { kind: 'object', properties } satisfies ObjectType
+      const objResult: ObjectType = { kind: 'object', properties }
+      if (symbolIteratorType) (objResult as any).__symbolIterator__ = symbolIteratorType
+      if (indexType) (objResult as any).__indexType = indexType
+      return objResult
     }
 
     // Member expression — ECMA-262 §13.3.2 Property Accessors
@@ -2594,7 +2611,7 @@ export class TypeChecker {
         // `export * from 'mod'` — re-exports all bindings; cross-module types not tracked in single-file mode
         break
       case 'WithStatement':
-        // `with (obj) { ... }` — legacy syntax; banned in strict mode; silently traversed
+        // `with (obj) { ... }` — legacy syntax; banned in ES modules (strict mode) by the parser
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
@@ -3748,14 +3765,32 @@ export class TypeChecker {
         // for (const x of set) — element is T
         elemType = (rightType as ObjectType & { setElementType?: Type }).setElementType ?? T_ANY
       } else {
-        // User-defined iterator protocol — ECMA-262 §27.1
-        // If the object has a next() method returning {value: T, done: boolean}, use T
-        const nextMethod = (rightType as ObjectType).properties.get('next')
-        if (nextMethod?.kind === 'function') {
-          const retType = (nextMethod as FunctionType).returnType
-          if (retType.kind === 'object') {
-            const valueType = (retType as ObjectType).properties.get('value')
-            if (valueType) elemType = valueType
+        // User-defined iterable: [Symbol.iterator]() method — ECMA-262 §27.1
+        const symIterType = (rightType as any).__symbolIterator__ as Type | undefined
+        if (symIterType) {
+          if (symIterType.kind === 'generator') {
+            elemType = (symIterType as GeneratorType).yieldType
+          } else if (symIterType.kind === 'object') {
+            // Iterator object: { next(): { value: T, done: boolean } }
+            const nextMethod = (symIterType as ObjectType).properties.get('next')
+            if (nextMethod?.kind === 'function') {
+              const retType = (nextMethod as FunctionType).returnType
+              if (retType.kind === 'object') {
+                const valueType = (retType as ObjectType).properties.get('value')
+                if (valueType) elemType = valueType
+              }
+            }
+          }
+        } else {
+          // User-defined iterator protocol — check for next() directly — ECMA-262 §27.1
+          // If the object has a next() method returning {value: T, done: boolean}, use T
+          const nextMethod = (rightType as ObjectType).properties.get('next')
+          if (nextMethod?.kind === 'function') {
+            const retType = (nextMethod as FunctionType).returnType
+            if (retType.kind === 'object') {
+              const valueType = (retType as ObjectType).properties.get('value')
+              if (valueType) elemType = valueType
+            }
           }
         }
       }
