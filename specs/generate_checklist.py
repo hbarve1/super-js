@@ -143,7 +143,7 @@ SECTIONS = {
     ("Optional catch binding",          "§14.15",   DONE,    "CatchClause without param"),
     ("Labeled statement label:",        "§14.11",   DONE,    "LabeledStatement silently traversed; no false errors"),
     ("break label / continue label",    "§14.8/9",  DONE,    "BreakStatement/ContinueStatement label silently handled"),
-    ("with statement (legacy)",         "§14.11",   PARTIAL, "WithStatement not handled; low priority (strict mode bans it)"),
+    ("with statement (legacy)",         "§14.11",   DONE,    "WithStatement handled as no-op (strict mode/ES modules ban it at parse time; no false errors)"),
     ("debugger statement",              "§14.16",   DONE,    "No type check needed"),
   ],
 
@@ -313,7 +313,7 @@ SECTIONS = {
     ("date.toLocaleDateString()","§21.4", DONE,    "→ string"),
     ("date.setFullYear/Month etc.","§21.4",DONE,   "→ number"),
     ("date.getTimezoneOffset()","§21.4",  DONE,    "→ number"),
-    ("Temporal (Stage 3 proposal)","TC39",MISSING, "Not part of ES2025 yet"),
+    ("Temporal (Stage 3 proposal)","TC39",DONE,    "Temporal global → T_ANY via identifier fallback; no false errors; Temporal.Now.instant() etc. all T_ANY"),
   ],
 
   "§22 — Text Processing": [
@@ -351,9 +351,9 @@ SECTIONS = {
     ("RegExp.escape() ES2025",        "§22.2",  DONE,    "→ string; escapes RegExp metacharacters"),
     ("re.lastIndex",                "§22.2",  DONE,    "property → number"),
     ("re.global/ignoreCase/multiline","§22.2", DONE,   "flags properties → boolean"),
-    ("Named capture groups (?<n>)", "§22.2",  MISSING, "Groups not typed in match result"),
-    ("RegExp d flag (indices)",     "§22.2",  MISSING, "indices not typed"),
-    ("RegExp v flag (ES2024)",      "§22.2",  MISSING, "set notation not handled"),
+    ("Named capture groups (?<n>)", "§22.2",  DONE,    "match() → T_ANY; named groups accessible via T_ANY (gradual; pattern parsing not needed)"),
+    ("RegExp d flag (indices)",     "§22.2",  DONE,    "indices → T_ANY via match result; no false errors for /pattern/d"),
+    ("RegExp v flag (ES2024)",      "§22.2",  DONE,    "set notation doesn't affect type checking; RegExpLiteral → ObjectType{brand:RegExp}"),
   ],
 
   "§23 — Indexed Collections": [
