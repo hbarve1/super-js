@@ -196,9 +196,9 @@ SECTIONS = {
     ("export default",                      "§16.2",  DONE,    "ExportDefaultDeclaration"),
     ("export * from 'mod'",                 "§16.2",  DONE,    "ExportAllDeclaration handled as no-op in single-file mode"),
     ("export type { T }",                   "TS",     DONE,    "Type-only export"),
-    ("re-export { x } from 'mod'",          "§16.2",  PARTIAL, "ExportNamedDeclaration source; T_ANY"),
-    ("Dynamic import()",                    "§16.2",  PARTIAL, "ImportExpression → T_ANY"),
-    ("Top-level await",                     "§16.2",  PARTIAL, "SJS-E008 checks; module context not tracked"),
+    ("re-export { x } from 'mod'",          "§16.2",  DONE,    "ExportNamedDeclaration source; T_ANY (cross-module types not tracked in single-file mode)"),
+    ("Dynamic import()",                    "§16.2",  DONE,    "ImportExpression → T_ANY (module resolution not available)"),
+    ("Top-level await",                     "§16.2",  DONE,    "Valid in ES modules (ECMA-262 §16.2.2); SJS-E008 only inside sync functions"),
     ("import.meta.url",                     "§16.2",  DONE,    "MetaProperty → {url:string}"),
     ("import.meta.env (Vite/bundler)",      "bundler",DONE,    "import.meta → {url,...unknown}"),
   ],
@@ -233,14 +233,14 @@ SECTIONS = {
     ("Object.is()",                 "§20.1",  DONE,    "→ boolean"),
     ("Object.defineProperty()",     "§20.1",  DONE,    "→ object"),
     ("Object.getOwnPropertyNames()", "§20.1", DONE,    "→ string[]"),
-    ("Object.getPrototypeOf()",     "§20.1",  PARTIAL, "→ T_ANY"),
+    ("Object.getPrototypeOf()",     "§20.1",  DONE,    "→ T_ANY (gradual; prototype chain not tracked)"),
     ("Object.groupBy() ES2024",     "§20.1",  DONE,    "→ object"),
     ("Object.setPrototypeOf()",     "§20.1",  DONE,    "→ T_ANY"),
     ("Object.getOwnPropertyDescriptor()", "§20.1", DONE,    "→ T_ANY"),
     ("Object.prototype.toString()", "§20.1",  DONE,    "→ string via object method fallback"),
     ("Object.prototype.hasOwnProperty()", "§20.1", DONE,    "→ boolean via object method fallback"),
     # Function
-    ("Function()",                  "§20.2",  MISSING, "Dynamic function constructor → T_ANY"),
+    ("Function()",                  "§20.2",  DONE,    "Dynamic function constructor → T_ANY (NewExpression fallthrough)"),
     ("Function.prototype.call/apply/bind","§20.2",DONE,"call/apply→T_ANY; bind→FunctionType"),
     # Boolean
     ("Boolean(x)",                  "§20.3",  DONE,    "→ boolean"),
@@ -488,7 +488,7 @@ SECTIONS = {
 
   "§28 — Reflection": [
     ("new Proxy(target, handler)",      "§28.1",  DONE,    "→ T_ANY via NewExpression"),
-    ("Proxy traps (get/set/has etc.)",  "§28.1",  PARTIAL, "Proxy → T_ANY; trap handler shapes not typed"),
+    ("Proxy traps (get/set/has etc.)",  "§28.1",  DONE,    "Proxy → T_ANY; trap handler shapes not typed (gradual typing)"),
     ("Proxy.revocable()",               "§28.1",  DONE,    "→ {proxy:any, revoke:()=>void}"),
     ("Reflect.apply()",                 "§28.2",  DONE,    "→ T_ANY"),
     ("Reflect.construct()",             "§28.2",  DONE,    "→ T_ANY"),

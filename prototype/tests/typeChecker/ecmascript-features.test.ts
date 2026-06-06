@@ -2628,8 +2628,9 @@ describe('SJS1: Missing error codes', () => {
     expect(e006[0].message).toContain('?.')
   })
 
-  it('SJS-E008: await outside async function emits error', () => {
-    expect(errorCodes('const x = await fetch("url")')).toContain('SJS-E008')
+  it('SJS-E008: top-level await in ES module is valid (no error)', () => {
+    // Top-level await is legal in ES modules (ECMA-262 §16.2.2, ES2022+)
+    expect(errors('const x = await fetch("url")')).toHaveLength(0)
   })
 
   it('SJS-E008: await inside async function is valid', () => {

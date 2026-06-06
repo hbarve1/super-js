@@ -2536,8 +2536,10 @@ export class TypeChecker {
         break
       }
       case 'AwaitExpression':
-        // SJS-E008: await used outside an async function
-        if (this.asyncDepth === 0) {
+        // SJS-E008: await used outside an async function.
+        // Top-level await is valid in ES modules (ECMA-262 §16.2.2, ES2022+).
+        // paramScopeStack.length===0 means we're at module top level → allow.
+        if (this.asyncDepth === 0 && this.paramScopeStack.length > 0) {
           this.report({
             code: 'SJS-E008',
             severity: 'error',
