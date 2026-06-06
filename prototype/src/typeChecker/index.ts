@@ -634,10 +634,22 @@ function inferStdlibMethodCall(
         }
         case 'fromEntries': return { kind: 'object', properties: new Map() }
         case 'assign': {
-          // Object.assign(target, ...sources) returns the target type
-          const targetArg = callArgs?.[0]
-          if (targetArg && t.isExpression(targetArg)) return inferExprType(targetArg, env)
-          return T_ANY
+          // Object.assign(target, ...sources) — merge all source properties into target
+          if (!callArgs || callArgs.length === 0) return T_ANY
+          const targetArg = callArgs[0]
+          if (!t.isExpression(targetArg)) return T_ANY
+          const targetType = inferExprType(targetArg, env)
+          if (targetType.kind !== 'object') return targetType
+          const merged = new Map<string, Type>((targetType as ObjectType).properties)
+          for (let i = 1; i < callArgs.length; i++) {
+            const src = callArgs[i]
+            if (!t.isExpression(src)) continue
+            const srcType = inferExprType(src as t.Expression, env)
+            if (srcType.kind === 'object') {
+              for (const [k, v] of (srcType as ObjectType).properties) merged.set(k, v)
+            }
+          }
+          return { kind: 'object', properties: merged } as ObjectType
         }
         case 'hasOwn': return T_BOOLEAN
         case 'create': return { kind: 'object', properties: new Map() }

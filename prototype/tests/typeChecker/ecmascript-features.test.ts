@@ -3965,6 +3965,21 @@ describe('Object.assign return type', () => {
       const result: object = Object.assign(target, { b: 2 })
     `)).toHaveLength(0)
   })
+
+  it('Object.assign merges source properties into result', () => {
+    expect(errors(`
+      const defaults = { color: 'red', size: 10 }
+      const opts = Object.assign({}, defaults)
+    `)).toHaveLength(0)
+  })
+
+  it('Object.assign merges multiple sources', () => {
+    expect(errors(`
+      const a = { x: 1 }
+      const b = { y: 'hello' }
+      const merged = Object.assign({}, a, b)
+    `)).toHaveLength(0)
+  })
 })
 
 // ── RegExp.exec return type — ECMA-262 §22.2.7.2 ─────────────────────────────
