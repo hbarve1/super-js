@@ -1923,6 +1923,8 @@ export class TypeChecker {
   private classFieldTypes: Map<string, Map<string, Type>> = new Map()
   // Function parameter scope stack: saves previous env bindings to restore on exit
   private paramScopeStack: Array<Map<string, Type | undefined>> = []
+  // Type guard registry: fnName → { paramIndex, narrowedType }
+  private typeGuardRegistry: Map<string, { paramIndex: number; narrowedType: Type }> = new Map()
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -2960,6 +2962,19 @@ export class TypeChecker {
       return
     }
 
+    // Register type guard if the return type is a TSTypePredicate (x is T)
+    if (returnAnnotation && returnAnnotation.type === 'TSTypePredicate') {
+      const pred = returnAnnotation as t.TSTypePredicate
+      if (pred.typeAnnotation && t.isIdentifier(pred.parameterName)) {
+        const guardParamName = (pred.parameterName as t.Identifier).name
+        const guardParamIndex = params.findIndex(p => p.name === guardParamName)
+        if (guardParamIndex >= 0) {
+          const narrowedType = resolveType(pred.typeAnnotation.typeAnnotation)
+          this.typeGuardRegistry.set(node.id.name, { paramIndex: guardParamIndex, narrowedType })
+        }
+      }
+    }
+
     this.env.set(node.id.name, fnType)
   }
 
@@ -3284,15 +3299,28 @@ export class TypeChecker {
       return result
     }
 
-    // `Array.isArray(x)` — narrow x to any[]
+    // User-defined type guard call: `isString(x)` → narrow x to string
     if (t.isCallExpression(cond)) {
       const call = cond as t.CallExpression
+      // Array.isArray(x) — narrow x to any[]
       if (t.isMemberExpression(call.callee) &&
           t.isIdentifier((call.callee as t.MemberExpression).object, { name: 'Array' }) &&
           t.isIdentifier((call.callee as t.MemberExpression).property, { name: 'isArray' })) {
         const arg = call.arguments[0]
         if (arg && t.isIdentifier(arg)) {
           result.set((arg as t.Identifier).name, { kind: 'array', elementType: T_ANY } as ArrayType)
+        }
+        return result
+      }
+      // User-defined type guard: `guardFn(x)` where guardFn returns `x is T`
+      if (t.isIdentifier(call.callee)) {
+        const fnName = (call.callee as t.Identifier).name
+        const guard = this.typeGuardRegistry.get(fnName)
+        if (guard) {
+          const arg = call.arguments[guard.paramIndex]
+          if (arg && t.isIdentifier(arg)) {
+            result.set((arg as t.Identifier).name, guard.narrowedType)
+          }
         }
       }
       return result

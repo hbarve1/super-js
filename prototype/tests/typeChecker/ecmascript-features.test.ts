@@ -2368,6 +2368,27 @@ describe('T3: User-defined type guards (TSTypePredicate)', () => {
       const b: boolean = Array.isArray(val)
     `)).toHaveLength(0)
   })
+
+  it('user-defined type guard narrows type in if branch', () => {
+    expect(errors(`
+      function isString(x: string | number): x is string { return typeof x === 'string' }
+      const val: string | number = 'hello'
+      if (isString(val)) {
+        const s: string = val
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('user-defined type guard narrows to specific class type', () => {
+    expect(errors(`
+      class Dog { breed: string = 'Lab' }
+      function isDog(x: any): x is Dog { return x instanceof Dog }
+      const animal: any = new Dog()
+      if (isDog(animal)) {
+        const d: Dog = animal
+      }
+    `)).toHaveLength(0)
+  })
 })
 
 // ── T5: T? null safety ────────────────────────────────────────────────────────
