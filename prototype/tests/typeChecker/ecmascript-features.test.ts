@@ -3748,6 +3748,37 @@ describe('instanceof type narrowing', () => {
   })
 })
 
+// ── Class extends clause field inheritance — ECMA-262 §15.7 ──────────────────
+
+describe('Class extends clause field inheritance', () => {
+  it('subclass inherits parent field types for member access', () => {
+    expect(errors(`
+      class Animal {
+        name: string = 'Animal'
+        speak(): string { return 'generic' }
+      }
+      class Dog extends Animal {
+        breed: string = 'Lab'
+      }
+      const d = new Dog()
+      const n: string = d.name
+    `)).toHaveLength(0)
+  })
+
+  it('subclass can access inherited method types', () => {
+    expect(errors(`
+      class Base {
+        value: number = 0
+      }
+      class Derived extends Base {
+        doubled(): number { return this.value * 2 }
+      }
+      const x = new Derived()
+      const v: number = x.value
+    `)).toHaveLength(0)
+  })
+})
+
 // ── eval() detection — SJS-E013 ──────────────────────────────────────────────
 
 describe('eval() detection — SJS-E013', () => {

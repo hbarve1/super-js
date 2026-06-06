@@ -2103,6 +2103,22 @@ export class TypeChecker {
               } as import('./types').FunctionType)
             }
           }
+          // Inherit members from superclass (extends clause) — ECMA-262 §15.7.14
+          if (cls.superClass && t.isIdentifier(cls.superClass)) {
+            const superName = (cls.superClass as t.Identifier).name
+            const superFields = this.classFieldTypes.get(superName)
+            if (superFields) {
+              for (const [k, v] of superFields) {
+                if (!fieldTypes.has(k)) fieldTypes.set(k, v)
+              }
+            }
+            const superMembers = this.classRegistry.get(superName)
+            if (superMembers) {
+              for (const [k, v] of superMembers) {
+                if (!members.has(k)) members.set(k, v)
+              }
+            }
+          }
           this.classRegistry.set(className, members)
           this.classFieldTypes.set(className, fieldTypes)
           // Register class name in env so ClassName.staticMethod() resolves — §15.7
