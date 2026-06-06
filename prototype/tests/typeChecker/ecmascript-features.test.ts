@@ -3748,6 +3748,20 @@ describe('instanceof type narrowing', () => {
   })
 })
 
+// ── Constructor parameter properties — TypeScript extension ──────────────────
+
+describe('Constructor parameter properties', () => {
+  it('constructor(private x: T) registers x as instance field', () => {
+    expect(errors(`
+      class Greeter {
+        constructor(private name: string, public age: number) {}
+      }
+      const g = new Greeter('Alice', 30)
+      const n: string = g.name
+    `)).toHaveLength(0)
+  })
+})
+
 // ── Object.values/entries type inference — ECMA-262 §20.1 ────────────────────
 
 describe('Object.values/entries type inference', () => {

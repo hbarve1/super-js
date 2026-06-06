@@ -2127,6 +2127,22 @@ export class TypeChecker {
               const privateName = '#' + (member.key as t.PrivateName).id.name
               members.set(privateName, 'private')
             }
+            // Constructor parameter properties: constructor(private x: T) — register as instance fields
+            if (t.isClassMethod(member) && (member as t.ClassMethod).kind === 'constructor') {
+              for (const p of (member as t.ClassMethod).params) {
+                if (t.isTSParameterProperty(p)) {
+                  const inner = (p as t.TSParameterProperty).parameter
+                  if (t.isIdentifier(inner)) {
+                    const acc = (p as t.TSParameterProperty).accessibility ?? 'public'
+                    members.set(inner.name, acc)
+                    const paramType = inner.typeAnnotation
+                      ? resolveType((inner.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+                      : T_ANY
+                    fieldTypes.set(inner.name, paramType)
+                  }
+                }
+              }
+            }
             // Abstract methods (TSDeclareMethod) — ECMA-262 §15.7.2 / TS abstract
             if (t.isTSDeclareMethod(member) && t.isIdentifier(member.key)) {
               const mKey = (member.key as t.Identifier).name
@@ -2254,6 +2270,9 @@ export class TypeChecker {
         break
       case 'ExportAllDeclaration':
         // `export * from 'mod'` — re-exports all bindings; cross-module types not tracked in single-file mode
+        break
+      case 'WithStatement':
+        // `with (obj) { ... }` — legacy syntax; banned in strict mode; silently traversed
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
