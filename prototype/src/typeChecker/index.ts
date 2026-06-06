@@ -419,28 +419,6 @@ function stripNullable(t: Type): Type {
   return { kind: 'union', types: members } satisfies UnionType
 }
 
-/**
- * Extracts all bound names from an ObjectPattern or ArrayPattern (for destructured params).
- */
-function extractPatternNames(pattern: t.ObjectPattern | t.ArrayPattern): string[] {
-  const names: string[] = []
-  if (t.isObjectPattern(pattern)) {
-    for (const prop of pattern.properties) {
-      if (t.isObjectProperty(prop) && t.isIdentifier(prop.value)) names.push(prop.value.name)
-      else if (t.isObjectProperty(prop) && t.isAssignmentPattern(prop.value) && t.isIdentifier((prop.value as t.AssignmentPattern).left))
-        names.push(((prop.value as t.AssignmentPattern).left as t.Identifier).name)
-      else if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) names.push(prop.argument.name)
-    }
-  } else if (t.isArrayPattern(pattern)) {
-    for (const elem of pattern.elements) {
-      if (t.isIdentifier(elem)) names.push(elem.name)
-      else if (t.isAssignmentPattern(elem) && t.isIdentifier(elem.left)) names.push(elem.left.name)
-      else if (t.isRestElement(elem) && t.isIdentifier(elem.argument)) names.push(elem.argument.name)
-    }
-  }
-  return names
-}
-
 // ── Stdlib type inference ─────────────────────────────────────────────────────
 
 /**
@@ -1998,13 +1976,48 @@ export class TypeChecker {
         type = annot
           ? resolveType((annot as t.TSTypeAnnotation).typeAnnotation)
           : { kind: 'array', elementType: T_ANY } as ArrayType
-      } else if (t.isObjectPattern(p) || t.isArrayPattern(p)) {
-        // Destructured params: register each inner binding as T_ANY (gradual)
-        const bindNames = extractPatternNames(p)
-        for (const n of bindNames) {
-          saved.set(n, this.env.get(n))
-          this.env.set(n, T_ANY)
+      } else if (t.isObjectPattern(p)) {
+        // Destructured object param: use type annotation if present
+        const patAnnot = (p as t.ObjectPattern).typeAnnotation
+        const patType = patAnnot ? resolveType((patAnnot as t.TSTypeAnnotation).typeAnnotation) : null
+        const props = (patType && patType.kind === 'object') ? (patType as ObjectType).properties : null
+        for (const prop of p.properties) {
+          if (t.isObjectProperty(prop)) {
+            const key = t.isIdentifier(prop.key) ? (prop.key as t.Identifier).name : null
+            let bindName: string | null = null
+            if (t.isIdentifier(prop.value)) bindName = (prop.value as t.Identifier).name
+            else if (t.isAssignmentPattern(prop.value) && t.isIdentifier((prop.value as t.AssignmentPattern).left))
+              bindName = ((prop.value as t.AssignmentPattern).left as t.Identifier).name
+            if (bindName) {
+              saved.set(bindName, this.env.get(bindName))
+              this.env.set(bindName, (key != null ? props?.get(key) : undefined) ?? T_ANY)
+            }
+          } else if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) {
+            const bindName = (prop.argument as t.Identifier).name
+            saved.set(bindName, this.env.get(bindName))
+            this.env.set(bindName, T_ANY)
+          }
         }
+        continue
+      } else if (t.isArrayPattern(p)) {
+        // Destructured array param: use type annotation if present
+        const patAnnot = (p as t.ArrayPattern).typeAnnotation
+        const patType = patAnnot ? resolveType((patAnnot as t.TSTypeAnnotation).typeAnnotation) : null
+        const elemType = (patType && patType.kind === 'array') ? (patType as ArrayType).elementType : T_ANY
+        const tupleElems = (patType && patType.kind === 'tuple') ? (patType as TupleType).elements : null
+        p.elements.forEach((elem, idx) => {
+          if (!elem) return
+          let bindName: string | null = null
+          if (t.isIdentifier(elem)) bindName = (elem as t.Identifier).name
+          else if (t.isAssignmentPattern(elem) && t.isIdentifier((elem as t.AssignmentPattern).left))
+            bindName = ((elem as t.AssignmentPattern).left as t.Identifier).name
+          else if (t.isRestElement(elem) && t.isIdentifier(elem.argument))
+            bindName = (elem.argument as t.Identifier).name
+          if (bindName) {
+            saved.set(bindName, this.env.get(bindName))
+            this.env.set(bindName, (tupleElems && tupleElems[idx]) ?? elemType)
+          }
+        })
         continue
       } else if (t.isTSParameterProperty(p)) {
         // constructor(private x: T) shorthand — register the inner param

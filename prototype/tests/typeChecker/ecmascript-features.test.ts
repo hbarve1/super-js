@@ -1542,6 +1542,32 @@ describe('Gap 8: Destructuring patterns (ECMA-262 §14.3.3)', () => {
       const n: number = a
     `)).toContain('SJS-E001')
   })
+
+  // Destructured function parameters with type annotations
+  it('destructured object param uses annotated property types', () => {
+    expect(errors(`
+      function greet({ name, age }: { name: string; age: number }) {
+        const s: string = name
+        const n: number = age
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('destructured object param typed bindings catch type errors', () => {
+    expect(errorCodes(`
+      function greet({ name }: { name: string }) {
+        const n: number = name
+      }
+    `)).toContain('SJS-E001')
+  })
+
+  it('destructured array param uses annotated element types', () => {
+    expect(errors(`
+      function head([first]: number[]) {
+        const n: number = first
+      }
+    `)).toHaveLength(0)
+  })
 })
 
 // ── B1: dynamic type keyword ─────────────────────────────────────────────────
