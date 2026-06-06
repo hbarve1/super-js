@@ -101,7 +101,7 @@ SECTIONS = {
     ("Bitwise assign &= |= ^= <<= >>= >>>=","§13.15",DONE,   "AssignmentExpression bitwise compound"),
     ("Destructuring assign {a}=obj",    "§13.15",   DONE,    "ObjectPattern in AssignmentExpression; updates bindings from source ObjectType properties"),
     ("Destructuring assign [a]=arr",    "§13.15",   DONE,    "ArrayPattern in AssignmentExpression; updates bindings from array/tuple element types"),
-    ("Spread in assignment ...rest",    "§13.15",   MISSING, "Rest in destructuring assign → T_ANY"),
+    ("Spread in assignment ...rest",    "§13.15",   DONE,    "ObjectPattern rest → source ObjectType minus extracted keys; ArrayPattern rest → source ArrayType"),
     # Other
     ("Comma operator a, b",             "§13.16",   DONE,    "SequenceExpression → last type"),
     ("await expression",                "§13.16",   DONE,    "AwaitExpression; unwraps Promise<T>"),
@@ -454,7 +454,7 @@ SECTIONS = {
     ("Iterable protocol [Symbol.iterator]","§27.1",MISSING, "Custom iterables not validated"),
     ("AsyncIterator protocol",           "§27.1",  MISSING, "for-await-of protocol not validated"),
     ("Iterator helpers ES2025",          "§27.1",  DONE,    "map/filter/take/drop/flatMap/toArray/forEach/some/every/find/reduce on GeneratorType"),
-    ("Iterator.from()",                  "§27.1",  PARTIAL, "→ T_ANY"),
+    ("Iterator.from()",                  "§27.1",  DONE,    "Infers yieldType from source array/generator element type"),
     ("iter.map/filter/take/drop",        "§27.1",  DONE,    "on GeneratorType → GeneratorType preserving yieldType"),
     ("iter.toArray()",                   "§27.1",  DONE,    "on GeneratorType → T[] where T is yieldType"),
     ("iter.flatMap/reduce/some/every/find","§27.1",DONE,    "on GeneratorType → typed results"),
