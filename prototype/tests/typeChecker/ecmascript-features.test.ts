@@ -1355,6 +1355,21 @@ describe('Gap 6: Property access type inference (ECMA-262 §13.3.2)', () => {
       const item: number = arr.at(0)
     `)).toContain('SJS-E001')
   })
+
+  it("obj['propName'] with string literal key infers property type", () => {
+    expect(errors(`
+      const obj: { x: number; y: string } = { x: 1, y: 'hi' }
+      const n: number = obj['x']
+      const s: string = obj['y']
+    `)).toHaveLength(0)
+  })
+
+  it("obj['propName'] with wrong type emits SJS-E001", () => {
+    expect(errorCodes(`
+      const obj: { x: number } = { x: 1 }
+      const s: string = obj['x']
+    `)).toContain('SJS-E001')
+  })
 })
 
 // ── Gap 7 — Async function return type ───────────────────────────────────────

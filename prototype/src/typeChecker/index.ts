@@ -1446,9 +1446,16 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         }
         if (objType.kind === 'array') return (objType as ArrayType).elementType
         if (objType.kind === 'string') return T_STRING
-        // Index signature lookup
-        if (objType.kind === 'object' && (objType as any).__indexType) {
-          return (objType as any).__indexType as Type
+        // Computed string literal key: obj['propName'] → look up property
+        if (objType.kind === 'object') {
+          if (t.isStringLiteral(node.property)) {
+            const key = (node.property as t.StringLiteral).value
+            const propType = (objType as ObjectType).properties.get(key)
+            if (propType !== undefined) return propType
+          }
+          // Index signature lookup
+          if ((objType as any).__indexType) return (objType as any).__indexType as Type
+          return T_ANY
         }
         return T_ANY
       }
