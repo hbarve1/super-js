@@ -3747,6 +3747,17 @@ export class TypeChecker {
       } else if (brand === 'Set') {
         // for (const x of set) — element is T
         elemType = (rightType as ObjectType & { setElementType?: Type }).setElementType ?? T_ANY
+      } else {
+        // User-defined iterator protocol — ECMA-262 §27.1
+        // If the object has a next() method returning {value: T, done: boolean}, use T
+        const nextMethod = (rightType as ObjectType).properties.get('next')
+        if (nextMethod?.kind === 'function') {
+          const retType = (nextMethod as FunctionType).returnType
+          if (retType.kind === 'object') {
+            const valueType = (retType as ObjectType).properties.get('value')
+            if (valueType) elemType = valueType
+          }
+        }
       }
     }
 

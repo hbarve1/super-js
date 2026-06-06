@@ -4375,6 +4375,32 @@ describe('computed destructuring', () => {
   })
 })
 
+// ── Iterator protocol {next()} — ECMA-262 §27.1 ──────────────────────────────
+
+describe('iterator protocol', () => {
+  it('custom iterator with annotated next() — for-of gives correct element type', () => {
+    expect(errors(`
+      const iter = {
+        next(): { value: number; done: boolean } { return { value: 1, done: false } }
+      }
+      for (const n of iter) {
+        const x: number = n
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('custom iterator next() returns string values', () => {
+    expect(errors(`
+      const iter = {
+        next(): { value: string; done: boolean } { return { value: 'a', done: false } }
+      }
+      for (const s of iter) {
+        const x: string = s
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`
