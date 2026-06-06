@@ -4320,6 +4320,40 @@ describe('Symbol.iterator calls', () => {
   })
 })
 
+// ── Object computed property keys — ECMA-262 §13.2.5 ─────────────────────────
+
+describe('Object computed property keys', () => {
+  it('string literal computed key — registered as named property', () => {
+    expect(errors(`
+      const obj = { ['hello']: 42 }
+      const n: number = obj.hello
+    `)).toHaveLength(0)
+  })
+
+  it('number literal computed key — registered as string key', () => {
+    expect(errors(`
+      const obj = { [0]: 'zero', [1]: 'one' }
+      const s: string = obj[0]
+    `)).toHaveLength(0)
+  })
+
+  it('dynamic computed key — sets __indexType for property access', () => {
+    expect(errors(`
+      const key = 'name'
+      const obj = { [key]: 'Alice' }
+      const s: string = obj[key]
+    `)).toHaveLength(0)
+  })
+
+  it('dynamic variable key — sets __indexType so any property access returns value type', () => {
+    expect(errors(`
+      const key = 'x'
+      const obj = { [key]: 42 }
+      const n: number = obj.anyProp
+    `)).toHaveLength(0)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`

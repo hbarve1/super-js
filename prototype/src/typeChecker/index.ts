@@ -1461,8 +1461,14 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
         // Shorthand method: { foo() {}, get bar() {} } — ECMA-262 §13.2.5
         if (t.isObjectMethod(prop)) {
           let key: string | null = null
-          if (t.isIdentifier(prop.key)) key = prop.key.name
-          else if (t.isStringLiteral(prop.key)) key = prop.key.value
+          // For computed keys [expr], only resolve literal expressions
+          if (prop.computed) {
+            if (t.isStringLiteral(prop.key)) key = (prop.key as t.StringLiteral).value
+            else if (t.isNumericLiteral(prop.key)) key = String((prop.key as t.NumericLiteral).value)
+          } else {
+            if (t.isIdentifier(prop.key)) key = (prop.key as t.Identifier).name
+            else if (t.isStringLiteral(prop.key)) key = (prop.key as t.StringLiteral).value
+          }
           if (!key) continue
           const retAnn = prop.returnType
           const retType = retAnn ? resolveType((retAnn as t.TSTypeAnnotation).typeAnnotation) : T_ANY
@@ -1480,10 +1486,25 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           continue
         }
         if (!t.isObjectProperty(prop)) continue
+        const op = prop as t.ObjectProperty
         let key: string | null = null
-        if (t.isIdentifier(prop.key)) key = prop.key.name
-        else if (t.isStringLiteral(prop.key)) key = prop.key.value
-        else if (t.isNumericLiteral(prop.key)) key = String(prop.key.value)
+        if (op.computed) {
+          // Computed key [expr] — only resolvable when expr is a literal
+          if (t.isStringLiteral(op.key)) key = (op.key as t.StringLiteral).value
+          else if (t.isNumericLiteral(op.key)) key = String((op.key as t.NumericLiteral).value)
+          else if (t.isTemplateLiteral(op.key) && (op.key as t.TemplateLiteral).expressions.length === 0)
+            key = (op.key as t.TemplateLiteral).quasis[0].value.cooked ?? null
+          // Dynamic computed key: set __indexType on the result object
+          if (!key) {
+            const dynValType = t.isExpression(op.value) ? inferExprType(op.value as t.Expression, env) : T_ANY
+            ;(properties as any).__indexType = dynValType
+            continue
+          }
+        } else {
+          if (t.isIdentifier(op.key)) key = (op.key as t.Identifier).name
+          else if (t.isStringLiteral(op.key)) key = (op.key as t.StringLiteral).value
+          else if (t.isNumericLiteral(op.key)) key = String((op.key as t.NumericLiteral).value)
+        }
         if (!key) continue
         const valType = t.isExpression(prop.value)
           ? inferExprType(prop.value, env)
