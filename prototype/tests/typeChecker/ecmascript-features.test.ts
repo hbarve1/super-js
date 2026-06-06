@@ -2762,6 +2762,20 @@ describe('Array.map/reduce callback inference', () => {
     `)).toHaveLength(0)
   })
 
+  it('arr.flat() unwraps one level of array nesting', () => {
+    expect(errors(`
+      const nested: number[][] = [[1, 2], [3, 4]]
+      const flat: number[] = nested.flat()
+    `)).toHaveLength(0)
+  })
+
+  it('arr.flat() on flat array stays same element type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const flat: number[] = nums.flat()
+    `)).toHaveLength(0)
+  })
+
   it('arr.reduce(acc, n => acc + n, 0) infers number from initial', () => {
     expect(errors(`
       const nums: number[] = [1, 2, 3]

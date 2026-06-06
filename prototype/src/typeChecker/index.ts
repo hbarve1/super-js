@@ -519,7 +519,11 @@ function inferStdlibMethodCall(
       case 'findIndex': return T_NUMBER
       case 'findLast': return makeUnion(elemType, T_UNDEFINED)
       case 'findLastIndex': return T_NUMBER
-      case 'flat': return { kind: 'array', elementType: T_ANY }
+      case 'flat': {
+        // flat() with default depth=1: unwrap one level of array nesting
+        const innerType = elemType.kind === 'array' ? (elemType as ArrayType).elementType : elemType
+        return { kind: 'array', elementType: innerType }
+      }
       case 'at': return makeUnion(elemType, T_UNDEFINED)
       case 'includes': return T_BOOLEAN
       case 'indexOf': return T_NUMBER
