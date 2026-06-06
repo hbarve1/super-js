@@ -64,6 +64,27 @@ describe('Task 1.1: Generic type parameter resolution — ES2015', () => {
   it('resolves nested generics: Array<Array<string>>', () => {
     expect(errors('const mat: Array<Array<string>> = [["a"]]')).toHaveLength(0)
   })
+
+  it('generic function identity<T>(x:T):T — infers return type from arg', () => {
+    expect(errors(`
+      function identity<T>(x: T): T { return x }
+      const n: number = identity(42)
+    `)).toHaveLength(0)
+  })
+
+  it('generic function identity<T>(x:T):T — type mismatch caught after inference', () => {
+    expect(errorCodes(`
+      function identity<T>(x: T): T { return x }
+      const s: string = identity(42)
+    `)).toContain('SJS-E001')
+  })
+
+  it('generic function with string arg infers string return', () => {
+    expect(errors(`
+      function wrap<T>(x: T): T { return x }
+      const s: string = wrap('hello')
+    `)).toHaveLength(0)
+  })
 })
 
 // ── Task 1.2: Async/Await Return Type Inference — ES2017 ─────────────────────

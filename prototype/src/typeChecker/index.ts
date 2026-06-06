@@ -1551,7 +1551,28 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       }
       if (t.isIdentifier(node.callee)) {
         const fnType = env.get(node.callee.name)
-        if (fnType?.kind === 'function') return (fnType as FunctionType).returnType
+        if (fnType?.kind === 'function') {
+          const ft = fnType as FunctionType
+          // Generic type parameter instantiation: match arg types against param types
+          if (ft.returnType.kind === 'typeParam') {
+            const subst = new Map<string, Type>()
+            for (let i = 0; i < ft.params.length; i++) {
+              const param = ft.params[i]
+              const arg = node.arguments[i]
+              if (!arg || !t.isExpression(arg)) continue
+              if (param.type.kind === 'typeParam') {
+                const argType = inferExprType(arg as t.Expression, env)
+                if (argType.kind !== 'any') subst.set((param.type as import('./types').TypeParamType).name, argType)
+              }
+            }
+            if (subst.size > 0) {
+              const tpName = (ft.returnType as import('./types').TypeParamType).name
+              const resolved = subst.get(tpName)
+              if (resolved) return resolved
+            }
+          }
+          return ft.returnType
+        }
         // Known global functions — ECMA-262 §19.2
         switch (node.callee.name) {
           case 'decodeURI': case 'encodeURI':
