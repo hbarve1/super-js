@@ -2023,6 +2023,27 @@ describe('L4: Promise<T> method signatures', () => {
       const p2 = p.finally(() => {})
     `)).toHaveLength(0)
   })
+
+  it('Promise.resolve infers value type from argument', () => {
+    expect(errors(`
+      const p = Promise.resolve(42)
+      const n: Promise<number> = p
+    `)).toHaveLength(0)
+  })
+
+  it('Promise.resolve with string argument', () => {
+    expect(errors(`
+      const p = Promise.resolve("hello")
+      const s: Promise<string> = p
+    `)).toHaveLength(0)
+  })
+
+  it('Promise.all infers array element type from promise array', () => {
+    expect(errors(`
+      const promises = [Promise.resolve(1), Promise.resolve(2)]
+      const result = Promise.all(promises)
+    `)).toHaveLength(0)
+  })
 })
 
 // ── L5: Map/Set/Weak* method signatures ──────────────────────────────────────

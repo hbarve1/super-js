@@ -695,9 +695,29 @@ function inferStdlibMethodCall(
     // Promise static methods — ECMA-262 §27.2
     if (globalName === 'Promise') {
       switch (methodName) {
-        case 'resolve': return { kind: 'promise', valueType: T_ANY }
+        case 'resolve': {
+          // Promise.resolve(v) — infer valueType from argument
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) {
+            const argType = inferExprType(arg as t.Expression, env)
+            if (argType.kind === 'promise') return argType
+            return { kind: 'promise', valueType: argType }
+          }
+          return { kind: 'promise', valueType: T_UNDEFINED }
+        }
         case 'reject': return { kind: 'promise', valueType: { kind: 'never' } }
-        case 'all':
+        case 'all': {
+          // Promise.all([p1, p2]) — infer array element type from input
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) {
+            const arrType = inferExprType(arg as t.Expression, env)
+            if (arrType.kind === 'array') {
+              const elemType = (arrType as ArrayType).elementType
+              if (elemType.kind === 'promise') return { kind: 'promise', valueType: { kind: 'array', elementType: (elemType as PromiseType).valueType } }
+            }
+          }
+          return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
+        }
         case 'allSettled': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
         case 'race':
         case 'any': return { kind: 'promise', valueType: T_ANY }
