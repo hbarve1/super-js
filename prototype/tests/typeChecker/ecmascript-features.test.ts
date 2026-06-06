@@ -4608,6 +4608,94 @@ describe('using / await using (TC39)', () => {
   })
 })
 
+// ── Decorators @decorator — TC39 Stage 3 / ECMA-402 ─────────────────────────
+
+describe('decorators @decorator', () => {
+  function errorsDecorators(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript', 'decorators'] })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(path: any) { checker.check(path) } })
+    return checker.getDiagnostics()
+  }
+
+  it('class decorator @log — no false errors', () => {
+    expect(errorsDecorators(`
+      function log(target: any) {}
+      @log
+      class Foo {
+        x: number = 42
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('method decorator @validate — no false errors', () => {
+    expect(errorsDecorators(`
+      function validate(target: any, key: string, desc: any) {}
+      class Foo {
+        x: number = 1
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('class with decorator and typed property — type still checked', () => {
+    expect(errorsDecorators(`
+      function sealed(target: any) {}
+      @sealed
+      class Point {
+        x: number = 0
+        y: number = 0
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Class auto-accessor (TC39 Stage 3) ───────────────────────────────────────
+
+describe('class auto-accessor', () => {
+  function errorsAutoAccessor(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript', 'decoratorAutoAccessors'] })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(path: any) { checker.check(path) } })
+    return checker.getDiagnostics()
+  }
+
+  it('accessor field typed from annotation — no error', () => {
+    expect(errorsAutoAccessor(`
+      class Foo {
+        accessor x: number = 42
+      }
+      const f = new Foo()
+      const n: number = f.x
+    `)).toHaveLength(0)
+  })
+
+  it('accessor field with wrong type — error', () => {
+    expect(errorsAutoAccessor(`
+      class Foo {
+        accessor x: number = 42
+      }
+      const f = new Foo()
+      const s: string = f.x
+    `)).toHaveLength(1)
+  })
+
+  it('accessor field inferred from initializer — no error', () => {
+    expect(errorsAutoAccessor(`
+      class Foo {
+        accessor x = 'hello'
+      }
+      const f = new Foo()
+      const s: string = f.x
+    `)).toHaveLength(0)
+  })
+})
+
 // ── Array.fromAsync() element type inference — ES2024 §23.1 ──────────────────
 
 describe('Array.fromAsync element type inference', () => {

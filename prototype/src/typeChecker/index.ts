@@ -2415,10 +2415,13 @@ export class TypeChecker {
             const isStatic = (member as any).static === true
             const targetMap = isStatic ? staticFieldTypes : fieldTypes
 
-            if ((t.isClassMethod(member) || t.isClassProperty(member)) && t.isIdentifier(member.key)) {
-              const mKey = (member.key as t.Identifier).name
+            // ClassAccessorProperty (TC39 auto-accessor): treat like ClassProperty
+            const isClassAccessorProperty = (member as any).type === 'ClassAccessorProperty'
+            const memberKey = (member as any).key
+            if ((t.isClassMethod(member) || t.isClassProperty(member) || isClassAccessorProperty) && t.isIdentifier(memberKey)) {
+              const mKey = (memberKey as t.Identifier).name
               members.set(mKey, (member as any).accessibility ?? 'public')
-              if (t.isClassProperty(member)) {
+              if (t.isClassProperty(member) || isClassAccessorProperty) {
                 const ann = (member as t.ClassProperty).typeAnnotation
                 const init = (member as t.ClassProperty).value
                 targetMap.set(mKey, ann && t.isTSTypeAnnotation(ann)
@@ -3986,7 +3989,7 @@ export class TypeChecker {
     const classMemberNames = new Set<string>()
     for (const member of node.body.body) {
       const isClassMember = t.isClassMethod(member) || t.isClassProperty(member) ||
-        t.isTSDeclareMethod(member)
+        t.isTSDeclareMethod(member) || (member as any).type === 'ClassAccessorProperty'
       if (isClassMember && t.isIdentifier((member as t.ClassMethod).key)) {
         classMemberNames.add(((member as t.ClassMethod).key as t.Identifier).name)
       }

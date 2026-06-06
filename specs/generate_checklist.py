@@ -183,8 +183,8 @@ SECTIONS = {
     ("abstract class (TS)",             "TS",       DONE,    "TSDeclareMethod registered in classRegistry/classFieldTypes"),
     ("Class static blocks (static {})", "§15.7",    DONE,    "StaticBlock traversed without errors; vars scoped"),
     ("#field in obj brand check",       "§15.7",    DONE,    "BinaryExpression PrivateName 'in' → boolean"),
-    ("Decorators @decorator",           "Stage 3",  MISSING, "Decorator nodes not type-checked"),
-    ("Class auto-accessor (TC39)",      "Stage 3",  MISSING, "AutoAccessor not handled"),
+    ("Decorators @decorator",           "Stage 3",  DONE,    "Decorator nodes silently traversed; no false errors; decorator expressions typed normally"),
+    ("Class auto-accessor (TC39)",      "Stage 3",  DONE,    "ClassAccessorProperty handled like ClassProperty; type inferred from annotation or initializer"),
   ],
 
   "§16 — Scripts & Modules": [
