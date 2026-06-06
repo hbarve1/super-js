@@ -419,6 +419,28 @@ function stripNullable(t: Type): Type {
   return { kind: 'union', types: members } satisfies UnionType
 }
 
+/**
+ * Extracts all bound names from an ObjectPattern or ArrayPattern (for destructured params).
+ */
+function extractPatternNames(pattern: t.ObjectPattern | t.ArrayPattern): string[] {
+  const names: string[] = []
+  if (t.isObjectPattern(pattern)) {
+    for (const prop of pattern.properties) {
+      if (t.isObjectProperty(prop) && t.isIdentifier(prop.value)) names.push(prop.value.name)
+      else if (t.isObjectProperty(prop) && t.isAssignmentPattern(prop.value) && t.isIdentifier((prop.value as t.AssignmentPattern).left))
+        names.push(((prop.value as t.AssignmentPattern).left as t.Identifier).name)
+      else if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) names.push(prop.argument.name)
+    }
+  } else if (t.isArrayPattern(pattern)) {
+    for (const elem of pattern.elements) {
+      if (t.isIdentifier(elem)) names.push(elem.name)
+      else if (t.isAssignmentPattern(elem) && t.isIdentifier(elem.left)) names.push(elem.left.name)
+      else if (t.isRestElement(elem) && t.isIdentifier(elem.argument)) names.push(elem.argument.name)
+    }
+  }
+  return names
+}
+
 // ── Stdlib type inference ─────────────────────────────────────────────────────
 
 /**
@@ -486,7 +508,8 @@ function inferStdlibMethodCall(
         return { kind: 'array', elementType: cbReturnType }
       }
       case 'filter': return { kind: 'array', elementType: elemType }
-      case 'reduce': {
+      case 'reduce':
+      case 'reduceRight': {
         // Infer accumulator type from initial value (second arg) if present
         const initArg = callArgs?.[1]
         if (initArg && t.isExpression(initArg)) return inferExprType(initArg, env)
@@ -585,7 +608,12 @@ function inferStdlibMethodCall(
         case 'assign': return T_ANY
         case 'hasOwn': return T_BOOLEAN
         case 'create': return { kind: 'object', properties: new Map() }
-        case 'freeze': return T_ANY
+        case 'freeze': {
+          // Object.freeze(obj) returns the same type as its argument (Readonly<T>)
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) return inferExprType(arg, env)
+          return T_ANY
+        }
         case 'isFrozen': return T_BOOLEAN
         case 'keys_': return { kind: 'array', elementType: T_STRING }
         case 'groupBy': return { kind: 'object', properties: new Map() }
@@ -1758,6 +1786,8 @@ export class TypeChecker {
   private interfaceRegistry: Map<string, Set<string>> = new Map()
   // Class field types: className → fieldName → Type (for this.field inference)
   private classFieldTypes: Map<string, Map<string, Type>> = new Map()
+  // Function parameter scope stack: saves previous env bindings to restore on exit
+  private paramScopeStack: Array<Map<string, Type | undefined>> = []
 
   constructor(options: TypeCheckerOptions = {}) {
     this.strict = options.strict ?? false
@@ -1782,6 +1812,7 @@ export class TypeChecker {
     this.currentClassMethodName = null
     this.interfaceRegistry = new Map()
     this.classFieldTypes = new Map()
+    this.paramScopeStack = []
   }
 
   // ── Exit handler — called on node exit for scope cleanup ─────────────────────
@@ -1802,20 +1833,25 @@ export class TypeChecker {
         break
       case 'ArrowFunctionExpression':
         if ((node as t.ArrowFunctionExpression).async) this.asyncDepth--
+        this.exitFunctionParams()
         break
       case 'FunctionDeclaration':
         if ((node as t.FunctionDeclaration).async) this.asyncDepth--
+        this.exitFunctionParams()
         break
       case 'FunctionExpression':
         if ((node as t.FunctionExpression).async) this.asyncDepth--
+        this.exitFunctionParams()
         break
       case 'ClassMethod':
         if ((node as t.ClassMethod).async) this.asyncDepth--
+        this.exitFunctionParams()
         this.currentClassMethodName = null
         this.env.delete('this')
         break
       case 'ObjectMethod':
         if ((node as t.ObjectMethod).async) this.asyncDepth--
+        this.exitFunctionParams()
         break
       case 'ClassDeclaration':
       case 'ClassExpression':
@@ -1844,6 +1880,69 @@ export class TypeChecker {
     }
   }
 
+  /**
+   * Registers function parameters in the type environment.
+   * Saves previous bindings for restore on exit.
+   */
+  private enterFunctionParams(params: ReadonlyArray<t.Identifier | t.Pattern | t.RestElement | t.TSParameterProperty>): void {
+    const saved = new Map<string, Type | undefined>()
+    for (const p of params) {
+      let name: string | null = null
+      let type: Type = T_ANY
+
+      if (t.isIdentifier(p)) {
+        name = p.name
+        type = p.typeAnnotation
+          ? resolveType((p.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+          : T_ANY
+      } else if (t.isAssignmentPattern(p) && t.isIdentifier(p.left)) {
+        name = p.left.name
+        type = p.left.typeAnnotation
+          ? resolveType((p.left.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+          : T_ANY
+      } else if (t.isRestElement(p) && t.isIdentifier(p.argument)) {
+        name = p.argument.name
+        const annot = (p.argument as t.Identifier).typeAnnotation
+        type = annot
+          ? resolveType((annot as t.TSTypeAnnotation).typeAnnotation)
+          : { kind: 'array', elementType: T_ANY } as ArrayType
+      } else if (t.isObjectPattern(p) || t.isArrayPattern(p)) {
+        // Destructured params: register each inner binding as T_ANY (gradual)
+        const bindNames = extractPatternNames(p)
+        for (const n of bindNames) {
+          saved.set(n, this.env.get(n))
+          this.env.set(n, T_ANY)
+        }
+        continue
+      } else if (t.isTSParameterProperty(p)) {
+        // constructor(private x: T) shorthand — register the inner param
+        const inner = p.parameter
+        if (t.isIdentifier(inner)) {
+          name = inner.name
+          type = inner.typeAnnotation
+            ? resolveType((inner.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+            : T_ANY
+        }
+      }
+
+      if (name) {
+        saved.set(name, this.env.get(name))
+        this.env.set(name, type)
+      }
+    }
+    this.paramScopeStack.push(saved)
+  }
+
+  private exitFunctionParams(): void {
+    const saved = this.paramScopeStack.pop()
+    if (saved) {
+      for (const [name, prev] of saved) {
+        if (prev === undefined) this.env.delete(name)
+        else this.env.set(name, prev)
+      }
+    }
+  }
+
   // ── Main entry point — called for every AST node ────────────────────────────
 
   check(path: NodePath): void {
@@ -1853,25 +1952,36 @@ export class TypeChecker {
       case 'VariableDeclaration':
         this.checkVariableDeclaration(path as NodePath<t.VariableDeclaration>)
         break
-      case 'FunctionDeclaration':
-        if ((path.node as t.FunctionDeclaration).async) this.asyncDepth++
+      case 'FunctionDeclaration': {
+        const fd = path.node as t.FunctionDeclaration
+        if (fd.async) this.asyncDepth++
         this.registerFunctionDeclaration(path as NodePath<t.FunctionDeclaration>)
+        this.enterFunctionParams(fd.params)
         break
+      }
       case 'AssignmentExpression':
         this.checkAssignment(path as NodePath<t.AssignmentExpression>)
         break
       case 'ReturnStatement':
         this.checkReturnStatement(path as NodePath<t.ReturnStatement>)
         break
-      case 'ArrowFunctionExpression':
-        if ((path.node as t.ArrowFunctionExpression).async) this.asyncDepth++
+      case 'ArrowFunctionExpression': {
+        const afe = path.node as t.ArrowFunctionExpression
+        if (afe.async) this.asyncDepth++
+        this.enterFunctionParams(afe.params)
         this.checkArrowConciseReturn(path as NodePath<t.ArrowFunctionExpression>)
         break
-      case 'FunctionExpression':
-        if ((path.node as t.FunctionExpression).async) this.asyncDepth++
+      }
+      case 'FunctionExpression': {
+        const fex = path.node as t.FunctionExpression
+        if (fex.async) this.asyncDepth++
+        this.enterFunctionParams(fex.params)
         break
-      case 'ClassMethod':
-        if ((path.node as t.ClassMethod).async) this.asyncDepth++
+      }
+      case 'ClassMethod': {
+        const cm = path.node as t.ClassMethod
+        if (cm.async) this.asyncDepth++
+        this.enterFunctionParams(cm.params)
         if (this.classContextStack.length > 0) {
           const className = this.classContextStack[this.classContextStack.length - 1]
           this.currentClassMethodName = className
@@ -1882,9 +1992,13 @@ export class TypeChecker {
           }
         }
         break
-      case 'ObjectMethod':
-        if ((path.node as t.ObjectMethod).async) this.asyncDepth++
+      }
+      case 'ObjectMethod': {
+        const om = path.node as t.ObjectMethod
+        if (om.async) this.asyncDepth++
+        this.enterFunctionParams(om.params)
         break
+      }
       case 'TSInterfaceDeclaration': {
         // SJS5: register interface members for implements checking
         const iface = path.node as t.TSInterfaceDeclaration
@@ -2069,6 +2183,9 @@ export class TypeChecker {
         break
       case 'ExportDefaultDeclaration':
         // Default exports don't need special handling in the type env
+        break
+      case 'ExportAllDeclaration':
+        // `export * from 'mod'` — re-exports all bindings; cross-module types not tracked in single-file mode
         break
       case 'TSNonNullExpression':
         this.checkNonNullAssertion(path as NodePath<t.TSNonNullExpression>)
@@ -2967,6 +3084,17 @@ export class TypeChecker {
       if (current) {
         result.set(name, stripNullable(current) === T_ANY ? current : stripNullable(current))
       }
+    }
+
+    // `x instanceof Foo` — narrow x to an instance of Foo
+    if (operator === 'instanceof' && t.isIdentifier(left) && t.isIdentifier(right)) {
+      const name = (left as t.Identifier).name
+      const className = (right as t.Identifier).name
+      // Build an ObjectType from known class fields + branded with class name
+      const fieldTypes = this.classFieldTypes.get(className)
+      const properties = new Map<string, Type>()
+      if (fieldTypes) for (const [k, v] of fieldTypes) properties.set(k, v)
+      result.set(name, { kind: 'object', brand: className, properties } as ObjectType)
     }
 
     return result

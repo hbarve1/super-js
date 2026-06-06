@@ -3655,3 +3655,112 @@ describe('Class getters and setters — ECMA-262 §15.7', () => {
   })
 })
 
+// ── Function parameter type registration — ECMA-262 §15.2 ────────────────────
+
+describe('Function parameter type registration', () => {
+  it('typed param is correctly typed in function body', () => {
+    expect(errors(`
+      function greet(name: string | null) {
+        const s: string = name
+      }
+    `)).toHaveLength(1)
+  })
+
+  it('typed param after null check has narrowed type', () => {
+    expect(errors(`
+      function greet(name: string | null) {
+        if (name !== null) {
+          const s: string = name
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('arrow function params are typed in body', () => {
+    expect(errors(`
+      const double = (x: number): number => x * 2
+    `)).toHaveLength(0)
+  })
+
+  it('arrow function param type used in return check', () => {
+    expect(errors(`
+      const toString = (x: number): string => x
+    `)).toHaveLength(1)
+  })
+
+  it('function expression params are typed in body', () => {
+    expect(errors(`
+      const add = function(a: number, b: number): number { return a + b }
+    `)).toHaveLength(0)
+  })
+
+  it('default param registers typed binding', () => {
+    expect(errors(`
+      function greet(name: string = 'world') {
+        const s: string = name
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── Array.prototype.reduceRight — ECMA-262 §23.1.3.24 ────────────────────────
+
+describe('Array.prototype.reduceRight', () => {
+  it('reduceRight with initial value infers accumulator type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const sum: number = nums.reduceRight((acc, x) => acc + x, 0)
+    `)).toHaveLength(0)
+  })
+
+  it('reduceRight result matches initial value type', () => {
+    expect(errors(`
+      const words: string[] = ['a', 'b', 'c']
+      const r: string = words.reduceRight((acc, w) => acc + w, '')
+    `)).toHaveLength(0)
+  })
+})
+
+// ── instanceof type narrowing — ECMA-262 §13.10 ───────────────────────────────
+
+describe('instanceof type narrowing', () => {
+  it('instanceof narrows variable to branded object type', () => {
+    expect(errors(`
+      class Dog {
+        name: string = 'Rex'
+      }
+      function process(val: unknown) {
+        if (val instanceof Dog) {
+          const d: object = val
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('instanceof Error narrows to object in then-branch', () => {
+    expect(errors(`
+      function handle(e: unknown) {
+        if (e instanceof Error) {
+          const o: object = e
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── export * from 'mod' — ECMA-262 §16.2 ─────────────────────────────────────
+
+describe('ExportAllDeclaration', () => {
+  it('export * from module — no error', () => {
+    expect(errors(`
+      export * from './utils'
+    `)).toHaveLength(0)
+  })
+
+  it('export * as ns from module — no error', () => {
+    expect(errors(`
+      export * as utils from './utils'
+    `)).toHaveLength(0)
+  })
+})
+
