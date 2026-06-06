@@ -4696,6 +4696,40 @@ describe('class auto-accessor', () => {
   })
 })
 
+// ── Function overloads (TS) ──────────────────────────────────────────────────
+
+describe('function overloads (TS)', () => {
+  it('overloaded function — implementation signature registered for calls', () => {
+    expect(errors(`
+      function f(x: number): number
+      function f(x: string): string
+      function f(x: any): any { return x }
+      const n: any = f(42)
+    `)).toHaveLength(0)
+  })
+
+  it('overloaded function — call checked against implementation signature', () => {
+    expect(errors(`
+      function double(x: number): number
+      function double(x: string): string
+      function double(x: any): any { return x }
+      double(42)
+    `)).toHaveLength(0)
+  })
+
+  it('overloaded method — no false errors on class', () => {
+    expect(errors(`
+      class Formatter {
+        format(x: number): string
+        format(x: string): string
+        format(x: any): string { return String(x) }
+      }
+      const fmt = new Formatter()
+      fmt.format(42)
+    `)).toHaveLength(0)
+  })
+})
+
 // ── Array.fromAsync() element type inference — ES2024 §23.1 ──────────────────
 
 describe('Array.fromAsync element type inference', () => {

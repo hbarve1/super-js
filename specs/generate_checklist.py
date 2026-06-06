@@ -162,7 +162,7 @@ SECTIONS = {
     ("Async function",                  "§15.8",    DONE,    "async: wraps return in Promise<T>"),
     ("Generator function*",             "§15.5",    DONE,    "GeneratorType{yieldType,returnType,nextType,async}; for-of elem type inferred"),
     ("Async generator function*",       "§15.8",    DONE,    "GeneratorType{async:true}; yieldType from AsyncGenerator<T> annotation; for-await-of extracts correct type"),
-    ("Function overloads",              "TS",       MISSING, "Multiple signatures not tracked"),
+    ("Function overloads",              "TS",       DONE,    "TSDeclareFunction signatures silently skipped; implementation signature registered for call checking (gradual)"),
     # Classes
     ("Class declaration",               "§15.7",    DONE,    "ClassDeclaration; member registration"),
     ("Class expression",                "§15.7",    DONE,    "ClassExpression named+anonymous; parent VariableDeclarator registers __instance__ for new expr"),
