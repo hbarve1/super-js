@@ -2234,11 +2234,22 @@ export class TypeChecker {
           }
           this.classRegistry.set(className, members)
           this.classFieldTypes.set(className, fieldTypes)
+          const instanceType = { kind: 'object', brand: className, properties: new Map(fieldTypes) } as import('./types').ObjectType
           // Register class instance type in env under __instance__ClassName for new expressions
-          this.env.set(`__instance__${className}`, { kind: 'object', brand: className, properties: new Map(fieldTypes) } as import('./types').ObjectType)
+          this.env.set(`__instance__${className}`, instanceType)
           // Register class name in env so ClassName.staticMethod() resolves — §15.7
           if (staticFieldTypes.size > 0) {
             this.env.set(className, { kind: 'object', properties: staticFieldTypes } as import('./types').ObjectType)
+          }
+          // For class expressions: if parent is `const Foo = class { ... }`, register
+          // __instance__Foo and update Foo's binding so `new Foo()` resolves correctly.
+          if (cls.type === 'ClassExpression') {
+            const parentDeclarator = path.parent
+            if (t.isVariableDeclarator(parentDeclarator) && t.isIdentifier(parentDeclarator.id)) {
+              const varName = (parentDeclarator.id as t.Identifier).name
+              this.env.set(`__instance__${varName}`, instanceType)
+              this.env.set(varName, instanceType)
+            }
           }
         }
         this.classContextStack.push(className)

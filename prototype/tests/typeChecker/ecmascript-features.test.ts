@@ -3979,6 +3979,26 @@ describe('new expression instance type', () => {
       const n: string = person.name
     `)).toHaveLength(0)
   })
+
+  it('class expression: new Foo() resolves instance fields', () => {
+    expect(errors(`
+      const Foo = class {
+        value: number = 42
+      }
+      const f = new Foo()
+      const v: number = f.value
+    `)).toHaveLength(0)
+  })
+
+  it('named class expression: new Bar() resolves instance fields', () => {
+    expect(errors(`
+      const Bar = class MyBar {
+        label: string = 'hello'
+      }
+      const b = new Bar()
+      const s: string = b.label
+    `)).toHaveLength(0)
+  })
 })
 
 // ── eval() detection — SJS-E013 ──────────────────────────────────────────────
