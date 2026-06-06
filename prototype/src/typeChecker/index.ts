@@ -2844,13 +2844,29 @@ export class TypeChecker {
       }
       if (!t.isObjectProperty(prop)) continue
 
-      const key = t.isIdentifier(prop.key) ? prop.key.name
-        : t.isStringLiteral(prop.key) ? prop.key.value
-        : null
+      let key: string | null = null
+      if ((prop as t.ObjectProperty).computed) {
+        // Computed key [expr]: only resolvable with literal expressions
+        if (t.isStringLiteral(prop.key)) key = (prop.key as t.StringLiteral).value
+        else if (t.isNumericLiteral(prop.key)) key = String((prop.key as t.NumericLiteral).value)
+        // Dynamic computed key — give binding T_ANY
+        if (!key) {
+          const bindName = t.isIdentifier(prop.value) ? (prop.value as t.Identifier).name
+            : (t.isAssignmentPattern(prop.value) && t.isIdentifier((prop.value as t.AssignmentPattern).left))
+              ? ((prop.value as t.AssignmentPattern).left as t.Identifier).name
+              : null
+          if (bindName) this.env.set(bindName, T_ANY)
+          continue
+        }
+      } else {
+        key = t.isIdentifier(prop.key) ? (prop.key as t.Identifier).name
+          : t.isStringLiteral(prop.key) ? (prop.key as t.StringLiteral).value
+          : null
+      }
       if (!key) continue
 
       const propType = objType.kind === 'object'
-        ? (objType as ObjectType).properties.get(key) ?? T_ANY
+        ? (objType as ObjectType).properties.get(key) ?? ((objType as any).__indexType as Type | undefined) ?? T_ANY
         : T_ANY
 
       const val = prop.value

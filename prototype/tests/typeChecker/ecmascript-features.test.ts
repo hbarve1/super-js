@@ -4354,6 +4354,27 @@ describe('Object computed property keys', () => {
   })
 })
 
+// ── Computed destructuring {[k]:v} — ECMA-262 §14.3.3 ────────────────────────
+
+describe('computed destructuring', () => {
+  it('{ ["name"]: v } = obj — string literal key resolved statically', () => {
+    expect(errors(`
+      const obj = { name: 'Alice', age: 30 }
+      const { ['name']: name } = obj
+      const s: string = name
+    `)).toHaveLength(0)
+  })
+
+  it('{ [dynamicKey]: v } = obj — dynamic key gives binding T_ANY (gradual)', () => {
+    expect(errors(`
+      const key = 'name'
+      const obj = { name: 'Alice' }
+      const { [key]: val } = obj
+      const s: string = val
+    `)).toHaveLength(0)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`
