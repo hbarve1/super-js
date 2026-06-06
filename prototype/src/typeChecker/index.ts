@@ -1580,6 +1580,43 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
           if (stdlibResult !== null) return stdlibResult
         }
       }
+      // Computed method call: obj[Symbol.iterator]() / obj[Symbol.asyncIterator]()
+      // ECMA-262 §27.1 — well-known symbols §6.1.5.1
+      if (t.isMemberExpression(node.callee) && node.callee.computed) {
+        const callee = node.callee as t.MemberExpression
+        const prop = callee.property
+        if (t.isMemberExpression(prop) && !prop.computed
+            && t.isIdentifier(prop.object) && (prop.object as t.Identifier).name === 'Symbol'
+            && t.isIdentifier(prop.property)) {
+          const symName = (prop.property as t.Identifier).name
+          if (symName === 'iterator' || symName === 'asyncIterator') {
+            const isAsync = symName === 'asyncIterator'
+            const objType = inferExprType(t.isExpression(callee.object) ? callee.object as t.Expression : null, env)
+            if (objType.kind === 'array') {
+              return { kind: 'generator', yieldType: (objType as ArrayType).elementType, returnType: T_VOID, nextType: T_ANY, async: isAsync } as GeneratorType
+            }
+            if (objType.kind === 'generator') return objType
+            if (objType.kind === 'string') {
+              return { kind: 'generator', yieldType: T_STRING, returnType: T_VOID, nextType: T_ANY, async: false } as GeneratorType
+            }
+            if (objType.kind === 'object') {
+              const brand = (objType as any).brand
+              if (brand === 'Map') {
+                const kT = (objType as any).mapKeyType as Type ?? T_ANY
+                const vT = (objType as any).mapValueType as Type ?? T_ANY
+                return { kind: 'generator', yieldType: { kind: 'tuple', elements: [kT, vT] } as TupleType, returnType: T_VOID, nextType: T_ANY, async: isAsync } as GeneratorType
+              }
+              if (brand === 'Set') {
+                const eT = (objType as any).setElementType as Type ?? T_ANY
+                return { kind: 'generator', yieldType: eT, returnType: T_VOID, nextType: T_ANY, async: isAsync } as GeneratorType
+              }
+              if (brand === 'URLSearchParams') {
+                return { kind: 'generator', yieldType: { kind: 'tuple', elements: [T_STRING, T_STRING] } as TupleType, returnType: T_VOID, nextType: T_ANY, async: false } as GeneratorType
+              }
+            }
+          }
+        }
+      }
       if (t.isIdentifier(node.callee)) {
         const fnType = env.get(node.callee.name)
         if (fnType?.kind === 'function') {
@@ -2228,6 +2265,8 @@ export class TypeChecker {
 
     switch (node.type) {
       case 'VariableDeclaration':
+        // Skip for-of/for-in loop variables — their types are set by checkForOfStatement/checkForInStatement
+        if (path.parent?.type === 'ForOfStatement' || path.parent?.type === 'ForInStatement') break
         this.checkVariableDeclaration(path as NodePath<t.VariableDeclaration>)
         break
       case 'FunctionDeclaration': {

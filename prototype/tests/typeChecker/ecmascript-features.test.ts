@@ -4265,6 +4265,61 @@ describe('Iterator.from type inference', () => {
   })
 })
 
+// ── Symbol.iterator calls — ECMA-262 §27.1, §23.1, §24.1 ────────────────────
+
+describe('Symbol.iterator calls', () => {
+  it('arr[Symbol.iterator]() — typed as generator with element type', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const iter = nums[Symbol.iterator]()
+      for (const n of iter) {
+        const x: number = n
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('arr[Symbol.iterator]() element type mismatch — error', () => {
+    expect(errors(`
+      const nums: number[] = [1, 2, 3]
+      const iter = nums[Symbol.iterator]()
+      for (const n of iter) {
+        const s: string = n
+      }
+    `)).toHaveLength(1)
+  })
+
+  it('map[Symbol.iterator]() — yields [K, V] tuples', () => {
+    expect(errors(`
+      const m = new Map<string, number>()
+      const iter = m[Symbol.iterator]()
+      for (const [k, v] of iter) {
+        const key: string = k
+        const val: number = v
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('set[Symbol.iterator]() — yields element type', () => {
+    expect(errors(`
+      const s = new Set<string>()
+      const iter = s[Symbol.iterator]()
+      for (const elem of iter) {
+        const x: string = elem
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('string[Symbol.iterator]() — yields string characters', () => {
+    expect(errors(`
+      const str: string = 'hello'
+      const iter = str[Symbol.iterator]()
+      for (const ch of iter) {
+        const x: string = ch
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 describe('ExportAllDeclaration', () => {
   it('export * from module — no error', () => {
     expect(errors(`
