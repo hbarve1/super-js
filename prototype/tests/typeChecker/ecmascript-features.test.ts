@@ -3748,6 +3748,32 @@ describe('instanceof type narrowing', () => {
   })
 })
 
+// ── Object.values/entries type inference — ECMA-262 §20.1 ────────────────────
+
+describe('Object.values/entries type inference', () => {
+  it('Object.values returns array of value types for known object', () => {
+    expect(errors(`
+      const obj = { a: 1, b: 2 }
+      const vals: (number | number)[] = Object.values(obj)
+    `)).toHaveLength(0)
+  })
+
+  it('Object.entries returns [string, V][] for known object', () => {
+    expect(errors(`
+      const obj = { x: 'hello', y: 'world' }
+      const entries = Object.entries(obj)
+    `)).toHaveLength(0)
+  })
+
+  it('Object.values on unknown object returns any[]', () => {
+    expect(errors(`
+      function getVals(o: object): any[] {
+        return Object.values(o)
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 // ── Class extends clause field inheritance — ECMA-262 §15.7 ──────────────────
 
 describe('Class extends clause field inheritance', () => {
@@ -3775,6 +3801,33 @@ describe('Class extends clause field inheritance', () => {
       }
       const x = new Derived()
       const v: number = x.value
+    `)).toHaveLength(0)
+  })
+})
+
+// ── new expression returns class instance with field types — ECMA-262 §15.7 ──
+
+describe('new expression instance type', () => {
+  it('new MyClass() returns instance with correct field types', () => {
+    expect(errors(`
+      class Point {
+        x: number = 0
+        y: number = 0
+      }
+      const p = new Point()
+      const x: number = p.x
+      const y: number = p.y
+    `)).toHaveLength(0)
+  })
+
+  it('instance field wrong type assignment errors', () => {
+    expect(errors(`
+      class Person {
+        name: string = ''
+        age: number = 0
+      }
+      const person = new Person()
+      const n: string = person.name
     `)).toHaveLength(0)
   })
 })

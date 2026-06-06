@@ -602,8 +602,36 @@ function inferStdlibMethodCall(
     if (globalName === 'Object') {
       switch (methodName) {
         case 'keys': return { kind: 'array', elementType: T_STRING }
-        case 'values': return { kind: 'array', elementType: T_ANY }
-        case 'entries': return { kind: 'array', elementType: T_ANY }
+        case 'values': {
+          // Object.values(obj) — infer value type from object properties if known
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) {
+            const argType = inferExprType(arg, env)
+            if (argType.kind === 'object' && (argType as ObjectType).properties.size > 0) {
+              const valTypes = [...(argType as ObjectType).properties.values()]
+              if (valTypes.length > 0) {
+                const unified = valTypes.reduce<Type>((acc, v) => makeUnion(acc, v), valTypes[0])
+                return { kind: 'array', elementType: unified }
+              }
+            }
+          }
+          return { kind: 'array', elementType: T_ANY }
+        }
+        case 'entries': {
+          // Object.entries(obj) — return [string, V][] where V is inferred
+          const arg = callArgs?.[0]
+          if (arg && t.isExpression(arg)) {
+            const argType = inferExprType(arg, env)
+            if (argType.kind === 'object' && (argType as ObjectType).properties.size > 0) {
+              const valTypes = [...(argType as ObjectType).properties.values()]
+              if (valTypes.length > 0) {
+                const unified = valTypes.reduce<Type>((acc, v) => makeUnion(acc, v), valTypes[0])
+                return { kind: 'array', elementType: { kind: 'tuple', elements: [T_STRING, unified] } as TupleType }
+              }
+            }
+          }
+          return { kind: 'array', elementType: T_ANY }
+        }
         case 'fromEntries': return { kind: 'object', properties: new Map() }
         case 'assign': {
           // Object.assign(target, ...sources) returns the target type
@@ -713,7 +741,19 @@ function inferStdlibMethodCall(
           }
           return { kind: 'array', elementType: T_ANY }
         }
-        case 'of': return { kind: 'array', elementType: T_ANY }
+        case 'of': {
+          // Array.of(1, 2, 3) → infer element type from arguments
+          if (callArgs && callArgs.length > 0) {
+            const types = callArgs
+              .filter(a => t.isExpression(a))
+              .map(a => inferExprType(a as t.Expression, env))
+            if (types.length > 0) {
+              const elemType = types.reduce<Type>((acc, v) => makeUnion(acc, v), types[0])
+              return { kind: 'array', elementType: elemType }
+            }
+          }
+          return { kind: 'array', elementType: T_ANY }
+        }
         case 'fromAsync': return { kind: 'promise', valueType: { kind: 'array', elementType: T_ANY } }
       }
     }
@@ -1556,10 +1596,12 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
             return { kind: 'object', brand: 'URLSearchParams', properties: new Map() }
         }
         // Look up constructor in env — for user-defined classes
+        // First check for registered instance type (set when class was visited)
+        const instanceType = env.get(`__instance__${name}`)
+        if (instanceType) return instanceType
         const ctorType = env.get(name)
         if (ctorType?.kind === 'function') {
-          const obj: ObjectType = { kind: 'object', properties: new Map() }
-          ;(obj as any).__className = name
+          const obj: ObjectType = { kind: 'object', brand: name, properties: new Map() }
           return obj
         }
       }
@@ -2121,6 +2163,8 @@ export class TypeChecker {
           }
           this.classRegistry.set(className, members)
           this.classFieldTypes.set(className, fieldTypes)
+          // Register class instance type in env under __instance__ClassName for new expressions
+          this.env.set(`__instance__${className}`, { kind: 'object', brand: className, properties: new Map(fieldTypes) } as import('./types').ObjectType)
           // Register class name in env so ClassName.staticMethod() resolves — §15.7
           if (staticFieldTypes.size > 0) {
             this.env.set(className, { kind: 'object', properties: staticFieldTypes } as import('./types').ObjectType)
