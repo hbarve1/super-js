@@ -1873,6 +1873,11 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       return T_ANY
     }
 
+    // Dynamic import() — ECMA-262 §13.3.11
+    case 'ImportExpression':
+      // import('./mod') → Promise<any> — module types not resolved in single-file mode
+      return { kind: 'promise', valueType: T_ANY }
+
     // MetaProperty — import.meta, new.target — ECMA-262 §13.3.12, §15.5
     case 'MetaProperty': {
       const meta = (node as t.MetaProperty).meta.name
@@ -2730,11 +2735,11 @@ export class TypeChecker {
     }
   }
 
-  /** Register a variable binding, tracking block scope if let/const. */
+  /** Register a variable binding, tracking block scope if let/const/using. */
   private registerVar(name: string, type: Type, kind: string): void {
     this.env.set(name, type)
-    // let/const are block-scoped — track for removal when block exits
-    if ((kind === 'let' || kind === 'const') && this.blockVarStack.length > 0) {
+    // let/const/using are block-scoped — track for removal when block exits
+    if ((kind === 'let' || kind === 'const' || kind === 'using' || kind === 'await using') && this.blockVarStack.length > 0) {
       this.blockVarStack[this.blockVarStack.length - 1].add(name)
     }
   }

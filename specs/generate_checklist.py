@@ -68,7 +68,7 @@ SECTIONS = {
     ("new Constructor()",               "§13.3.5",  DONE,    "NewExpression; stdlib + user constructors"),
     ("super(args) in constructor",      "§13.3.7",  DONE,    "Super → T_ANY; no false errors"),
     ("super.method()",                  "§13.3.7",  DONE,    "Super member → T_ANY; no false errors"),
-    ("import() dynamic",                "§13.3.11", PARTIAL, "ImportExpression → T_ANY; type not resolved"),
+    ("import() dynamic",                "§13.3.11", DONE,    "ImportExpression → Promise<any>; module types not resolved in single-file mode"),
     ("import.meta",                     "§13.3.12", DONE,    "MetaProperty → {url:string,...}"),
     ("new.target",                      "§13.3.12", DONE,    "MetaProperty → fn|undefined"),
     # Update/unary
@@ -543,7 +543,7 @@ SECTIONS = {
     ("User-defined type guards",        "TS",     DONE,    "TSTypePredicate registered; if(guardFn(x)) narrows x to guarded type"),
     ("const assertions as const",       "TS",     DONE,    "→ T_ANY via TSTypeOperator in TSAsExpression"),
     ("satisfies operator",              "TS4.9",  DONE,    "TSSatisfiesExpression"),
-    ("using / await using (TC39)",      "TC39",   PARTIAL, "Parse with explicitResourceManagement plugin; bindings T_ANY"),
+    ("using / await using (TC39)",      "TC39",   DONE,    "Parse with explicitResourceManagement plugin; bindings typed from initializer; block-scoped"),
     ("Symbol.prototype.description",   "§20.4",  DONE,    "→ string | undefined; ES2019"),
     ("import type",                     "TS",     DONE,    "SJS-E009 type-only binding"),
   ],

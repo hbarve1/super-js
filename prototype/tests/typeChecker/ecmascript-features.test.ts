@@ -4557,6 +4557,57 @@ describe('spread in call arguments', () => {
   })
 })
 
+// ── Dynamic import() — ECMA-262 §13.3.11 ─────────────────────────────────────
+
+describe('dynamic import()', () => {
+  it('import() returns Promise<any> — no error assigning to promise', () => {
+    expect(errors(`
+      const p: Promise<any> = import('./module')
+    `)).toHaveLength(0)
+  })
+
+  it('import() can be awaited — resolves to any', () => {
+    expect(errors(`
+      async function load() {
+        const mod = await import('./module')
+        const x: any = mod
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+// ── using / await using (TC39 Explicit Resource Management) ──────────────────
+
+describe('using / await using (TC39)', () => {
+  function errorsUsing(source: string) {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse(source, { sourceType: 'module', plugins: ['typescript', 'explicitResourceManagement'] })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(path: any) { checker.check(path) } })
+    return checker.getDiagnostics()
+  }
+
+  it('using x = resource — binding registered with inferred type', () => {
+    expect(errorsUsing(`
+      function getResource(): { value: number; [Symbol.dispose](): void } {
+        return { value: 42, [Symbol.dispose]() {} }
+      }
+      using res = getResource()
+    `)).toHaveLength(0)
+  })
+
+  it('using x = resource — binding is block-scoped', () => {
+    expect(errorsUsing(`
+      function getResource() { return { x: 1 } }
+      {
+        using res = getResource()
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 // ── Array.fromAsync() element type inference — ES2024 §23.1 ──────────────────
 
 describe('Array.fromAsync element type inference', () => {
