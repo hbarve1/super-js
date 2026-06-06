@@ -450,7 +450,7 @@ SECTIONS = {
 
   "§27 — Control Abstraction": [
     # Iteration protocol
-    ("Iterator protocol {next()}",       "§27.1",  PARTIAL, "for-of dispatches; no protocol validation"),
+    ("Iterator protocol {next()}",       "§27.1",  DONE,    "for-of over {next(): {value:T,done:boolean}} infers T as element type"),
     ("Iterable protocol [Symbol.iterator]","§27.1",MISSING, "Custom iterables not validated"),
     ("AsyncIterator protocol",           "§27.1",  MISSING, "for-await-of protocol not validated"),
     ("Iterator helpers ES2025",          "§27.1",  DONE,    "map/filter/take/drop/flatMap/toArray/forEach/some/every/find/reduce on GeneratorType"),
