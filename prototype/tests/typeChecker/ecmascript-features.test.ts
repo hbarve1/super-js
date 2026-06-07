@@ -4882,3 +4882,84 @@ describe('Interface readonly properties — SJS-E010', () => {
   })
 })
 
+describe('readonly T[] function parameter — SJS-E010', () => {
+  it('emits SJS-E010 when calling push on readonly T[] parameter', () => {
+    expect(errorCodes(`
+      function sum(arr: readonly number[]): number {
+        arr.push(1)
+        return 0
+      }
+    `)).toContain('SJS-E010')
+  })
+
+  it('does NOT emit SJS-E010 for non-mutating method on readonly T[] parameter', () => {
+    expect(errors(`
+      function sum(arr: readonly number[]): number {
+        return arr.reduce((acc: number, n: number) => acc + n, 0)
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('emits SJS-E010 when calling sort on readonly T[] parameter', () => {
+    expect(errorCodes(`
+      function sorted(arr: readonly number[]): void {
+        arr.sort()
+      }
+    `)).toContain('SJS-E010')
+  })
+})
+
+describe('switch statement — ECMA-262 §14.12', () => {
+  it('switch on string — no error', () => {
+    expect(errors(`
+      const s: string = "hello"
+      switch (s) {
+        case "hello": break
+        case "world": break
+        default: break
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('switch on number — no error', () => {
+    expect(errors(`
+      const n: number = 1
+      switch (n) {
+        case 1: break
+        case 2: break
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('switch with expression in case — no error', () => {
+    expect(errors(`
+      const x: number = 42
+      let result: string = ""
+      switch (x) {
+        case 1: result = "one"; break
+        default: result = "other"
+      }
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Intersection types (A & B) — ECMA-262 / TypeScript', () => {
+  it('intersection type annotation — no error on compatible assignment', () => {
+    expect(errors(`
+      type Named = { name: string }
+      type Aged = { age: number }
+      const x: Named & Aged = { name: "Alice", age: 30 }
+    `)).toHaveLength(0)
+  })
+
+  it('intersection type function parameter — no error', () => {
+    expect(errors(`
+      type Named = { name: string }
+      type Aged = { age: number }
+      function greet(person: Named & Aged): string {
+        return person.name
+      }
+    `)).toHaveLength(0)
+  })
+})
+
