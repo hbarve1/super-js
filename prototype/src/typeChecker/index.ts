@@ -2427,12 +2427,27 @@ export class TypeChecker {
         const ifaceName = iface.id.name
         if (!this.interfaceRegistry.has(ifaceName)) {
           const members = new Set<string>()
+          const properties = new Map<string, Type>()
+          const readonlyProps = new Set<string>()
           for (const member of iface.body.body) {
             if ((t.isTSPropertySignature(member) || t.isTSMethodSignature(member)) && t.isIdentifier(member.key)) {
-              members.add(member.key.name)
+              const mKey = member.key.name
+              members.add(mKey)
+              if (t.isTSPropertySignature(member)) {
+                const prop = member as t.TSPropertySignature
+                const propType = prop.typeAnnotation
+                  ? resolveType((prop.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
+                  : T_ANY
+                properties.set(mKey, propType)
+                if (prop.readonly) readonlyProps.add(mKey)
+              }
             }
           }
           this.interfaceRegistry.set(ifaceName, members)
+          // Register interface as object type alias for readonly property checking (SJS-E010)
+          if (readonlyProps.size > 0) {
+            this.typeAliasRegistry.set(ifaceName, { kind: 'object', properties, readonlyProps } as ObjectType)
+          }
         }
         break
       }

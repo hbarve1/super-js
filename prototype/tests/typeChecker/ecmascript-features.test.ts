@@ -4858,3 +4858,27 @@ describe('Readonly<T> utility type — SJS-E010 enforcement', () => {
   })
 })
 
+describe('Interface readonly properties — SJS-E010', () => {
+  it('emits SJS-E010 when assigning to readonly interface property', () => {
+    expect(errorCodes(`
+      interface ReadonlyPoint {
+        readonly x: number
+        readonly y: number
+      }
+      const p: ReadonlyPoint = { x: 3, y: 4 }
+      p.x = 5
+    `)).toContain('SJS-E010')
+  })
+
+  it('does NOT emit SJS-E010 for mutable interface property', () => {
+    expect(errors(`
+      interface Point {
+        readonly x: number
+        y: number
+      }
+      const p: Point = { x: 3, y: 4 }
+      p.y = 10
+    `)).toHaveLength(0)
+  })
+})
+
