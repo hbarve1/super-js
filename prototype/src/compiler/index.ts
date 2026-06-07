@@ -139,9 +139,8 @@ async function compileFile(
   log('Running type checker...');
   typeChecker.reset();
   traverse(ast, {
-    enter(path) {
-      typeChecker.check(path);
-    },
+    enter(path) { typeChecker.check(path); },
+    exit(path) { typeChecker.exit(path); },
   });
 
   // Surface type errors — ECMA-262 §14.3.1, §15.2 (via type-system.md rules)
@@ -413,7 +412,19 @@ export async function compile(options: CompileOptions = {}): Promise<void> {
 
     if (watch) {
       log('Watching for changes...');
-      // TODO: Implement watch mode
+      const { Watcher } = await import('../watch/watcher');
+      const resolvedSourceRoot = directory
+        ? resolve(process.cwd(), directory)
+        : resolve(process.cwd(), sourceRoot);
+      const watcher = new Watcher(resolvedSourceRoot, outDir);
+      const pattern = directory
+        ? resolve(process.cwd(), directory) + '/**/*.sjs'
+        : sourceFile ? resolve(process.cwd(), sourceFile) : resolvedSourceRoot + '/**/*.sjs';
+      await watcher.start(pattern, (results) => {
+        for (const [file, status] of results) {
+          log(`[watch] ${file}: ${status}`);
+        }
+      });
     }
   } catch (error) {
     if (error instanceof Error) {

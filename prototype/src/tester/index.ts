@@ -54,11 +54,43 @@ export async function runTests(options: TestRunOptions = {}): Promise<TestRunRes
 
   const log = silent ? (..._: unknown[]) => {} : console.log.bind(console)
 
-  if (watch) log('Watch mode: running once (full watch coming in v2)')
-  if (coverage) log('Coverage: not yet implemented')
+  if (coverage) log('Coverage not yet implemented — use `jest --coverage` for coverage reports')
 
-  const runStart = Date.now()
   const absDir = resolve(directory)
+  const result = await runTestsOnce({ absDir, pattern, log })
+
+  if (watch) {
+    log('\nWatching for file changes… (Ctrl-C to quit)')
+    try {
+      const chokidar = await import('chokidar')
+      const watchGlob = pattern ?? '**/*.{sjs,ts,js}'
+      let debounceTimer: ReturnType<typeof setTimeout> | null = null
+      chokidar.watch(watchGlob, {
+        cwd: absDir,
+        ignoreInitial: true,
+        ignored: ['**/node_modules/**', '**/dist/**'],
+      }).on('all', (_event: string, path: string) => {
+        if (debounceTimer) clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(async () => {
+          log(`\n[change] ${path}`)
+          await runTestsOnce({ absDir, pattern, log })
+        }, 100)
+      })
+    } catch {
+      log('Watch mode: file watcher unavailable, ran once')
+    }
+  }
+
+  return result
+}
+
+async function runTestsOnce(opts: {
+  absDir: string
+  pattern?: string
+  log: (...args: unknown[]) => void
+}): Promise<TestRunResult> {
+  const { absDir, pattern, log } = opts
+  const runStart = Date.now()
 
   const globs = pattern ? [pattern] : ['**/*.test.sjs', '**/*.spec.sjs']
   const files = await glob(globs, {
