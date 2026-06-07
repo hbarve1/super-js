@@ -4815,3 +4815,46 @@ describe('T4: readonly property enforcement — SJS-E010', () => {
   })
 })
 
+// ── ReadonlyArray<T> and Readonly<T> — SJS-E010 extension ───────────────────
+
+describe('ReadonlyArray<T> mutating method rejection — SJS-E010', () => {
+  it('allows read methods on ReadonlyArray', () => {
+    expect(errors(`
+      const nums: ReadonlyArray<number> = [1, 2, 3]
+      const n: number | undefined = nums[0]
+      const len: number = nums.length
+    `)).toHaveLength(0)
+  })
+
+  it('emits SJS-E010 when calling push on ReadonlyArray', () => {
+    expect(errorCodes(`
+      const nums: ReadonlyArray<number> = [1, 2, 3]
+      nums.push(4)
+    `)).toContain('SJS-E010')
+  })
+
+  it('emits SJS-E010 when calling sort on ReadonlyArray', () => {
+    expect(errorCodes(`
+      const nums: ReadonlyArray<number> = [1, 2, 3]
+      nums.sort()
+    `)).toContain('SJS-E010')
+  })
+
+  it('does NOT emit SJS-E010 for map on ReadonlyArray (not mutating)', () => {
+    expect(errors(`
+      const nums: ReadonlyArray<number> = [1, 2, 3]
+      const doubled = nums.map((n: number) => n * 2)
+    `)).toHaveLength(0)
+  })
+})
+
+describe('Readonly<T> utility type — SJS-E010 enforcement', () => {
+  it('Readonly<T> makes all properties readonly — SJS-E010 on mutation', () => {
+    expect(errorCodes(`
+      type Mutable = { x: number; y: number }
+      const frozen: Readonly<Mutable> = { x: 1, y: 2 }
+      frozen.x = 3
+    `)).toContain('SJS-E010')
+  })
+})
+

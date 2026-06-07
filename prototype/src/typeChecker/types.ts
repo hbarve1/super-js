@@ -43,6 +43,8 @@ export interface ObjectType {
 export interface ArrayType {
   kind: 'array'
   elementType: Type
+  /** True for ReadonlyArray<T> and readonly T[] — mutating methods are banned (SJS-E010). */
+  readonly?: boolean
 }
 
 export interface FunctionType {

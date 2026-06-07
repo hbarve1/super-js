@@ -188,8 +188,9 @@ function resolveType(node: t.TSType | null | undefined): Type {
         case 'Promise':
           return { kind: 'promise', valueType: args[0] ?? T_ANY }
         case 'Array':
-        case 'ReadonlyArray':
           return { kind: 'array', elementType: args[0] ?? T_ANY }
+        case 'ReadonlyArray':
+          return { kind: 'array', elementType: args[0] ?? T_ANY, readonly: true }
         case 'Map':
           return { kind: 'object', brand: 'Map', mapKeyType: args[0] ?? T_ANY, mapValueType: args[1] ?? T_ANY, properties: new Map<string, Type>([['size', T_NUMBER]]) }
         case 'Set':
@@ -202,9 +203,18 @@ function resolveType(node: t.TSType | null | undefined): Type {
           return { kind: 'object', brand: 'WeakRef', weakRefType: args[0] ?? T_ANY, properties: new Map() }
         case 'Record':
           return { kind: 'object', properties: new Map() }
+        case 'Readonly': {
+          // Readonly<T> — make all properties of T readonly for SJS-E010 checking
+          const inner = args[0] ?? T_ANY
+          if (inner.kind === 'object') {
+            const obj = inner as ObjectType
+            const readonlyProps = new Set<string>(obj.properties.keys())
+            return { ...obj, readonlyProps } as ObjectType
+          }
+          return inner
+        }
         case 'Partial':
         case 'Required':
-        case 'Readonly':
         case 'Pick':
         case 'Omit':
         case 'Exclude':
@@ -309,10 +319,19 @@ function resolveType(node: t.TSType | null | undefined): Type {
     case 'TSTypePredicate':
       return T_BOOLEAN
 
-    // Readonly modifier — e.g. `readonly T` or `Readonly<T>`
+    // Readonly modifier — e.g. `readonly T[]` (TSTypeOperator with operator 'readonly')
     case 'TSTypeOperator': {
-      const inner = (node as t.TSTypeOperator).typeAnnotation
-      return resolveType(inner)
+      const op = node as t.TSTypeOperator
+      const inner = resolveType(op.typeAnnotation)
+      if (op.operator === 'readonly') {
+        if (inner.kind === 'array') return { ...inner, readonly: true } as ArrayType
+        if (inner.kind === 'object') {
+          const obj = inner as ObjectType
+          const readonlyProps = new Set<string>(obj.properties.keys())
+          return { ...obj, readonlyProps } as ObjectType
+        }
+      }
+      return inner
     }
 
     // Indexed access type — e.g. `T[K]`
@@ -2595,6 +2614,7 @@ export class TypeChecker {
         break
       case 'CallExpression':
         this.checkCallExpression(path as NodePath<t.CallExpression>)
+        this.checkReadonlyArrayMutation(path as NodePath<t.CallExpression>)
         break
       case 'TSTypeAliasDeclaration':
         this.registerSumTypeAlias(path as NodePath<t.TSTypeAliasDeclaration>)
@@ -2700,12 +2720,25 @@ export class TypeChecker {
         annotation.typeAnnotation.type === 'TSTypeReference' &&
         t.isIdentifier((annotation.typeAnnotation as t.TSTypeReference).typeName)
       ) {
-        const refName = ((annotation.typeAnnotation as t.TSTypeReference).typeName as t.Identifier).name
+        const ref = annotation.typeAnnotation as t.TSTypeReference
+        const refName = (ref.typeName as t.Identifier).name
         const knownSum = this.sumTypeRegistry.get(refName)
         if (knownSum) declared = knownSum
         else {
           const knownAlias = this.typeAliasRegistry.get(refName)
           if (knownAlias) declared = knownAlias
+          // Special case: Readonly<NamedType> — look up inner type alias and make all props readonly
+          else if (refName === 'Readonly') {
+            const innerRef = ref.typeParameters?.params[0]
+            if (innerRef?.type === 'TSTypeReference' && t.isIdentifier((innerRef as t.TSTypeReference).typeName)) {
+              const innerName = ((innerRef as t.TSTypeReference).typeName as t.Identifier).name
+              const innerAlias = this.typeAliasRegistry.get(innerName)
+              if (innerAlias?.kind === 'object') {
+                const obj = innerAlias as ObjectType
+                declared = { ...obj, readonlyProps: new Set<string>(obj.properties.keys()) } as ObjectType
+              }
+            }
+          }
         }
       }
 
@@ -3536,10 +3569,14 @@ export class TypeChecker {
     const { node } = path
     const aliasName = node.id.name
     const rhs = node.typeAnnotation
-    // Only register object type literals (TSTypeLiteral) that have readonly props
+    // Register object type literals (TSTypeLiteral) in the alias registry
+    // Skip if it looks like a sum variant type (has _tag property)
     if (rhs.type !== 'TSTypeLiteral') return
     const resolved = resolveType(rhs)
-    if (resolved.kind === 'object' && (resolved as ObjectType).readonlyProps?.size) {
+    if (resolved.kind === 'object') {
+      const obj = resolved as ObjectType
+      // Don't register preprocessor-generated sum variant types (they have _tag)
+      if (obj.properties.has('_tag')) return
       this.typeAliasRegistry.set(aliasName, resolved)
     }
   }
@@ -4208,6 +4245,37 @@ export class TypeChecker {
       line: loc?.line ?? 0,
       column: loc?.column ?? 0,
       specUrl: opts.specUrl,
+    })
+  }
+
+  // ── Rule SJS-E010: ReadonlyArray mutating method calls ────────────────────────
+
+  private static READONLY_ARRAY_MUTATING_METHODS = new Set([
+    'push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin',
+  ])
+
+  /**
+   * Emits SJS-E010 when a mutating method is called on a ReadonlyArray<T> variable.
+   * ECMA-262 §23.1 — ReadonlyArray<T> does not expose mutating methods.
+   */
+  private checkReadonlyArrayMutation(path: NodePath<t.CallExpression>): void {
+    const callee = path.node.callee
+    if (!t.isMemberExpression(callee)) return
+    if (callee.computed) return
+    if (!t.isIdentifier(callee.property)) return
+    const methodName = (callee.property as t.Identifier).name
+    if (!TypeChecker.READONLY_ARRAY_MUTATING_METHODS.has(methodName)) return
+    if (!t.isIdentifier(callee.object)) return
+    const objName = (callee.object as t.Identifier).name
+    const objType = this.env.get(objName)
+    if (!objType || objType.kind !== 'array') return
+    if (!(objType as ArrayType).readonly) return
+    this.report({
+      code: 'SJS-E010',
+      severity: 'error',
+      message: `Cannot call mutating method '${methodName}' on ReadonlyArray '${objName}'. ReadonlyArray does not support mutation.`,
+      node: path.node,
+      specUrl: 'https://tc39.es/ecma262/#sec-properties-of-array-instances',
     })
   }
 }
