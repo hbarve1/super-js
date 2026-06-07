@@ -4755,3 +4755,63 @@ describe('Array.fromAsync element type inference', () => {
   })
 })
 
+// ── T4: readonly modifier — SJS-E010 ─────────────────────────────────────────
+
+describe('T4: readonly property enforcement — SJS-E010', () => {
+  it('allows reading a readonly property', () => {
+    expect(errors(`
+      type Point = { readonly x: number; readonly y: number }
+      const p: Point = { x: 3, y: 4 }
+      const n: number = p.x
+    `)).toHaveLength(0)
+  })
+
+  it('emits SJS-E010 when assigning to readonly object property', () => {
+    expect(errorCodes(`
+      type Point = { readonly x: number; y: number }
+      const p: Point = { x: 3, y: 4 }
+      p.x = 5
+    `)).toContain('SJS-E010')
+  })
+
+  it('does NOT emit SJS-E010 for mutable object property', () => {
+    expect(errors(`
+      type Point = { readonly x: number; y: number }
+      const p: Point = { x: 3, y: 4 }
+      p.y = 10
+    `)).toHaveLength(0)
+  })
+
+  it('emits SJS-E010 when assigning to class readonly field outside class', () => {
+    expect(errorCodes(`
+      class Circle {
+        readonly radius: number = 0
+      }
+      const c = new Circle()
+      c.radius = 10
+    `)).toContain('SJS-E010')
+  })
+
+  it('allows assigning to class readonly field in constructor', () => {
+    expect(errors(`
+      class Circle {
+        readonly radius: number
+        constructor(r: number) {
+          this.radius = r
+        }
+      }
+    `)).toHaveLength(0)
+  })
+
+  it('emits SJS-E010 when assigning to this.readonlyField outside constructor', () => {
+    expect(errorCodes(`
+      class Circle {
+        readonly radius: number = 0
+        setRadius(r: number): void {
+          this.radius = r
+        }
+      }
+    `)).toContain('SJS-E010')
+  })
+})
+

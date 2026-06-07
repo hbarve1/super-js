@@ -34,6 +34,8 @@ export interface ObjectType {
   setElementType?: Type
   /** WeakRef<T> — inner type */
   weakRefType?: Type
+  /** Properties declared `readonly` — SJS-E010 guards assignment to these. */
+  readonlyProps?: Set<string>
 }
 
 // ── Composite types ───────────────────────────────────────────────────────────

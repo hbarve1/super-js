@@ -128,6 +128,7 @@ function resolveType(node: t.TSType | null | undefined): Type {
     // Also handles index signatures: { [key: string]: number }
     case 'TSTypeLiteral': {
       const properties = new Map<string, Type>()
+      const readonlyProps = new Set<string>()
       let indexValueType: Type | null = null
       for (const member of node.members) {
         if (member.type === 'TSIndexSignature') {
@@ -148,8 +149,10 @@ function resolveType(node: t.TSType | null | undefined): Type {
           ? resolveType((prop.typeAnnotation as t.TSTypeAnnotation).typeAnnotation)
           : T_ANY
         properties.set(key, valueType)
+        if (prop.readonly) readonlyProps.add(key)
       }
       const result: ObjectType = { kind: 'object', properties }
+      if (readonlyProps.size > 0) result.readonlyProps = readonlyProps
       if (indexValueType !== null) {
         // Store index signature info for computed access
         ;(result as any).__indexType = indexValueType
@@ -2106,6 +2109,12 @@ export class TypeChecker {
   private interfaceRegistry: Map<string, Set<string>> = new Map()
   // Class field types: className → fieldName → Type (for this.field inference)
   private classFieldTypes: Map<string, Map<string, Type>> = new Map()
+  // Readonly class fields: className → Set<fieldName> (for SJS-E010)
+  private classReadonlyProps: Map<string, Set<string>> = new Map()
+  // User-defined type alias registry: aliasName → resolved Type (for readonly object types)
+  private typeAliasRegistry: Map<string, Type> = new Map()
+  // Tracks nesting depth inside class constructors (for SJS-E010 constructor exception)
+  private constructorDepth: number = 0
   // Function parameter scope stack: saves previous env bindings to restore on exit
   private paramScopeStack: Array<Map<string, Type | undefined>> = []
   // Type guard registry: fnName → { paramIndex, narrowedType }
@@ -2136,6 +2145,9 @@ export class TypeChecker {
     this.currentClassMethodName = null
     this.interfaceRegistry = new Map()
     this.classFieldTypes = new Map()
+    this.classReadonlyProps = new Map()
+    this.typeAliasRegistry = new Map()
+    this.constructorDepth = 0
     this.paramScopeStack = []
     this.generatorYieldStack = []
   }
@@ -2173,6 +2185,7 @@ export class TypeChecker {
       case 'ClassMethod':
         if ((node as t.ClassMethod).async) this.asyncDepth--
         if ((node as t.ClassMethod).generator) this.generatorYieldStack.pop()
+        if ((node as t.ClassMethod).kind === 'constructor') this.constructorDepth--
         this.exitFunctionParams()
         this.currentClassMethodName = null
         this.env.delete('this')
@@ -2358,6 +2371,7 @@ export class TypeChecker {
       case 'ClassMethod': {
         const cm = path.node as t.ClassMethod
         if (cm.async) this.asyncDepth++
+        if (cm.kind === 'constructor') this.constructorDepth++
         this.enterFunctionParams(cm.params)
         if (this.classContextStack.length > 0) {
           const className = this.classContextStack[this.classContextStack.length - 1]
@@ -2411,6 +2425,7 @@ export class TypeChecker {
           const members = new Map<string, string>()
           const fieldTypes = new Map<string, Type>()
           const staticFieldTypes = new Map<string, Type>()
+          const readonlyFields = new Set<string>()
           for (const member of cls.body.body) {
             const isStatic = (member as any).static === true
             const targetMap = isStatic ? staticFieldTypes : fieldTypes
@@ -2427,6 +2442,7 @@ export class TypeChecker {
                 targetMap.set(mKey, ann && t.isTSTypeAnnotation(ann)
                   ? resolveType((ann as t.TSTypeAnnotation).typeAnnotation)
                   : (init && t.isExpression(init) ? inferExprType(init as t.Expression, this.env) : T_ANY))
+                if ((member as t.ClassProperty).readonly) readonlyFields.add(mKey)
               }
               if (t.isClassMethod(member)) {
                 const meth = member as t.ClassMethod
@@ -2521,6 +2537,7 @@ export class TypeChecker {
           }
           this.classRegistry.set(className, members)
           this.classFieldTypes.set(className, fieldTypes)
+          if (readonlyFields.size > 0) this.classReadonlyProps.set(className, readonlyFields)
           const instanceType = { kind: 'object', brand: className, properties: new Map(fieldTypes) } as import('./types').ObjectType
           // Register class instance type in env under __instance__ClassName for new expressions
           this.env.set(`__instance__${className}`, instanceType)
@@ -2581,6 +2598,7 @@ export class TypeChecker {
         break
       case 'TSTypeAliasDeclaration':
         this.registerSumTypeAlias(path as NodePath<t.TSTypeAliasDeclaration>)
+        this.registerTypeAlias(path as NodePath<t.TSTypeAliasDeclaration>)
         break
       case 'VariableDeclarator':
         this.registerVariantConstructor(path as NodePath<t.VariableDeclarator>)
@@ -2675,8 +2693,8 @@ export class TypeChecker {
         ? resolveType(annotation.typeAnnotation)
         : T_ANY
 
-      // If the annotation is a TSTypeReference to a known sum type alias,
-      // resolve it to the registered SumType so the env has the full type.
+      // If the annotation is a TSTypeReference to a known sum type or object type alias,
+      // resolve it to the registered type so the env has the full type (for readonly checks etc.).
       if (
         hasAnnotation &&
         annotation.typeAnnotation.type === 'TSTypeReference' &&
@@ -2685,6 +2703,10 @@ export class TypeChecker {
         const refName = ((annotation.typeAnnotation as t.TSTypeReference).typeName as t.Identifier).name
         const knownSum = this.sumTypeRegistry.get(refName)
         if (knownSum) declared = knownSum
+        else {
+          const knownAlias = this.typeAliasRegistry.get(refName)
+          if (knownAlias) declared = knownAlias
+        }
       }
 
       const name = decl.id.name
@@ -3021,6 +3043,63 @@ export class TypeChecker {
           this.env.set(bindName, elemT)
         }
       })
+      return
+    }
+    // Member expression assignment: obj.prop = val — check for readonly (SJS-E010)
+    if (t.isMemberExpression(path.node.left)) {
+      const mem = path.node.left as t.MemberExpression
+      if (!mem.computed && t.isIdentifier(mem.property)) {
+        const propName = (mem.property as t.Identifier).name
+        // this.prop assignment — only allow in the constructor of owning class
+        if (t.isThisExpression(mem.object)) {
+          const className = this.classContextStack[this.classContextStack.length - 1]
+          if (className) {
+            const roProps = this.classReadonlyProps.get(className)
+            if (roProps?.has(propName) && this.constructorDepth === 0) {
+              this.report({
+                code: 'SJS-E010',
+                severity: 'error',
+                message: `Cannot assign to readonly property '${propName}' of class '${className}'.`,
+                node: path.node,
+                specUrl: 'https://tc39.es/ecma262/#sec-object-internal-methods',
+              })
+              return
+            }
+          }
+        } else if (t.isIdentifier(mem.object)) {
+          // obj.prop assignment — look up obj type and check readonlyProps
+          const objName = (mem.object as t.Identifier).name
+          const objType = this.env.get(objName)
+          if (objType?.kind === 'object') {
+            // Check object literal type readonly props
+            if ((objType as ObjectType).readonlyProps?.has(propName)) {
+              this.report({
+                code: 'SJS-E010',
+                severity: 'error',
+                message: `Cannot assign to readonly property '${propName}' of type '${objName}'.`,
+                node: path.node,
+                specUrl: 'https://tc39.es/ecma262/#sec-object-internal-methods',
+              })
+              return
+            }
+            // Check class instance readonly props via brand
+            const brand = (objType as ObjectType).brand
+            if (brand) {
+              const roProps = this.classReadonlyProps.get(brand)
+              if (roProps?.has(propName)) {
+                this.report({
+                  code: 'SJS-E010',
+                  severity: 'error',
+                  message: `Cannot assign to readonly property '${propName}' of class '${brand}'.`,
+                  node: path.node,
+                  specUrl: 'https://tc39.es/ecma262/#sec-object-internal-methods',
+                })
+                return
+              }
+            }
+          }
+        }
+      }
       return
     }
     if (!t.isIdentifier(path.node.left)) return
@@ -3449,6 +3528,20 @@ export class TypeChecker {
     }
 
     this.sumTypeRegistry.set(aliasName, sumType)
+  }
+
+  // ── Type alias registry — for readonly property tracking ───────────────────────
+
+  private registerTypeAlias(path: NodePath<t.TSTypeAliasDeclaration>): void {
+    const { node } = path
+    const aliasName = node.id.name
+    const rhs = node.typeAnnotation
+    // Only register object type literals (TSTypeLiteral) that have readonly props
+    if (rhs.type !== 'TSTypeLiteral') return
+    const resolved = resolveType(rhs)
+    if (resolved.kind === 'object' && (resolved as ObjectType).readonlyProps?.size) {
+      this.typeAliasRegistry.set(aliasName, resolved)
+    }
   }
 
   // ── Rule TC-007: Variant constructor registration ─────────────────────────────
