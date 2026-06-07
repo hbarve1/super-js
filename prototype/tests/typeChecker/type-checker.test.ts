@@ -1,16 +1,16 @@
 import { parse } from '@babel/parser'
 import traverse from '@babel/traverse'
 import { TypeChecker } from '../../src/typeChecker'
-import type { PrototypeDiagnostic as Diagnostic } from '../../src/typeChecker/types'
+import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
 
-function typeCheck(source: string): Diagnostic[] {
+function typeCheck(source: string): PrototypeDiagnostic[] {
   const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
   const checker = new TypeChecker()
   traverse(ast, { enter(path) { checker.check(path) } })
   return checker.getDiagnostics()
 }
 
-function errors(source: string): Diagnostic[] {
+function errors(source: string): PrototypeDiagnostic[] {
   return typeCheck(source).filter(d => d.severity === 'error')
 }
 
@@ -45,6 +45,71 @@ describe('Binary expression type inference (ECMA-262 §13.15)', () => {
 
   it('reports mismatch when arithmetic result is assigned to wrong type', () => {
     const diags = errors('const x: string = 1 + 2')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+})
+
+// ── TC-logical: LogicalExpression and ConditionalExpression type inference ─────
+
+describe('TC-logical: LogicalExpression type inference (ECMA-262 §13.13)', () => {
+  it('|| of two strings infers string — no error on string assignment', () => {
+    expect(errors('const x: string = "hello" || "world"')).toHaveLength(0)
+  })
+
+  it('|| of string and number infers union — errors on single-type assignment', () => {
+    const diags = errors('const x: string = "hello" || 42')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('|| of two numbers infers number — no error on number assignment', () => {
+    expect(errors('const x: number = 1 || 2')).toHaveLength(0)
+  })
+
+  it('&& of two strings infers string — no error on string assignment', () => {
+    expect(errors('const x: string = "hello" && "world"')).toHaveLength(0)
+  })
+
+  it('&& of string and number infers union — errors on string assignment', () => {
+    const diags = errors('const x: string = "foo" && 42')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('?? with null left — infers right type (string)', () => {
+    expect(errors('const x: string = null ?? "default"')).toHaveLength(0)
+  })
+
+  it('?? with undefined left — infers right type (number)', () => {
+    expect(errors('const x: number = undefined ?? 42')).toHaveLength(0)
+  })
+
+  it('?? with non-nullable left — infers left type, ignores right', () => {
+    // left is string (not null/undefined), result is string
+    expect(errors('const x: string = "hello" ?? 42')).toHaveLength(0)
+  })
+
+  it('?? with non-nullable left — right type does not widen the result', () => {
+    // "hello" ?? 42 → string; assigning to number should error
+    const diags = errors('const x: number = "hello" ?? 42')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+})
+
+describe('TC-conditional: ConditionalExpression type inference (ECMA-262 §13.14)', () => {
+  it('ternary with same type on both branches infers that type', () => {
+    expect(errors('const x: string = true ? "yes" : "no"')).toHaveLength(0)
+  })
+
+  it('ternary with number on both branches infers number', () => {
+    expect(errors('const x: number = true ? 1 : 2')).toHaveLength(0)
+  })
+
+  it('ternary with different branch types infers union — errors on single-type assignment', () => {
+    const diags = errors('const x: string = true ? "yes" : 42')
+    expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
+  })
+
+  it('ternary with string and boolean branches errors on number assignment', () => {
+    const diags = errors('const x: number = true ? "yes" : false')
     expect(diags.some(d => d.code === 'SJS-E001')).toBe(true)
   })
 })
