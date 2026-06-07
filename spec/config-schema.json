@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superjs.dev/spec/config/v1",
+  "title": "superjs.config.json",
+  "description": "Configuration file for the SuperJS compiler",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "language": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Reserved language version field. Must be '1.0' if present. Does nothing at v1.0 but prevents schema breakage in future multi-version coexistence."
+    },
+    "extends": {
+      "type": "string",
+      "description": "Path to a tsconfig.json or another superjs.config.json. The 'paths' from the extended file are merged with this file's paths (this file wins on conflict)."
+    },
+    "compilerOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strict": { "type": "boolean", "description": "Enable strict mode (SJS-W001 for implicit dynamic)", "default": false },
+        "noEmitOnError": { "type": "boolean", "description": "Do not emit JS output if type errors are present", "default": false },
+        "target": { "type": "string", "enum": ["ES2020", "ES2021", "ES2022", "ES2023", "ES2024", "ESNext"], "default": "ES2022" },
+        "outDir": { "type": "string", "description": "Output directory for compiled .js files" },
+        "sourceMap": { "type": "string", "enum": ["none", "inline", "external"], "default": "none" },
+        "watch": { "type": "boolean", "default": false }
+      }
+    },
+    "jsx": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runtime": { "type": "string", "enum": ["automatic", "classic"], "default": "automatic" },
+        "importSource": { "type": "string", "default": "react", "description": "Import source for JSX automatic runtime" },
+        "pragma": { "type": "string", "default": "React.createElement", "description": "Pragma for JSX classic runtime" },
+        "pragmaFrag": { "type": "string", "default": "React.Fragment" }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } },
+      "description": "Path aliases (TypeScript paths format)"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "target"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "target": { "type": "string", "enum": ["ES2020", "ES2021", "ES2022", "ES2023", "ES2024", "ESNext"] },
+              "outDir": { "type": "string" }
+            }
+          },
+          "description": "Multiple output variants (e.g. ESM and CJS)"
+        },
+        "eol": { "type": "string", "enum": ["lf", "crlf", "auto"], "default": "lf" }
+      }
+    },
+    "lsp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memoryBudgetMB": { "type": "integer", "minimum": 64, "maximum": 4096, "default": 128, "description": "LSP server memory budget. Exceeding this emits SJS-W010." }
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowlist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Environment variable names that may be accessed via process.env"
+        }
+      }
+    }
+  }
+}

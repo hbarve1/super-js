@@ -1,0 +1,56 @@
+[
+  {
+    "line": "const el = <Foo bar={42}>{children}</Foo>",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 12,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 12,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 37,
+        "endIndex": 40,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 40,
+        "endIndex": 42,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

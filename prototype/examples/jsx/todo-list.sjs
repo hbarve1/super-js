@@ -35,7 +35,7 @@ function TodoInput({ onAdd }: TodoInputProps) {
       <input
         type="text"
         placeholder="What needs to be done?"
-        onChange={e => inputValue = (e.target as HTMLInputElement).value}
+        onChange={(e: dynamic) => { inputValue = e.target.value }}
       />
       <button type="submit">Add Todo</button>
     </form>

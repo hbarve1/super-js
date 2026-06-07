@@ -1,0 +1,9 @@
+# Default owners for everything
+* @hbarve1
+
+# Spec and RFCs require maintainer review
+/spec/ @hbarve1
+/rfcs/ @hbarve1
+
+# compiler-types breaking changes require maintainer review
+/packages/compiler-types/ @hbarve1

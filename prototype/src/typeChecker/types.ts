@@ -23,6 +23,19 @@ export interface BigIntType    { kind: 'bigint' }      // §6.1.6.2
 export interface ObjectType {
   kind: 'object'
   properties: Map<string, Type>
+  typeParams?: string[]
+  /** Identifies branded stdlib objects (Map, Set, WeakMap, WeakSet, WeakRef, Date, RegExp, Error). */
+  brand?: string
+  /** Map<K,V> / WeakMap<K,V> — key type */
+  mapKeyType?: Type
+  /** Map<K,V> / WeakMap<K,V> — value type */
+  mapValueType?: Type
+  /** Set<T> / WeakSet<T> — element type */
+  setElementType?: Type
+  /** WeakRef<T> — inner type */
+  weakRefType?: Type
+  /** Properties declared `readonly` — SJS-E010 guards assignment to these. */
+  readonlyProps?: Set<string>
 }
 
 // ── Composite types ───────────────────────────────────────────────────────────
@@ -30,12 +43,28 @@ export interface ObjectType {
 export interface ArrayType {
   kind: 'array'
   elementType: Type
+  /** True for ReadonlyArray<T> and readonly T[] — mutating methods are banned (SJS-E010). */
+  readonly?: boolean
 }
 
 export interface FunctionType {
   kind: 'function'
   params: Array<{ name: string; type: Type; optional: boolean }>
   returnType: Type
+  typeParams?: string[]
+}
+
+// ── Generic type parameter placeholder ───────────────────────────────────────
+
+/** Represents an unresolved generic type parameter, e.g. `T` in `identity<T>`. */
+export interface TypeParamType {
+  kind: 'typeParam'
+  name: string
+}
+
+export interface TupleType {
+  kind: 'tuple'
+  elements: Type[]
 }
 
 export interface UnionType {
@@ -60,6 +89,28 @@ export interface SumType {
   kind: 'sum'
   name: string           // declared type name, e.g. "Result"
   variants: SumVariantType[]
+}
+
+/**
+ * Promise<T> — the result of an async function or an awaitable value.
+ * ECMA-262 §27.2 Promise Objects.
+ */
+export interface PromiseType {
+  kind: 'promise'
+  valueType: Type
+}
+
+/**
+ * Generator<Y, R, N> — the result of a generator function (function*).
+ * ECMA-262 §27.3 Generator Objects.
+ * Y = yield type, R = return type, N = next input type.
+ */
+export interface GeneratorType {
+  kind: 'generator'
+  yieldType: Type
+  returnType: Type
+  nextType: Type
+  async: boolean
 }
 
 /** `dynamic` — runtime-checked escape hatch (not `any`). Consistent with every type. */
@@ -92,6 +143,7 @@ export type Type =
   | BigIntType
   | ObjectType
   | ArrayType
+  | TupleType
   | FunctionType
   | UnionType
   | IntersectionType
@@ -101,21 +153,23 @@ export type Type =
   | SumType
   | SumVariantType
   | DynamicType
+  | TypeParamType
+  | PromiseType
+  | GeneratorType
 
 // ── Diagnostic ────────────────────────────────────────────────────────────────
 
 /**
- * A compiler diagnostic (error or warning).
+ * Prototype-internal diagnostic shape.
  *
- * Follows the Rust-inspired model from research.md §3:
- *   - stable `SJS-Exxx` codes
- *   - precise source location
- *   - `specUrl` linking to the ECMAScript (or TypeScript) specification section
- *     that defines the rule being violated
+ * Uses flat `line`/`column` fields (Babel AST coordinates) for Phase 1
+ * compatibility.  The public `Diagnostic` type is the canonical shape from
+ * `@superjs/compiler-types`; this local alias is intentionally kept until
+ * Stage 1 wires up the full `SourceSpan`-based pipeline.
  */
-export interface Diagnostic {
+export interface PrototypeDiagnostic {
   code: string          // e.g. "SJS-E001"
-  severity: 'error' | 'warning' | 'note'
+  severity: 'error' | 'warning' | 'info'
   message: string       // plain-English, names both types
   file?: string
   line: number
@@ -124,6 +178,9 @@ export interface Diagnostic {
   endColumn?: number
   specUrl: string       // authoritative spec anchor for this rule
 }
+
+// Re-export the canonical Diagnostic type from the shared package.
+export type { Diagnostic, Severity, SourceSpan, SJSType } from '@superjs/compiler-types';
 
 // ── Type environment ──────────────────────────────────────────────────────────
 

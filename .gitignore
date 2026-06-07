@@ -62,3 +62,12 @@ typings/
 
 .DS_Store
 **/*/.DS_Store
+
+# Git worktrees
+.worktrees/
+# Build artifacts
+packages/*/dist/
+packages/*/tsconfig.tsbuildinfo
+prototype/tsconfig.tsbuildinfo
+graphify-out/
+.superpowers/
