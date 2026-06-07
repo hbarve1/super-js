@@ -2588,6 +2588,30 @@ describe('E4: import.meta and new.target', () => {
     traverse(ast, { enter(p: any) { checker.check(p) } })
     expect(checker.getDiagnostics().filter((d: any) => d.severity === 'error')).toHaveLength(0)
   })
+
+  it('import.meta.url assigned to number emits SJS-E001 (url is string)', () => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse('const n: number = import.meta.url', {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(p: any) { checker.check(p) }, exit(p: any) { checker.exit(p) } })
+    const codes = checker.getDiagnostics().map((d: any) => d.code)
+    expect(codes).toContain('SJS-E001')
+  })
+
+  it('new.target is accessible in constructor — no error', () => {
+    expect(errors(`
+      class Foo {
+        constructor() {
+          const t = new.target
+        }
+      }
+    `)).toHaveLength(0)
+  })
 })
 
 // ── E5: TSAsExpression and TSNonNullExpression ────────────────────────────────
