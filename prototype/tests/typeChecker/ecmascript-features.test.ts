@@ -2588,6 +2588,30 @@ describe('E4: import.meta and new.target', () => {
     traverse(ast, { enter(p: any) { checker.check(p) } })
     expect(checker.getDiagnostics().filter((d: any) => d.severity === 'error')).toHaveLength(0)
   })
+
+  it('import.meta.url assigned to number emits SJS-E001 (url is string)', () => {
+    const { parse } = require('@babel/parser')
+    const traverse = require('@babel/traverse').default
+    const { TypeChecker } = require('../../src/typeChecker')
+    const ast = parse('const n: number = import.meta.url', {
+      sourceType: 'module',
+      plugins: ['typescript'],
+    })
+    const checker = new TypeChecker()
+    traverse(ast, { enter(p: any) { checker.check(p) }, exit(p: any) { checker.exit(p) } })
+    const codes = checker.getDiagnostics().map((d: any) => d.code)
+    expect(codes).toContain('SJS-E001')
+  })
+
+  it('new.target is accessible in constructor — no error', () => {
+    expect(errors(`
+      class Foo {
+        constructor() {
+          const t = new.target
+        }
+      }
+    `)).toHaveLength(0)
+  })
 })
 
 // ── E5: TSAsExpression and TSNonNullExpression ────────────────────────────────
@@ -4502,6 +4526,14 @@ describe('yield expression type checking', () => {
     `)).toHaveLength(1)
   })
 
+  it('yield wrong type emits SJS-E001 (not SJS-E006)', () => {
+    expect(errorCodes(`
+      function* nums(): Generator<number> {
+        yield 'hello'
+      }
+    `)).toContain('SJS-E001')
+  })
+
   it('yield without annotation — no error (gradual)', () => {
     expect(errors(`
       function* gen() {
@@ -4906,6 +4938,48 @@ describe('readonly T[] function parameter — SJS-E010', () => {
         arr.sort()
       }
     `)).toContain('SJS-E010')
+  })
+})
+
+describe('UpdateExpression (++/--) type validation — ECMA-262 §13.4', () => {
+  it('++ on number is valid — no error', () => {
+    expect(errors('let n: number = 0; n++')).toHaveLength(0)
+  })
+
+  it('-- on number is valid — no error', () => {
+    expect(errors('let n: number = 5; n--')).toHaveLength(0)
+  })
+
+  it('++ on bigint is valid — no error', () => {
+    expect(errors('let b: bigint = 1n; b++')).toHaveLength(0)
+  })
+
+  it('++ on string emits SJS-E001', () => {
+    expect(errorCodes('let s: string = "hello"; s++')).toContain('SJS-E001')
+  })
+
+  it('-- on boolean emits SJS-E001', () => {
+    expect(errorCodes('let b: boolean = true; b--')).toContain('SJS-E001')
+  })
+})
+
+describe('in operator — ECMA-262 §13.10', () => {
+  it('"key" in obj returns boolean', () => {
+    expect(errors(`
+      const obj = { x: 1, y: 2 }
+      const has: boolean = "x" in obj
+    `)).toHaveLength(0)
+  })
+
+  it('#field in obj brand check returns boolean (ES2022)', () => {
+    expect(errors(`
+      class Point {
+        #x: number = 0
+        hasX(other: unknown): boolean {
+          return #x in (other as any)
+        }
+      }
+    `)).toHaveLength(0)
   })
 })
 
