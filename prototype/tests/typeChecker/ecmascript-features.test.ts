@@ -4909,6 +4909,48 @@ describe('readonly T[] function parameter — SJS-E010', () => {
   })
 })
 
+describe('UpdateExpression (++/--) type validation — ECMA-262 §13.4', () => {
+  it('++ on number is valid — no error', () => {
+    expect(errors('let n: number = 0; n++')).toHaveLength(0)
+  })
+
+  it('-- on number is valid — no error', () => {
+    expect(errors('let n: number = 5; n--')).toHaveLength(0)
+  })
+
+  it('++ on bigint is valid — no error', () => {
+    expect(errors('let b: bigint = 1n; b++')).toHaveLength(0)
+  })
+
+  it('++ on string emits SJS-E001', () => {
+    expect(errorCodes('let s: string = "hello"; s++')).toContain('SJS-E001')
+  })
+
+  it('-- on boolean emits SJS-E001', () => {
+    expect(errorCodes('let b: boolean = true; b--')).toContain('SJS-E001')
+  })
+})
+
+describe('in operator — ECMA-262 §13.10', () => {
+  it('"key" in obj returns boolean', () => {
+    expect(errors(`
+      const obj = { x: 1, y: 2 }
+      const has: boolean = "x" in obj
+    `)).toHaveLength(0)
+  })
+
+  it('#field in obj brand check returns boolean (ES2022)', () => {
+    expect(errors(`
+      class Point {
+        #x: number = 0
+        hasX(other: unknown): boolean {
+          return #x in (other as any)
+        }
+      }
+    `)).toHaveLength(0)
+  })
+})
+
 describe('switch statement — ECMA-262 §14.12', () => {
   it('switch on string — no error', () => {
     expect(errors(`

@@ -2644,6 +2644,9 @@ export class TypeChecker {
       case 'BinaryExpression':
         this.checkBinaryExpression(path as NodePath<t.BinaryExpression>)
         break
+      case 'UpdateExpression':
+        this.checkUpdateExpression(path as NodePath<t.UpdateExpression>)
+        break
       case 'BlockStatement':
         this.enterBlockStatement()
         break
@@ -3670,6 +3673,23 @@ export class TypeChecker {
         specUrl: SPEC.BIGINT_TYPE,
       })
     }
+  }
+
+  // ── UpdateExpression type check (++/--) ──────────────────────────────────────
+
+  private checkUpdateExpression(path: NodePath<t.UpdateExpression>): void {
+    const { node } = path
+    if (!t.isExpression(node.argument)) return
+    const operandType = inferExprType(node.argument as t.Expression, this.env)
+    if (operandType.kind === 'any' || operandType.kind === 'dynamic' ||
+        operandType.kind === 'number' || operandType.kind === 'bigint') return
+    this.report({
+      code: 'SJS-E001',
+      severity: 'error',
+      message: `Operand of '${node.operator}' must be number or bigint, got '${operandType.kind}'. (ECMA-262 §13.4)`,
+      node,
+      specUrl: 'https://tc39.es/ecma262/#sec-prefix-increment-operator',
+    })
   }
 
   // ── Rule SJS-E007: Switch exhaustiveness check ────────────────────────────────
