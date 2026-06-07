@@ -4526,6 +4526,14 @@ describe('yield expression type checking', () => {
     `)).toHaveLength(1)
   })
 
+  it('yield wrong type emits SJS-E001 (not SJS-E006)', () => {
+    expect(errorCodes(`
+      function* nums(): Generator<number> {
+        yield 'hello'
+      }
+    `)).toContain('SJS-E001')
+  })
+
   it('yield without annotation — no error (gradual)', () => {
     expect(errors(`
       function* gen() {

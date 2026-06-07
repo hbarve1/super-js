@@ -3296,9 +3296,9 @@ export class TypeChecker {
     const argType = inferExprType(node.argument, this.env)
     if (!isConsistent(argType, declaredYieldType)) {
       this.report({
-        code: 'SJS-E006',
+        code: 'SJS-E001',
         severity: 'error',
-        message: `Yield type mismatch: declared yield type is '${declaredYieldType.kind}' but got '${argType.kind}'.`,
+        message: `I cannot yield a value of type '${argType.kind}' from a generator declared to yield '${declaredYieldType.kind}'.`,
         node: node.argument,
         specUrl: 'https://tc39.es/ecma262/#sec-yield',
       })
