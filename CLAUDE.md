@@ -1,15 +1,28 @@
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan at:
-`specs/001-superjs-core-language/plan.md`
+## SuperJS — Agent Context
 
-Key artifacts for current feature (001-superjs-core-language):
-- Spec: `specs/001-superjs-core-language/spec.md`
-- Plan: `specs/001-superjs-core-language/plan.md`
-- Research: `specs/001-superjs-core-language/research.md`
-- Data Model: `specs/001-superjs-core-language/data-model.md`
-- CLI Contract: `specs/001-superjs-core-language/contracts/cli-interface.md`
-- Compiler API: `specs/001-superjs-core-language/contracts/compiler-api.md`
-- Config Schema: `specs/001-superjs-core-language/contracts/config-schema.json`
-- Quickstart: `specs/001-superjs-core-language/quickstart.md`
-<!-- SPECKIT END -->
+Read `specs/mission.md` first for project goal, principles, and key language facts.
+
+## Specs structure
+
+```
+specs/
+├── mission.md                  # Project goal, principles, key facts — READ FIRST
+├── roadmap/                    # Stage 0–6 production plans
+├── features/                   # Per-feature implementation specs
+│   ├── 001-core-language/      # Core language + CLI (COMPLETE)
+│   ├── 002-ecmascript/         # ES5–ES2025 type-checking (COMPLETE)
+│   ├── 003-website/            # Next.js marketing site + playground (COMPLETE)
+│   ├── 004-vscode-extension/   # VS Code extension plans
+│   └── 005-sjs-examples/       # SJS examples rewrite plans
+├── ecmascript/                 # ES5–ES2025 reference docs per year
+├── design/                     # Architecture and design docs
+└── archive/                    # Superseded docs (read-only reference)
+```
+
+## Formal spec (not planning)
+
+`spec/` — canonical language spec: `grammar.ebnf`, `error-codes.md`, JSON schemas. Do not confuse with `specs/`.
+
+## Next stage
+
+`specs/roadmap/stage-0-foundations.md` — start here for next work.

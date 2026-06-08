@@ -6,7 +6,7 @@ import { execSync } from 'child_process'
 type CompileParams = Parameters<typeof _compile>[0]
 const compile = (opts: CompileParams) => _compile({ silent: true, ...opts })
 
-const EXAMPLES_DIR = resolve(__dirname, '../../examples')
+const EXAMPLES_DIR = resolve(__dirname, '../../../examples')
 const TMP_OUT = resolve(__dirname, '../__tmp_out__')
 
 beforeEach(() => {

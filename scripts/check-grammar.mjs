@@ -24,7 +24,7 @@ import { createRequire } from 'node:module';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, '..');
 const prototypeDir = join(root, 'prototype');
-const examplesDir = join(prototypeDir, 'examples');
+const examplesDir = join(root, 'examples');
 
 // Resolve @babel/parser from the prototype's own node_modules so we don't
 // need to install it at the monorepo root.
@@ -38,7 +38,7 @@ const BABEL_PLUGINS = ['typescript', 'jsx', 'decorators-legacy'];
 // SJS-native parser (spec/grammar.ebnf-derived) is implemented.
 // Format: relative path from repo root -> reason
 const KNOWN_FAILURES = new Map([
-  ['prototype/examples/node/src/analyzer.sjs',
+  ['examples/node/src/analyzer.sjs',
     'Uses SJS sum-type declaration: type T = Variant(U) | ... (not valid TypeScript)'],
 ]);
 
