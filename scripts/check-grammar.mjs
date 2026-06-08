@@ -24,7 +24,7 @@ import { createRequire } from 'node:module';
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, '..');
 const prototypeDir = join(root, 'prototype');
-const examplesDir = join(prototypeDir, 'examples');
+const examplesDir = join(root, 'examples');
 
 // Resolve @babel/parser from the prototype's own node_modules so we don't
 // need to install it at the monorepo root.

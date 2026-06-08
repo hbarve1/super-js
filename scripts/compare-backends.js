@@ -45,7 +45,7 @@ function findSjs(dir) {
 }
 
 const goldenFixtures = findSjs(join(PROTOTYPE_DIR, 'tests/golden/fixtures'))
-const exampleFiles  = findSjs(join(PROTOTYPE_DIR, 'examples'))
+const exampleFiles  = findSjs(join(ROOT, 'examples'))
 const corpus = [...goldenFixtures, ...exampleFiles]
 
 // ── Backend 1: prototype (Babel) — run as subprocess ─────────────────────────
