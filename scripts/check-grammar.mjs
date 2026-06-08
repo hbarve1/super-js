@@ -38,7 +38,7 @@ const BABEL_PLUGINS = ['typescript', 'jsx', 'decorators-legacy'];
 // SJS-native parser (spec/grammar.ebnf-derived) is implemented.
 // Format: relative path from repo root -> reason
 const KNOWN_FAILURES = new Map([
-  ['prototype/examples/node/src/analyzer.sjs',
+  ['examples/node/src/analyzer.sjs',
     'Uses SJS sum-type declaration: type T = Variant(U) | ... (not valid TypeScript)'],
 ]);
 

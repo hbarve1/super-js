@@ -55,11 +55,18 @@ export function createStorage<T>(key: string, defaultValue: T): StorageAdapter<T
   return { get, set, remove, exists, getOrDefault }
 }
 
+type Todo = {
+  id: number
+  text: string
+  done: boolean
+  createdAt: number
+}
+
 /**
  * Convenience adapter for the app's todo list and filter state.
  */
 type AppPersistedState = {
-  todos: any[]
+  todos: Todo[]
   filter: string
   nextId: number
 }

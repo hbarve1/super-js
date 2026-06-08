@@ -58,7 +58,7 @@ async function run() {
 
 // Async class methods
 class DataService {
-  private cache: Map<number, any> = new Map()
+  private cache: Map<number, unknown> = new Map()
 
   async get<T>(id: number, fetcher: (id: number) => Promise<T>): Promise<T> {
     if (this.cache.has(id)) {

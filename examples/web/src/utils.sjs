@@ -28,7 +28,7 @@ export function formatDate(ts: number): string {
  * Returns a debounced version of `fn` that delays invocation by `wait` ms.
  * Subsequent calls within the window reset the timer.
  */
-export function debounce(fn: (...args: any[]) => void, wait: number): (...args: any[]) => void {
+export function debounce(fn: (...args: dynamic[]) => void, wait: number): (...args: dynamic[]) => void {
   let timer: ReturnType<typeof setTimeout> | null = null
 
   return function debounced(...args: any[]): void {
@@ -45,7 +45,7 @@ export function debounce(fn: (...args: any[]) => void, wait: number): (...args: 
 /**
  * Returns a throttled version of `fn` that fires at most once per `limit` ms.
  */
-export function throttle(fn: (...args: any[]) => void, limit: number): (...args: any[]) => void {
+export function throttle(fn: (...args: dynamic[]) => void, limit: number): (...args: dynamic[]) => void {
   let lastCall: number = 0
 
   return function throttled(...args: any[]): void {
