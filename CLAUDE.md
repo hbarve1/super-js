@@ -23,6 +23,17 @@ specs/
 
 `spec/` — canonical language spec: `grammar.ebnf`, `error-codes.md`, JSON schemas. Do not confuse with `specs/`.
 
+## Git workflow
+
+Full rules: `specs/design/git-workflow.md`
+
+Key rules for agents:
+- `main` is production — never push directly, all changes via PR
+- Feature branches cut from `main`; PRs always `--base main`
+- Worktrees live in `.worktrees/<branch-name>/` (gitignored)
+- Branch naming: `feature/`, `fix/`, `chore/`, `release/`
+- `gh pr create --base main` — always
+
 ## Next stage
 
 `specs/roadmap/stage-0-foundations.md` — start here for next work.
