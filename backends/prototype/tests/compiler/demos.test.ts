@@ -2,7 +2,7 @@ import { compile } from '../../src/compiler'
 import { join } from 'path'
 import { existsSync, rmSync } from 'fs'
 
-const DEMOS_DIR = join(__dirname, '../../../examples')
+const DEMOS_DIR = join(__dirname, '../../../../examples')
 
 describe('Demo projects compile end-to-end', () => {
   const demos = [

@@ -7,6 +7,13 @@ Read `specs/mission.md` first for project goal, principles, and key language fac
 ```
 specs/
 ├── mission.md                  # Project goal, principles, key facts — READ FIRST
+├── grammar.ebnf                # Formal grammar (machine-consumed by Stage 1 parser)
+├── error-codes.md              # Error code registry
+├── error-codes/                # Per-code spec files (SJS-E001 … SJS-E012)
+├── config-schema.json          # JSON schema for superjs.config.json
+├── diagnostics.schema.json     # JSON schema for diagnostic fixtures
+├── fixtures/                   # Config + diagnostic test fixtures
+├── language/                   # Language reference docs
 ├── roadmap/                    # Stage 0–6 production plans
 ├── features/                   # Per-feature implementation specs
 │   ├── 001-core-language/      # Core language + CLI (COMPLETE)
@@ -18,10 +25,6 @@ specs/
 ├── design/                     # Architecture and design docs
 └── archive/                    # Superseded docs (read-only reference)
 ```
-
-## Formal spec (not planning)
-
-`spec/` — canonical language spec: `grammar.ebnf`, `error-codes.md`, JSON schemas. Do not confuse with `specs/`.
 
 ## Git workflow
 

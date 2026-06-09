@@ -2,7 +2,7 @@
 * @hbarve1
 
 # Spec and RFCs require maintainer review
-/spec/ @hbarve1
+/specs/ @hbarve1
 /rfcs/ @hbarve1
 
 # compiler-types breaking changes require maintainer review

@@ -22,7 +22,7 @@ const { join, resolve } = require('path')
 const os = require('os')
 
 const ROOT = resolve(__dirname, '..')
-const PROTOTYPE_DIR = join(ROOT, 'prototype')
+const PROTOTYPE_DIR = join(ROOT, 'backends/prototype')
 const COMPILER_DIR = join(ROOT, 'compiler')
 
 const args = process.argv.slice(2)

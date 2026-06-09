@@ -6,11 +6,11 @@ import Ajv from 'ajv/dist/2020.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, '..');
-const schema = JSON.parse(readFileSync(join(root, 'spec/config-schema.json'), 'utf8'));
+const schema = JSON.parse(readFileSync(join(root, 'specs/config-schema.json'), 'utf8'));
 const ajv = new Ajv({ strict: true });
 const validate = ajv.compile(schema);
 
-const fixturesDir = join(root, 'spec/fixtures/configs');
+const fixturesDir = join(root, 'specs/fixtures/configs');
 const files = readdirSync(fixturesDir).filter(f => f.endsWith('.json'));
 let errors = 0;
 for (const file of files) {
