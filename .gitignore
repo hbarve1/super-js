@@ -75,5 +75,8 @@ graphify-out/
 # Runtime agent logs
 .remember/
 
+# Speckit tool (removed)
+.specify/
+
 # Pagefind search index (generated at build time)
 website/public/pagefind/
