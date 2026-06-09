@@ -149,12 +149,14 @@ superjs test   [--source <file>] [--watch] [--coverage]
 
 ## Diagnostic Codes
 
-| Code | Severity | Meaning |
-|------|----------|---------|
-| SJS-E001 | Error | Null assigned to non-nullable type |
-| SJS-E002 | Error | Type mismatch on assignment |
-| SJS-E007 | Error | Non-exhaustive match (missing sum type variant) |
-| SJS-W001 | Warning | Implicit `dynamic` (strict mode only) |
+SJS emits structured diagnostic codes. Full registry: [`specs/error-codes.md`](specs/error-codes.md). Per-code fix guidance: [`specs/error-codes/`](specs/error-codes/).
+
+| Series | Range | Purpose |
+|--------|-------|---------|
+| `SJS-E` | E001–E019 | Hard type errors — compilation halts |
+| `SJS-W` | W001–W010 | Warnings — configurable as errors via `--strict` |
+| `SJS-L` | L001–L005 | Lint rules — off by default in `--loose` mode |
+| `SJS-P` | P001–P099 | Parser errors — always fatal |
 
 ---
 
@@ -163,22 +165,17 @@ superjs test   [--source <file>] [--watch] [--coverage]
 ```
 super-js/
 ├── backends/
-│   ├── prototype/       # Babel-based compiler + tools (reference impl, active)
-│   │   ├── src/
-│   │   │   ├── compiler/    # Babel pipeline
-│   │   │   ├── preprocessor/# SJS-specific syntax transforms
-│   │   │   ├── typeChecker/ # Static type checker
-│   │   │   ├── linter/
-│   │   │   ├── formatter/
-│   │   │   └── tester/
-│   │   └── tests/       # 202 passing tests
+│   ├── prototype/       # Babel-based reference compiler (active — Phase 1)
 │   └── llvm/            # Future: LLVM native backend (C++/LLVM 17)
-├── compiler/            # Plain-JS correctness-check compiler (validates vs prototype)
-├── examples/            # .sjs demo files
-├── packages/            # npm packages (@superjs/stdlib, etc.)
-├── specs/               # Formal spec — grammar.ebnf, error codes, language docs
+├── compiler/            # Plain-JS production compiler (Phase 2 — in progress)
+├── examples/            # .sjs demo files with reading order
+├── packages/
+│   ├── compiler-types/  # @superjs/compiler-types — shared AST/Diagnostic types
+│   └── stdlib/          # @superjs/stdlib — planned Stage 4
+├── specs/               # Formal spec: grammar, error codes, language docs, ADRs
+├── docs/                # HOWTO guides for contributors and agents
 ├── rfcs/                # RFC-NNNN-title.md proposals
-├── tools/               # VS Code extension, playground, etc.
+├── tools/               # VS Code extension, playground (Stage 3+)
 └── website/             # Next.js documentation site
 ```
 
@@ -186,17 +183,29 @@ super-js/
 
 ## Roadmap
 
-| Phase | Version | Status | Description |
-|-------|---------|--------|-------------|
-| 1 | 0.1.0 | **Complete** | Babel prototype — TypeChecker + Preprocessor + Babel transforms |
-| 2 | 1.0.0 | In progress | Custom JS compiler — recursive descent, zero external deps |
-| 3 | 2.0.0 | Planned | LLVM native backend — C++17 + LLVM, <50ms compile target |
+| Stage | Status | Goal |
+|-------|--------|------|
+| 0 — Foundations | **Complete** | Monorepo, shared types, grammar spec, error codes, CI, RFCs 0001–0005 |
+| 1 — Compiler Core | **In progress** | Production parser, full type checker, deterministic codegen, LSP API |
+| 2 — Interop | Planned | `.d.ts` consumption, npm package wrappers, `tsconfig.json` paths |
+| 3 — DX Tools | Planned | Formatter, linter (17 rules), VS Code extension, watch mode |
+| 4 — Stdlib | Planned | `@superjs/stdlib` — Result, Option, Iterator, collections |
+| 5 — Ecosystem | Planned | React wrapper, Node.js types, Jest transform, Vite plugin |
+| 6 — Stability | Planned | 1.0 semver, migration guide, public docs, community open |
+
+Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 
 ---
 
 ## Documentation
 
-Full documentation is available at the [docs site](./website).
+| Resource | Purpose |
+|----------|---------|
+| [`specs/`](specs/) | Formal language spec — grammar, error codes, type rules |
+| [`docs/`](docs/) | HOWTO guides — add a diagnostic, add a type-checker rule, add a language feature |
+| [`specs/design/`](specs/design/) | Architecture Decision Records (ADRs) |
+| [`rfcs/`](rfcs/) | Language change proposals |
+| [`website/`](website/) | Public docs site |
 
 ---
 
