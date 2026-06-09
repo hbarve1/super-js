@@ -58,5 +58,5 @@ Ship **SuperJS 1.0** — a production-grade language toolchain usable by real pr
 - Banned: `any`, `enum`, mapped types, conditional types, `A & B` intersections
 - `dynamic` = runtime-checked escape hatch, warns in strict mode
 - Structural interfaces — conformance checked structurally, no explicit `implements`
-- Error codes: `SJS-E001`–`SJS-E011` (type errors), `SJS-W001` (warnings), `SJS-L001`–`SJS-L005` (lint), `SJS-P001`–`SJS-P099` (parser)
+- Error codes: `SJS-E001`–`SJS-E019` (type errors), `SJS-W001`–`SJS-W012` (warnings), `SJS-L001`–`SJS-L011` (lint/security), `SJS-P001`–`SJS-P099` (parser)
 - CLI: `superjs build | lint | format | test [--watch] [--strict] [--json]`
