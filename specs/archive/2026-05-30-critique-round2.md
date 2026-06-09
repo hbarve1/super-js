@@ -1,3 +1,5 @@
+> **Archived feedback — no longer actionable.** Superseded by `specs/roadmap/`. Read-only reference.
+
 # Plan Critique: SuperJS Production Roadmap (Round 2)
 
 **Critique date:** 2026-05-30

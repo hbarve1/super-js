@@ -1,3 +1,5 @@
+> **Archived** — Superseded by `specs/features/001-core-language/type-system-v2.md`. Read-only reference.
+
 # Super.js Type System
 
 **Branch**: `001-superjs-core-language` | **Updated**: 2026-05-26 | **Status**: ✅ Implemented
