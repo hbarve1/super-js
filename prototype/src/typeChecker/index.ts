@@ -1390,9 +1390,10 @@ function inferExprType(node: t.Expression | null | undefined, env: TypeEnvironme
       const left  = inferExprType(node.left,  env)
       const right = inferExprType(node.right, env)
       if (node.operator === '??') {
-        // `a ?? b`: when a is null/undefined use b, otherwise a
-        // Result type: non-nullable part of a, unioned with b's type
-        return makeUnion(stripNullable(left), right)
+        // `a ?? b`: if a is null/undefined use b; if a is T|null|undefined use T|b; else use a
+        if (left.kind === 'null' || left.kind === 'undefined') return right
+        if (left.kind === 'union') return makeUnion(stripNullable(left), right)
+        return left  // left is non-nullable — result is always left
       }
       // `a && b` and `a || b`: either side may be returned
       return makeUnion(left, right)
