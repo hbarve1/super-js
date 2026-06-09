@@ -80,12 +80,13 @@ These codes are emitted by the type checker or compiler pipeline for conditions 
 | SJS-W008 | warning | control-flow | Implicit switch fallthrough between non-empty case clauses | Stage 1 |
 | SJS-W009 | warning | control-flow | Unreachable code following a terminator statement | Stage 1 |
 | SJS-W010 | warning | try-catch | `catch` binding not typed as `Error` or `unknown` | Stage 1 |
+| SJS-W012 | warning | security | BiDi control character in source file | Stage 1 |
 
 ---
 
 ## Lint Codes (SJS-L001–L099)
 
-These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be configured in the project's `superjs.config` file.
+These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be configured in the project's `superjs.config` file. Security-critical lint codes (SJS-L011) are emitted by the lexer at Stage 1.
 
 | Code | Severity | Category | Short Message | Owning Stage |
 |------|----------|----------|---------------|--------------|
@@ -94,6 +95,7 @@ These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be confi
 | SJS-L003 | warning | lint | Use `===` / `!==` — `==` / `!=` performs type coercion | Stage 3 |
 | SJS-L004 | warning | lint | Prefer `for…of` over `for…in` for array and iterable iteration | Stage 3 |
 | SJS-L005 | warning | lint | `debugger` statement found in committed code | Stage 3 |
+| SJS-L011 | error | security | BiDi control character rejected | Stage 1 |
 
 ---
 
