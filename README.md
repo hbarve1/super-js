@@ -43,7 +43,7 @@ SJS 0.1.0 is a prototype — install from source:
 
 ```bash
 git clone https://github.com/hbarve1/super-js.git
-cd super-js/prototype
+cd super-js/backends/prototype
 npm install
 npm run build
 npm link          # makes `superjs` available globally
@@ -162,19 +162,24 @@ superjs test   [--source <file>] [--watch] [--coverage]
 
 ```
 super-js/
-├── prototype/           # Phase 1: working Babel-based compiler + tools
-│   ├── src/
-│   │   ├── compiler/    # Babel pipeline
-│   │   ├── preprocessor/# SJS-specific syntax transforms
-│   │   ├── typeChecker/ # Static type checker
-│   │   ├── linter/
-│   │   ├── formatter/
-│   │   └── tester/
-│   ├── examples/        # .sjs demo files
-│   └── tests/           # 202 passing tests
-├── compiler/            # Phase 2 (in progress): custom recursive-descent compiler
-├── llvm/                # Phase 3 (future): LLVM native backend
-└── docs/                # Docusaurus documentation site
+├── backends/
+│   ├── prototype/       # Babel-based compiler + tools (reference impl, active)
+│   │   ├── src/
+│   │   │   ├── compiler/    # Babel pipeline
+│   │   │   ├── preprocessor/# SJS-specific syntax transforms
+│   │   │   ├── typeChecker/ # Static type checker
+│   │   │   ├── linter/
+│   │   │   ├── formatter/
+│   │   │   └── tester/
+│   │   └── tests/       # 202 passing tests
+│   └── llvm/            # Future: LLVM native backend (C++/LLVM 17)
+├── compiler/            # Plain-JS correctness-check compiler (validates vs prototype)
+├── examples/            # .sjs demo files
+├── packages/            # npm packages (@superjs/stdlib, etc.)
+├── specs/               # Formal spec — grammar.ebnf, error codes, language docs
+├── rfcs/                # RFC-NNNN-title.md proposals
+├── tools/               # VS Code extension, playground, etc.
+└── website/             # Next.js documentation site
 ```
 
 ---
@@ -191,7 +196,7 @@ super-js/
 
 ## Documentation
 
-Full documentation is available at the [docs site](./docs).
+Full documentation is available at the [docs site](./website).
 
 ---
 

@@ -54,6 +54,13 @@ These codes are emitted by the type checker. Codes marked **Stage 0 (prototype)*
 | SJS-E010 | error | type-check | TypeScript `enum` is not allowed; use sum types | Stage 1 |
 | SJS-E011 | error | null-safety | Non-null assertion `!` is not allowed; use narrowing | Stage 1 |
 | SJS-E012 | error | type-check | `namespace` is not allowed; use ES modules | Stage 1 |
+| SJS-E013 | error | control-flow | `with` statement not allowed (SJS is always strict mode) | Stage 1 |
+| SJS-E014 | error | access-modifiers | Private or protected member not accessible from this scope | Stage 1 |
+| SJS-E015 | error | access-modifiers | Cannot narrow an access modifier on an overriding method or property | Stage 1 |
+| SJS-E016 | error | classes | Cannot instantiate an abstract class directly with `new` | Stage 1 |
+| SJS-E017 | error | modules | Circular import detected — module graph contains a cycle | Stage 1 |
+| SJS-E018 | error | async-await | Top-level `await` used outside an ES module context | Stage 1 |
+| SJS-E019 | error | jsx | Unknown JSX element type — identifier not in scope or not a valid component | Stage 2 |
 
 ---
 
@@ -63,18 +70,16 @@ These codes are emitted by the type checker or compiler pipeline for conditions 
 
 | Code | Severity | Category | Short Message | Owning Stage |
 |------|----------|----------|---------------|--------------|
-| SJS-W001 | warning | strict | Parameter or variable has implicit type `dynamic` (strict mode) | Stage 0 (prototype) |
-| `SJS-W002` | — | reserved | Reserved for future use | — |
-| SJS-W003 | warning | match | Unreachable match arm | Stage 1 |
-| `SJS-W004` | — | reserved | Reserved for future use | — |
-| SJS-W005 | warning | type-check | Circular value reference detected | Stage 1 |
-| `SJS-W006` | — | reserved | Reserved for future use | — |
-| `SJS-W007` | — | reserved | Reserved for future use | — |
-| SJS-W008 | warning | api | Use of deprecated symbol | Stage 1 |
-| `SJS-W009` | — | reserved | Reserved for future use | — |
-| SJS-W010 | warning | lsp | LSP server memory pressure: usage exceeds budget | Stage 3 |
-| `SJS-W011` | — | reserved | Reserved for future use | — |
-| SJS-W012 | warning | security | Bidirectional Unicode codepoint in source file | Stage 1 |
+| SJS-W001 | warning | dynamic | Implicit `dynamic` — unannotated position in `--strict` mode | Stage 0 (prototype) |
+| SJS-W002 | warning | dynamic | `dynamic` value assigned to a typed position without a narrowing check | Stage 1 |
+| SJS-W003 | warning | match | Unreachable `match` arm — earlier arm already covers this variant | Stage 1 |
+| SJS-W004 | warning | keywords | Reserved or future SJS keyword used as an identifier | Stage 1 |
+| SJS-W005 | warning | access-modifiers | Explicit `public` modifier is redundant — class members are public by default | Stage 1 |
+| SJS-W006 | warning | type-check | Excess property on a fresh object literal assigned to a typed position | Stage 1 |
+| SJS-W007 | warning | jsx | Missing `key` prop on JSX element in a list or iterator context | Stage 2 |
+| SJS-W008 | warning | control-flow | Implicit switch fallthrough between non-empty case clauses | Stage 1 |
+| SJS-W009 | warning | control-flow | Unreachable code following a terminator statement | Stage 1 |
+| SJS-W010 | warning | try-catch | `catch` binding not typed as `Error` or `unknown` | Stage 1 |
 
 ---
 
@@ -84,9 +89,11 @@ These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be confi
 
 | Code | Severity | Category | Short Message | Owning Stage |
 |------|----------|----------|---------------|--------------|
-| SJS-L001 | warning | lint | `dynamic` value used without narrowing | Stage 3 |
-| SJS-L002 | warning | lint | Function result is ignored (use `void` to suppress) | Stage 3 |
-| SJS-L011 | error | lint | Bidirectional codepoint in identifier name | Stage 1 |
+| SJS-L001 | warning | lint | Prefer `const` — `let` binding is never reassigned | Stage 3 |
+| SJS-L002 | warning | lint | Prefer `let` or `const` over `var` | Stage 3 |
+| SJS-L003 | warning | lint | Use `===` / `!==` — `==` / `!=` performs type coercion | Stage 3 |
+| SJS-L004 | warning | lint | Prefer `for…of` over `for…in` for array and iterable iteration | Stage 3 |
+| SJS-L005 | warning | lint | `debugger` statement found in committed code | Stage 3 |
 
 ---
 
