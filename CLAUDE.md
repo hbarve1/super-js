@@ -1,12 +1,19 @@
 ## SuperJS — Agent Context
 
-Read `planning/mission.md` first for project goal, principles, and key language facts.
+Read `specs/mission.md` first for project goal, principles, and key language facts.
 
-## Planning structure
+## Specs structure
 
 ```
-planning/
+specs/
 ├── mission.md                  # Project goal, principles, key facts — READ FIRST
+├── grammar.ebnf                # Formal grammar (machine-consumed by Stage 1 parser)
+├── error-codes.md              # Error code registry
+├── error-codes/                # Per-code spec files (SJS-E001 … SJS-E012)
+├── config-schema.json          # JSON schema for superjs.config.json
+├── diagnostics.schema.json     # JSON schema for diagnostic fixtures
+├── fixtures/                   # Config + diagnostic test fixtures
+├── language/                   # Language reference docs
 ├── roadmap/                    # Stage 0–6 production plans
 ├── features/                   # Per-feature implementation specs
 │   ├── 001-core-language/      # Core language + CLI (COMPLETE)
@@ -19,13 +26,9 @@ planning/
 └── archive/                    # Superseded docs (read-only reference)
 ```
 
-## Formal spec (not planning)
-
-`spec/` — canonical language spec: `grammar.ebnf`, `error-codes.md`, JSON schemas. Distinct from `planning/`.
-
 ## Git workflow
 
-Full rules: `planning/design/git-workflow.md`
+Full rules: `specs/design/git-workflow.md`
 
 Key rules for agents:
 - `main` is production — never push directly, all changes via PR
@@ -36,4 +39,4 @@ Key rules for agents:
 
 ## Next stage
 
-`planning/roadmap/stage-0-foundations.md` — start here for next work.
+`specs/roadmap/stage-0-foundations.md` — start here for next work.

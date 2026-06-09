@@ -13,7 +13,7 @@
  *   - Babel accepts TypeScript syntax including banned SJS features (`any`,
  *     intersection types, conditional types, decorators, etc.).  That is
  *     intentional: the prototype examples pre-date strict SJS enforcement.
- *   - A Stage 1 SJS-aware parser will enforce spec/grammar.ebnf restrictions.
+ *   - A Stage 1 SJS-aware parser will enforce specs/grammar.ebnf restrictions.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -35,7 +35,7 @@ const BABEL_PLUGINS = ['typescript', 'jsx', 'decorators-legacy'];
 
 // Files that use SJS-specific syntax not yet supported by Babel.
 // These are EXPECTED failures; they will become passing once the Stage 1
-// SJS-native parser (spec/grammar.ebnf-derived) is implemented.
+// SJS-native parser (specs/grammar.ebnf-derived) is implemented.
 // Format: relative path from repo root -> reason
 const KNOWN_FAILURES = new Map([
   ['examples/node/src/analyzer.sjs',
