@@ -4,7 +4,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "prototype"
+    "backends/prototype"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
