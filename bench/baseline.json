@@ -1,0 +1,13 @@
+{
+  "_comment": "Placeholder — replace with output of `npm run bench` on first run. See bench/README.md for recording procedure.",
+  "recorded": "2026-06-09",
+  "compiler_version": "0.1.0",
+  "platform": "placeholder",
+  "benchmarks": [
+    { "name": "lexer",               "hz": 0, "mean": 0, "unit": "tokens/sec",      "target": 500000 },
+    { "name": "parser",              "hz": 0, "mean": 0, "unit": "ast-nodes/sec",   "target": 200000 },
+    { "name": "type-checker",        "hz": 0, "mean": 0, "unit": "constraints/sec", "target": 50000  },
+    { "name": "codegen",             "hz": 0, "mean": 0, "unit": "ast-nodes/sec",   "target": 100000 },
+    { "name": "cold-compile-10kloc", "hz": 0, "mean": 0, "unit": "ms",              "target": 2000   }
+  ]
+}
