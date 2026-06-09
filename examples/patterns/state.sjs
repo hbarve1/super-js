@@ -1,124 +1,69 @@
 // State Management Example
 
-// Action types
-type Action = 
-  | { type: 'ADD_TODO'; payload: string }
-  | { type: 'TOGGLE_TODO'; payload: number }
-  | { type: 'SET_FILTER'; payload: FilterType };
-
-// State types
-type FilterType = 'all' | 'active' | 'completed';
-
-interface Todo {
-  id: number;
-  text: string;
-  completed: boolean;
-}
+// Action sum types
+type Action =
+  | Increment
+  | Decrement
+  | Reset
+  | SetValue { value: number }
 
 interface State {
-  todos: Todo[];
-  filter: FilterType;
+  count: number
+  history: number[]
 }
 
-// Store implementation
-class Store<S, A> {
-  #state: S;
-  #listeners: Set<(state: S) => void> = new Set();
-  #reducer: (state: S, action: A) => S;
-
-  constructor(reducer: (state: S, action: A) => S, initialState: S) {
-    this.#state = initialState;
-    this.#reducer = reducer;
-  }
-
-  getState(): S {
-    return this.#state;
-  }
-
-  dispatch(action: A): void {
-    this.#state = this.#reducer(this.#state, action);
-    this.#notifyListeners();
-  }
-
-  subscribe(listener: (state: S) => void): () => void {
-    this.#listeners.add(listener);
-    return () => this.#listeners.delete(listener);
-  }
-
-  #notifyListeners(): void {
-    this.#listeners.forEach(listener => listener(this.#state));
+function reducer(state: State, action: Action): State {
+  match action {
+    Increment => ({ count: state.count + 1, history: [...state.history, state.count] })
+    Decrement => ({ count: state.count - 1, history: [...state.history, state.count] })
+    Reset => ({ count: 0, history: [] })
+    SetValue { value } => ({ count: value, history: [...state.history, state.count] })
   }
 }
 
-// Reducer function
-function todoReducer(state: State, action: Action): State {
-  switch (action.type) {
-    case 'ADD_TODO':
-      return {
-        ...state,
-        todos: [
-          ...state.todos,
-          {
-            id: state.todos.length + 1,
-            text: action.payload,
-            completed: false
-          }
-        ]
-      };
+interface Store<S> {
+  getState(): S
+  dispatch(action: Action): void
+  subscribe(listener: (state: S) => void): () => void
+}
 
-    case 'TOGGLE_TODO':
-      return {
-        ...state,
-        todos: state.todos.map(todo =>
-          todo.id === action.payload
-            ? { ...todo, completed: !todo.completed }
-            : todo
-        )
-      };
-
-    case 'SET_FILTER':
-      return {
-        ...state,
-        filter: action.payload
-      };
-
-    default:
-      return state;
+function createStore(initial: State): Store<State> {
+  let state = initial
+  const listeners: ((s: State) => void)[] = []
+  return {
+    getState: () => state,
+    dispatch(action) {
+      state = reducer(state, action)
+      for (const l of listeners) l(state)
+    },
+    subscribe(listener) {
+      listeners.push(listener)
+      return () => {
+        const i = listeners.indexOf(listener)
+        if (i >= 0) listeners.splice(i, 1)
+      }
+    }
   }
 }
 
-// Usage example
 function main(): void {
-  // Create store
-  const store = new Store<State, Action>(todoReducer, {
-    todos: [],
-    filter: 'all'
-  });
+  const store = createStore({ count: 0, history: [] })
 
-  // Subscribe to state changes
-  store.subscribe(state => {
-    console.log('\nState updated:');
-    console.log('Filter:', state.filter);
-    console.log('Todos:', state.todos);
-  });
+  const unsubscribe = store.subscribe(s => {
+    console.log('State:', s.count, '| History:', s.history)
+  })
 
-  // Dispatch actions
-  store.dispatch({ type: 'ADD_TODO', payload: 'Learn super.js' });
-  store.dispatch({ type: 'ADD_TODO', payload: 'Write examples' });
-  store.dispatch({ type: 'ADD_TODO', payload: 'Create documentation' });
+  store.dispatch(Increment())
+  store.dispatch(Increment())
+  store.dispatch(Increment())
+  store.dispatch(Decrement())
+  store.dispatch(SetValue({ value: 10 }))
 
-  store.dispatch({ type: 'TOGGLE_TODO', payload: 2 });
-  store.dispatch({ type: 'SET_FILTER', payload: 'active' });
+  console.log('\nUnsubscribing...')
+  unsubscribe()
 
-  // Get final state
-  const finalState = store.getState();
-  console.log('\nFinal filtered todos:', 
-    finalState.todos.filter(todo => 
-      finalState.filter === 'all' ||
-      (finalState.filter === 'completed' && todo.completed) ||
-      (finalState.filter === 'active' && !todo.completed)
-    )
-  );
+  store.dispatch(Reset())
+  console.log('Final state (no listener):', store.getState())
 }
 
-main(); 
+main()

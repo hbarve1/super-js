@@ -7,12 +7,12 @@ interface Logger {
 }
 
 interface Storage {
-  get(key: string): string | null;
+  get(key: string): string?;
   set(key: string, value: string): void;
 }
 
 interface UserService {
-  getCurrentUser(): string | null;
+  getCurrentUser(): string?;
   login(username: string): void;
   logout(): void;
 }
@@ -31,7 +31,7 @@ class ConsoleLogger implements Logger {
 class LocalStorage implements Storage {
   #storage: Map<string, string> = new Map();
 
-  get(key: string): string | null {
+  get(key: string): string? {
     return this.#storage.get(key) || null;
   }
 
@@ -49,7 +49,7 @@ class UserServiceImpl implements UserService {
     this.#storage = storage;
   }
 
-  getCurrentUser(): string | null {
+  getCurrentUser(): string? {
     const user = this.#storage.get('currentUser');
     this.#logger.log(`Getting current user: ${user}`);
     return user;
@@ -71,7 +71,7 @@ class UserServiceImpl implements UserService {
 
 // Dependency container
 class Container {
-  #services: Map<string, any> = new Map();
+  #services: Map<string, dynamic> = new Map();
 
   register<T>(token: string, service: T): void {
     this.#services.set(token, service);

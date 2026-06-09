@@ -175,7 +175,8 @@ class Stack<T> {
   push(item: T): void { this.items.push(item) }
 
   pop(): T? {
-    return this.items.length > 0 ? this.items.pop()! : null
+    if (this.items.length === 0) return null
+    return this.items.pop() ?? null
   }
 
   peek(): T? {
