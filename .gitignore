@@ -68,7 +68,7 @@ typings/
 # Build artifacts
 packages/*/dist/
 packages/*/tsconfig.tsbuildinfo
-prototype/tsconfig.tsbuildinfo
+backends/*/tsconfig.tsbuildinfo
 graphify-out/
 .superpowers/
 
