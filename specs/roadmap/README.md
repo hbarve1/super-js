@@ -157,6 +157,13 @@ These items are distributed across stages but tracked here for visibility:
 
 ## File Index
 
+### Version Vision Docs
+
+- [`v1.0-product-vision.md`](v1.0-product-vision.md) — full working model of SJS at 1.0: language, compiler, CLI, interop, stdlib, tooling, ecosystem, docs, success criteria
+- [`v2.0-native-compiler.md`](v2.0-native-compiler.md) — post-1.0 vision: self-hosted compiler, LLVM backend, native OS binaries, `superjs build --target native`, cross-compilation, native stdlib
+
+### Stage Execution Plans (v1.0)
+
 - [`stage-0-foundations.md`](stage-0-foundations.md) — repo, CI, grammar spec, error registry, shared types, diagnostic schema, RFC-0001..0005, threat model
 - [`stage-1-compiler-core.md`](stage-1-compiler-core.md) — lexer (BiDi-safe), parser, checker (with `algorithm.md`), codegen, incremental, CLI, `@superjs/runtime`, `transform()` API, hard determinism gate
 - [`stage-2-interop.md`](stage-2-interop.md) — `.d.ts → .d.sjs` translator, top-30 wrappers (backend-first), `superjs add` impl, typed-surface metric, ORM strategy
