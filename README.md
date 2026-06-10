@@ -5,7 +5,7 @@ SuperJS is a new programming language that compiles to JavaScript. It is a stric
 SuperJS is **not** TypeScript with a different extension. It deliberately bans the parts of TypeScript that make type systems unsound (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-202%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-1011%20passing-brightgreen.svg)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#roadmap)
 
 ---
@@ -165,19 +165,25 @@ SJS emits structured diagnostic codes. Full registry: [`specs/error-codes.md`](s
 ```
 super-js/
 ├── backends/
-│   ├── prototype/       # Babel-based reference compiler (active — Phase 1)
-│   └── llvm/            # Future: LLVM native backend (C++/LLVM 17)
-├── compiler/            # Plain-JS production compiler (Phase 2 — in progress)
+│   ├── prototype/       # Active reference compiler — TypeScript, 1011 tests (Stage 1)
+│   └── llvm/            # Future: LLVM native backend (C++/LLVM 17) — see v2.0 vision
+├── compiler/            # Earlier standalone JS compiler exploration — not in workspaces/CI
 ├── examples/            # .sjs demo files with reading order
 ├── packages/
 │   ├── compiler-types/  # @superjs/compiler-types — shared AST/Diagnostic types
-│   └── stdlib/          # @superjs/stdlib — planned Stage 4
-├── specs/               # Formal spec: grammar, error codes, language docs, ADRs
-├── docs/                # HOWTO guides for contributors and agents
+│   └── stdlib/          # @superjs/stdlib — placeholder, planned Stage 4
+├── specs/               # Formal spec: grammar, error codes, language docs, ADRs, roadmap
+├── docs/                # HOWTO guides + language comparisons (docs/comparisons/)
 ├── rfcs/                # RFC-NNNN-title.md proposals
-├── tools/               # VS Code extension, playground (Stage 3+)
-└── website/             # Next.js documentation site
+├── tools/               # AST graph tooling
+├── vscode-extension/    # VS Code extension
+└── website/             # Next.js documentation site + playground
 ```
+
+> **Forward direction:** the next major step is a fresh NX monorepo rewrite in
+> TypeScript (see [`ADR-008`](specs/design/ADR-008-nx-monorepo.md)). The current
+> tree is frozen as reference — `backends/prototype` is the working compiler;
+> `compiler/` is an earlier exploration kept for history, not built or tested.
 
 ---
 
@@ -195,6 +201,13 @@ super-js/
 
 Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 
+**Version vision:**
+
+| Doc | Scope |
+|-----|-------|
+| [`v1.0-product-vision.md`](specs/roadmap/v1.0-product-vision.md) | Full working SJS — compiler, CLI, interop, stdlib, tooling, `superjs doc` |
+| [`v2.0-native-compiler.md`](specs/roadmap/v2.0-native-compiler.md) | Self-hosted compiler — JS, LLVM native binaries, and WASM targets via SJS-IR |
+
 ---
 
 ## Documentation
@@ -203,6 +216,7 @@ Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 |----------|---------|
 | [`specs/`](specs/) | Formal language spec — grammar, error codes, type rules |
 | [`docs/`](docs/) | HOWTO guides — add a diagnostic, add a type-checker rule, add a language feature |
+| [`docs/comparisons/`](docs/comparisons/) | SJS vs JS, TypeScript, Rust, Go, Dart, JVM languages |
 | [`specs/design/`](specs/design/) | Architecture Decision Records (ADRs) |
 | [`rfcs/`](rfcs/) | Language change proposals |
 | [`website/`](website/) | Public docs site |
