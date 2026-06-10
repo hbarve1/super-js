@@ -82,6 +82,8 @@ Tier 7   apps           — deployable, consume everything below
 ```
 apps/
   cli/               superjs binary — assembles Tier 3+4, published to npm as superjs
+                     Commands: build, check, format, lint, init, add, doctor, explain,
+                     doc, verify, migrate, test (stub), lsp (stub), repl (stub)
   website/           Next.js docs + marketing site
   playground/        Cloudflare Worker — runs @superjs/compiler in edge runtime [Stage 3]
   vscode-extension/  VS Code extension — LSP client + syntax highlighting
@@ -420,6 +422,7 @@ Does NOT run: `libs/lexer`, `libs/parser`, `libs/runtime`, `apps/website`, `tool
 - Polyglot ready — v2.0 LLVM/WASM backends slot in without restructuring
 - Remote caching via NX Cloud — warm CI runs near-instant for unchanged code
 - Clear build order — `^build` in `nx.json` handles dependency sequencing automatically
+- `superjs doc` (`libs/doc-gen/`) ships as a first-class CLI command alongside build/lint/format — documentation is a compiler output, not a post-processing step; see ADR-009
 
 **Negative:**
 - Phase 1 re-implements code that already works — 2–4 weeks of known work
