@@ -5,7 +5,7 @@ SuperJS is a new programming language that compiles to JavaScript. It is a stric
 SuperJS is **not** TypeScript with a different extension. It deliberately bans the parts of TypeScript that make type systems unsound (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-202%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-1011%20passing-brightgreen.svg)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#roadmap)
 
 ---
@@ -165,7 +165,7 @@ SJS emits structured diagnostic codes. Full registry: [`specs/error-codes.md`](s
 ```
 super-js/
 ├── backends/
-│   ├── prototype/       # Active reference compiler — TypeScript, 1000+ tests (Stage 1)
+│   ├── prototype/       # Active reference compiler — TypeScript, 1011 tests (Stage 1)
 │   └── llvm/            # Future: LLVM native backend (C++/LLVM 17) — see v2.0 vision
 ├── compiler/            # Earlier standalone JS compiler exploration — not in workspaces/CI
 ├── examples/            # .sjs demo files with reading order
