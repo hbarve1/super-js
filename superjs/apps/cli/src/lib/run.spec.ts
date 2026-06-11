@@ -61,6 +61,11 @@ describe('explain', () => {
     expect(await run(['explain', 'ZZZ'], io)).toBe(1);
     expect(io.stderr()).toContain('unknown diagnostic code');
   });
+  it('prints the full spec doc when reachable (found by walking up from cwd)', async () => {
+    const io = makeIO({ '/work/proj/specs/error-codes/SJS-E001.md': '# SJS-E001 — Null safety\n\nLong-form write-up.' }, '/work/proj/src');
+    expect(await run(['explain', 'E001'], io)).toBe(0);
+    expect(io.stdout()).toContain('Long-form write-up.');
+  });
 });
 
 describe('check', () => {
