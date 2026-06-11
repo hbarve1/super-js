@@ -715,12 +715,15 @@ export class Checker implements TypeResolver {
     const savedScope = this.scope, savedFlow = this.flow, savedRet = this.expectedReturn;
     this.scope = this.scope.child();
     this.flow = new Map(this.flow);
-    this.expectedReturn = ret;
+    // In an async function, `return e` (or an expression body) yields the
+    // Promise's resolved value, so check against the unwrapped type — `async
+    // () => 42` satisfies `Promise<number>`.
+    const target = async ? (ret?.kind === 'promise' ? ret.value : undefined) : ret;
+    this.expectedReturn = target;
     nodes.forEach((p, i) => this.bindPattern(p.pattern, resolved[i]?.type ?? DYNAMIC, 'let'));
     if (body.kind === 'BlockStatement') this.checkBlock(body.body);
-    else if (ret && ret.kind !== 'void' && ret.kind !== 'dynamic') this.checkAssignable(this.check(body, ret), ret, body.span);
+    else if (target && target.kind !== 'void' && target.kind !== 'dynamic') this.checkAssignable(this.check(body, target), target, body.span);
     else this.synth(body);
-    void async;
     this.scope = savedScope; this.flow = savedFlow; this.expectedReturn = savedRet;
   }
 

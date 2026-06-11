@@ -141,6 +141,18 @@ describe('generic class instantiation inference', () => {
   });
 });
 
+describe('async return checking', () => {
+  it('accepts a plain value returned from an async function (Promise unwrap)', () => {
+    clean('async function f(): Promise<number> { return 42; }');
+  });
+  it('accepts an async arrow expression body against its Promise type', () => {
+    clean('const f = async (): Promise<number> => 42;');
+  });
+  it('flags a wrong-typed async return', () => {
+    expect(has('const f = async (): Promise<number> => "x";', 'SJS-E002')).toBe(true);
+  });
+});
+
 describe('narrowing (typeof / truthiness)', () => {
   it('typeof narrows a union member', () => {
     clean('function f(v: string | number): string { if (typeof v === "number") { return v.toFixed(2); } return v; }');
