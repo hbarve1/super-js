@@ -752,6 +752,13 @@ class Parser {
       } else if (this.c.is('(')) {
         const args = this.parseArguments();
         expr = this.fin(start, { kind: 'CallExpression', callee: expr, args, optional: false });
+      } else if (this.c.is('<')) {
+        // Possibly a generic call `f<T>(...)`. Speculate; on failure, leave `<`
+        // for the binary (less-than) parser.
+        const typeArgs = this.tryCallTypeArgs();
+        if (!typeArgs) break;
+        const args = this.parseArguments();
+        expr = this.fin(start, { kind: 'CallExpression', callee: expr, typeArgs, args, optional: false });
       } else if (this.c.is('as')) {
         this.c.advance();
         const type = this.parseType();
@@ -767,8 +774,28 @@ class Parser {
     const start = this.pos();
     this.c.advance();
     const callee = this.parseCallMemberNoCall();
+    const typeArgs = this.c.is('<') ? this.tryCallTypeArgs() : null;
     const args = this.c.is('(') ? this.parseArguments() : [];
-    return this.fin(start, { kind: 'NewExpression', callee, args });
+    return this.fin(start, { kind: 'NewExpression', callee, ...(typeArgs ? { typeArgs } : {}), args });
+  }
+
+  /**
+   * Speculatively parse a generic call's `<TypeArguments>` — only commits when
+   * the list closes and is immediately followed by `(`, disambiguating
+   * `f<T>(x)` from the comparison `f < T > (x)`. Restores the cursor (and rolls
+   * back any diagnostics) on failure.
+   */
+  private tryCallTypeArgs(): TypeNode[] | null {
+    if (!this.c.is('<')) return null;
+    const snap = this.c.snapshot();
+    try {
+      const typeArgs = this.parseTypeArgsOpt();
+      if (typeArgs && this.c.is('(')) return typeArgs;
+    } catch {
+      // not a type-argument list — fall through to restore
+    }
+    this.c.restore(snap);
+    return null;
   }
 
   /** Member chain without trailing call (so `new A.B()` binds the call to new). */
