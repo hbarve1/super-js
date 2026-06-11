@@ -93,6 +93,34 @@ export class Cursor {
     throw new ParseError();
   }
 
+  /**
+   * Consume a single closing `>` for a type-argument / type-parameter list,
+   * splitting a compound `>`-led token (`>>`, `>>>`, `>=`, `>>=`, `>>>=`) so
+   * nested generics like `Array<Map<K, V>>` close correctly. When the current
+   * token is compound, its leading `>` is consumed and the remainder is left in
+   * place as the next token (the index does not advance).
+   */
+  expectCloseAngle(): void {
+    const t = this.current;
+    if (t.kind === '>') { this.advance(); return; }
+    if (t.kind === '>=' || t.kind === '>>' || t.kind === '>>=' || t.kind === '>>>' || t.kind === '>>>=') {
+      const rest = t.value.slice(1);
+      const remainder: Token = {
+        kind: rest as TokenKind,
+        value: rest,
+        span: {
+          start: { offset: t.span.start.offset + 1, line: t.span.start.line, column: t.span.start.column + 1 },
+          end: t.span.end,
+        },
+        precededByLineBreak: false,
+      };
+      (this.tokens as Token[])[this.i] = remainder;
+      return;
+    }
+    this.error(Codes['P001'], `Expected '>' but found '${t.kind}'`);
+    throw new ParseError();
+  }
+
   /** ASI-aware statement terminator. */
   consumeSemicolon(): void {
     if (this.eat(';')) return;
