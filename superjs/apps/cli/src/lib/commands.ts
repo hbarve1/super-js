@@ -7,7 +7,7 @@
  * repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
-import { join, isAbsolute, basename } from 'node:path';
+import { join, isAbsolute, basename, dirname } from 'node:path';
 import { compile } from '@superjs/compiler';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
@@ -95,12 +95,38 @@ export async function build(args: ParsedArgs, io: IO): Promise<number> {
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────
+
+/**
+ * Locate `specs/error-codes/<CODE>.md` by walking up from the cwd, so a checkout
+ * of the SuperJS repo / a project that vendors the specs gets the full write-up.
+ * Returns the file contents, or null when no spec tree is in reach.
+ */
+function findSpecDoc(io: IO, code: string): string | null {
+  let dir = io.cwd();
+  for (;;) {
+    const candidate = join(dir, 'specs', 'error-codes', `${code}.md`);
+    if (io.exists(candidate)) return io.readFile(candidate);
+    const parent = dirname(dir);
+    if (parent === dir) return null; // reached filesystem root
+    dir = parent;
+  }
+}
+
 export function explain(args: ParsedArgs, io: IO): number {
   const raw = args.positionals[0];
   if (!raw) { errline(io, 'usage: superjs explain <CODE>   e.g. superjs explain E001'); return 2; }
   const code = (raw.toUpperCase().startsWith('SJS-') ? raw.toUpperCase() : `SJS-${raw.toUpperCase()}`) as DiagnosticCode;
   const desc = getDescriptor(code);
   if (!desc) { errline(io, `unknown diagnostic code '${raw}'`); return 1; }
+
+  // Prefer the authoritative per-code spec when reachable; else the registry summary.
+  const doc = findSpecDoc(io, code);
+  if (doc) {
+    line(io, doc.trimEnd());
+    line(io);
+    line(io, `spec: ${specUrlFor(code)}`);
+    return 0;
+  }
   line(io, `${desc.code}  (${desc.severity}, ${desc.category}, ${desc.stage})`);
   line(io);
   line(io, `  ${desc.template}`);
