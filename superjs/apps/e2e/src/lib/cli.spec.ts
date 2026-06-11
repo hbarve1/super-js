@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { run, type IO } from '@superjs/cli';
 import { FIXTURES_DIR } from './corpus.js';
@@ -22,6 +22,8 @@ function capturingIO(cwd: string): IO & { stdout: () => string; stderr: () => st
     readFile: (p) => readFileSync(abs(p), 'utf8'),
     writeFile: (p, d) => { writes.set(abs(p), d); },
     exists: (p) => writes.has(abs(p)) || existsSync(abs(p)),
+    isDirectory: (p) => { try { return statSync(abs(p)).isDirectory(); } catch { return false; } },
+    readDir: (p) => readdirSync(abs(p)),
     cwd: () => cwd,
     watch: () => () => { /* no watching in e2e */ },
     stdout: () => out,

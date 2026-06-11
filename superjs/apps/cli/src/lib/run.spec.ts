@@ -17,6 +17,13 @@ function makeIO(files: Record<string, string> = {}, cwd = '/work'): IO & {
     readFile: (p) => { const v = fs.get(p); if (v === undefined) throw new Error(`ENOENT ${p}`); return v; },
     writeFile: (p, d) => { fs.set(p, d); },
     exists: (p) => fs.has(p),
+    isDirectory: (p) => { const pre = `${p.replace(/\/+$/, '')}/`; return [...fs.keys()].some((k) => k.startsWith(pre)); },
+    readDir: (p) => {
+      const pre = `${p.replace(/\/+$/, '')}/`;
+      const names = new Set<string>();
+      for (const k of fs.keys()) if (k.startsWith(pre)) names.add(k.slice(pre.length).split('/')[0]!);
+      return [...names];
+    },
     cwd: () => cwd,
     watch: (paths, cb) => { watchers.push({ paths, cb }); return () => { /* noop */ }; },
     stdout: () => outBuf,
@@ -123,6 +130,17 @@ describe('build', () => {
     const io = makeIO({ '/work/a.sjs': 'const x = 1;' });
     await run(['build', 'a.sjs', '--out-dir', 'out', '--no-cache'], io);
     expect([...io.fs.keys()].some((p) => p.includes('.superjs/cache'))).toBe(false);
+  });
+  it('expands a directory argument to all .sjs files under it', async () => {
+    const io = makeIO({
+      '/work/src/a.sjs': 'const a = 1;',
+      '/work/src/nested/b.sjs': 'const b = 2;',
+      '/work/src/readme.md': 'not source',
+    });
+    expect(await run(['build', 'src', '--out-dir', 'out'], io)).toBe(0);
+    expect(io.fs.get('/work/out/a.js')).toContain('const a = 1;');
+    expect(io.fs.get('/work/out/b.js')).toContain('const b = 2;');
+    expect(io.stdout()).toContain('built 2 files');
   });
   it('--watch does the initial build and rebuilds on change', async () => {
     const io = makeIO({ '/work/a.sjs': 'const x = 1;' });

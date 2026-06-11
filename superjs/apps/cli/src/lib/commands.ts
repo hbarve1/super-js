@@ -35,11 +35,35 @@ function resolve(io: IO, p: string): string {
   return isAbsolute(p) ? p : join(io.cwd(), p);
 }
 
+/** Recursively collect `.sjs` files under a directory (relative paths from cwd). */
+function walkSjs(io: IO, absDir: string, relDir: string, out: string[]): void {
+  for (const entry of io.readDir(absDir).sort()) {
+    const abs = join(absDir, entry);
+    const rel = relDir ? `${relDir}/${entry}` : entry;
+    if (io.isDirectory(abs)) walkSjs(io, abs, rel, out);
+    else if (entry.endsWith('.sjs')) out.push(rel);
+  }
+}
+
+/**
+ * Expand input arguments to a flat list of `.sjs` files: a directory becomes all
+ * `.sjs` files under it (recursively); a file passes through unchanged.
+ */
+function expandInputs(io: IO, paths: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const p of paths) {
+    const abs = resolve(io, p);
+    if (io.isDirectory(abs)) walkSjs(io, abs, p.replace(/\/+$/, ''), out);
+    else out.push(p);
+  }
+  return out;
+}
+
 /** Read each path into a SourceFile, reporting unreadable files to stderr. */
 function readSources(io: IO, paths: readonly string[]): { files: { filename: string; source: string }[]; missing: number } {
   const files: { filename: string; source: string }[] = [];
   let missing = 0;
-  for (const p of paths) {
+  for (const p of expandInputs(io, paths)) {
     const abs = resolve(io, p);
     if (!io.exists(abs)) { errline(io, `error: cannot find file '${p}'`); missing++; continue; }
     files.push({ filename: p, source: io.readFile(abs) });
