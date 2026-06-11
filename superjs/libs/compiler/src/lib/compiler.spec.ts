@@ -141,6 +141,52 @@ describe('incremental cache', () => {
   });
 });
 
+describe('persistent cache (CacheStore)', () => {
+  function memStore() {
+    const m = new Map<string, import('../index.js').CacheEntry>();
+    let hits = 0, misses = 0;
+    return {
+      get(k: string) { const e = m.get(k); if (e) hits++; else misses++; return e; },
+      set(k: string, e: import('../index.js').CacheEntry) { m.set(k, e); },
+      stats: () => ({ hits, misses, size: m.size }),
+    };
+  }
+
+  it('populates on a cold compile and reuses on a warm one', async () => {
+    const store = memStore();
+    const src = 'const x: number = 1 + 2;';
+    const a = await compile([{ filename: 'a.sjs', source: src }], {}, store);
+    expect(store.stats()).toMatchObject({ misses: 1, size: 1 });
+    const b = await compile([{ filename: 'a.sjs', source: src }], {}, store);
+    expect(store.stats().hits).toBe(1);
+    // Warm output is identical to cold.
+    expect(b.outputs.get('a.js')!.code).toBe(a.outputs.get('a.js')!.code);
+  });
+
+  it('misses when the source changes', async () => {
+    const store = memStore();
+    await compile([{ filename: 'a.sjs', source: 'const x = 1;' }], {}, store);
+    await compile([{ filename: 'a.sjs', source: 'const x = 2;' }], {}, store);
+    expect(store.stats()).toMatchObject({ misses: 2, size: 2 });
+  });
+
+  it('misses when the config changes (config-hash in the key)', async () => {
+    const store = memStore();
+    const src = 'const x = 1;';
+    await compile([{ filename: 'a.sjs', source: src }], { sourceMap: 'none' }, store);
+    await compile([{ filename: 'a.sjs', source: src }], { sourceMap: 'inline' }, store);
+    expect(store.stats().misses).toBe(2);
+  });
+
+  it('preserves diagnostics through the cache', async () => {
+    const store = memStore();
+    const src = 'const x: string = null;';
+    await compile([{ filename: 'bad.sjs', source: src }], {}, store);
+    const warm = await compile([{ filename: 'bad.sjs', source: src }], {}, store);
+    expect(warm.diagnostics.some((d) => d.code === 'SJS-E001')).toBe(true);
+  });
+});
+
 describe('hashing (cache key M3/M4)', () => {
   it('configHash is stable and order-independent', () => {
     expect(configHash({ variants: 'default', strict: false }))

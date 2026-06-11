@@ -16,6 +16,7 @@ import { type IO, line, errline } from './io.js';
 import {
   formatPretty, formatJson, countErrors, countWarnings, type DiagnosticFormat,
 } from './diagnostics-format.js';
+import { DiskCacheStore, CACHE_DIR } from './cache.js';
 
 export const VERSION = '0.0.1';
 
@@ -72,12 +73,14 @@ export async function check(args: ParsedArgs, io: IO): Promise<number> {
 
 // ── build ─────────────────────────────────────────────────────────────────────
 export async function build(args: ParsedArgs, io: IO): Promise<number> {
-  if (args.positionals.length === 0) { errline(io, 'usage: superjs build <files...> [--out-dir dir] [--source-map none|inline|external]'); return 2; }
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs build <files...> [--out-dir dir] [--source-map none|inline|external] [--no-cache]'); return 2; }
   const outDir = typeof args.flags['out-dir'] === 'string' ? (args.flags['out-dir'] as string) : 'dist';
   const sm = args.flags['source-map'];
   const sourceMap = sm === 'inline' || sm === 'external' || sm === 'none' ? sm : 'external';
   const { files, missing } = readSources(io, args.positionals);
-  const result = await compile(files, { sourceMap });
+  // Warm rebuilds reuse `.superjs/cache/`; `--no-cache` forces a cold build.
+  const cache = args.flags['no-cache'] === true ? undefined : new DiskCacheStore(io, join(resolve(io, '.'), CACHE_DIR));
+  const result = await compile(files, { sourceMap }, cache);
   if (result.diagnostics.length) emitDiagnostics(io, result.diagnostics, 'pretty');
 
   const errors = countErrors(result.diagnostics);
