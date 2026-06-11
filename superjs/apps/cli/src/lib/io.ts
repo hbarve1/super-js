@@ -4,7 +4,7 @@
  * touching the real filesystem or stdout.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, watch as fsWatch } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, readdirSync, watch as fsWatch } from 'node:fs';
 import { dirname } from 'node:path';
 
 /** Stops watching when called. */
@@ -18,6 +18,9 @@ export interface IO {
   readFile(path: string): string;
   writeFile(path: string, data: string): void;
   exists(path: string): boolean;
+  isDirectory(path: string): boolean;
+  /** Immediate child entry names of a directory. */
+  readDir(path: string): string[];
   cwd(): string;
   /** Watch `paths`; call `onChange(path)` when one changes. Returns a disposer. */
   watch(paths: readonly string[], onChange: (path: string) => void): Unwatch;
@@ -33,6 +36,8 @@ export const nodeIO: IO = {
     writeFileSync(path, data, 'utf8');
   },
   exists: (path) => existsSync(path),
+  isDirectory: (path) => { try { return statSync(path).isDirectory(); } catch { return false; } },
+  readDir: (path) => readdirSync(path),
   cwd: () => process.cwd(),
   watch: (paths, onChange) => {
     const watchers = paths.map((p) => fsWatch(p, () => onChange(p)));
