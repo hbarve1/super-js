@@ -26,7 +26,7 @@ export function warningsOf(diags: readonly Diagnostic[]): Diagnostic[] {
 /** Counts keyed by severity. */
 export function countBySeverity(diags: readonly Diagnostic[]): Record<Severity, number> {
   const acc = { error: 0, warning: 0, info: 0, hint: 0 } as Record<Severity, number>;
-  for (const d of diags) acc[d.severity] = (acc[d.severity] ?? 0) + 1;
+  for (const d of diags) acc[d.severity]++;
   return acc;
 }
 

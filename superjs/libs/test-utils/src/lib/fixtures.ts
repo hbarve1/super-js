@@ -4,8 +4,8 @@
  * of re-implementing `readdirSync` recursion.
  */
 
-import { readdirSync, statSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, lstatSync, readFileSync } from 'node:fs';
+import { join, relative, basename } from 'node:path';
 
 export interface Fixture {
   /** Path relative to the root passed to {@link loadFixtures}. */
@@ -14,12 +14,18 @@ export interface Fixture {
   readonly source: string;
 }
 
-/** Recursively collect file paths under `dir` matching `ext` (default `.sjs`). */
+/**
+ * Recursively collect file paths under `dir` matching `ext` (default `.sjs`).
+ * Symlinks are skipped (via `lstatSync`) so a link cycle can't cause infinite
+ * recursion.
+ */
 export function findFixtures(dir: string, ext = '.sjs'): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
-    if (statSync(p).isDirectory()) out.push(...findFixtures(p, ext));
+    const stats = lstatSync(p);
+    if (stats.isSymbolicLink()) continue;
+    if (stats.isDirectory()) out.push(...findFixtures(p, ext));
     else if (p.endsWith(ext)) out.push(p);
   }
   return out.sort();
@@ -34,7 +40,11 @@ export function loadFixtures(root: string, ext = '.sjs'): Fixture[] {
   }));
 }
 
-/** Load a single fixture file. */
+/**
+ * Load a single fixture file. With no root to relativise against, `name` is the
+ * file's basename (whereas {@link loadFixtures} names entries relative to its
+ * root).
+ */
 export function loadFixture(path: string): Fixture {
-  return { name: path, path, source: readFileSync(path, 'utf8') };
+  return { name: basename(path), path, source: readFileSync(path, 'utf8') };
 }
