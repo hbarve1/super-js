@@ -17,6 +17,9 @@
     },
     {
       "path": "./libs/lexer"
+    },
+    {
+      "path": "./libs/parser"
     }
   ]
 }

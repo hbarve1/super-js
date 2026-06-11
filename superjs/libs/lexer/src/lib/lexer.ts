@@ -40,6 +40,9 @@ const NO_REGEX_AFTER = new Set<TokenKind>([
   'identifier', 'private-identifier', 'number', 'string', 'bigint', 'regex',
   'template-full', 'template-tail', ')', ']', '}', '++', '--',
   'this', 'super', 'true', 'false', 'null', 'undefined',
+  // `<` is included so JSX `</close>` and `/>` lex as division, not a regex.
+  // Trade-off: `a < /re/` must be written `a < (/re/)`. JSX is on by default.
+  '<', '>',
 ]);
 
 export function tokenize(source: string, options: TokenizeOptions = {}): TokenizeResult {

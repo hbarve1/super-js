@@ -99,6 +99,21 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/parser:
+    dependencies:
+      '@superjs/diagnostics':
+        specifier: workspace:*
+        version: link:../diagnostics
+      '@superjs/lexer':
+        specifier: workspace:*
+        version: link:../lexer
+      '@superjs/types':
+        specifier: workspace:*
+        version: link:../types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   libs/runtime:
     dependencies:
       tslib:

@@ -104,6 +104,16 @@ export class DiagnosticBag {
     this.items.push(diagnostic);
   }
 
+  /** Current length — pair with {@link rollback} for speculative parsing. */
+  mark(): number {
+    return this.items.length;
+  }
+
+  /** Drop diagnostics reported since a {@link mark} (abandoned parse paths). */
+  rollback(to: number): void {
+    if (to >= 0 && to < this.items.length) this.items.length = to;
+  }
+
   get all(): readonly Diagnostic[] {
     return this.items;
   }

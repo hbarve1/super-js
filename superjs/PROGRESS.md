@@ -32,7 +32,7 @@
 | 4 | libs/test-utils (private) | 0 | types, diagnostics | ⬜ todo |
 | 5 | libs/runtime `@superjs/runtime` | 5 | — | ✅ done |
 | 6 | libs/lexer `@superjs/lexer` | 1 | types, diagnostics | ✅ done |
-| 7 | libs/parser `@superjs/parser` | 1 | lexer | ⬜ todo |
+| 7 | libs/parser `@superjs/parser` | 1 | lexer | ✅ done |
 | 8 | libs/checker `@superjs/checker` | 1 | parser | ⬜ todo |
 | 9 | libs/ir `@superjs/ir` | 1 | checker | ⬜ todo |
 | 10 | libs/codegen-js `@superjs/codegen-js` | 2 | ir | ⬜ todo |
@@ -56,6 +56,7 @@
 
 ## Session log
 
+- 2026-06-11: Task 7 DONE — `@superjs/parser` (tier:1). cursor.ts (Cursor: peek/eat/expect, ASI consumeSemicolon, panic-mode synchronize, snapshot/restore for speculative parsing incl diagnostic rollback). parser.ts (full grammar: all statements/decls, classes/interfaces, type+sum decls, Pratt expressions w/ precedence table + right-assoc **, arrow detection via backtracking, match, JSX, type annotations incl union/nullable/array/tuple/function/object). parse() → {program, diagnostics}. 22 tests. **Key learnings:** (1) fin() builder MUST use `<const T extends object>` or kind literals widen to string, breaking discriminated unions. (2) access modifiers public/private/protected + `constructor` lex as identifiers (not keywords) — match by VALUE. (3) backtracking must roll back diagnostics (added DiagnosticBag.mark/rollback). (4) lexer: `<`,`>` added to NO_REGEX_AFTER so JSX </close> and /> lex as division not regex. (5) builder methods need precise return types (not Node/Statement) where AST fields are narrow.
 - 2026-06-11: Task 6 DONE — `@superjs/lexer` (tier:1). char.ts (Unicode id classification, BiDi controls, whitespace/line-terminators by code point), lexer.ts (Lexer class: identifiers/keywords/private-ids, numbers all bases+separators+bigint+float/exp, strings w/ escapes, templates w/ nested ${} via brace/template stack, regex-vs-division by prevKind, maximal-munch operators, BiDi→L011, P001/P002 recovery, line/col + precededByLineBreak for ASI). tokenize() → {tokens, diagnostics}. 23 tests. **Gotcha:** Write tool renders pasted non-ASCII literals unreliably — use \u escapes / String.fromCharCode / codePointAt for unicode in source AND tests.
 - 2026-06-11: Task 5 DONE — `@superjs/runtime` (tier:5, scope:external). panic.ts (SjsPanic, panic/assert/todo/unreachable), iterator.ts (attachIteratorSymbol self-iterable), inspect.ts (deterministic formatter, renders sum variants {_tag,_0} as Ok(42)/Err("x")/None, Map/Set/circular). 13 tests. Codegen will emit calls to these.
 - 2026-06-10: Foundation started. NX TS-solution workspace (user-scaffolded). Added @nx/vite + @nx/eslint. nx.json task pipeline. Decisions locked above.
