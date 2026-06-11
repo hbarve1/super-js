@@ -8,6 +8,9 @@
     },
     {
       "path": "./libs/diagnostics"
+    },
+    {
+      "path": "./libs/config"
     }
   ]
 }
