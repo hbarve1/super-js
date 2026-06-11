@@ -59,6 +59,19 @@ describe('sum types & match', () => {
   it('record variant', () => {
     ok('type Tree = Leaf | Node({ left: Tree, right: Tree });');
   });
+  it('parses a leading-pipe sum type (multi-line style)', () => {
+    const s = first('type Result<T, E> =\n  | Ok(T)\n  | Err(E);');
+    expect(kindsOf(s)).toContain('SumTypeDef');
+    expect(kindsOf(s).filter((k) => k === 'VariantDef')).toHaveLength(2);
+  });
+  it('parses a leading-pipe enum-style sum of unit variants', () => {
+    const s = first('type Color =\n  | Red\n  | Green\n  | Blue;');
+    expect(kindsOf(s).filter((k) => k === 'VariantDef')).toHaveLength(3);
+  });
+  it('parses a leading-pipe union of (non-variant) types', () => {
+    const s = first('type N = | { a: number } | { b: string };');
+    expect(kindsOf(s)).toContain('UnionTypeNode');
+  });
   it('match expression with tuple/unit/default arms', () => {
     const p = ok('const m = match r { Ok(v) => v, Err(e) => 0, default => -1, };');
     expect(kindsOf(p)).toEqual(

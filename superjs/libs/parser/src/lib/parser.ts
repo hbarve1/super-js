@@ -508,8 +508,11 @@ class Parser {
   private parseTypeDeclValue(): SumTypeDef | TypeNode {
     const mark = this.c.mark();
     const start = this.pos();
-    // Sum type heuristic: `Ident` or `Ident(` then a `|`, or capitalised variant list.
-    if (this.c.is('identifier') && (this.c.peek(1).kind === '(' || this.c.peek(1).kind === '|')) {
+    // Optional leading `|` for multi-line sum/union declarations.
+    const leadingPipe = this.c.eat('|');
+    // Sum type heuristic: `Ident` or `Ident(` then a `|`, or a leading-pipe
+    // alternation of capitalised variant names.
+    if (this.c.is('identifier') && (this.c.peek(1).kind === '(' || this.c.peek(1).kind === '|' || leadingPipe)) {
       const variants: VariantDef[] = [this.parseVariant()];
       if (this.c.is('|')) {
         while (this.c.eat('|')) variants.push(this.parseVariant());
@@ -519,8 +522,10 @@ class Parser {
       if (variants[0] && variants[0].form !== 'unit') {
         return this.fin(start, { kind: 'SumTypeDef', variants });
       }
-      this.c.reset(mark);
     }
+    // Not variant-shaped — rewind (including any leading pipe) and let
+    // `parseType` handle it; it accepts a leading `|` for union aliases.
+    this.c.reset(mark);
     return this.parseType();
   }
 
@@ -1121,11 +1126,14 @@ class Parser {
   // ════════════════════════════════════════════════════════════════════════════
   private parseType(): TypeNode {
     const start = this.pos();
+    // Tolerate a leading `|` so multi-line unions can be written
+    // `type T =\n  | A\n  | B`. A lone `| A` collapses to just `A`.
+    const leading = this.c.eat('|');
     let type = this.parseTypePostfix();
-    if (this.c.is('|')) {
+    if (leading || this.c.is('|')) {
       const types = [type];
       while (this.c.eat('|')) types.push(this.parseTypePostfix());
-      type = this.fin(start, { kind: 'UnionTypeNode', types });
+      type = types.length === 1 ? type : this.fin(start, { kind: 'UnionTypeNode', types });
     }
     return type;
   }
