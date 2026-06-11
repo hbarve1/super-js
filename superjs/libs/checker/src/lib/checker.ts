@@ -27,7 +27,7 @@ import {
   containsNullish, display,
 } from './model.js';
 import { isAssignable } from './subtype.js';
-import { resolveType, type TypeResolver } from './resolve.js';
+import { resolveType, substitute, type TypeResolver } from './resolve.js';
 import { Scope } from './scope.js';
 
 export interface CheckOptions {
@@ -49,6 +49,8 @@ export class Checker implements TypeResolver {
   private flow = new Map<string, Type>();
   private readonly namedTypes = new Map<string, Type>();
   private readonly sums = new Map<string, SumType>();
+  /** Constructor parameter types for generic classes, for `new C(args)` inference. */
+  private readonly classCtors = new Map<string, readonly ParamType[]>();
   private readonly variantIndex = new Map<string, { owner: string; variant: SumVariantType }[]>();
   private typeParams = new Set<string>();
   private expectedReturn: Type | undefined;
@@ -123,6 +125,13 @@ export class Checker implements TypeResolver {
     for (const { node, shell } of objShells) {
       this.withTypeParams(shell.typeParams, () => {
         (shell.properties as PropertySignature[]).push(...this.buildMembers(node));
+        // Capture a generic class's constructor signature for `new C(args)` inference.
+        if (node.kind === 'ClassDecl' && shell.typeParams?.length) {
+          const ctor = node.members.find((m) => m.kind === 'ClassConstructor');
+          if (ctor && ctor.kind === 'ClassConstructor') {
+            this.classCtors.set(node.id.name, ctor.params.map((p) => this.paramType(p)));
+          }
+        }
       });
     }
     for (const decl of aliases) {
@@ -635,10 +644,25 @@ export class Checker implements TypeResolver {
   }
 
   private synthNew(expr: import('@superjs/types').NewExpression): Type {
-    for (const a of expr.args) this.synth(a.kind === 'SpreadElement' ? a.argument : a);
+    const argTypes = expr.args.map((a) => this.synth(a.kind === 'SpreadElement' ? a.argument : a));
     if (expr.callee.kind === 'Identifier') {
       const named = this.namedTypes.get(expr.callee.name);
-      if (named && named.kind === 'object' && named.nominal) return named;
+      if (named && named.kind === 'object' && named.nominal) {
+        const typeParams = named.typeParams;
+        if (typeParams && typeParams.length > 0) {
+          // Infer type arguments from the constructor: unify each declared
+          // parameter type against the supplied argument type.
+          const map = new Map<string, Type>();
+          const ctorParams = this.classCtors.get(expr.callee.name);
+          ctorParams?.forEach((p, i) => {
+            const at = argTypes[i];
+            if (at) inferTypeArgs(p.type, at, map);
+          });
+          for (const tp of typeParams) if (!map.has(tp)) map.set(tp, DYNAMIC);
+          return substitute(named, map);
+        }
+        return named;
+      }
     }
     return DYNAMIC;
   }
@@ -1025,6 +1049,49 @@ function terminates(s: Statement): boolean {
  * synthetic `_0` field; unit variants carry none. Anything else — including a
  * single named field — is a record.
  */
+/**
+ * Structurally unify a (possibly generic) parameter type against a concrete
+ * argument type, recording each type-parameter binding in `map`. First binding
+ * wins. Widens literals so `new Box(42)` infers `T = number`, not `42`.
+ */
+function inferTypeArgs(param: Type, arg: Type, map: Map<string, Type>): void {
+  switch (param.kind) {
+    case 'type-param':
+      if (!map.has(param.name)) map.set(param.name, widen(arg));
+      return;
+    case 'array':
+      if (arg.kind === 'array') inferTypeArgs(param.element, arg.element, map);
+      return;
+    case 'promise':
+      if (arg.kind === 'promise') inferTypeArgs(param.value, arg.value, map);
+      return;
+    case 'nullable':
+      inferTypeArgs(param.inner, arg.kind === 'nullable' ? arg.inner : arg, map);
+      return;
+    case 'tuple':
+      if (arg.kind === 'tuple') {
+        param.elements.forEach((e, i) => { const a = arg.elements[i]; if (a) inferTypeArgs(e, a, map); });
+      }
+      return;
+    case 'function':
+      if (arg.kind === 'function') {
+        param.params.forEach((p, i) => { const a = arg.params[i]; if (a) inferTypeArgs(p.type, a.type, map); });
+        inferTypeArgs(param.returnType, arg.returnType, map);
+      }
+      return;
+    case 'object':
+      if (arg.kind === 'object') {
+        for (const pp of param.properties) {
+          const ap = arg.properties.find((x) => x.name === pp.name);
+          if (ap) inferTypeArgs(pp.type, ap.type, map);
+        }
+      }
+      return;
+    default:
+      return;
+  }
+}
+
 function isRecordVariant(variant: SumVariantType): boolean {
   if (variant.fields.length === 0) return false;
   return !(variant.fields.length === 1 && variant.fields[0]!.name === '_0');

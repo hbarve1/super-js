@@ -124,6 +124,23 @@ describe('call-argument expected-type propagation', () => {
   });
 });
 
+describe('generic class instantiation inference', () => {
+  const BOX = 'class Box<T> { constructor(public value: T) {} get(): T { return this.value; } }\n';
+
+  it('infers the type parameter from a constructor argument', () => {
+    clean(BOX + 'const b = new Box(42);\nconst n: number = b.get();');
+  });
+  it('rejects a mismatched use of the inferred type', () => {
+    expect(has(BOX + 'const b = new Box("hi");\nconst n: number = b.get();', 'SJS-E002')).toBe(true);
+  });
+  it('infers each parameter of a multi-parameter generic class', () => {
+    clean('class Pair<A, B> { constructor(public a: A, public b: B) {} }\nconst p = new Pair(1, "x");\nconst n: number = p.a;\nconst s: string = p.b;');
+  });
+  it('infers a type parameter nested under a container', () => {
+    clean('class Wrap<T> { constructor(public items: T[]) {} head(): T { return this.items[0]; } }\nconst w = new Wrap([1, 2, 3]);\nconst n: number = w.head();');
+  });
+});
+
 describe('narrowing (typeof / truthiness)', () => {
   it('typeof narrows a union member', () => {
     clean('function f(v: string | number): string { if (typeof v === "number") { return v.toFixed(2); } return v; }');
