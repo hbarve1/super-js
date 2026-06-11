@@ -101,6 +101,9 @@ importers:
       '@superjs/parser':
         specifier: workspace:*
         version: link:../../libs/parser
+      '@superjs/test-utils':
+        specifier: workspace:*
+        version: link:../../libs/test-utils
       '@superjs/types':
         specifier: workspace:*
         version: link:../../libs/types
