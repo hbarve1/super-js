@@ -617,13 +617,17 @@ export class Checker implements TypeResolver {
       return this.constructVariant(expr.callee.name, arg && arg.kind !== 'SpreadElement' ? arg : undefined, expected, expr.span);
     }
     const callee = this.synth(expr.callee);
-    for (const a of expr.args) this.synth(a.kind === 'SpreadElement' ? a.argument : a);
+    const params = callee.kind === 'function' ? callee.params : undefined;
+    // Check each argument once, flowing the parameter type in as the expected
+    // type so contextual cases resolve — generic variant construction
+    // (`Some(40)` against `Opt<number>`) and bare arrow params especially.
+    expr.args.forEach((a, i) => {
+      if (a.kind === 'SpreadElement') { this.synth(a.argument); return; }
+      const param = params?.[i];
+      if (param) this.checkAssignable(this.check(a, param.type), param.type, a.span);
+      else this.synth(a);
+    });
     if (callee.kind === 'function') {
-      // Check arguments positionally where possible.
-      expr.args.forEach((a, i) => {
-        const param = callee.params[i];
-        if (param && a.kind !== 'SpreadElement') this.checkAssignable(this.synth(a), param.type, a.span);
-      });
       const ret = callee.returnType;
       return expr.optional ? union([ret, UNDEFINED]) : ret;
     }
