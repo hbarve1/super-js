@@ -1,0 +1,87 @@
+import { describe, it, expect } from 'vitest';
+import { transform } from '@superjs/compiler';
+import { translateDts } from '../index.js';
+
+/** Translate, asserting the emitted .d.sjs parses + checks without errors. */
+async function tr(dts: string) {
+  const r = translateDts(dts);
+  const checked = await transform(r.code, 'out.d.sjs');
+  expect(checked.diagnostics.filter((d) => d.severity === 'error'), r.code).toEqual([]);
+  return r;
+}
+
+describe('translateDts — type aliases', () => {
+  it('maps primitives', async () => {
+    expect((await tr('type N = number;')).code.trim()).toBe('type N = number;');
+    expect((await tr('type S = string;')).code.trim()).toBe('type S = string;');
+  });
+  it('maps arrays and tuples', async () => {
+    expect((await tr('type A = number[];')).code).toContain('type A = number[];');
+    expect((await tr('type T = [number, string];')).code).toContain('[number, string]');
+  });
+  it('maps unions including null', async () => {
+    expect((await tr('type U = number | string;')).code).toContain('number | string');
+    expect((await tr('type N = number | null;')).code).toContain('number | null');
+  });
+  it('maps generics and nested generics', async () => {
+    expect((await tr('type M = Map<string, number[]>;')).code).toContain('Map<string, number[]>');
+    expect((await tr('type N = Array<Map<string, number>>;')).code).toContain('Array<Map<string, number>>');
+  });
+  it('maps function types', async () => {
+    expect((await tr('type F = (a: number, b: string) => boolean;')).code).toContain('(a: number, b: string) => boolean');
+  });
+  it('maps object type literals with optional + readonly + index signatures', async () => {
+    const r = await tr('type O = { readonly x: number; y?: string; [k: string]: number };');
+    expect(r.code).toContain('readonly x: number');
+    expect(r.code).toContain('y?: string');
+    expect(r.code).toContain('[k: string]: number');
+  });
+});
+
+describe('translateDts — interfaces', () => {
+  it('translates an interface to a structural object-type alias', async () => {
+    const r = await tr('interface Point { x: number; y: number; }');
+    expect(r.code).toContain('type Point = {');
+    expect(r.code).toContain('x: number');
+  });
+  it('carries type parameters', async () => {
+    const r = await tr('interface Box<T> { value: T; }');
+    expect(r.code).toContain('type Box<T> = {');
+    expect(r.code).toContain('value: T');
+  });
+  it('maps a method signature to a function-typed property', async () => {
+    const r = await tr('interface Repo<T> { find(id: string): T | null; }');
+    expect(r.code).toContain('find: (id: string) => T | null');
+  });
+});
+
+describe('translateDts — unsupported forms degrade to dynamic', () => {
+  it('maps `any` to dynamic and reports it', async () => {
+    const r = await tr('type A = any;');
+    expect(r.code).toContain('dynamic');
+    expect(r.unsupported.join('\n')).toMatch(/any.*dynamic/);
+  });
+  it('maps an intersection to dynamic and reports it', async () => {
+    const r = await tr('type I = { a: number } & { b: string };');
+    expect(r.code).toContain('dynamic');
+    expect(r.unsupported.some((u) => u.includes('unsupported'))).toBe(true);
+  });
+  it('reports a dropped type-parameter constraint', async () => {
+    const r = await tr('type C<T extends object> = T[];');
+    expect(r.unsupported.some((u) => u.includes('constraint'))).toBe(true);
+    expect(r.code).toContain('type C<T> = T[];');
+  });
+});
+
+describe('translateDts — multiple declarations', () => {
+  it('translates a small .d.ts module', async () => {
+    const r = await tr([
+      'type Id = string;',
+      'interface User { id: Id; name: string; age?: number; }',
+      'type Lookup = (id: Id) => User | null;',
+    ].join('\n'));
+    expect(r.code).toContain('type Id = string;');
+    expect(r.code).toContain('type User = {');
+    expect(r.code).toContain('(id: Id) => User | null');
+  });
+});
