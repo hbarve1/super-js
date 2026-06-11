@@ -1,0 +1,174 @@
+import { describe, it, expect } from 'vitest';
+import {
+  compile, transform, Compiler,
+  parseTypeDecl, emitTypeDecl,
+  configHash, apiHash, fileHash, cacheKey, COMPILER_VERSION,
+  openFile, typeAt, symbolAt, diagnosticsFor, configureSession,
+} from '../index.js';
+
+/** Deep-clone an AST node dropping positional fields, for structural equality. */
+function stripSpans(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(stripSpans);
+  if (node && typeof node === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (k === 'span' || k === 'loc') continue;
+      out[k] = stripSpans(v);
+    }
+    return out;
+  }
+  return node;
+}
+
+describe('compile()', () => {
+  it('compiles sources to JS outputs keyed by .js filename', async () => {
+    const r = await compile([{ filename: 'a.sjs', source: 'const x: number = 1 + 2;' }]);
+    expect([...r.outputs.keys()]).toEqual(['a.js']);
+    expect(r.outputs.get('a.js')!.code).toContain('const x = 1 + 2;');
+    expect(r.diagnostics).toEqual([]);
+  });
+
+  it('aggregates diagnostics across files', async () => {
+    const r = await compile([
+      { filename: 'ok.sjs', source: 'const a = 1;' },
+      { filename: 'bad.sjs', source: 'const b: string = null;' },
+    ]);
+    expect(r.outputs.size).toBe(2);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E001')).toBe(true);
+  });
+
+  it('emits a source map alongside code', async () => {
+    const r = await compile([{ filename: 'm.sjs', source: 'const y = 2;' }]);
+    const out = r.outputs.get('m.js')!;
+    expect(out.map.version).toBe(3);
+    expect(out.map.sources).toEqual(['m.sjs']);
+  });
+});
+
+describe('transform() — single-file async', () => {
+  it('returns code, map and diagnostics', async () => {
+    const r = await transform('function id(x: number): number { return x; }', 'id.sjs');
+    expect(r.code).toContain('function id(x) {');
+    expect(r.map.version).toBe(3);
+    expect(r.diagnostics).toEqual([]);
+  });
+
+  it('surfaces checker diagnostics for a bad single file', async () => {
+    const r = await transform('const n: string = null;', 'n.sjs');
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E001')).toBe(true);
+  });
+
+  it('sum-type construction lowers to a tagged object', async () => {
+    const src = 'type R = Ok(number) | Err(string);\nconst r = Ok(7);';
+    const r = await transform(src, 'r.sjs');
+    expect(r.code).toContain('{ _tag: "Ok", _0: 7 }');
+  });
+});
+
+describe('LSP queries (typeAt / symbolAt / diagnosticsFor)', () => {
+  it('typeAt resolves the type at a literal position', () => {
+    configureSession();
+    openFile('t.sjs', 'const x = 42;');
+    const t = typeAt('t.sjs', 1, 10); // the `42`
+    expect(t).not.toBeNull();
+    expect(t!.kind).toBe('literal');
+  });
+
+  it('symbolAt resolves a use to its declaration', () => {
+    configureSession();
+    openFile('s.sjs', 'const foo = 1;\nfoo;');
+    const sym = symbolAt('s.sjs', 2, 0);
+    expect(sym).not.toBeNull();
+    expect(sym!.name).toBe('foo');
+    expect(sym!.kind).toBe('const');
+    expect(sym!.declaration!.start.line).toBe(1);
+  });
+
+  it('diagnosticsFor returns cached diagnostics for an open file', () => {
+    configureSession();
+    openFile('d.sjs', 'const z: string = null;');
+    expect(diagnosticsFor('d.sjs').some((x) => x.code === 'SJS-E001')).toBe(true);
+  });
+
+  it('returns null for unopened files', () => {
+    configureSession();
+    expect(typeAt('missing.sjs', 1, 0)).toBeNull();
+    expect(symbolAt('missing.sjs', 1, 0)).toBeNull();
+  });
+});
+
+describe('parseTypeDecl / emitTypeDecl round-trip', () => {
+  const cases = [
+    'number',
+    'string?',
+    'number | string',
+    'Array<number>',
+    'Map<Array<number>, string>', // nested generic (avoids the `>>` lexer gap)
+    '[number, string]',
+    '(a: number, b: string) => boolean',
+    '{ x: number; y: string }',
+    'Ok(number) | Err(string)',
+    'Some(number) | None',
+  ];
+  for (const input of cases) {
+    it(`round-trips \`${input}\``, () => {
+      const ast = parseTypeDecl(input);
+      const printed = emitTypeDecl(ast);
+      const reparsed = parseTypeDecl(printed);
+      expect(stripSpans(reparsed)).toEqual(stripSpans(ast));
+    });
+  }
+
+  it('throws on malformed type input', () => {
+    expect(() => parseTypeDecl('number |')).toThrow();
+  });
+});
+
+describe('incremental cache', () => {
+  it('returns the cached analysis for unchanged content', () => {
+    const c = new Compiler();
+    const a = c.setFile('a.sjs', 'const x = 1;');
+    const b = c.setFile('a.sjs', 'const x = 1;');
+    expect(a).toBe(b); // same object — cache hit
+  });
+
+  it('recomputes when content changes', () => {
+    const c = new Compiler();
+    const a = c.setFile('a.sjs', 'const x = 1;');
+    const b = c.setFile('a.sjs', 'const x = 2;');
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('hashing (cache key M3/M4)', () => {
+  it('configHash is stable and order-independent', () => {
+    expect(configHash({ variants: 'default', strict: false }))
+      .toBe(configHash({ strict: false, variants: 'default' }));
+  });
+
+  it('configHash changes when an output-affecting knob changes', () => {
+    expect(configHash({ variants: 'default' })).not.toBe(configHash({ variants: 'classes' }));
+  });
+
+  it('apiHash tracks the exported surface, not internals', () => {
+    const a = apiHash(['export var:x', 'export FunctionDecl:f']);
+    const b = apiHash(['export FunctionDecl:f', 'export var:x']); // reordered
+    expect(a).toBe(b);
+    expect(a).not.toBe(apiHash(['export var:x']));
+  });
+
+  it('cacheKey embeds file hash, version and config hash', () => {
+    const key = cacheKey('const x = 1;', configHash({}));
+    expect(key).toBe(`${fileHash('const x = 1;')}:${COMPILER_VERSION}:${configHash({})}`);
+  });
+});
+
+describe('determinism', () => {
+  it('two compilations are byte-identical', async () => {
+    const src = 'type R = Ok(number) | Err(string);\nconst r = Ok(1);\nconst v = match r { Ok(x) => x, Err(e) => 0, };';
+    const a = await compile([{ filename: 's.sjs', source: src }]);
+    const b = await compile([{ filename: 's.sjs', source: src }]);
+    expect(a.outputs.get('s.js')!.code).toBe(b.outputs.get('s.js')!.code);
+    expect(JSON.stringify(a.outputs.get('s.js')!.map)).toBe(JSON.stringify(b.outputs.get('s.js')!.map));
+  });
+});

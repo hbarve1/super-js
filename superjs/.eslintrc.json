@@ -1,0 +1,40 @@
+{
+  "root": true,
+  "ignorePatterns": ["**/*"],
+  "plugins": ["@nx"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": [],
+            "depConstraints": [
+              { "sourceTag": "tier:0", "onlyDependOnLibsWithTags": ["tier:0"] },
+              { "sourceTag": "tier:1", "onlyDependOnLibsWithTags": ["tier:0", "tier:1"] },
+              { "sourceTag": "tier:2", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2"] },
+              { "sourceTag": "tier:3", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2", "tier:3"] },
+              { "sourceTag": "tier:4", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2", "tier:3", "tier:4"] },
+              { "sourceTag": "tier:5", "onlyDependOnLibsWithTags": ["tier:5"] },
+              { "sourceTag": "tier:6", "onlyDependOnLibsWithTags": ["tier:0", "tier:3", "tier:5", "tier:6"] },
+              { "sourceTag": "tier:app", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2", "tier:3", "tier:4", "tier:5", "tier:6", "tier:app"] },
+              { "sourceTag": "scope:internal", "notDependOnLibsWithTags": ["scope:external"] }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@nx/typescript"],
+      "rules": {}
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "extends": ["plugin:@nx/javascript"],
+      "rules": {}
+    }
+  ]
+}

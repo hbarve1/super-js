@@ -1,0 +1,43 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/types"
+    },
+    {
+      "path": "./libs/diagnostics"
+    },
+    {
+      "path": "./libs/config"
+    },
+    {
+      "path": "./libs/runtime"
+    },
+    {
+      "path": "./libs/lexer"
+    },
+    {
+      "path": "./libs/parser"
+    },
+    {
+      "path": "./libs/checker"
+    },
+    {
+      "path": "./libs/ir"
+    },
+    {
+      "path": "./libs/codegen-js"
+    },
+    {
+      "path": "./libs/compiler"
+    },
+    {
+      "path": "./apps/cli"
+    },
+    {
+      "path": "./apps/e2e"
+    }
+  ]
+}

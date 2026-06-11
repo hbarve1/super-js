@@ -61,6 +61,7 @@ These codes are emitted by the type checker. Codes marked **Stage 0 (prototype)*
 | SJS-E017 | error | modules | Circular import detected — module graph contains a cycle | Stage 1 |
 | SJS-E018 | error | async-await | Top-level `await` used outside an ES module context | Stage 1 |
 | SJS-E019 | error | jsx | Unknown JSX element type — identifier not in scope or not a valid component | Stage 2 |
+| SJS-E020 | error | type-check | Ambiguous variant constructor `V` — multiple sum types declare it and the expected type is unknown | Stage 1 |
 
 ---
 

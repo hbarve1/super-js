@@ -60,7 +60,7 @@ Each variant name becomes a constructor in scope after the `type` declaration. C
 
 ### Variant names and scoping
 
-Variant names are module-scoped identifiers. If two sum types in scope declare the same variant name, the compiler resolves ambiguity using the expected type context. If context is insufficient to disambiguate, SJS-E008 is emitted.
+Variant names are module-scoped identifiers. If two sum types in scope declare the same variant name, the compiler resolves ambiguity using the expected type context. If context is insufficient to disambiguate, SJS-E020 is emitted.
 
 ### Recursive types
 
@@ -160,7 +160,7 @@ expected type = D1    V declared in D1 and D2
 Γ ⊢ V(e) : D1
 ```
 
-If no expected type context is available and the variant name is ambiguous, SJS-E008 is emitted.
+If no expected type context is available and the variant name is ambiguous, SJS-E020 is emitted.
 
 ---
 
@@ -250,7 +250,7 @@ The compiler tracks tag-to-index mapping and generates a `__sjs_shape_tag` enum 
 | Code | When emitted |
 |------|--------------|
 | SJS-E007 | Non-exhaustive `match` on a sum type (see `003-match.md`) |
-| SJS-E008 | Ambiguous variant constructor: name shared by multiple sum types and context is insufficient |
+| SJS-E020 | Ambiguous variant constructor: name shared by multiple sum types and context is insufficient |
 | SJS-E010 | `enum` keyword used — SJS does not have C-style enums; use sum types |
 
 ---
@@ -305,11 +305,11 @@ const e: Validated<number> = Invalid(["too small", "must be even"]);
 ### Invalid
 
 ```sjs
-// SJS-E008: ambiguous variant (both types declare Ok)
+// SJS-E020: ambiguous variant (both types declare Ok)
 type A = Ok(number) | Fail;
 type B = Ok(string) | Fail;
 
-const x = Ok(1);  // SJS-E008: Ok is ambiguous between A and B
+const x = Ok(1);  // SJS-E020: Ok is ambiguous between A and B
 
 // Wrong payload type
 type Result<T, E> = Ok(T) | Err(E);
