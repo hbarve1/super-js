@@ -23,6 +23,7 @@ function capturingIO(cwd: string): IO & { stdout: () => string; stderr: () => st
     writeFile: (p, d) => { writes.set(abs(p), d); },
     exists: (p) => writes.has(abs(p)) || existsSync(abs(p)),
     cwd: () => cwd,
+    watch: () => () => { /* no watching in e2e */ },
     stdout: () => out,
     stderr: () => err,
     writes,

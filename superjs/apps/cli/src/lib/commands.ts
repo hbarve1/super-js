@@ -73,28 +73,44 @@ export async function check(args: ParsedArgs, io: IO): Promise<number> {
 
 // ── build ─────────────────────────────────────────────────────────────────────
 export async function build(args: ParsedArgs, io: IO): Promise<number> {
-  if (args.positionals.length === 0) { errline(io, 'usage: superjs build <files...> [--out-dir dir] [--source-map none|inline|external] [--no-cache]'); return 2; }
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs build <files...> [--out-dir dir] [--source-map none|inline|external] [--no-cache] [--watch]'); return 2; }
   const outDir = typeof args.flags['out-dir'] === 'string' ? (args.flags['out-dir'] as string) : 'dist';
   const sm = args.flags['source-map'];
   const sourceMap = sm === 'inline' || sm === 'external' || sm === 'none' ? sm : 'external';
-  const { files, missing } = readSources(io, args.positionals);
   // Warm rebuilds reuse `.superjs/cache/`; `--no-cache` forces a cold build.
   const cache = args.flags['no-cache'] === true ? undefined : new DiskCacheStore(io, join(resolve(io, '.'), CACHE_DIR));
-  const result = await compile(files, { sourceMap }, cache);
-  if (result.diagnostics.length) emitDiagnostics(io, result.diagnostics, 'pretty');
 
-  const errors = countErrors(result.diagnostics);
-  if (errors > 0) { errline(io, `build failed: ${errors} error${errors === 1 ? '' : 's'}`); return 1; }
+  /** One build pass. Returns the exit code for that pass. */
+  const buildOnce = async (): Promise<number> => {
+    const { files, missing } = readSources(io, args.positionals);
+    const result = await compile(files, { sourceMap }, cache);
+    if (result.diagnostics.length) emitDiagnostics(io, result.diagnostics, 'pretty');
+    const errors = countErrors(result.diagnostics);
+    if (errors > 0) { errline(io, `build failed: ${errors} error${errors === 1 ? '' : 's'}`); return 1; }
+    let written = 0;
+    for (const [name, output] of result.outputs) {
+      const outPath = join(resolve(io, outDir), basename(name));
+      io.writeFile(outPath, output.code);
+      written++;
+      if (sourceMap === 'external') io.writeFile(`${outPath}.map`, JSON.stringify(output.map));
+    }
+    line(io, `built ${written} file${written === 1 ? '' : 's'} → ${outDir}/`);
+    return missing > 0 ? 1 : 0;
+  };
 
-  let written = 0;
-  for (const [name, output] of result.outputs) {
-    const outPath = join(resolve(io, outDir), basename(name));
-    io.writeFile(outPath, output.code);
-    written++;
-    if (sourceMap === 'external') io.writeFile(`${outPath}.map`, JSON.stringify(output.map));
+  const code = await buildOnce();
+
+  if (args.flags['watch'] === true) {
+    // Re-build on change; warm passes are served from the cache. The active
+    // watchers keep the process alive (run() resolves; node does not exit).
+    line(io, 'watching for changes… (ctrl-c to stop)');
+    io.watch(args.positionals.map((p) => resolve(io, p)), (path) => {
+      line(io, `change: ${basename(path)} — rebuilding`);
+      void buildOnce();
+    });
+    return 0;
   }
-  line(io, `built ${written} file${written === 1 ? '' : 's'} → ${outDir}/`);
-  return missing > 0 ? 1 : 0;
+  return code;
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────

@@ -3,11 +3,13 @@ import { run, parseArgs } from './run.js';
 import { VERSION } from './commands.js';
 import type { IO } from './io.js';
 
-/** In-memory IO: captures stdout/stderr and a virtual filesystem. */
+/** In-memory IO: captures stdout/stderr, a virtual filesystem, and watchers. */
 function makeIO(files: Record<string, string> = {}, cwd = '/work'): IO & {
   stdout: () => string; stderr: () => string; fs: Map<string, string>;
+  fireChange: (path: string) => void;
 } {
   const fs = new Map<string, string>(Object.entries(files));
+  const watchers: { paths: readonly string[]; cb: (p: string) => void }[] = [];
   let outBuf = '', errBuf = '';
   return {
     out: (t) => { outBuf += t; },
@@ -16,9 +18,11 @@ function makeIO(files: Record<string, string> = {}, cwd = '/work'): IO & {
     writeFile: (p, d) => { fs.set(p, d); },
     exists: (p) => fs.has(p),
     cwd: () => cwd,
+    watch: (paths, cb) => { watchers.push({ paths, cb }); return () => { /* noop */ }; },
     stdout: () => outBuf,
     stderr: () => errBuf,
     fs,
+    fireChange: (path) => { for (const w of watchers) if (w.paths.includes(path)) w.cb(path); },
   };
 }
 
@@ -119,6 +123,18 @@ describe('build', () => {
     const io = makeIO({ '/work/a.sjs': 'const x = 1;' });
     await run(['build', 'a.sjs', '--out-dir', 'out', '--no-cache'], io);
     expect([...io.fs.keys()].some((p) => p.includes('.superjs/cache'))).toBe(false);
+  });
+  it('--watch does the initial build and rebuilds on change', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const x = 1;' });
+    expect(await run(['build', 'a.sjs', '--out-dir', 'out', '--watch'], io)).toBe(0);
+    expect(io.fs.get('/work/out/a.js')).toContain('const x = 1;');
+    expect(io.stdout()).toContain('watching for changes');
+    // Edit the file and fire the watcher → output is rebuilt from new source.
+    io.fs.set('/work/a.sjs', 'const x = 99;');
+    io.fireChange('/work/a.sjs');
+    await Promise.resolve(); // let the async rebuild settle
+    expect(io.fs.get('/work/out/a.js')).toContain('const x = 99;');
+    expect(io.stdout()).toContain('rebuilding');
   });
 });
 

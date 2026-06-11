@@ -4,8 +4,11 @@
  * touching the real filesystem or stdout.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, watch as fsWatch } from 'node:fs';
 import { dirname } from 'node:path';
+
+/** Stops watching when called. */
+export type Unwatch = () => void;
 
 export interface IO {
   /** Write to stdout (no trailing newline added). */
@@ -16,6 +19,8 @@ export interface IO {
   writeFile(path: string, data: string): void;
   exists(path: string): boolean;
   cwd(): string;
+  /** Watch `paths`; call `onChange(path)` when one changes. Returns a disposer. */
+  watch(paths: readonly string[], onChange: (path: string) => void): Unwatch;
 }
 
 /** The production IO bound to node:fs and process streams. */
@@ -29,6 +34,10 @@ export const nodeIO: IO = {
   },
   exists: (path) => existsSync(path),
   cwd: () => process.cwd(),
+  watch: (paths, onChange) => {
+    const watchers = paths.map((p) => fsWatch(p, () => onChange(p)));
+    return () => { for (const w of watchers) w.close(); };
+  },
 };
 
 /** A line writer helper (appends `\n`). */
