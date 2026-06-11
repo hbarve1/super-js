@@ -38,6 +38,9 @@
     },
     {
       "path": "./apps/e2e"
+    },
+    {
+      "path": "./libs/test-utils"
     }
   ]
 }
