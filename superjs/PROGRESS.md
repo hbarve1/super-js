@@ -30,7 +30,7 @@
 | 2 | libs/diagnostics `@superjs/diagnostics` | 0 | types | ✅ done |
 | 3 | libs/config `@superjs/config` | 0 | (none) | ✅ done |
 | 4 | libs/test-utils (private) | 0 | types, diagnostics | ⬜ todo |
-| 5 | libs/runtime `@superjs/runtime` | 5 | — | ⬜ todo |
+| 5 | libs/runtime `@superjs/runtime` | 5 | — | ✅ done |
 | 6 | libs/lexer `@superjs/lexer` | 1 | types, diagnostics | ⬜ todo |
 | 7 | libs/parser `@superjs/parser` | 1 | lexer | ⬜ todo |
 | 8 | libs/checker `@superjs/checker` | 1 | parser | ⬜ todo |
@@ -56,6 +56,7 @@
 
 ## Session log
 
+- 2026-06-11: Task 5 DONE — `@superjs/runtime` (tier:5, scope:external). panic.ts (SjsPanic, panic/assert/todo/unreachable), iterator.ts (attachIteratorSymbol self-iterable), inspect.ts (deterministic formatter, renders sum variants {_tag,_0} as Ok(42)/Err("x")/None, Map/Set/circular). 13 tests. Codegen will emit calls to these.
 - 2026-06-10: Foundation started. NX TS-solution workspace (user-scaffolded). Added @nx/vite + @nx/eslint. nx.json task pipeline. Decisions locked above.
 - 2026-06-10: Foundation DONE — nx.json targetDefaults (^build), eslint tier depConstraints (ADR-008), Vitest. **Gotcha:** generated lib `.eslintrc.json` has `"!**/*"` which un-ignores `node_modules`/`dist` → ESLint lints `node_modules/tslib`. Fix: add `"**/node_modules/**", "dist"` to each lib's `ignorePatterns`. APPLY TO EVERY GENERATED LIB.
 - 2026-06-11: Task 3 DONE — `@superjs/config`. schema.ts (typed model + DEFAULT_CONFIG mirroring config-schema.json), validate.ts (dependency-free validator, partial-over-defaults merge, enum/bounds/unknown-key checks, output variants), load.ts (parseConfig, loadConfigFile, findConfigFile upward search, loadConfig). Self-contained (no types dep). 16 tests, all 4 targets green.
