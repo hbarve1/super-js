@@ -41,6 +41,9 @@
     },
     {
       "path": "./libs/test-utils"
+    },
+    {
+      "path": "./libs/interop"
     }
   ]
 }
