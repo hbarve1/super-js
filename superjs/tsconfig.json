@@ -23,6 +23,9 @@
     },
     {
       "path": "./libs/checker"
+    },
+    {
+      "path": "./libs/ir"
     }
   ]
 }
