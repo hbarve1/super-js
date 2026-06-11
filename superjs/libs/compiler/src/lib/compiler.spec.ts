@@ -103,7 +103,8 @@ describe('parseTypeDecl / emitTypeDecl round-trip', () => {
     'string?',
     'number | string',
     'Array<number>',
-    'Map<Array<number>, string>', // nested generic (avoids the `>>` lexer gap)
+    'Map<Array<number>, string>',
+    'Array<Map<string, number>>', // nested generic closing with `>>`
     '[number, string]',
     '(a: number, b: string) => boolean',
     '{ x: number; y: string }',

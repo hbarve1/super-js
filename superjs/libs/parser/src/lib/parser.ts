@@ -1176,7 +1176,7 @@ class Parser {
     this.c.advance();
     const args = [this.parseType()];
     while (this.c.eat(',')) args.push(this.parseType());
-    this.c.expect('>');
+    this.c.expectCloseAngle();
     return args;
   }
 
@@ -1249,7 +1249,7 @@ class Parser {
       params.push(this.fin(ps, { kind: 'TypeParam', name, ...(def ? { default: def } : {}) }));
       if (!this.c.eat(',')) break;
     }
-    this.c.expect('>');
+    this.c.expectCloseAngle();
     return params;
   }
 

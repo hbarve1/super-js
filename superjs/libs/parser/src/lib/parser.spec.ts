@@ -136,3 +136,24 @@ describe('error recovery', () => {
     expect(parse('').program.body).toHaveLength(0);
   });
 });
+
+describe('nested generics — `>>` token splitting', () => {
+  it('closes a two-deep type argument list (`Array<Map<K, V>>`)', () => {
+    const s = first('const m: Array<Map<string, number>> = x;');
+    expect(s.kind).toBe('VariableDecl');
+    expect(kindsOf(s)).toContain('TypeRefNode');
+  });
+  it('closes a three-deep list (`>>>`)', () => {
+    ok('const x: Array<Array<Array<number>>> = y;');
+  });
+  it('handles a nested generic in a type alias', () => {
+    ok('type M = Map<string, Array<number>>;');
+  });
+  it('handles a nested generic as a type-parameter default (`>>`)', () => {
+    ok('type Box<T = Array<number>> = T;');
+  });
+  it('still parses a real right-shift outside type context', () => {
+    const s = first('const n = a >> b;');
+    expect(kindsOf(s)).toContain('BinaryExpression');
+  });
+});

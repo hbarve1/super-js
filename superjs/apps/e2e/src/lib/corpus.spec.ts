@@ -14,7 +14,7 @@ import { loadFixtures } from './corpus.js';
 const CORPUS = loadFixtures('corpus');
 
 /** Floor on the error-free count — a regression that breaks working programs trips this. */
-const CLEAN_BASELINE = 21;
+const CLEAN_BASELINE = 22;
 
 describe('example corpus', () => {
   it('discovers the corpus', () => {
