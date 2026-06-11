@@ -15,9 +15,16 @@ import { lower } from '@superjs/ir';
 import { generate } from '@superjs/codegen-js';
 import {
   type CompileOpts, type CompileResult, type CompiledOutput, type SourceFile,
-  type TransformOpts, type TransformResult, type SymbolInfo,
+  type TransformOpts, type TransformResult, type SymbolInfo, type CacheStore,
 } from './options.js';
-import { apiHash, docHash, configHash, fileHash } from './hash.js';
+import { apiHash, docHash, configHash, fileHash, cacheKey } from './hash.js';
+
+/** Placeholder program for cache-hit files (no AST is reconstructed). */
+const EMPTY_PROGRAM: Program = {
+  kind: 'Program',
+  body: [],
+  span: { start: { offset: 0, line: 1, column: 0 }, end: { offset: 0, line: 1, column: 0 } },
+};
 
 /** Everything the compiler derives and caches for one source file. */
 interface FileState {
@@ -40,10 +47,12 @@ export class Compiler {
   private readonly files = new Map<string, FileState>();
   private readonly opts: CompileOpts;
   private readonly cfgHash: string;
+  private readonly cache: CacheStore | undefined;
 
-  constructor(opts: CompileOpts = {}) {
+  constructor(opts: CompileOpts = {}, cache?: CacheStore) {
     this.opts = opts;
     this.cfgHash = configHash(opts);
+    this.cache = cache;
   }
 
   /** The config-hash component of this session's cache key. */
@@ -66,6 +75,17 @@ export class Compiler {
   }
 
   private analyse(filename: string, source: string): FileState {
+    // Persistent-cache hit: skip the whole pipeline. The cached file carries no
+    // program/types — fine for builds; LSP sessions run without a cache.
+    const key = cacheKey(source, this.cfgHash);
+    const hit = this.cache?.get(key);
+    if (hit) {
+      return {
+        source, program: EMPTY_PROGRAM, diagnostics: [...hit.diagnostics], types: [],
+        output: { code: hit.code, map: hit.map },
+        fileHash: fileHash(source), apiHash: '', docHash: '',
+      };
+    }
     const parsed = parse(source, { file: filename, strict: this.opts.strict });
     const checked = checkProgram(parsed.program, {
       file: filename, strict: this.opts.strict, recordTypes: true,
@@ -80,6 +100,7 @@ export class Compiler {
       inlineMapUrl: this.opts.sourceMap !== 'none',
     });
     const diagnostics = [...parsed.diagnostics, ...checked.diagnostics];
+    this.cache?.set(key, { code: gen.code, map: gen.map, diagnostics });
     return {
       source,
       program: parsed.program,
@@ -154,9 +175,12 @@ export class Compiler {
 
 // ── Stateless one-shot API (spec §API Contract) ───────────────────────────────
 
-/** Compile a set of source files. Async per the frozen API surface. */
-export async function compile(sources: readonly SourceFile[], opts: CompileOpts = {}): Promise<CompileResult> {
-  const compiler = new Compiler(opts);
+/**
+ * Compile a set of source files. Async per the frozen API surface. An optional
+ * {@link CacheStore} makes warm rebuilds skip unchanged files.
+ */
+export async function compile(sources: readonly SourceFile[], opts: CompileOpts = {}, cache?: CacheStore): Promise<CompileResult> {
+  const compiler = new Compiler(opts, cache);
   for (const f of sources) compiler.setFile(f.filename, f.source);
   return compiler.compileAll();
 }

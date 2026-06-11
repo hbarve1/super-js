@@ -107,6 +107,19 @@ describe('build', () => {
     expect(io.fs.has('/work/out/bad.js')).toBe(false);
     expect(io.stderr()).toContain('build failed');
   });
+  it('writes a persistent cache entry under .superjs/cache and reuses it', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const x = 1;' });
+    await run(['build', 'a.sjs', '--out-dir', 'out'], io);
+    expect([...io.fs.keys()].filter((p) => p.includes('.superjs/cache'))).toHaveLength(1);
+    const before = io.fs.get('/work/out/a.js');
+    expect(await run(['build', 'a.sjs', '--out-dir', 'out'], io)).toBe(0);
+    expect(io.fs.get('/work/out/a.js')).toBe(before); // identical, served from cache
+  });
+  it('--no-cache skips the cache directory', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const x = 1;' });
+    await run(['build', 'a.sjs', '--out-dir', 'out', '--no-cache'], io);
+    expect([...io.fs.keys()].some((p) => p.includes('.superjs/cache'))).toBe(false);
+  });
 });
 
 describe('init & doctor', () => {

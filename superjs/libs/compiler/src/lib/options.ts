@@ -49,6 +49,24 @@ export interface TransformResult {
   readonly diagnostics: Diagnostic[];
 }
 
+/** A cached build product for one file, keyed by `cacheKey(source, configHash)`. */
+export interface CacheEntry {
+  readonly code: string;
+  readonly map: SourceMap;
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+/**
+ * Persistent build cache. Injected (so the Tier-3 compiler stays filesystem-free);
+ * the CLI supplies a disk-backed implementation. A hit skips parse/check/lower/
+ * generate entirely — so a cached file carries no in-memory `program`/`types`
+ * (LSP sessions run without a cache and re-analyse).
+ */
+export interface CacheStore {
+  get(key: string): CacheEntry | undefined;
+  set(key: string, entry: CacheEntry): void;
+}
+
 /** Result of a go-to-definition query ({@link symbolAt}). */
 export interface SymbolInfo {
   readonly name: string;

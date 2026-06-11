@@ -18,7 +18,7 @@ export {
 } from './lib/hash.js';
 export type {
   SourceFile, CompileOpts, TransformOpts, CompiledOutput, CompileResult,
-  TransformResult, SymbolInfo,
+  TransformResult, SymbolInfo, CacheStore, CacheEntry,
 } from './lib/options.js';
 
 /**
