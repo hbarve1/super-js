@@ -110,6 +110,20 @@ describe('record-variant construction', () => {
   });
 });
 
+describe('call-argument expected-type propagation', () => {
+  const OPT = 'type Opt<T> = Some(T) | None;\nfunction unwrap(o: Opt<number>, f: number): number { return match o { Some(v) => v, None => f, }; }\n';
+
+  it('infers a generic variant argument from the parameter type', () => {
+    clean(OPT + 'const r: number = unwrap(Some(40), 0) + unwrap(None, 2);');
+  });
+  it('still rejects a wrong-typed variant argument', () => {
+    expect(has(OPT + 'const r: number = unwrap(Some("x"), 0);', 'SJS-E002')).toBe(true);
+  });
+  it('contextually types a bare arrow parameter from the callee signature', () => {
+    clean('function apply(f: (n: number) => number, x: number): number { return f(x); }\nconst r: number = apply((n) => n + 1, 5);');
+  });
+});
+
 describe('narrowing (typeof / truthiness)', () => {
   it('typeof narrows a union member', () => {
     clean('function f(v: string | number): string { if (typeof v === "number") { return v.toFixed(2); } return v; }');

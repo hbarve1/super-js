@@ -7,6 +7,4 @@ function unwrapOr(o: Opt<number>, fallback: number): number {
   };
 }
 
-const present: Opt<number> = Some(40);
-const absent: Opt<number> = None;
-const __r: number = unwrapOr(present, 0) + unwrapOr(absent, 2);
+const __r: number = unwrapOr(Some(40), 0) + unwrapOr(None, 2);
