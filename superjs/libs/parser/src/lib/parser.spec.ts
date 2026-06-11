@@ -72,6 +72,19 @@ describe('sum types & match', () => {
     const s = first('type N = | { a: number } | { b: string };');
     expect(kindsOf(s)).toContain('UnionTypeNode');
   });
+  it('parses `T | null` as a union, not a sum of unit variants', () => {
+    const s = first('type N = number | null;');
+    expect(kindsOf(s)).toContain('UnionTypeNode');
+    expect(kindsOf(s)).not.toContain('SumTypeDef');
+  });
+  it('parses an object type with an index signature', () => {
+    expect(kindsOf(first('type Dict = { [key: string]: number };'))).toContain('IndexSignature');
+  });
+  it('parses a parenthesized type wrapped by an array', () => {
+    const s = first('type A = (number | string)[];');
+    expect(kindsOf(s)).toContain('ParenthesizedTypeNode');
+    expect(kindsOf(s)).toContain('ArrayTypeNode');
+  });
   it('match expression with tuple/unit/default arms', () => {
     const p = ok('const m = match r { Ok(v) => v, Err(e) => 0, default => -1, };');
     expect(kindsOf(p)).toEqual(

@@ -9,12 +9,8 @@
  * Covers the spec's categories (those SJS actually allows): primitives, arrays,
  * tuples, unions, nullable, function signatures, object types (+ optional /
  * readonly / index signatures / nested), generics (incl. nested `>>`), and
- * variant sum types (unit / tuple / record).
- *
- * Two forms are deliberately excluded pending parser follow-ups (logged in
- * PROGRESS): `number | null` (the sum/union heuristic mistakes a primitive-named
- * member for a unit variant) and object index signatures `{ [k: string]: V }`
- * (not yet parsed). Nullable `T?` covers the `T | null` case meanwhile.
+ * variant sum types (unit / tuple / record), including `T | null` unions and
+ * object index signatures `{ [k: string]: V }`.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -41,7 +37,7 @@ const CORPUS: Record<string, readonly string[]> = {
   ],
   arrays: ['number[]', 'string[][]', '(number | string)[]', 'boolean[][][]'],
   tuples: ['[number, string]', '[number]', '[number, string, boolean]'],
-  unions: ['number | string', 'number | string | boolean', 'A | B | C'],
+  unions: ['number | string', 'number | string | boolean', 'A | B | C', 'number | null', 'string | undefined'],
   nullable: ['string?', 'number[]?', '(number | string)?'],
   functions: [
     '() => number',
@@ -55,6 +51,8 @@ const CORPUS: Record<string, readonly string[]> = {
     '{ readonly x: number }',
     '{ x?: number }',
     '{ a: { b: number } }',
+    '{ [key: string]: number }',
+    '{ [id: string]: Array<number> }',
   ],
   generics: [
     'Array<number>',

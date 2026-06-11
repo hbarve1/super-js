@@ -510,9 +510,11 @@ class Parser {
     const start = this.pos();
     // Optional leading `|` for multi-line sum/union declarations.
     const leadingPipe = this.c.eat('|');
-    // Sum type heuristic: `Ident` or `Ident(` then a `|`, or a leading-pipe
-    // alternation of capitalised variant names.
-    if (this.c.is('identifier') && (this.c.peek(1).kind === '(' || this.c.peek(1).kind === '|' || leadingPipe)) {
+    // Sum type heuristic: a variant-named `Ident` or `Ident(` then a `|`, or a
+    // leading-pipe alternation. A primitive-named member (`number | null`) is a
+    // union of types, not a variant list, so exclude those.
+    if (this.c.is('identifier') && !PRIMITIVE_TYPES.has(this.c.current.value)
+        && (this.c.peek(1).kind === '(' || this.c.peek(1).kind === '|' || leadingPipe)) {
       const variants: VariantDef[] = [this.parseVariant()];
       if (this.c.is('|')) {
         while (this.c.eat('|')) variants.push(this.parseVariant());
@@ -1234,6 +1236,18 @@ class Parser {
     while (!this.c.is('}') && !this.c.atEnd) {
       if (this.c.eat(';') || this.c.eat(',')) continue;
       const ms = this.pos();
+      // Index signature: `[ name : KeyType ] : ValueType`.
+      if (this.c.is('[')) {
+        this.c.advance();
+        const keyName = this.parseIdentifier();
+        this.c.expect(':');
+        const keyType = this.parseType();
+        this.c.expect(']');
+        this.c.expect(':');
+        const valueType = this.parseType();
+        members.push(this.fin(ms, { kind: 'IndexSignature', keyName, keyType, valueType }));
+        continue;
+      }
       const readonly = this.eatModifier('readonly');
       const name = this.parsePropertyKey();
       if (this.c.is('(')) {
