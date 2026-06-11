@@ -73,8 +73,10 @@ export class Compiler {
     const ir = lower(parsed.program);
     const outName = outputName(filename);
     const gen = generate(ir, {
-      file: outName,
-      source: filename,
+      // `file` / sourceMappingURL must be the bare output name so the footer
+      // resolves next to the emitted `.js`, not against an absolute input path.
+      file: baseName(outName),
+      source: baseName(filename),
       inlineMapUrl: this.opts.sourceMap !== 'none',
     });
     const diagnostics = [...parsed.diagnostics, ...checked.diagnostics];
@@ -194,6 +196,12 @@ function spanWidth(s: Span): number {
 
 function outputName(filename: string): string {
   return filename.replace(/\.sjs$/, '.js').replace(/\.ts$/, '.js');
+}
+
+/** Last path segment (POSIX or Windows separators), for relative map URLs. */
+function baseName(path: string): string {
+  const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return i >= 0 ? path.slice(i + 1) : path;
 }
 
 // ── Lightweight AST traversal (symbolAt / apiHash) ────────────────────────────
