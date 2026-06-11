@@ -26,6 +26,7 @@
     "@superjs/types": "workspace:*",
     "@superjs/parser": "workspace:*",
     "@superjs/compiler": "workspace:*",
-    "@superjs/cli": "workspace:*"
+    "@superjs/cli": "workspace:*",
+    "@superjs/test-utils": "workspace:*"
   }
 }
