@@ -12,7 +12,7 @@
             "enforceBuildableLibDependency": true,
             "allow": [],
             "depConstraints": [
-              { "sourceTag": "tier:0", "onlyDependOnLibsWithTags": [] },
+              { "sourceTag": "tier:0", "onlyDependOnLibsWithTags": ["tier:0"] },
               { "sourceTag": "tier:1", "onlyDependOnLibsWithTags": ["tier:0", "tier:1"] },
               { "sourceTag": "tier:2", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2"] },
               { "sourceTag": "tier:3", "onlyDependOnLibsWithTags": ["tier:0", "tier:1", "tier:2", "tier:3"] },

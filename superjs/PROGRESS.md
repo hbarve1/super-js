@@ -27,7 +27,7 @@
 |---|---------|------|-----------|--------|
 | 0 | foundation (nx.json pipeline, eslint tier-gate, vitest) | — | — | ✅ done |
 | 1 | libs/types `@superjs/types` | 0 | — | ✅ done |
-| 2 | libs/diagnostics `@superjs/diagnostics` | 0 | types | ⬜ todo |
+| 2 | libs/diagnostics `@superjs/diagnostics` | 0 | types | ✅ done |
 | 3 | libs/config `@superjs/config` | 0 | types | ⬜ todo |
 | 4 | libs/test-utils (private) | 0 | types, diagnostics | ⬜ todo |
 | 5 | libs/runtime `@superjs/runtime` | 5 | — | ⬜ todo |
@@ -58,4 +58,5 @@
 
 - 2026-06-10: Foundation started. NX TS-solution workspace (user-scaffolded). Added @nx/vite + @nx/eslint. nx.json task pipeline. Decisions locked above.
 - 2026-06-10: Foundation DONE — nx.json targetDefaults (^build), eslint tier depConstraints (ADR-008), Vitest. **Gotcha:** generated lib `.eslintrc.json` has `"!**/*"` which un-ignores `node_modules`/`dist` → ESLint lints `node_modules/tslib`. Fix: add `"**/node_modules/**", "dist"` to each lib's `ignorePatterns`. APPLY TO EVERY GENERATED LIB.
+- 2026-06-11: Task 2 DONE — `@superjs/diagnostics`. registry.ts (42 codes P/E/W/L, code→severity/category/template/stage, `Codes` constants), factory.ts (formatMessage `{token}` interp, createDiagnostic, specUrlFor, DiagnosticBag collector w/ strict-promotion). 14 tests. **Workflow notes for every cross-lib dep:** (1) add `"@superjs/<dep>": "workspace:*"` to lib package.json, (2) `pnpm install`, (3) `nx sync` (enabled `sync.applyChanges:true` in nx.json → auto tsconfig refs). **ADR-008 correction:** tier:0 depConstraint must be `["tier:0"]` not `[]` — diagnostics/config/test-utils (tier:0) depend on types (tier:0). Updated root .eslintrc.json.
 - 2026-06-10: Task 1 DONE — `@superjs/types`. Modules: span, token (keywords/banned-ids/punctuators), diagnostic (Severity/Diagnostic/fix), ast (full grammar discriminated union, `*Node`-suffixed syntactic types), sjs-type (semantic model, no `any`/intersection, `dynamic`+`nullable`), scope. 12 tests. build+typecheck+test+lint green. Convention: syntactic=`XTypeNode`, semantic=`XType`.
