@@ -72,6 +72,21 @@ importers:
         specifier: ~4.1.0
         version: 4.1.8(@types/node@20.19.9)(@vitest/coverage-v8@4.1.8)(vite@8.0.16(@types/node@20.19.9)(yaml@2.9.0))
 
+  libs/checker:
+    dependencies:
+      '@superjs/diagnostics':
+        specifier: workspace:*
+        version: link:../diagnostics
+      '@superjs/parser':
+        specifier: workspace:*
+        version: link:../parser
+      '@superjs/types':
+        specifier: workspace:*
+        version: link:../types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   libs/config:
     dependencies:
       tslib:

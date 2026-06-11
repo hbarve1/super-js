@@ -74,6 +74,7 @@ const TABLE: Record<string, Omit<DiagnosticDescriptor, 'code'>> = {
   'SJS-E017': d('error', 'modules', 'Circular import detected — module graph contains a cycle', 'Stage 1'),
   'SJS-E018': d('error', 'async-await', 'Top-level `await` used outside an ES module context', 'Stage 1'),
   'SJS-E019': d('error', 'jsx', 'Unknown JSX element type `{name}`', 'Stage 2'),
+  'SJS-E020': d('error', 'type-check', 'Ambiguous variant constructor `{variant}` — multiple sum types declare it; annotate the expected type', 'Stage 1'),
 
   // ── Warnings (--strict promotes to error) ──────────────────────────────────
   'SJS-W001': d('warning', 'dynamic', 'Implicit `dynamic` — unannotated position in `--strict` mode', 'Stage 0'),

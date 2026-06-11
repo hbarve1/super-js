@@ -28,7 +28,7 @@ Codes are grouped into four series:
 | SJS-E005 | Intersection type `A & B` not allowed in SJS | Banned features | `007-banned-features.md` |
 | SJS-E006 | Mapped type, indexed access type, or `typeof` type operator not allowed | Banned features | `007-banned-features.md` |
 | SJS-E007 | Non-exhaustive `match` expression — one or more variants not covered | Match | `003-match.md` |
-| SJS-E008 | Ambiguous variant constructor — name is shared by multiple sum types and context is insufficient to resolve | Sum types | `002-sum-types.md` |
+| SJS-E020 | Ambiguous variant constructor — name is shared by multiple sum types and context is insufficient to resolve | Sum types | `002-sum-types.md` |
 | SJS-E009 | `infer` keyword not allowed | Banned features | `007-banned-features.md` |
 | SJS-E010 | `enum` keyword not allowed — use sum types instead | Banned features | `007-banned-features.md` |
 | SJS-E011 | Non-null assertion operator `!` not allowed | Null safety | `001-null-safety.md` |
