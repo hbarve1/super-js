@@ -96,6 +96,30 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/compiler:
+    dependencies:
+      '@superjs/checker':
+        specifier: workspace:*
+        version: link:../checker
+      '@superjs/codegen-js':
+        specifier: workspace:*
+        version: link:../codegen-js
+      '@superjs/config':
+        specifier: workspace:*
+        version: link:../config
+      '@superjs/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@superjs/parser':
+        specifier: workspace:*
+        version: link:../parser
+      '@superjs/types':
+        specifier: workspace:*
+        version: link:../types
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   libs/config:
     dependencies:
       tslib:

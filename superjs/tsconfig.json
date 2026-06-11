@@ -29,6 +29,9 @@
     },
     {
       "path": "./libs/codegen-js"
+    },
+    {
+      "path": "./libs/compiler"
     }
   ]
 }

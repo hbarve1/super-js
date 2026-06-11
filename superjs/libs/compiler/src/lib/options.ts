@@ -1,0 +1,61 @@
+/**
+ * Public option + result shapes for the `@superjs/compiler` API
+ * (stage-1-compiler-core.md §API Contract). Frozen surface — Stages 2–5 build
+ * on these types.
+ */
+
+import type { Diagnostic, Type } from '@superjs/types';
+import type { SourceMap } from '@superjs/codegen-js';
+
+/** A source file fed to {@link compile}. */
+export interface SourceFile {
+  readonly filename: string;
+  readonly source: string;
+}
+
+export interface CompileOpts {
+  /** Layer-0 types are built-in; do not resolve `@superjs/std/core`. */
+  readonly selfBootstrap?: boolean;
+  /** Sum-type representation. `default` = tagged objects; `classes` = class encoding. */
+  readonly variants?: 'default' | 'classes';
+  /** Source-map emission mode. */
+  readonly sourceMap?: 'none' | 'inline' | 'external';
+  /** Promote warnings to errors (parser + checker strict mode). */
+  readonly strict?: boolean;
+  readonly jsx?: { readonly runtime: 'automatic' | 'classic' };
+}
+
+/** Subset of {@link CompileOpts} safe for single-file in-memory transforms. */
+export interface TransformOpts {
+  readonly sourceMap?: 'none' | 'inline' | 'external';
+  readonly jsx?: { readonly runtime: 'automatic' | 'classic' };
+  readonly strict?: boolean;
+}
+
+export interface CompiledOutput {
+  readonly code: string;
+  readonly map: SourceMap;
+}
+
+export interface CompileResult {
+  /** Output filename (`<name>.js`) → emitted code + map. */
+  readonly outputs: Map<string, CompiledOutput>;
+  readonly diagnostics: Diagnostic[];
+}
+
+export interface TransformResult {
+  readonly code: string;
+  readonly map: SourceMap;
+  readonly diagnostics: Diagnostic[];
+}
+
+/** Result of a go-to-definition query ({@link symbolAt}). */
+export interface SymbolInfo {
+  readonly name: string;
+  /** Binding flavour at the declaration site. */
+  readonly kind: 'const' | 'let' | 'var' | 'function' | 'class' | 'interface' | 'type' | 'param';
+  /** The declaration's source span, or null when the symbol is a library global. */
+  readonly declaration: import('@superjs/types').Span | null;
+  /** The symbol's type, when known. */
+  readonly type: Type | null;
+}

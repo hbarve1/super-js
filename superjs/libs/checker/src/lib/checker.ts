@@ -33,6 +33,14 @@ import { Scope } from './scope.js';
 export interface CheckOptions {
   readonly file?: string;
   readonly strict?: boolean;
+  /** Record a (span → synthesized type) table for `typeAt` / LSP hover. */
+  readonly recordTypes?: boolean;
+}
+
+/** One entry of the checker's type table: the type synthesized at a node's span. */
+export interface TypedSpan {
+  readonly span: Span;
+  readonly type: Type;
 }
 
 export class Checker implements TypeResolver {
@@ -44,10 +52,13 @@ export class Checker implements TypeResolver {
   private readonly variantIndex = new Map<string, { owner: string; variant: SumVariantType }[]>();
   private typeParams = new Set<string>();
   private expectedReturn: Type | undefined;
+  private readonly recordTypes: boolean;
+  private readonly typeTable: TypedSpan[] = [];
 
   constructor(opts: CheckOptions = {}) {
     this.bag = new DiagnosticBag({ file: opts.file, strict: opts.strict ?? false });
     this.scope = new Scope();
+    this.recordTypes = opts.recordTypes ?? false;
   }
 
   // ── TypeResolver ────────────────────────────────────────────────────────────
@@ -63,7 +74,7 @@ export class Checker implements TypeResolver {
     this.collectTypes(program.body);
     this.hoist(program.body);
     this.checkBlock(program.body);
-    return { diagnostics: this.bag.all };
+    return { diagnostics: this.bag.all, types: this.typeTable as readonly TypedSpan[] };
   }
 
   // ── Pass 1: register all named types (allows recursion + forward refs) ────────
@@ -441,8 +452,14 @@ export class Checker implements TypeResolver {
     return this.synth(expr);
   }
 
-  /** Synthesize (infer) the type of `expr`. */
+  /** Synthesize (infer) the type of `expr`, recording it in the type table. */
   private synth(expr: Expression): Type {
+    const t = this.synthInner(expr);
+    if (this.recordTypes) this.typeTable.push({ span: expr.span, type: t });
+    return t;
+  }
+
+  private synthInner(expr: Expression): Type {
     switch (expr.kind) {
       case 'NumberLiteral': return literal(expr.value, 'number');
       case 'StringLiteral': return literal(expr.value, 'string');
