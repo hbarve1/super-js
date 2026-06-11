@@ -35,6 +35,9 @@
     },
     {
       "path": "./apps/cli"
+    },
+    {
+      "path": "./apps/e2e"
     }
   ]
 }
