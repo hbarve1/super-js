@@ -1255,22 +1255,39 @@ class Parser {
   private parseFunctionOrParenType(): TypeNode {
     const start = this.pos();
     this.c.expect('(');
-    // Function type if it looks like `(name: T, …) =>` or `()=>`.
-    const params: Node[] = [];
-    while (!this.c.is(')') && !this.c.atEnd) {
-      const ps = this.pos();
-      const rest = this.c.eat('...');
-      const name = this.parseIdentifier();
-      const optional = this.c.eat('?');
-      this.c.expect(':');
-      const type = this.parseType();
-      params.push(this.fin(ps, { kind: 'FunctionTypeParam', name, optional, rest, type }));
-      if (!this.c.eat(',')) break;
-    }
+    // Speculate a function type `( [params] ) =>`; on any mismatch, fall back to
+    // a parenthesized type group `( Type )` (e.g. `(number | string)[]`).
+    const afterParen = this.c.snapshot();
+    const fn = this.tryFunctionType(start);
+    if (fn) return fn;
+    this.c.restore(afterParen);
+    const inner = this.parseType();
     this.c.expect(')');
-    this.c.expect('=>');
-    const returnType = this.parseType();
-    return this.fin(start, { kind: 'FunctionTypeNode', params: params as unknown as FunctionTypeNode['params'], returnType });
+    return this.fin(start, { kind: 'ParenthesizedTypeNode', inner });
+  }
+
+  /** Parse the rest of a function type after `(`, or return null (no commit on failure). */
+  private tryFunctionType(start: Position): FunctionTypeNode | null {
+    try {
+      const params: Node[] = [];
+      while (!this.c.is(')') && !this.c.atEnd) {
+        const ps = this.pos();
+        const rest = this.c.eat('...');
+        const name = this.parseIdentifier();
+        const optional = this.c.eat('?');
+        this.c.expect(':');
+        const type = this.parseType();
+        params.push(this.fin(ps, { kind: 'FunctionTypeParam', name, optional, rest, type }));
+        if (!this.c.eat(',')) break;
+      }
+      if (!this.c.is(')') || this.c.peek(1).kind !== '=>') return null;
+      this.c.expect(')');
+      this.c.expect('=>');
+      const returnType = this.parseType();
+      return this.fin(start, { kind: 'FunctionTypeNode', params: params as unknown as FunctionTypeNode['params'], returnType });
+    } catch {
+      return null;
+    }
   }
 
   private parseTypeParamsOpt(): TypeParam[] | undefined {
