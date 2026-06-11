@@ -93,6 +93,23 @@ describe('sum types & match (E007 / W003 / E008)', () => {
   });
 });
 
+describe('record-variant construction', () => {
+  const SHAPE = 'type Shape = Rect({ w: number, h: number }) | Dot;\n';
+
+  it('accepts a record variant built with a matching object literal', () => {
+    clean(SHAPE + 'const s: Shape = Rect({ w: 3, h: 4 });');
+  });
+  it('flags a record-variant field type mismatch (E002)', () => {
+    expect(has(SHAPE + 'const s: Shape = Rect({ w: "x", h: 4 });', 'SJS-E002')).toBe(true);
+  });
+  it('flags a missing record-variant field (E002)', () => {
+    expect(has(SHAPE + 'const s: Shape = Rect({ w: 3 });', 'SJS-E002')).toBe(true);
+  });
+  it('round-trips construction then match destructuring', () => {
+    clean(SHAPE + 'function area(s: Shape): number { return match s { Rect({ w, h }) => w * h, Dot => 0, }; }\nconst a: number = area(Rect({ w: 2, h: 5 }));');
+  });
+});
+
 describe('narrowing (typeof / truthiness)', () => {
   it('typeof narrows a union member', () => {
     clean('function f(v: string | number): string { if (typeof v === "number") { return v.toFixed(2); } return v; }');
