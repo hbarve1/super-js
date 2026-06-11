@@ -26,6 +26,9 @@
     },
     {
       "path": "./libs/ir"
+    },
+    {
+      "path": "./libs/codegen-js"
     }
   ]
 }

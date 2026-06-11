@@ -16,6 +16,18 @@
  * `Math.pow`, etc.) is the codegen backend's responsibility, not the IR's.
  */
 
+/** Originating `.sjs` position, attached by the lowerer for source maps. */
+export interface SourceLoc {
+  readonly line: number;
+  readonly column: number;
+  readonly offset: number;
+}
+
+/** Every IR node may carry a `loc` back to its `.sjs` origin (source maps). */
+export interface IrLocated {
+  readonly loc?: SourceLoc;
+}
+
 export type IrNode = IrProgram | IrStatement | IrExpression;
 
 export interface IrProgram {

@@ -13,9 +13,15 @@ import type {
 } from '@superjs/types';
 import type {
   IrProgram, IrStatement, IrExpression, IrPattern, IrBlock, IrClassMember,
-  IrPropertyKey, IrProperty, IrObject, IrVarDecl, IrSpread,
+  IrPropertyKey, IrProperty, IrObject, IrVarDecl, IrSpread, SourceLoc,
 } from './ir.js';
 import { id, lit, member, call } from './ir.js';
+
+/** Attach a `.sjs` origin position to an IR node (mutates, returns same ref). */
+function at<T extends object>(node: T, span: { start: { line: number; column: number; offset: number } }): T {
+  (node as { loc?: SourceLoc }).loc = { line: span.start.line, column: span.start.column, offset: span.start.offset };
+  return node;
+}
 
 interface VariantInfo { readonly form: 'unit' | 'tuple' | 'record'; readonly fields: readonly string[] }
 
@@ -57,6 +63,13 @@ class Lowering {
 
   // ── Statements ──────────────────────────────────────────────────────────────
   private stmt(s: Statement): IrStatement | IrStatement[] | null {
+    const r = this.stmtInner(s);
+    if (r === null) return null;
+    if (Array.isArray(r)) { r.forEach((n) => at(n, s.span)); return r; }
+    return at(r, s.span);
+  }
+
+  private stmtInner(s: Statement): IrStatement | IrStatement[] | null {
     switch (s.kind) {
       case 'TypeDecl': case 'InterfaceDecl':
         return null; // type-level — erased
@@ -234,6 +247,10 @@ class Lowering {
 
   // ── Expressions ─────────────────────────────────────────────────────────────
   private expr(e: Expression): IrExpression {
+    return at(this.exprInner(e), e.span);
+  }
+
+  private exprInner(e: Expression): IrExpression {
     switch (e.kind) {
       case 'NumberLiteral': return lit(e.value);
       case 'StringLiteral': return lit(e.value);
