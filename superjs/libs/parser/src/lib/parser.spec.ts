@@ -170,3 +170,24 @@ describe('nested generics — `>>` token splitting', () => {
     expect(kindsOf(s)).toContain('BinaryExpression');
   });
 });
+
+describe('generic call / new type arguments', () => {
+  it('parses a generic call `f<T>(x)`', () => {
+    const s = first('const r = createStack<string>();');
+    expect(kindsOf(s)).toContain('CallExpression');
+    expect(kindsOf(s)).toContain('PrimitiveTypeNode'); // the `<string>` type arg
+  });
+  it('parses a generic `new C<T>()`', () => {
+    const s = first('const m = new Map<string, string[]>();');
+    expect(kindsOf(s)).toContain('NewExpression');
+  });
+  it('parses a generic method call `obj.m<T>(x)`', () => {
+    ok('const p = obj.method<number>(x);');
+  });
+  it('does not mistake comparisons for generic calls', () => {
+    const lt = first('const b = a < c;');
+    expect(kindsOf(lt)).toContain('BinaryExpression');
+    expect(kindsOf(lt)).not.toContain('CallExpression');
+    ok('const z = a < c > d;'); // `(a < c) > d`, not a call
+  });
+});
