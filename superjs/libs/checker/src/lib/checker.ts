@@ -761,9 +761,20 @@ export class Checker implements TypeResolver {
       ? instantiated.variants.find((v) => v.tag === tag) ?? chosen.variant
       : chosen.variant;
     if (arg) {
-      const payload = variant.fields[0];
-      if (payload) this.checkAssignable(this.synth(arg), payload.type, arg.span);
-      else this.synth(arg);
+      if (isRecordVariant(variant)) {
+        // Record variant `V({ a, b })`: the argument is an object literal whose
+        // fields must match the variant's declared fields structurally.
+        const expected: ObjectType = {
+          kind: 'object',
+          properties: variant.fields.map((f) => ({ name: f.name, type: f.type, optional: false, readonly: false })),
+        };
+        this.checkAssignable(this.check(arg, expected), expected, arg.span);
+      } else {
+        // Tuple variant `V(x)`: single positional payload (`_0`).
+        const payload = variant.fields[0];
+        if (payload) this.checkAssignable(this.synth(arg), payload.type, arg.span);
+        else this.synth(arg);
+      }
     }
     return instantiated ?? DYNAMIC;
   }
@@ -1003,6 +1014,16 @@ function terminates(s: Statement): boolean {
     default:
       return false;
   }
+}
+
+/**
+ * True for record-form variants (`V({ a, b })`). Tuple variants carry a single
+ * synthetic `_0` field; unit variants carry none. Anything else — including a
+ * single named field — is a record.
+ */
+function isRecordVariant(variant: SumVariantType): boolean {
+  if (variant.fields.length === 0) return false;
+  return !(variant.fields.length === 1 && variant.fields[0]!.name === '_0');
 }
 
 function expectedOwner(t: Type): string | undefined {
