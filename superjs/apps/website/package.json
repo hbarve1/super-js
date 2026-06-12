@@ -5,18 +5,22 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "npx pagefind --site .next/server/app --output-path public/pagefind || true",
     "start": "next start",
     "build:cf": "npx @cloudflare/next-on-pages",
     "preview:cf": "npm run build:cf && npx wrangler pages dev .vercel/output/static",
     "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website"
   },
   "dependencies": {
+    "@pagefind/default-ui": "^1.5.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "framer-motion": "^12.40.0",
     "geist": "^1.7.1",
+    "gray-matter": "^4.0.3",
     "gsap": "^3.15.0",
     "next": "16.2.9",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shiki": "^4.2.0",

@@ -1,0 +1,53 @@
+---
+title: What's coming in Super.js 0.2.0
+date: 2024-01-15
+description: A preview of what v0.2.0 will bring — tighter type enforcement, improved error messages, and `dynamic` interop patterns.
+author: Himank Barve
+---
+
+# What's coming in Super.js 0.2.0
+
+v0.1.0 shipped the core language — null safety, sum types, match expressions, and the VS Code extension. Here's a preview of what v0.2.0 will focus on.
+
+## Stricter banned-feature enforcement
+
+v0.2.0 will emit errors for all banned TypeScript features at the parser level rather than only in the type checker:
+
+- `any` → use `dynamic` or `unknown`
+- `A & B` intersection types → use `interface extends`
+- `T extends U ? X : Y` conditional types
+- `{ [P in keyof T]: ... }` mapped types
+- `enum` → use sum types or string unions
+
+```sjs
+// SJS-E004 in v0.2.0 — caught at parse time
+let x: any = 5         // error
+
+// Fix
+let x: dynamic = legacyLib.getValue()
+if (typeof x === "number") {
+  const n: number = x
+}
+```
+
+## Improved error messages
+
+Every diagnostic will link to its `spec/error-codes/SJS-EXXX.md` page and include a one-line fix suggestion. `superjs explain SJS-E001` will print the full explanation and example fixes.
+
+## `dynamic` propagation warnings
+
+In `--strict` mode, `SJS-W001` will fire whenever a `dynamic` value flows into typed code without narrowing:
+
+```sjs
+const raw: dynamic = fetchJson()
+console.log(raw.name)            // SJS-W001 in strict mode — narrow first
+
+// Fix
+if (typeof raw === "object" && raw !== null) {
+  console.log((raw as { name: string }).name)
+}
+```
+
+## What's next
+
+See the full [roadmap](/docs/roadmap) for the Stage 0–6 plan.
