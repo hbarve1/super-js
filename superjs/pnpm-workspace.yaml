@@ -2,3 +2,7 @@ packages:
   - 'packages/*'
   - 'libs/*'
   - 'apps/*'
+allowBuilds:
+  esbuild: false
+  sharp: false
+  workerd: false
