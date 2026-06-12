@@ -28,6 +28,14 @@ html {
   scroll-behavior: auto;
 }
 
+html,
+body {
+  /* The scroll-pinned hero + marquee can spill a hair past the viewport on
+     mobile; clamp horizontal overflow site-wide. */
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   background: var(--color-bg-deep);
   color: var(--color-text-primary);

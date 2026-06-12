@@ -6,6 +6,12 @@ import ScrollTrigger from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
+// Let GSAP own touch scrolling so the pinned, `touch-none` hero stays scrollable
+// on mobile (without this the page is trapped on the hero). Guard for SSR.
+if (typeof window !== 'undefined') {
+  ScrollTrigger.normalizeScroll(true)
+}
+
 /**
  * Scroll progress 0→1 over `scrollHeight` px, pinning the container. Drives the
  * scroll-told hero (SPEC §Phase B). 0 = top of trigger, 1 = after `scrollHeight`.
