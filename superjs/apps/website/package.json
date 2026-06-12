@@ -12,6 +12,8 @@
     "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website"
   },
   "dependencies": {
+    "@superjs/compiler": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
     "@pagefind/default-ui": "^1.5.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
@@ -19,6 +21,7 @@
     "geist": "^1.7.1",
     "gray-matter": "^4.0.3",
     "gsap": "^3.15.0",
+    "monaco-editor": "^0.55.1",
     "next": "16.2.9",
     "next-mdx-remote": "^6.0.0",
     "react": "19.2.4",

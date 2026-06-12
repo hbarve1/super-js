@@ -8,6 +8,9 @@ import type { NextConfig } from 'next'
  */
 const nextConfig: NextConfig = {
   outputFileTracingRoot: join(import.meta.dirname, '..', '..'),
+  experimental: {
+    optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei'],
+  },
 }
 
 export default nextConfig
