@@ -1,0 +1,257 @@
+---
+title: Type System
+sidebar_position: 4
+---
+
+# Type System
+
+SuperJS extends JavaScript with a sound, gradual type system. Types are non-nullable by default, sum types replace discriminated unions, and `match` replaces `switch` for exhaustive dispatch.
+
+## What's banned
+
+These TypeScript features do not exist in SJS:
+
+| Feature | Reason |
+|---|---|
+| `any` | Silent unsafety — use `dynamic` or `unknown` instead |
+| `A & B` intersection types | Unsound merging — use interfaces with `extends` |
+| `T extends U ? X : Y` conditional types | Complexity without soundness gain |
+| Mapped types (`{ [P in keyof T]: ... }`) | Implicit metaprogramming — spell out the shape |
+| `T!` non-null assertion | Defeats null safety — narrow explicitly |
+| `enum` | Use `type` union literals instead |
+
+---
+
+## Null safety
+
+All types are **non-nullable by default**. Append `?` to opt into nullability.
+
+```sjs
+let name: string = "Alice"   // cannot be null
+let nickname: string? = null  // OK
+
+function greet(user: string?): string {
+  if (user === null) return "Hello, stranger"
+  return `Hello, ${user}`
+}
+```
+
+Nullable types must be narrowed before use. SJS emits `SJS-E001` on unsafe access.
+
+---
+
+## Primitive types
+
+```sjs
+let s: string   = "hello"
+let n: number   = 42
+let b: boolean  = true
+let sym: symbol = Symbol("key")
+let big: bigint = 123n
+```
+
+---
+
+## Interfaces
+
+Interfaces describe structural shapes. SJS uses structural typing — any value that satisfies the shape is compatible.
+
+```sjs
+interface User {
+  id: number
+  name: string
+  email: string
+  age?: number        // optional property
+  readonly createdAt: Date
+}
+
+interface AdminUser extends User {
+  role: string
+  permissions: string[]
+}
+```
+
+Index signatures use `unknown`, not `any`:
+
+```sjs
+interface Registry {
+  [key: string]: unknown
+}
+```
+
+---
+
+## Sum types
+
+Sum types replace discriminated unions. Each variant is a constructor that carries typed payload.
+
+```sjs
+type Shape =
+  | Circle(radius: number)
+  | Rect(width: number, height: number)
+  | Point
+
+type Result<T, E> =
+  | Ok(value: T)
+  | Err(error: E)
+```
+
+Constructing and consuming:
+
+```sjs
+const s: Shape = Circle(5)
+
+const area = match s {
+  Circle(r)       => Math.PI * r * r,
+  Rect(w, h)      => w * h,
+  Point           => 0,
+}
+```
+
+---
+
+## Match expressions
+
+`match` is exhaustive — SJS emits `SJS-E008` if a variant arm is missing.
+
+```sjs
+type ApiResult = Ok(data: string) | NotFound | ServerError(code: number)
+
+function handle(r: ApiResult): string {
+  return match r {
+    Ok(data)          => data,
+    NotFound          => "404",
+    ServerError(code) => `Error ${code}`,
+  }
+}
+```
+
+Use `_` for a catch-all arm:
+
+```sjs
+return match r {
+  Ok(data) => data,
+  _        => "failed",
+}
+```
+
+---
+
+## Generics
+
+Standard generic syntax. Constrain with `extends`:
+
+```sjs
+function first<T>(arr: T[]): T? {
+  return arr.length > 0 ? arr[0] : null
+}
+
+interface Repository<T> {
+  find(id: number): T?
+  save(item: T): void
+  findAll(): T[]
+}
+
+class Stack<T> {
+  private items: T[] = []
+  push(item: T): void { this.items.push(item) }
+  pop(): T?           { return this.items.pop() ?? null }
+  get size(): number  { return this.items.length }
+}
+```
+
+Generic constraints:
+
+```sjs
+interface Measurable {
+  length: number
+}
+
+function longest<T extends Measurable>(a: T, b: T): T {
+  return a.length >= b.length ? a : b
+}
+```
+
+---
+
+## The `dynamic` escape hatch
+
+`dynamic` opts a value out of type checking. Use only at JS interop boundaries — never inside pure SJS code.
+
+```sjs
+// wrapping an untyped third-party library
+const raw: dynamic = require('some-legacy-lib').getData()
+
+// narrow before use
+if (typeof raw === 'string') {
+  console.log(raw.toUpperCase())
+}
+```
+
+`dynamic` propagates: operations on a `dynamic` value return `dynamic`. Narrow explicitly with `typeof`, `instanceof`, or a sum-type guard before using the value in typed code.
+
+---
+
+## Type inference
+
+SJS infers types for variable initializers, function return types, and array/object literals:
+
+```sjs
+const message = "hello"          // inferred: string
+const items   = [1, 2, 3]        // inferred: number[]
+const user    = { name: "Alice" } // inferred: { name: string }
+
+function double(n: number) {
+  return n * 2                   // inferred return: number
+}
+```
+
+---
+
+## Structural typing
+
+SJS is structurally typed. A value satisfies an interface if it has the required shape — no `implements` needed at call sites.
+
+```sjs
+interface Point { x: number; y: number }
+
+function distance(a: Point, b: Point): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+}
+
+// Any object with x and y satisfies Point
+distance({ x: 0, y: 0 }, { x: 3, y: 4 })  // OK
+```
+
+---
+
+## Narrowing
+
+Narrow nullable and `unknown` values with standard JS checks. SJS flow-analyzes these:
+
+```sjs
+function process(val: string | number): string {
+  if (typeof val === "string") {
+    return val.toUpperCase()   // val: string here
+  }
+  return val.toString()        // val: number here
+}
+
+function display(name: string?): string {
+  if (name === null) return "anonymous"
+  return name                  // name: string here
+}
+```
+
+---
+
+## Error codes
+
+| Code | Condition |
+|---|---|
+| `SJS-E001` | Nullable access without null check |
+| `SJS-E002` | Type mismatch on assignment or return |
+| `SJS-E003` | Missing required property |
+| `SJS-E004` | Use of banned syntax (`any`, `A & B`, etc.) |
+| `SJS-E008` | Non-exhaustive `match` (missing variant arm) |
+| `SJS-W001` | Implicit `dynamic` propagation |
