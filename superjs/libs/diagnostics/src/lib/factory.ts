@@ -15,7 +15,7 @@ import type {
 import { getDescriptor } from './registry.js';
 
 /** Base URL for per-code documentation pages (website errors section). */
-export const SPEC_URL_BASE = 'https://superjs.dev/docs/errors';
+export const SPEC_URL_BASE = 'https://superjs.org/docs/errors';
 
 export function specUrlFor(code: DiagnosticCode): string {
   return `${SPEC_URL_BASE}/${code}`;
