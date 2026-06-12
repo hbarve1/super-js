@@ -12,7 +12,7 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
           <SearchButton />
           <DocsNavList items={navItems} />
         </aside>
-        <main id="main-content" className="flex-1 flex px-6 md:px-8 py-8">
+        <main id="main-content" className="flex-1 min-w-0 flex px-6 md:px-8 py-8">
           {children}
         </main>
       </div>

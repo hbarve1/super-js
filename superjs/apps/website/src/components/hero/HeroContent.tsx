@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 
@@ -16,14 +17,18 @@ export function HeroContent({ progress }: Props) {
   const stageIndex = progress < 0.25 ? 0 : progress < 0.5 ? 1 : 2
   const stage = STAGES[stageIndex]
 
+  // Hold framer's `initial` styles until after mount so the SSR markup and the
+  // first client render match (otherwise the SSR transform string mismatches
+  // what framer recomputes on the client → hydration warning).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-end pb-24 px-4 pointer-events-none">
       {!headlineVisible && (
         <motion.div
           key={stage.label}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
+          {...(mounted ? { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 } } : {})}
           className="text-center mb-8"
         >
           <p className="text-xs uppercase tracking-[0.2em] mb-2" style={{ color: stage.color }}>
@@ -36,9 +41,7 @@ export function HeroContent({ progress }: Props) {
 
       {headlineVisible && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
+          {...(mounted ? { initial: { opacity: 0, scale: 0.95 }, animate: { opacity: 1, scale: 1 }, transition: { duration: 0.6 } } : {})}
           className="text-center pointer-events-auto"
         >
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-4">
@@ -59,8 +62,7 @@ export function HeroContent({ progress }: Props) {
 
       {progress < 0.05 && (
         <motion.p
-          animate={{ opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          {...(mounted ? { animate: { opacity: [0.3, 0.7, 0.3] }, transition: { duration: 2, repeat: Infinity } } : {})}
           className="text-white/30 text-xs tracking-widest absolute bottom-6"
         >
           SCROLL TO EXPLORE

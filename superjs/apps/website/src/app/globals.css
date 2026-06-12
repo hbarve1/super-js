@@ -33,6 +33,14 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* Wrap long words/URLs instead of pushing the page wider on mobile. */
+  overflow-wrap: break-word;
+}
+
+/* Code blocks scroll within their own box rather than widening the page. */
+pre {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 ::-webkit-scrollbar { width: 6px; }
