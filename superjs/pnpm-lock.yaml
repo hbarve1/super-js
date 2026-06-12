@@ -133,7 +133,7 @@ importers:
         version: 12.40.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       geist:
         specifier: ^1.7.1
-        version: 1.7.2(next@16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 1.7.2(next@16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
@@ -145,7 +145,7 @@ importers:
         version: 0.55.1
       next:
         specifier: 16.2.9
-        version: 16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-mdx-remote:
         specifier: ^6.0.0
         version: 6.0.0(@types/react@19.2.17)(react@19.2.4)
@@ -164,7 +164,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: ^1.13.16
-        version: 1.13.16(next@16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.99.0)
+        version: 1.13.16(next@16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.99.0)
       '@next/eslint-plugin-next':
         specifier: 16.2.9
         version: 16.2.9
@@ -5432,7 +5432,7 @@ snapshots:
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
-  '@cloudflare/next-on-pages@1.13.16(next@16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.99.0)':
+  '@cloudflare/next-on-pages@1.13.16(next@16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(wrangler@4.99.0)':
     dependencies:
       acorn: 8.16.0
       ast-types: 0.14.2
@@ -5443,7 +5443,7 @@ snapshots:
       esbuild: 0.15.18
       js-yaml: 4.2.0
       miniflare: 3.20250718.3
-      next: 16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.8.3
@@ -7628,9 +7628,9 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  geist@1.7.2(next@16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)):
+  geist@1.7.2(next@16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)):
     dependencies:
-      next: 16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   gensync@1.0.0-beta.2: {}
 
@@ -8442,7 +8442,7 @@ snapshots:
       - '@types/react'
       - supports-color
 
-  next@16.2.9(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@16.2.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.2.9
       '@swc/helpers': 0.5.15
@@ -8451,7 +8451,7 @@ snapshots:
       postcss: 8.4.31
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.4)
+      styled-jsx: 5.1.6(react@19.2.4)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.2.9
       '@next/swc-darwin-x64': 16.2.9
@@ -9075,12 +9075,10 @@ snapshots:
     dependencies:
       inline-style-parser: 0.2.7
 
-  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.4):
+  styled-jsx@5.1.6(react@19.2.4):
     dependencies:
       client-only: 0.0.1
       react: 19.2.4
-    optionalDependencies:
-      '@babel/core': 7.29.7
 
   supports-color@10.2.2: {}
 

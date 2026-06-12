@@ -46,7 +46,7 @@ export async function Quickstart() {
             <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 text-sm font-bold flex-shrink-0">
               {i + 1}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-white/70 text-sm mb-2">{step.label}</p>
               <div
                 className="rounded-lg overflow-hidden [&_pre]:p-4 [&_pre]:!bg-[#0d1117] [&_pre]:overflow-x-auto"
