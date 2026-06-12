@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { getAllDocSlugs } from '@/lib/docs'
 import { getAllPostSlugs } from '@/lib/blog'
 
-const BASE = 'https://superjs.dev'
+const BASE = 'https://superjs.org'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const docSlugs = await getAllDocSlugs()
