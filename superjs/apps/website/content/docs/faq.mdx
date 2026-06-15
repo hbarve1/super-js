@@ -21,7 +21,7 @@ spreads through a codebase without a trace. Super.js rejects it (`SJS-E004`) and
 gives you two explicit replacements:
 
 - **`dynamic`** — a gradual type for genuinely untyped values (JSON, JS interop).
-  It's explicit in the source, it propagates through operations, and in `--strict`
+  It's explicit in the source, it propagates through operations, and in strict
   mode an *implicit* `dynamic` warns (`SJS-W001`). It's the **only** escape hatch.
 - **`unknown`** — a safe top type you must narrow before using.
 
@@ -90,7 +90,7 @@ overhead; that's on the roadmap, not in the current JS compiler.
 
 You annotate where you want and lean on inference elsewhere. `dynamic` is the
 explicit bridge for untyped code, so you can port JavaScript first and tighten
-types incrementally. In `--strict` mode the compiler points out every implicit
+types incrementally. In strict mode the compiler points out every implicit
 `dynamic` (`SJS-W001`) and every `dynamic` flowing into a typed position
 (`SJS-W002`), giving you a worklist for migration.
 

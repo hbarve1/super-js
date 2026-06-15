@@ -16,15 +16,17 @@ Start with `specs/mission.md` and the root `CLAUDE.md` for project context, then
 
 ---
 
-## Package-level context files
+## Workspace context files
 
-Each package has a `CLAUDE.md` with package-specific context for agents:
+The compiler and tooling live in the NX monorepo under `superjs/`. Agent context:
 
-| File | Package |
+| File | Scope |
 |---|---|
-| [compiler/CLAUDE.md](../compiler/CLAUDE.md) | Phase 2 plain-JS compiler — directory layout, how to add rules, how to run tests, key invariants |
-| [backends/prototype/CLAUDE.md](../backends/prototype/CLAUDE.md) | Phase 1 Babel-based prototype — directory layout, TypeChecker internals, how to add diagnostics, test patterns |
-| [website/CLAUDE.md](../website/CLAUDE.md) | Next.js marketing/docs site — directory layout, how to add doc pages, how to run locally, what not to change |
+| [superjs/CLAUDE.md](../superjs/CLAUDE.md) | NX workspace conventions — running tasks via `nx`, generators, plugin docs |
+| [superjs/AGENTS.md](../superjs/AGENTS.md) | Agent guide for the workspace |
+| [superjs/PROGRESS.md](../superjs/PROGRESS.md) | Implementation log — every lib/app, tier model, decisions |
+
+Each library and app lives under `superjs/libs/<name>/` and `superjs/apps/<name>/` with its own `README.md`.
 
 ---
 
@@ -33,11 +35,11 @@ Each package has a `CLAUDE.md` with package-specific context for agents:
 ### Run all tests
 
 ```bash
-# Prototype
-cd backends/prototype && npm test
-
-# Compiler
-cd compiler && npm test
+cd superjs
+pnpm install
+pnpm nx run-many -t test            # every project
+pnpm nx test @superjs/checker       # one project
+pnpm nx affected -t test            # only what changed
 ```
 
 ### Check what diagnostic codes are available
@@ -60,7 +62,5 @@ See [howto-add-diagnostic.md](howto-add-diagnostic.md). The next available codes
 
 ### Add a new website doc page
 
-1. Create `website/content/docs/your-page.mdx` with frontmatter (`title`, `sidebar_position`)
+1. Create `superjs/apps/website/content/docs/your-page.mdx` with frontmatter (`title`, `sidebar_position`)
 2. Done — routing and nav are automatic
-
-See [website/CLAUDE.md](../website/CLAUDE.md) for details.

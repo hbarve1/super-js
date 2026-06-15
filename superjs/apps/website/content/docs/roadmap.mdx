@@ -5,76 +5,75 @@ sidebar_position: 7
 
 # Roadmap
 
-SuperJS is built in three phases: a Babel-based prototype to establish the language, a custom compiler to own the full pipeline, and an LLVM native backend for production-grade performance.
+SuperJS ships a hand-written compiler that owns its full pipeline today, and is
+growing outward into interop, developer tooling, a standard library, and an
+eventual native backend. Development is organized into stages — the
+authoritative per-stage plans live in [`specs/roadmap/`](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 
-## Phase 1 — Babel Prototype (Complete, v0.1.0)
+## Foundations & Compiler Core (Complete, v0.1.0)
 
-**Status: Released 2026-05-30**
+**Status: Published to npm** ([`@superjsorg/cli`](https://www.npmjs.com/package/@superjsorg/cli), [`@superjsorg/compiler`](https://www.npmjs.com/package/@superjsorg/compiler))
 
-Phase 1 established the SuperJS language, toolchain, and type system using Babel as the compilation backbone. The goal was to ship a real, working language quickly and validate design decisions with actual code.
+The compiler is written from scratch — no Babel, no TypeScript at runtime. An
+early Babel-based prototype validated the language design and was then fully
+replaced by this hand-written pipeline.
 
 ### What shipped
 
-- **Unified CLI**: `superjs build`, `superjs lint`, `superjs format`, `superjs test`
+- **Hand-written pipeline**: lexer → recursive-descent + Pratt parser (with error recovery) → bidirectional type checker → SJS-IR lowering → JavaScript codegen
 - **Type checker**
-  - Sound null safety: non-nullable types by default, `T?` for nullable (SJS-E001)
+  - Sound null safety with control-flow narrowing (SJS-E001 / SJS-E003)
   - Type mismatch detection on assignment and return (SJS-E002)
-  - Implicit-any warnings in strict mode (SJS-W001, `--strict`)
-- **Preprocessor**
-  - Sum type declaration syntax (`type Result<T, E> = Ok(T) | Err(E)`) compiled to discriminated unions
-  - Match expression syntax compiled to exhaustive switch IIFEs
-  - Exhaustiveness checking for match over sum types (SJS-E007)
-- **Build flags**: `--watch`, `--strict`, `--no-emit`, `--sourcemap`, `--json`, `--target`
-- **Config file**: `superjs.config.json`
-- **JSX**: enabled by default, configurable factory and fragment
-- **Demo projects**: algorithms (data structures), web (todo app), JSX/React (markdown editor), Node.js (code stats analyzer)
-- **202 tests passing across 18 suites**
+  - Sum types + exhaustive `match` (SJS-E007), structural interfaces, generics with inference
+  - Strict mode promotes implicit-`dynamic` warnings to errors (SJS-W001)
+- **CLI**: `superjs build` (`--out-dir`, `--source-map`, `--watch`, `--no-cache`), `superjs check` (`--format pretty|json`), `superjs explain`, `superjs init`, `superjs doctor`
+- **Deterministic output** with Source Map v3 generation and a persistent incremental build cache
+- **Config file**: `superjs.config.json`; **JSX** on by default (automatic or classic runtime)
+- Distributed as self-contained, zero-dependency npm bundles with build provenance
 
 ---
 
-## Phase 2 — Custom JS Compiler (Next, v1.0)
+## Interop (In progress)
 
-**Status: Planned**
+Making SuperJS consume the existing JS/TS ecosystem.
 
-Phase 2 removes the dependency on Babel and TypeScript's parser. Every part of the compilation pipeline will be written from scratch in SuperJS/TypeScript, giving full control over syntax, error messages, and performance.
-
-### Planned work
-
-- **Hand-written lexer** — zero external dependencies
-- **Recursive-descent parser** — full SJS grammar, not TypeScript's grammar
-- **Full SJS syntax enforcement** — stricter rejection of banned features (`any`, mapped types, conditional types, intersection types, `enum`, `namespace`)
-- **Cross-file type inference** — understand imports and module boundaries
-- **Better error messages** — source spans, did-you-mean suggestions, contextual hints
-- **Watch mode improvements** — incremental per-file recompilation
-- **LSP server** — Language Server Protocol implementation for editor integration
-- **VS Code extension** — syntax highlighting, inline diagnostics, hover types, go-to-definition
+- **`.d.ts` → `.sjs` translation** — landed as `@superjs/interop`
+- `tsconfig.json` `paths` inheritance and npm package wrappers — next
 
 ---
 
-## Phase 3 — LLVM Native Backend (Future, v2.0)
+## Developer Tooling (In progress)
 
-**Status: Planned**
-
-Phase 3 is an optional native compilation path for applications that need maximum performance. The SJS frontend from Phase 2 feeds into a C++17 compiler that targets LLVM 17.
-
-### Planned work
-
-- **C++17 compiler frontend** consuming Phase 2's AST
-- **LLVM 17 IR code generator**
-- **Monomorphized generics** — generic types specialized at compile time, no boxing
-- **Native binary output** — standalone executables, no Node.js required
-- **WebAssembly target** — compile SJS to `.wasm`
-- **Compile speed target** — under 50ms for large projects
+- **VS Code extension** — TextMate grammar highlighting (shipped)
+- **Watch mode** — `superjs build --watch` (shipped)
+- **Formatter & linter** (17 rules), LSP server with hover/go-to-definition — next
 
 ---
 
-## Timeline Summary
+## Standard Library & Ecosystem (Planned)
 
-| Phase | Version | Status | Key Deliverable |
-|-------|---------|--------|-----------------|
-| Phase 1 (Babel prototype) | v0.1.0 | **Complete** | CLI, type checker, sum types, match, 202 tests |
-| Phase 2 (Custom JS compiler) | v1.0 | Planned | Hand-written parser, LSP, cross-file inference |
-| Phase 3 (LLVM native) | v2.0 | Future | Native binaries, WASM target, &lt;50ms compile |
+- Typed `Result`, `Option`, `Iterator`, and collections
+- React wrapper, Node.js types, and bundler/test-runner integrations
+
+---
+
+## LLVM Native Backend (Future, v2.0)
+
+An optional native compilation path. The SJS frontend feeds a backend targeting
+LLVM, with monomorphized generics, standalone native binaries, and a WebAssembly
+target. See the [v2.0 vision](https://github.com/hbarve1/super-js/blob/main/specs/roadmap/v2.0-native-compiler.md).
+
+---
+
+## Stage Summary
+
+| Stage | Status | Key Deliverable |
+|-------|--------|-----------------|
+| Foundations + Compiler Core | **Complete (v0.1.0)** | Hand-written compiler, CLI, type checker, sum types, match, published to npm |
+| Interop | **In progress** | `.d.ts` → `.sjs` translator, `tsconfig` paths |
+| Developer Tooling | **In progress** | VS Code extension + watch shipped; formatter, linter, LSP next |
+| Standard Library & Ecosystem | Planned | Result/Option/collections, framework integrations |
+| LLVM Native | Future (v2.0) | Native binaries, WASM target |
 
 ---
 

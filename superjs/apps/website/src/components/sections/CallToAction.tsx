@@ -21,7 +21,7 @@ export function CallToAction() {
           Type-safe by default. Zero configuration. Compiles to plain JavaScript.
         </p>
         <div className="mb-8 flex justify-center">
-          <CopyCommand command="npm i -g superjs" />
+          <CopyCommand command="npm i -g @superjsorg/cli" />
         </div>
         <div className="flex gap-3 justify-center">
           <Button href="/docs/intro" size="md">Read the Docs →</Button>

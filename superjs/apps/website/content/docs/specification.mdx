@@ -304,7 +304,7 @@ The following TypeScript generic features are not in SJS:
 - A `dynamic` value may hold any JavaScript value at runtime.
 - Accessing a property or calling a method on `dynamic` succeeds at compile time but is checked at runtime.
 - `dynamic` does not propagate silently. Assigning a `dynamic` to a statically typed variable requires a runtime narrowing check.
-- In `--strict` mode, positions that would implicitly receive `dynamic` emit `SJS-W001`.
+- In strict mode, positions that would implicitly receive `dynamic` emit `SJS-W001`.
 
 ```sjs
 function parseJSON(raw: string): dynamic {
@@ -328,43 +328,39 @@ if (typeof count === "number") {
 
 ## 9. Compilation Pipeline
 
-SJS compiles `.sjs` → `.js` in five ordered phases:
+SJS compiles `.sjs` → `.js` through a hand-written pipeline — no Babel and no
+TypeScript at runtime — in five ordered phases:
 
-### Phase 1: Read
+### Phase 1: Lex
 
-The source file is read as UTF-8. The SJS parser produces an AST that is a superset of the JavaScript AST.
+The source file is read as UTF-8 and tokenized by a hand-written lexer (numbers in all bases, templates with nested interpolation, regex-vs-division disambiguation, BiDi-control rejection).
 
-### Phase 2: Preprocess (SJS syntax lowering)
+### Phase 2: Parse
 
-SJS-specific constructs are transformed to valid TypeScript-compatible AST nodes:
-
-- **Sum type declarations** → TypeScript discriminated union type aliases + constructor arrow functions that produce `{ _tag, _0 }` objects.
-- **Match expressions** → IIFE switch statements on `._tag` with destructuring in each case arm.
-
-After this phase the AST contains no SJS-specific nodes — only constructs that Babel and the TypeScript type checker can process.
+A recursive-descent parser with a Pratt expression layer produces an AST that is a superset of the JavaScript AST, including SJS-specific nodes (sum type declarations, `match` expressions, type annotations). The parser recovers from errors so a single mistake does not abort the whole file.
 
 ### Phase 3: Type check
 
-The type checker runs over the preprocessed AST and emits diagnostics:
+A bidirectional type checker (`synth`/`check`) runs over the AST and emits diagnostics:
 
-- `SJS-E001` — null/undefined assigned to non-nullable type
+- `SJS-E001` / `SJS-E003` — null/undefined assigned to a non-nullable type; access on a possibly-null value
 - `SJS-E002` — type mismatch on assignment or return
-- `SJS-E007` — non-exhaustive match on sum type
+- `SJS-E007` — non-exhaustive match on a sum type
 - `SJS-W001` — implicit `dynamic` (strict mode only)
 
-Type errors in this phase do not block emission by default. Pass `--no-emit-on-error` to halt compilation on any error.
+Type errors do not block emission by default. Set `compilerOptions.noEmitOnError` to halt compilation when any error is present.
 
-### Phase 4: Babel transform
+### Phase 4: Lower to SJS-IR
 
-Babel strips all type annotations and applies:
+The typed AST is lowered to SJS-IR (an ESTree-subset JavaScript AST). All type syntax is erased and SJS constructs are desugared:
 
-- JSX transform (React 17+ automatic runtime by default)
-- Target ES version downleveling (configurable via `superjs.config.json`)
-- Source map generation
+- **Sum type constructors** → tagged objects (`{ _tag, _0 }`)
+- **Match expressions** → an invoked arrow (IIFE) that switches on `_tag` and binds payloads
+- **JSX** → `React.createElement` (or the configured runtime); **class parameter properties** → `this.x = x`
 
-### Phase 5: Emit
+### Phase 5: Codegen & emit
 
-The compiler writes `.js` and `.js.map` files to the output directory. One output file is produced per input file, preserving the directory structure under `outDir`.
+A precedence-aware printer renders the IR to JavaScript at the configured ES target, generating a Source Map v3 alongside. The compiler writes one `.js` (and `.js.map`, when source maps are enabled) per input file, preserving directory structure under `outDir`.
 
 ---
 
@@ -416,12 +412,11 @@ const label = match color {
 
 | Code | Name | Activated by | Description |
 |------|------|--------------|-------------|
-| `SJS-W001` | Implicit dynamic | `--strict` flag | A variable or parameter has no type annotation and would implicitly receive type `dynamic`. |
+| `SJS-W001` | Implicit dynamic | strict mode | A variable or parameter has no type annotation and would implicitly receive type `dynamic`. |
 
-**SJS-W001 example:**
+**SJS-W001 example (with `compilerOptions.strict: true`):**
 
 ```sjs
-// superjs build --strict
 function add(a, b) { return a + b }
 // warning[SJS-W001]: parameter 'a' has implicit type 'dynamic'
 // warning[SJS-W001]: parameter 'b' has implicit type 'dynamic'

@@ -36,7 +36,7 @@ Every diagnostic will link to its `spec/error-codes/SJS-EXXX.md` page and includ
 
 ## `dynamic` propagation warnings
 
-In `--strict` mode, `SJS-W001` will fire whenever a `dynamic` value flows into typed code without narrowing:
+In strict mode, `SJS-W001` will fire whenever a `dynamic` value flows into typed code without narrowing:
 
 ```sjs
 const raw: dynamic = fetchJson()

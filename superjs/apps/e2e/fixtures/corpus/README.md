@@ -9,9 +9,7 @@ A curated collection of Super.js (SJS) programs — from hello world to producti
 - **Node.js 18+**
 - Install the compiler:
   ```bash
-  npm install -g superjs
-  # — or, build from source —
-  cd prototype && npm run build && npm link
+  npm install -g @superjsorg/cli
   ```
 - Confirm: `superjs --version`
 
@@ -27,7 +25,7 @@ console.log(msg)
 EOF
 
 # Compile and run
-superjs build --source hello.sjs --outDir /tmp/out && node /tmp/out/hello.js
+superjs build hello.sjs --out-dir /tmp/out && node /tmp/out/hello.js
 ```
 
 ---
@@ -60,13 +58,13 @@ Follow this path for the best learning experience:
 ## 4. How to run any example
 
 ```bash
-superjs build --source <file> --outDir /tmp/out && node /tmp/out/<filename>.js
+superjs build <file> --out-dir /tmp/out && node /tmp/out/<filename>.js
 ```
 
 Example:
 
 ```bash
-superjs build --source null-safety/01-basics.sjs --outDir /tmp/out && node /tmp/out/01-basics.js
+superjs build null-safety/01-basics.sjs --out-dir /tmp/out && node /tmp/out/01-basics.js
 ```
 
 ---
@@ -115,4 +113,4 @@ superjs build --source null-safety/01-basics.sjs --outDir /tmp/out && node /tmp/
 
 ## 9. License
 
-MIT — see [LICENSE](../../LICENSE) in the repository root.
+GPL-3.0-or-later — see [LICENSE](../../LICENSE) in the repository root.
