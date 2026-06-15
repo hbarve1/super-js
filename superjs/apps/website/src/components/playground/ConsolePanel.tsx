@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 interface LogLine {
+  id: number
   level: 'log' | 'info' | 'warn' | 'error'
   text: string
 }
@@ -51,7 +52,7 @@ export function ConsolePanel({ code, runToken }: { code: string; runToken: numbe
       const d = e.data as { __sjsConsole?: boolean; level?: LogLine['level']; text?: string; done?: boolean }
       if (!d || !d.__sjsConsole) return
       if (d.done) setDone(true)
-      else if (d.level) setLogs((prev) => [...prev, { level: d.level!, text: d.text ?? '' }])
+      else if (d.level) setLogs((prev) => [...prev, { id: prev.length, level: d.level!, text: d.text ?? '' }])
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -73,8 +74,8 @@ export function ConsolePanel({ code, runToken }: { code: string; runToken: numbe
         <p className="text-text-muted">(no console output)</p>
       ) : (
         <div className="space-y-1">
-          {logs.map((l, i) => (
-            <div key={i} className={`whitespace-pre-wrap ${COLOR[l.level]}`}>
+          {logs.map((l) => (
+            <div key={l.id} className={`whitespace-pre-wrap ${COLOR[l.level]}`}>
               {l.text}
             </div>
           ))}

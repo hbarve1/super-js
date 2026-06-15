@@ -36,12 +36,13 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
-  let post: Post
+  let post: Post | null = null
   try {
     post = await getPostBySlug(slug)
   } catch {
-    notFound()
+    // Missing post — handled by notFound() outside the try/catch below.
   }
+  if (!post) notFound()
 
   const structuredData = {
     '@context': 'https://schema.org',

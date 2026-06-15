@@ -14,13 +14,11 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@pagefind/default-ui": "^1.5.2",
     "@shikijs/rehype": "^4.2.0",
     "@superjs/compiler": "workspace:*",
     "@superjs/diagnostics": "workspace:*",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "framer-motion": "^12.40.0",
     "geist": "^1.7.1",
     "gray-matter": "^4.0.3",
     "monaco-editor": "^0.55.1",

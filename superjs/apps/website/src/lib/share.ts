@@ -12,11 +12,11 @@ function fromBase64Url(s: string): Uint8Array {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0))
 }
 
-export function encodeCode(source: string): string {
+function encodeCode(source: string): string {
   return toBase64Url(new TextEncoder().encode(source))
 }
 
-export function decodeCode(encoded: string): string | null {
+function decodeCode(encoded: string): string | null {
   try {
     return new TextDecoder().decode(fromBase64Url(encoded))
   } catch {

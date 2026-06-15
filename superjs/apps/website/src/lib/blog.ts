@@ -24,10 +24,10 @@ export interface Post {
 
 export async function getAllPostSlugs(): Promise<string[]> {
   if (!fs.existsSync(BLOG_DIR)) return []
-  return fs
-    .readdirSync(BLOG_DIR)
-    .filter((f) => f.endsWith('.mdx'))
-    .map((f) => f.replace(/\.mdx$/, ''))
+  return fs.readdirSync(BLOG_DIR).reduce<string[]>((slugs, f) => {
+    if (f.endsWith('.mdx')) slugs.push(f.replace(/\.mdx$/, ''))
+    return slugs
+  }, [])
 }
 
 export async function getPostBySlug(slug: string): Promise<Post> {
@@ -43,11 +43,12 @@ export async function getPostBySlug(slug: string): Promise<Post> {
 
 export async function getAllPosts(): Promise<PostSummary[]> {
   const slugs = await getAllPostSlugs()
-  const posts: PostSummary[] = []
-  for (const slug of slugs) {
-    const post = await getPostBySlug(slug)
-    posts.push({ slug, frontmatter: post.frontmatter })
-  }
+  const posts = await Promise.all(
+    slugs.map(async (slug) => {
+      const post = await getPostBySlug(slug)
+      return { slug, frontmatter: post.frontmatter }
+    }),
+  )
   return posts.sort(
     (a, b) => new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime(),
   )

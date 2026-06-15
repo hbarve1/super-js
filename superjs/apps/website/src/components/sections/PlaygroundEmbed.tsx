@@ -1,7 +1,4 @@
-'use client'
-
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { Playground } from '@/components/playground/Playground'
 
 const EMBED_CODE = `// Try Super.js — null-safe, sum types, match expressions
@@ -20,16 +17,6 @@ match safeDivide(10, 2) {
 `
 
 export function PlaygroundEmbed() {
-  // Responsive height: taller on mobile (stacked), shorter on desktop (split).
-  const [height, setHeight] = useState('380px')
-
-  useEffect(() => {
-    const update = () => setHeight(window.innerWidth < 768 ? '420px' : '380px')
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
-
   return (
     <section className="py-24 px-4 md:px-8 bg-bg-deep">
       <div className="max-w-6xl mx-auto">
@@ -45,7 +32,10 @@ export function PlaygroundEmbed() {
           </p>
         </div>
 
-        <Playground initialCode={EMBED_CODE} height={height} />
+        {/* Responsive height via CSS: taller on mobile (stacked), shorter on desktop (split). */}
+        <div className="h-[420px] md:h-[380px]">
+          <Playground initialCode={EMBED_CODE} height="100%" />
+        </div>
 
         <div className="mt-6 text-center">
           <Link

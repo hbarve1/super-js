@@ -15,8 +15,8 @@ function Body({ output, errors }: { output: string; errors: CompileError[] }) {
     <div className="flex-1 overflow-auto p-4 font-mono text-sm">
       {errors.length > 0 ? (
         <div className="space-y-2">
-          {errors.map((err, i) => (
-            <div key={i} className="text-red-400">
+          {errors.map((err) => (
+            <div key={`${err.line ?? 'x'}:${err.message}`} className="text-red-400">
               {err.line != null && <span className="text-text-muted mr-2">Line {err.line}:</span>}
               {err.message}
             </div>

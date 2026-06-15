@@ -46,12 +46,13 @@ function extractHeadings(content: string) {
 
 export default async function DocPage({ params }: PageProps) {
   const { slug } = await params
-  let doc: Doc
+  let doc: Doc | null = null
   try {
     doc = await getDocBySlug(slug)
   } catch {
-    notFound()
+    // Missing doc — handled by notFound() outside the try/catch below.
   }
+  if (!doc) notFound()
 
   const headings = extractHeadings(doc.content)
   const path = `/docs/${slug.join('/')}`

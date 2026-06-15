@@ -5,8 +5,7 @@ import { getAllPostSlugs } from '@/lib/blog'
 const BASE = 'https://superjs.org'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const docSlugs = await getAllDocSlugs()
-  const postSlugs = await getAllPostSlugs()
+  const [docSlugs, postSlugs] = await Promise.all([getAllDocSlugs(), getAllPostSlugs()])
 
   const docEntries: MetadataRoute.Sitemap = docSlugs.map((segments) => ({
     url: `${BASE}/docs/${segments.join('/')}`,

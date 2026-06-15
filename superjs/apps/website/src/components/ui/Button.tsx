@@ -46,7 +46,8 @@ export function Button({
   }
 
   return (
-    <button className={classes} {...props}>
+    // Default to a non-submitting button; callers can override `type` via props.
+    <button type="button" className={classes} {...props}>
       {children}
     </button>
   )

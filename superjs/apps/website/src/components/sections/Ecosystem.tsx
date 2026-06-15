@@ -21,7 +21,7 @@ export function Ecosystem() {
       <div className="flex gap-6 animate-[marquee_25s_linear_infinite] whitespace-nowrap">
         {[...TOOLS, ...TOOLS].map((t, i) => (
           <div
-            key={i}
+            key={`${t.name}-${i}`}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-hairline-soft bg-surface-1 text-text-muted text-sm flex-shrink-0"
           >
             <span>{t.icon}</span>

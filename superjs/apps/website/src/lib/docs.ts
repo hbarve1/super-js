@@ -33,10 +33,10 @@ export function slugify(text: string): string {
 
 export async function getAllDocSlugs(): Promise<string[][]> {
   if (!fs.existsSync(DOCS_DIR)) return []
-  return fs
-    .readdirSync(DOCS_DIR)
-    .filter((f) => f.endsWith('.mdx') || f.endsWith('.md'))
-    .map((f) => [f.replace(/\.(mdx|md)$/, '')])
+  return fs.readdirSync(DOCS_DIR).reduce<string[][]>((slugs, f) => {
+    if (f.endsWith('.mdx') || f.endsWith('.md')) slugs.push([f.replace(/\.(mdx|md)$/, '')])
+    return slugs
+  }, [])
 }
 
 export async function getDocBySlug(slug: string[]): Promise<Doc> {
@@ -51,15 +51,16 @@ export async function getDocBySlug(slug: string[]): Promise<Doc> {
 
 export async function getDocNavTree(): Promise<NavItem[]> {
   const slugs = await getAllDocSlugs()
-  const items: NavItem[] = []
-  for (const slug of slugs) {
-    const doc = await getDocBySlug(slug)
-    items.push({
-      slug: slug.join('/'),
-      title: doc.frontmatter.title ?? slug[slug.length - 1],
-      sidebar_position: doc.frontmatter.sidebar_position ?? 99,
-      href: `/docs/${slug.join('/')}`,
-    })
-  }
+  const items = await Promise.all(
+    slugs.map(async (slug) => {
+      const doc = await getDocBySlug(slug)
+      return {
+        slug: slug.join('/'),
+        title: doc.frontmatter.title ?? slug[slug.length - 1],
+        sidebar_position: doc.frontmatter.sidebar_position ?? 99,
+        href: `/docs/${slug.join('/')}`,
+      }
+    }),
+  )
   return items.sort((a, b) => a.sidebar_position - b.sidebar_position)
 }
