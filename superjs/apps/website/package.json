@@ -16,6 +16,7 @@
     "@pagefind/default-ui": "^1.5.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "@shikijs/rehype": "^4.2.0",
     "@superjs/compiler": "workspace:*",
     "@superjs/diagnostics": "workspace:*",
     "framer-motion": "^12.40.0",

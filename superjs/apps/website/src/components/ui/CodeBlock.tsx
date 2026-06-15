@@ -1,9 +1,21 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ComponentPropsWithoutRef } from 'react'
 
-/** MDX `pre` wrapper that adds a hover copy-to-clipboard button (SPEC §E-4). */
-export function CodeBlockWrapper({ children }: { children: ReactNode }) {
+/**
+ * MDX `pre` wrapper that adds a hover copy-to-clipboard button (SPEC §E-4).
+ *
+ * Receives the `<pre>` produced by `@shikijs/rehype` — its `className`
+ * (`shiki superjs-dark`) and inline `style` (theme background/foreground)
+ * are preserved so per-token highlighting survives; we only add layout
+ * (padding, rounded border, scroll) and the copy button.
+ */
+export function CodeBlockWrapper({
+  className = '',
+  style,
+  children,
+  ...rest
+}: ComponentPropsWithoutRef<'pre'>) {
   const preRef = useRef<HTMLPreElement>(null)
   const [copied, setCopied] = useState(false)
 
@@ -19,7 +31,9 @@ export function CodeBlockWrapper({ children }: { children: ReactNode }) {
     <div className="relative group my-4">
       <pre
         ref={preRef}
-        className="overflow-x-auto p-4 rounded-lg bg-[#0d1117] border border-white/10 text-sm font-mono text-[#e2e8f0] leading-relaxed"
+        style={style}
+        className={`overflow-x-auto p-4 rounded-lg border border-white/10 text-sm leading-relaxed [&_code]:font-mono ${className}`}
+        {...rest}
       >
         {children}
       </pre>
