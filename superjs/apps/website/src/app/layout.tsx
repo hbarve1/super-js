@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Navbar } from '@/components/ui/Navbar'
@@ -46,6 +46,10 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Super.js — JavaScript, Perfected',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0d1117',
 }
 
 export default async function RootLayout({
