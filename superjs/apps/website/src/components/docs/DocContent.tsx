@@ -82,6 +82,10 @@ export default function DocContent({ source }: { source: string }) {
                 {
                   theme: superjsDark,
                   langs: [...SHIKI_LANGS],
+                  // `sjs`/`superjs` fences (the repo-standard for Super.js code)
+                  // highlight with the TypeScript grammar — close enough for the
+                  // shared syntax and far better than plain text.
+                  langAlias: { sjs: 'typescript', superjs: 'typescript' },
                   // Unknown/unspecified fences fall back to plain text, never throw.
                   fallbackLanguage: 'text',
                 },
