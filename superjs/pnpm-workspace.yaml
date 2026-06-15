@@ -2,6 +2,9 @@ packages:
   - 'packages/*'
   - 'libs/*'
   - 'apps/*'
+  # Standalone npm package (own lockfile + native oniguruma dep); not part of
+  # the pnpm workspace. Built/tested/published via npm in its own directory.
+  - '!apps/vscode-extension'
 allowBuilds:
   esbuild: false
   sharp: false

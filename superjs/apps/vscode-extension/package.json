@@ -1,0 +1,79 @@
+{
+  "name": "superjs-syntax",
+  "displayName": "SuperJS",
+  "description": "Syntax highlighting and snippets for SuperJS (.sjs) files.",
+  "version": "0.1.0",
+  "publisher": "hbarve1",
+  "license": "MIT",
+  "homepage": "https://github.com/hbarve1/super-js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hbarve1/super-js.git",
+    "directory": "vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/hbarve1/super-js/issues"
+  },
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "categories": ["Programming Languages", "Snippets"],
+  "keywords": ["superjs", "sjs", "syntax", "highlighting", "sum types", "match", "algebraic data types"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "extensionKind": ["ui"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "superjs",
+        "aliases": ["SuperJS", "superjs", "sjs"],
+        "extensions": [".sjs"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/sjs-file-dark.svg",
+          "dark":  "./icons/sjs-file.svg"
+        }
+      },
+      {
+        "id": "json",
+        "filenames": ["superjs.config.json"]
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "superjs.config.json",
+        "url": "./schemas/superjs.config.schema.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "superjs",
+        "scopeName": "source.sjs",
+        "path": "./syntaxes/superjs.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "superjs",
+        "path": "./snippets/superjs.code-snippets"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^2.24.0",
+    "vscode-textmate": "^9.0.0",
+    "vscode-oniguruma": "^1.7.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "scripts": {
+    "test": "node out/test/suite/grammar.test.js",
+    "compile:test": "tsc -p tsconfig.json",
+    "pretest": "npm run compile:test",
+    "package": "npx vsce package",
+    "publish:marketplace": "npx vsce publish",
+    "publish:openvsx": "npx ovsx publish"
+  }
+}

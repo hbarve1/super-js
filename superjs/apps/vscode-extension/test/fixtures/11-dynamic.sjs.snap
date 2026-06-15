@@ -1,0 +1,50 @@
+[
+  {
+    "line": "function parse(s: string): dynamic {",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "  return JSON.parse(s)",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 23,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 2,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

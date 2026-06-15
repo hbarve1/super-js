@@ -1,0 +1,34 @@
+name: VS Code Extension
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'superjs/apps/vscode-extension/**'
+      - '.github/workflows/vscode-extension.yml'
+  pull_request:
+    paths:
+      - 'superjs/apps/vscode-extension/**'
+      - '.github/workflows/vscode-extension.yml'
+
+defaults:
+  run:
+    working-directory: superjs/apps/vscode-extension
+
+jobs:
+  test:
+    name: grammar tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      - run: npx vsce package --allow-missing-repository
+        if: matrix.os == 'ubuntu-latest'

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect width="128" height="128" rx="16" ry="16" fill="#1a1a2e"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif"
+        font-weight="700" font-size="42" fill="#e8e8f0" letter-spacing="-1">SJS</text>
+  <text x="50%" y="80%" dominant-baseline="middle" text-anchor="middle"
+        font-family="'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif"
+        font-weight="400" font-size="18" fill="#7c9ae0">.sjs</text>
+</svg>
