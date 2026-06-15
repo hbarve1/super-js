@@ -39,3 +39,13 @@ jobs:
 
       - name: Typecheck, lint & build the website
         run: pnpm nx run-many -t typecheck lint build --projects=@superjs/website
+
+      # Quality gate: Lighthouse runs `next start` against the built app and
+      # asserts budgets. Accessibility & SEO are blocking (≥0.95); performance &
+      # best-practices warn (3D hero perf varies). Lighthouse's accessibility
+      # category runs axe-core, so this covers the a11y gate too.
+      - name: Lighthouse CI (perf / a11y / SEO budgets)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./superjs/apps/website/lighthouserc.json
+          temporaryPublicStorage: true
