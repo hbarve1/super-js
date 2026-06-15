@@ -29,6 +29,7 @@
     "@superjs/types": "workspace:*",
     "@superjs/compiler": "workspace:*",
     "@superjs/config": "workspace:*",
-    "@superjs/diagnostics": "workspace:*"
+    "@superjs/diagnostics": "workspace:*",
+    "@superjs/interop": "workspace:*"
   }
 }

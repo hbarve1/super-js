@@ -2,9 +2,9 @@
  * Command implementations. Each takes parsed args + an {@link IO} and returns a
  * POSIX-ish exit code (0 ok, 1 diagnostics, 2 usage/not-implemented, 64 unknown).
  *
- * Real at v1.0: build, check, explain, init, doctor. Stubbed (print a planned-
- * stage notice, exit 2): format, lint, add, doc, verify, migrate, test, lsp,
- * repl — they land in later stages but are wired so `superjs <cmd>` is defined.
+ * Real at v1.0: build, check, translate, explain, init, doctor. Stubbed (print a
+ * planned-stage notice, exit 2): format, lint, add, doc, verify, migrate, test,
+ * lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
@@ -138,6 +138,47 @@ export async function build(args: ParsedArgs, io: IO): Promise<number> {
     return 0;
   }
   return code;
+}
+
+// ── translate (.d.ts → .d.sjs) ──────────────────────────────────────────────────
+
+/**
+ * Translate TypeScript `.d.ts` declaration files into SuperJS `.d.sjs`.
+ *
+ * `@superjs/interop` is the only code that pulls in the TypeScript compiler, so
+ * it is imported lazily: every other command stays on the TS-free fast path, and
+ * the heavy TS module initialises only when someone actually runs `translate`.
+ * TS forms SuperJS doesn't model degrade to `dynamic` and are reported, never
+ * silently dropped.
+ */
+export async function translate(args: ParsedArgs, io: IO): Promise<number> {
+  if (args.positionals.length === 0) {
+    errline(io, 'usage: superjs translate <files.d.ts...> [--out-dir dir]');
+    return 2;
+  }
+  let translateDts: (source: string, fileName?: string) => { code: string; unsupported: readonly string[] };
+  try {
+    ({ translateDts } = await import('@superjs/interop'));
+  } catch {
+    errline(io, "error: the TypeScript interop layer failed to load — install 'typescript' (npm install -D typescript) and retry.");
+    return 2;
+  }
+
+  const outDir = typeof args.flags['out-dir'] === 'string' ? (args.flags['out-dir'] as string) : undefined;
+  const SUFFIX = '.d.ts';
+  let failed = 0;
+  for (const p of args.positionals) {
+    if (!p.endsWith(SUFFIX)) { errline(io, `error: '${p}' is not a .d.ts file`); failed++; continue; }
+    const abs = resolve(io, p);
+    if (!io.exists(abs)) { errline(io, `error: cannot find file '${p}'`); failed++; continue; }
+    const { code, unsupported } = translateDts(io.readFile(abs), basename(p));
+    const outName = `${basename(p).slice(0, -SUFFIX.length)}.d.sjs`;
+    const outPath = outDir ? join(resolve(io, outDir), outName) : join(dirname(abs), outName);
+    io.writeFile(outPath, code);
+    for (const note of unsupported) errline(io, `  warning: ${note}`);
+    line(io, `translated ${p} → ${outDir ? `${outDir}/${outName}` : outName}`);
+  }
+  return failed > 0 ? 1 : 0;
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────

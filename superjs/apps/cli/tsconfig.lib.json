@@ -11,7 +11,7 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../../libs/types/tsconfig.lib.json"
+      "path": "../../libs/interop/tsconfig.lib.json"
     },
     {
       "path": "../../libs/diagnostics/tsconfig.lib.json"
@@ -21,6 +21,9 @@
     },
     {
       "path": "../../libs/compiler/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/types/tsconfig.lib.json"
     }
   ],
   "exclude": [

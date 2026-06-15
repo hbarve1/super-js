@@ -99,6 +99,9 @@ importers:
       '@superjs/diagnostics':
         specifier: workspace:*
         version: link:../../libs/diagnostics
+      '@superjs/interop':
+        specifier: workspace:*
+        version: link:../../libs/interop
       '@superjs/types':
         specifier: workspace:*
         version: link:../../libs/types
