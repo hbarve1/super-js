@@ -53,3 +53,7 @@ libs/compiler/publish/index.js
 libs/compiler/publish/index.d.ts
 libs/compiler/publish/LICENSE
 *.tgz
+
+# Generated CLI publishable bundle
+apps/cli/publish/main.js
+apps/cli/publish/LICENSE
