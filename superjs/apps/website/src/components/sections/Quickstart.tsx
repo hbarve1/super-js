@@ -49,7 +49,7 @@ export async function Quickstart() {
             <div className="flex-1 min-w-0">
               <p className="text-white/70 text-sm mb-2">{step.label}</p>
               <div
-                className="rounded-lg overflow-hidden [&_pre]:p-4 [&_pre]:!bg-[#0d1117] [&_pre]:overflow-x-auto"
+                className="rounded-lg overflow-hidden [&_pre]:p-4 [&_pre]:!bg-bg-dark [&_pre]:overflow-x-auto"
                 dangerouslySetInnerHTML={{ __html: html[step.key] }}
               />
             </div>

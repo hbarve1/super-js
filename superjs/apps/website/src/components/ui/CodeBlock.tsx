@@ -41,7 +41,7 @@ export function CodeBlockWrapper({
         type="button"
         onClick={handleCopy}
         aria-label={copied ? 'Copied!' : 'Copy code'}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-[#94a3b8] hover:text-white"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-text-muted hover:text-white"
       >
         {copied ? (
           <>

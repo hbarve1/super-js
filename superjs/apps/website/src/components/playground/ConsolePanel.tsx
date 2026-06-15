@@ -33,7 +33,7 @@ function buildSrcDoc(code: string): string {
 }
 
 const COLOR: Record<LogLine['level'], string> = {
-  log: 'text-[#e2e8f0]',
+  log: 'text-text-secondary',
   info: 'text-[#60a5fa]',
   warn: 'text-amber-300',
   error: 'text-red-400',
@@ -68,9 +68,9 @@ export function ConsolePanel({ code, runToken }: { code: string; runToken: numbe
   return (
     <div className="flex h-full flex-col overflow-auto p-4 font-mono text-sm">
       {runToken === 0 ? (
-        <p className="text-[#94a3b8]">Press Run to execute the compiled JavaScript.</p>
+        <p className="text-text-muted">Press Run to execute the compiled JavaScript.</p>
       ) : logs.length === 0 && done ? (
-        <p className="text-[#94a3b8]">(no console output)</p>
+        <p className="text-text-muted">(no console output)</p>
       ) : (
         <div className="space-y-1">
           {logs.map((l, i) => (

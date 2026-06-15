@@ -34,13 +34,13 @@ export function PlaygroundEmbed() {
     <section className="py-24 px-4 md:px-8 bg-bg-deep">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#f8fafc]">
+          <h2 className="text-3xl md:text-4xl font-bold text-text-primary">
             Try it{' '}
             <span className="bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent">
               live
             </span>
           </h2>
-          <p className="mt-3 text-[#94a3b8] max-w-xl mx-auto">
+          <p className="mt-3 text-text-muted max-w-xl mx-auto">
             Edit the Super.js code on the left, hit Run, see compiled JavaScript on the right.
           </p>
         </div>
