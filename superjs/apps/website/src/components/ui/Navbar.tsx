@@ -6,6 +6,7 @@ import { GITHUB_URL } from '@/lib/site'
 
 const LINKS = [
   { href: '/docs/intro', label: 'Docs' },
+  { href: '/tour', label: 'Tour' },
   { href: '/playground', label: 'Playground' },
   { href: '/blog', label: 'Blog' },
 ] as const
