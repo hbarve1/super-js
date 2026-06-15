@@ -1,0 +1,24 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "cd superjs/apps/website && npx next start --port 3000",
+      "startServerReadyPattern": "Local:",
+      "startServerReadyTimeout": 90000,
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/docs/intro",
+        "http://localhost:3000/playground"
+      ],
+      "numberOfRuns": 1
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:seo": ["error", { "minScore": 0.95 }],
+        "categories:performance": ["warn", { "minScore": 0.8 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }]
+      }
+    },
+    "upload": { "target": "temporary-public-storage" }
+  }
+}
