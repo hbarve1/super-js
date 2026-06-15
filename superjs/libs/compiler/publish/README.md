@@ -1,4 +1,4 @@
-# @hbarve1/compiler
+# @hbarve1/super-js
 
 The [Super.js](https://superjs.org) compiler — a null-safe, sum-typed superset
 of JavaScript that compiles to plain JS with zero runtime overhead.
@@ -9,13 +9,13 @@ runtime dependencies.
 ## Install
 
 ```bash
-npm install @hbarve1/compiler
+npm install @hbarve1/super-js
 ```
 
 ## Usage
 
 ```js
-import { transform } from '@hbarve1/compiler'
+import { transform } from '@hbarve1/super-js'
 
 const result = await transform(
   `const name: string? = null
