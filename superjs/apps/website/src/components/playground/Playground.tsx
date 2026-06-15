@@ -44,7 +44,7 @@ export function Playground({ initialCode = DEFAULT_CODE, height = '500px' }: Pla
   return (
     <div className="flex flex-col md:flex-row gap-4 w-full" style={{ height }}>
       <div className="flex-1 min-h-0">
-        <Editor value={code} onChange={setCode} onRun={handleRun} />
+        <Editor value={code} onChange={setCode} onRun={handleRun} diagnostics={result?.diagnostics ?? []} />
       </div>
       <div className="flex-1 min-h-0">
         <OutputPanel output={result?.output ?? ''} errors={result?.errors ?? []} isCompiling={isCompiling} />

@@ -1,23 +1,62 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { OnMount } from '@monaco-editor/react'
+import type { CompileDiagnostic } from '@/hooks/useCompiler'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+
+type MonacoApi = Parameters<OnMount>[1]
+type EditorApi = Parameters<OnMount>[0]
 
 interface EditorProps {
   value: string
   onChange: (value: string) => void
   onRun: () => void
+  diagnostics?: CompileDiagnostic[]
 }
 
-export function Editor({ value, onChange, onRun }: EditorProps) {
+const SEVERITY: Record<CompileDiagnostic['severity'], number> = {
+  // Mirrors monaco.MarkerSeverity (Hint=1, Info=2, Warning=4, Error=8).
+  hint: 1,
+  info: 2,
+  warning: 4,
+  error: 8,
+}
+
+export function Editor({ value, onChange, onRun, diagnostics = [] }: EditorProps) {
   // Keep the latest onRun reachable from the (mount-time) Monaco command closure.
   const onRunRef = useRef(onRun)
   onRunRef.current = onRun
 
+  const monacoRef = useRef<MonacoApi | null>(null)
+  const editorRef = useRef<EditorApi | null>(null)
+
+  // Reflect compiler diagnostics as Monaco markers (squiggles + hover).
+  useEffect(() => {
+    const monaco = monacoRef.current
+    const editor = editorRef.current
+    const model = editor?.getModel()
+    if (!monaco || !model) return
+    monaco.editor.setModelMarkers(
+      model,
+      'superjs',
+      diagnostics.map((d) => ({
+        severity: SEVERITY[d.severity] ?? SEVERITY.error,
+        message: `${d.code}: ${d.message}`,
+        startLineNumber: d.startLine,
+        startColumn: d.startColumn,
+        endLineNumber: d.endLine,
+        // Guarantee a visible width for zero-length spans.
+        endColumn: d.endLine === d.startLine && d.endColumn <= d.startColumn ? d.startColumn + 1 : d.endColumn,
+      })),
+    )
+  }, [diagnostics])
+
   const handleMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor
+    monacoRef.current = monaco
     if (!monaco.languages.getLanguages().some((l: { id: string }) => l.id === 'superjs')) {
       monaco.languages.register({ id: 'superjs' })
       monaco.languages.setMonarchTokensProvider('superjs', {
