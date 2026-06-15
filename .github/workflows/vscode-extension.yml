@@ -11,6 +11,9 @@ on:
       - 'superjs/apps/vscode-extension/**'
       - '.github/workflows/vscode-extension.yml'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: superjs/apps/vscode-extension
