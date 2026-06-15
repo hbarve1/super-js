@@ -19,11 +19,11 @@ export const metadata: Metadata = {
     'sum types',
     'match expressions',
   ],
-  metadataBase: new URL('https://superjs.dev'),
+  metadataBase: new URL('https://superjs.org'),
   openGraph: {
     title: 'Super.js — JavaScript, Perfected',
     description: 'Null-safe. Sum types. Match expressions. Zero runtime overhead.',
-    url: 'https://superjs.dev',
+    url: 'https://superjs.org',
     siteName: 'Super.js',
     type: 'website',
   },
