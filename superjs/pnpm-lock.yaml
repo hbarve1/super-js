@@ -128,6 +128,9 @@ importers:
       '@superjs/compiler':
         specifier: workspace:*
         version: link:../../libs/compiler
+      '@superjs/diagnostics':
+        specifier: workspace:*
+        version: link:../../libs/diagnostics
       framer-motion:
         specifier: ^12.40.0
         version: 12.40.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
