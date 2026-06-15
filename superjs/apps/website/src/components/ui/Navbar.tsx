@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/docs/intro', label: 'Docs' },
   { href: '/tour', label: 'Tour' },
   { href: '/playground', label: 'Playground' },
+  { href: '/errors', label: 'Errors' },
   { href: '/blog', label: 'Blog' },
 ] as const
 
