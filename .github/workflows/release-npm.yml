@@ -1,0 +1,77 @@
+name: Release npm packages
+
+# Publishes @superjsorg/compiler + @superjsorg/cli in lockstep, with npm
+# provenance (signed via GitHub OIDC). Trigger by pushing a v* tag:
+#   git tag v0.1.1 && git push origin v0.1.1
+# or run manually from the Actions tab with an explicit version.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.1)'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance
+
+defaults:
+  run:
+    working-directory: superjs
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing version $VERSION"
+
+      - name: Stamp version into publish manifests
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          for f in libs/compiler/publish/package.json apps/cli/publish/package.json; do
+            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('$f'));p.version='$VERSION';fs.writeFileSync('$f',JSON.stringify(p,null,2)+'\n')"
+          done
+
+      - name: Build bundles
+        run: |
+          node scripts/build-compiler-publish.mjs
+          node scripts/build-cli-publish.mjs
+
+      - name: Publish @superjsorg/compiler
+        working-directory: superjs/libs/compiler/publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @superjsorg/cli
+        working-directory: superjs/apps/cli/publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
