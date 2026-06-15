@@ -1,0 +1,50 @@
+{
+  "name": "@hbarve1/compiler",
+  "version": "0.1.0",
+  "description": "The Super.js compiler — a null-safe, sum-typed superset of JavaScript that compiles to plain JS. Programmatic compile/transform API.",
+  "license": "GPL-3.0-or-later",
+  "author": "Himank Barve",
+  "homepage": "https://superjs.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hbarve1/super-js.git",
+    "directory": "superjs/libs/compiler"
+  },
+  "bugs": {
+    "url": "https://github.com/hbarve1/super-js/issues"
+  },
+  "keywords": [
+    "superjs",
+    "compiler",
+    "javascript",
+    "typescript",
+    "null-safety",
+    "sum-types",
+    "pattern-matching",
+    "type-checker"
+  ],
+  "type": "module",
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

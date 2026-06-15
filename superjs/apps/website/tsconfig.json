@@ -32,6 +32,9 @@
   "exclude": ["node_modules"],
   "references": [
     {
+      "path": "../../libs/diagnostics"
+    },
+    {
       "path": "../../libs/compiler"
     }
   ]
