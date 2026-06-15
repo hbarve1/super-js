@@ -6,3 +6,8 @@ allowBuilds:
   esbuild: false
   sharp: false
   workerd: false
+  # Recorded so CI's `pnpm install --frozen-lockfile` doesn't fail with
+  # ERR_PNPM_IGNORED_BUILDS on a fresh checkout. Neither needs its postinstall:
+  # nx works without it; @swc/core ships prebuilt native bindings.
+  "@swc/core": false
+  nx: false

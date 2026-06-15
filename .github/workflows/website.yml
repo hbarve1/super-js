@@ -38,6 +38,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck, lint & build the website
+        # Preload (after checkout, so the script exists) lifts Node's listener cap
+        # and filters MaxListenersExceededWarning from nx's parallel task spawns.
+        env:
+          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
         run: pnpm nx run-many -t typecheck lint build --projects=@superjs/website
 
       # Quality gate: Lighthouse runs `next start` against the built app and
