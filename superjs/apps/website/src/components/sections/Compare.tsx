@@ -67,8 +67,8 @@ export async function Compare() {
     <section className="py-24 px-4 max-w-7xl mx-auto">
       <div className="text-center mb-12">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Comparison</p>
-        <h2 className="text-4xl font-bold text-white">The same problem, solved correctly</h2>
-        <p className="mt-3 text-white/50">Switch tabs — same program, three outcomes.</p>
+        <h2 className="text-4xl font-bold text-text-primary">The same problem, solved correctly</h2>
+        <p className="mt-3 text-text-muted">Switch tabs — same program, three outcomes.</p>
       </div>
       <CompareTabs langs={langs} />
     </section>

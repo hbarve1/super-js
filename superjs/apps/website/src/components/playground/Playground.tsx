@@ -42,7 +42,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={[
         'px-4 py-2 font-mono uppercase tracking-wider transition-colors',
-        active ? 'text-orange-400 border-b-2 border-orange-400' : 'text-text-muted hover:text-white',
+        active ? 'text-orange-400 border-b-2 border-orange-400' : 'text-text-muted hover:text-text-primary',
       ].join(' ')}
     >
       {children}
@@ -103,7 +103,7 @@ export function Playground({ initialCode = DEFAULT_CODE, height = '500px' }: Pla
             if (ex) setCode(ex.code)
             e.target.value = ''
           }}
-          className="rounded-md border border-white/10 bg-bg-elevated px-3 py-1.5 text-sm text-text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
+          className="rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
         >
           <option value="" disabled>
             Load example…
@@ -117,7 +117,7 @@ export function Playground({ initialCode = DEFAULT_CODE, height = '500px' }: Pla
         <button
           type="button"
           onClick={handleShare}
-          className="rounded-md border border-white/10 px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
+          className="rounded-md border border-border px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
         >
           {shared ? '✓ Link copied' : 'Share'}
         </button>
@@ -126,8 +126,8 @@ export function Playground({ initialCode = DEFAULT_CODE, height = '500px' }: Pla
         <div className="flex-1 min-h-0">
           <Editor value={code} onChange={setCode} onRun={handleRun} diagnostics={result?.diagnostics ?? []} />
         </div>
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-white/10 bg-bg-dark">
-        <div className="flex items-center border-b border-white/10 bg-bg-elevated text-xs">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-border bg-bg-dark">
+        <div className="flex items-center border-b border-border bg-bg-elevated text-xs">
           <TabButton active={tab === 'output'} onClick={() => setTab('output')}>
             Compiled JS
           </TabButton>

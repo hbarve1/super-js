@@ -20,15 +20,15 @@ export function CopyCommand({ command = 'npm i -g superjs', className = '' }: Co
 
   return (
     <div
-      className={`inline-flex items-center gap-3 rounded-lg border border-white/10 bg-bg-dark px-4 py-2.5 font-mono text-sm ${className}`}
+      className={`inline-flex items-center gap-3 rounded-lg border border-border bg-bg-dark px-4 py-2.5 font-mono text-sm ${className}`}
     >
-      <span className="select-none text-white/40">$</span>
+      <span className="select-none text-text-subtle">$</span>
       <code className="text-text-primary">{command}</code>
       <button
         type="button"
         onClick={copy}
         aria-label={copied ? 'Copied install command' : 'Copy install command'}
-        className="ml-1 rounded text-white/50 transition-colors hover:text-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+        className="ml-1 rounded text-text-muted transition-colors hover:text-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
       >
         {copied ? (
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

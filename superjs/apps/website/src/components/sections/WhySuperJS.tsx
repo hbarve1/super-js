@@ -27,8 +27,8 @@ export function WhySuperJS() {
     <section className="py-24 px-4 max-w-6xl mx-auto">
       <div className="text-center mb-16">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Why Super.js</p>
-        <h2 className="text-4xl font-bold text-white">Correctness, by construction</h2>
-        <p className="text-white/50 mt-3 max-w-xl mx-auto">
+        <h2 className="text-4xl font-bold text-text-primary">Correctness, by construction</h2>
+        <p className="text-text-muted mt-3 max-w-xl mx-auto">
           Three beats: the problem with the status quo, what Super.js does about it, and what you get.
         </p>
       </div>
@@ -37,15 +37,15 @@ export function WhySuperJS() {
         {BEATS.map((b) => (
           <li
             key={b.step}
-            className="flex min-w-0 flex-col rounded-xl border border-white/5 bg-white/[0.02] p-6"
+            className="flex min-w-0 flex-col rounded-xl border border-hairline-soft bg-surface-1 p-6"
           >
             <div className="flex items-center gap-3 mb-4">
               <span className="font-mono text-2xl font-bold text-orange-400/80 tabular-nums">{b.step}</span>
-              <span className="text-xs uppercase tracking-widest text-white/40">{b.label}</span>
+              <span className="text-xs uppercase tracking-widest text-text-subtle">{b.label}</span>
             </div>
-            <h3 className="text-white font-semibold text-lg mb-3">{b.title}</h3>
-            <p className="text-white/50 text-sm leading-relaxed mb-4">{b.body}</p>
-            <p className="mt-auto border-l-2 border-orange-500/40 pl-3 text-xs italic text-white/40">
+            <h3 className="text-text-primary font-semibold text-lg mb-3">{b.title}</h3>
+            <p className="text-text-muted text-sm leading-relaxed mb-4">{b.body}</p>
+            <p className="mt-auto border-l-2 border-orange-500/40 pl-3 text-xs italic text-text-subtle">
               {b.evidence}
             </p>
           </li>

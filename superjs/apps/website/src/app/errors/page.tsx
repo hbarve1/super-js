@@ -59,17 +59,17 @@ export default function ErrorsPage() {
       <div className="mx-auto max-w-4xl">
         <header className="mb-12">
           <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Reference</p>
-          <h1 className="text-4xl font-bold text-white">Error code reference</h1>
-          <p className="mt-4 max-w-2xl leading-relaxed text-white/60">
+          <h1 className="text-4xl font-bold text-text-primary">Error code reference</h1>
+          <p className="mt-4 max-w-2xl leading-relaxed text-text-muted">
             Every diagnostic the Super.js compiler can emit. Codes are permanent — never renumbered
-            or reused. <span className="text-white/80">SJS-P</span> are parser errors,{' '}
-            <span className="text-white/80">SJS-E</span> type errors,{' '}
-            <span className="text-white/80">SJS-W</span> warnings (promoted to errors under{' '}
+            or reused. <span className="text-text-secondary">SJS-P</span> are parser errors,{' '}
+            <span className="text-text-secondary">SJS-E</span> type errors,{' '}
+            <span className="text-text-secondary">SJS-W</span> warnings (promoted to errors under{' '}
             <code className="font-mono text-orange-300">--strict</code>), and{' '}
-            <span className="text-white/80">SJS-L</span> lint rules (off under{' '}
+            <span className="text-text-secondary">SJS-L</span> lint rules (off under{' '}
             <code className="font-mono text-orange-300">--loose</code>).
           </p>
-          <p className="mt-3 text-sm text-white/40">
+          <p className="mt-3 text-sm text-text-subtle">
             {all.length} codes, generated from the{' '}
             <code className="font-mono">@superjs/diagnostics</code> registry.
           </p>
@@ -81,12 +81,12 @@ export default function ErrorsPage() {
             if (!codes || codes.length === 0) return null
             return (
               <section key={key} aria-labelledby={`cat-${key}`}>
-                <h2 id={`cat-${key}`} className="mb-4 text-2xl font-bold text-white">
+                <h2 id={`cat-${key}`} className="mb-4 text-2xl font-bold text-text-primary">
                   {label}
                 </h2>
-                <div className="overflow-x-auto rounded-xl border border-white/10">
+                <div className="overflow-x-auto rounded-xl border border-border">
                   <table className="w-full min-w-[40rem] text-left text-sm">
-                    <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-white/40">
+                    <thead className="border-b border-border text-xs uppercase tracking-wider text-text-subtle">
                       <tr>
                         <th scope="col" className="px-4 py-3 font-medium">Code</th>
                         <th scope="col" className="px-4 py-3 font-medium">Severity</th>
@@ -94,7 +94,7 @@ export default function ErrorsPage() {
                         <th scope="col" className="px-4 py-3 font-medium">Stage</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-hairline-soft">
                       {codes.map((d) => (
                         <tr key={d.code} id={d.code} className="scroll-mt-24 align-top">
                           <td className="px-4 py-3">
@@ -108,8 +108,8 @@ export default function ErrorsPage() {
                           <td className="px-4 py-3">
                             <SeverityBadge severity={d.severity} />
                           </td>
-                          <td className="px-4 py-3 text-white/70">{d.template}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-white/40">{d.stage}</td>
+                          <td className="px-4 py-3 text-text-secondary">{d.template}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-text-subtle">{d.stage}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -34,8 +34,8 @@ export function HeroContent({ progress }: Props) {
           <p className="text-xs uppercase tracking-[0.2em] mb-2" style={{ color: stage.color }}>
             Evolution
           </p>
-          <h2 className="text-4xl font-bold text-white">{stage.label}</h2>
-          <p className="text-white/50 mt-2 text-sm">{stage.sub}</p>
+          <h2 className="text-4xl font-bold text-text-primary">{stage.label}</h2>
+          <p className="text-text-muted mt-2 text-sm">{stage.sub}</p>
         </motion.div>
       )}
 
@@ -45,12 +45,12 @@ export function HeroContent({ progress }: Props) {
           className="text-center pointer-events-auto"
         >
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-4">
-            <span className="text-white">JavaScript,</span>{' '}
+            <span className="text-text-primary">JavaScript,</span>{' '}
             <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
               Perfected.
             </span>
           </h1>
-          <p className="text-white/50 text-lg mb-8 max-w-lg mx-auto">
+          <p className="text-text-muted text-lg mb-8 max-w-lg mx-auto">
             Null-safe. Sum types. Match expressions. Compiles to plain JS.
           </p>
           <div className="flex gap-3 justify-center">
@@ -63,7 +63,7 @@ export function HeroContent({ progress }: Props) {
       {progress < 0.05 && (
         <motion.p
           {...(mounted ? { animate: { opacity: [0.3, 0.7, 0.3] }, transition: { duration: 2, repeat: Infinity } } : {})}
-          className="text-white/30 text-xs tracking-widest absolute bottom-6"
+          className="text-text-subtle text-xs tracking-widest absolute bottom-6"
         >
           SCROLL TO EXPLORE
         </motion.p>

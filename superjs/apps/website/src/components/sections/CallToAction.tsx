@@ -10,14 +10,14 @@ export function CallToAction() {
       </div>
       <div className="relative z-10">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-4">Get Started</p>
-        <h2 className="text-5xl font-black text-white mb-4">
+        <h2 className="text-5xl font-black text-text-primary mb-4">
           Start writing{' '}
           <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
             Super.js
           </span>{' '}
           today.
         </h2>
-        <p className="text-white/50 mb-8 max-w-md mx-auto">
+        <p className="text-text-muted mb-8 max-w-md mx-auto">
           Type-safe by default. Zero configuration. Compiles to plain JavaScript.
         </p>
         <div className="mb-8 flex justify-center">

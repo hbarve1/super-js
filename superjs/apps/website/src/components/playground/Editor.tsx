@@ -105,8 +105,8 @@ export function Editor({ value, onChange, onRun, diagnostics = [] }: EditorProps
   }
 
   return (
-    <div className="flex flex-col h-full border border-white/10 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-bg-elevated">
+    <div className="flex flex-col h-full border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-bg-elevated">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500/60" />
           <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
@@ -117,7 +117,7 @@ export function Editor({ value, onChange, onRun, diagnostics = [] }: EditorProps
           type="button"
           onClick={onRun}
           aria-keyshortcuts="Control+Enter Meta+Enter"
-          className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-gradient-to-r from-orange-500 to-amber-400 text-white rounded hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-gradient-to-r from-orange-500 to-amber-400 text-text-primary rounded hover:opacity-90 transition-opacity"
         >
           ▶ Run
           <span className="opacity-60 text-[10px]">⌘↵</span>

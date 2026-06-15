@@ -16,7 +16,7 @@ const mdxComponents = {
     <h1 className="text-3xl font-bold text-text-primary mt-8 mb-4 first:mt-0" {...props} />
   ),
   h2: ({ children, ...props }: ComponentPropsWithoutRef<'h2'>) => (
-    <h2 id={headingId(children)} className="text-2xl font-semibold text-text-primary mt-8 mb-3 border-b border-white/10 pb-2 scroll-mt-20" {...props}>
+    <h2 id={headingId(children)} className="text-2xl font-semibold text-text-primary mt-8 mb-3 border-b border-border pb-2 scroll-mt-20" {...props}>
       {children}
     </h2>
   ),
@@ -47,23 +47,23 @@ const mdxComponents = {
     </div>
   ),
   th: (props: ComponentPropsWithoutRef<'th'>) => (
-    <th className="text-left px-4 py-2 text-text-primary font-semibold bg-white/5 border border-white/10" {...props} />
+    <th className="text-left px-4 py-2 text-text-primary font-semibold bg-surface-2 border border-border" {...props} />
   ),
   td: (props: ComponentPropsWithoutRef<'td'>) => (
-    <td className="px-4 py-2 text-text-muted border border-white/10" {...props} />
+    <td className="px-4 py-2 text-text-muted border border-border" {...props} />
   ),
   // Inline code has a plain string child; Shiki-highlighted block code (inside
   // <pre>) has element children (the token <span>s) — only style the inline case
   // so the per-token highlighting in code blocks is left untouched.
   code: ({ children, ...props }: ComponentPropsWithoutRef<'code'>) =>
     typeof children === 'string' ? (
-      <code className="px-1.5 py-0.5 rounded text-amber bg-white/10 font-mono text-sm" {...props}>
+      <code className="px-1.5 py-0.5 rounded text-amber bg-surface-3 font-mono text-sm" {...props}>
         {children}
       </code>
     ) : (
       <code {...props}>{children}</code>
     ),
-  hr: () => <hr className="border-white/10 my-8" />,
+  hr: () => <hr className="border-border my-8" />,
   pre: (props: ComponentPropsWithoutRef<'pre'>) => <CodeBlockWrapper {...props} />,
 }
 

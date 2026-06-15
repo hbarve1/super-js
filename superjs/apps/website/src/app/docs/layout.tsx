@@ -8,7 +8,7 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
   return (
     <div className="min-h-screen bg-bg-deep pt-16">
       <div className="max-w-screen-2xl mx-auto flex">
-        <aside className="hidden md:block w-64 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pr-4 border-r border-white/5">
+        <aside className="hidden md:block w-64 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pr-4 border-r border-hairline-soft">
           <SearchButton />
           <DocsNavList items={navItems} />
         </aside>

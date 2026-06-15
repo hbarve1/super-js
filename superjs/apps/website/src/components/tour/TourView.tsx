@@ -22,7 +22,7 @@ export function TourView() {
             aria-current={i === step}
             className={[
               'h-2 rounded-full transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500',
-              i === step ? 'w-8 bg-orange-400' : 'w-2 bg-white/20 hover:bg-white/40',
+              i === step ? 'w-8 bg-orange-400' : 'w-2 bg-surface-4 hover:bg-surface-4',
             ].join(' ')}
           />
         ))}
@@ -33,15 +33,15 @@ export function TourView() {
           <p className="font-mono text-xs uppercase tracking-widest text-orange-400">
             Step {step + 1} / {TOUR.length}
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">{lesson.title}</h2>
-          <p className="mt-4 leading-relaxed text-white/60">{lesson.body}</p>
+          <h2 className="mt-2 text-2xl font-bold text-text-primary">{lesson.title}</h2>
+          <p className="mt-4 leading-relaxed text-text-muted">{lesson.body}</p>
 
           <div className="mt-6 flex gap-3">
             <button
               type="button"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm text-text-primary transition-colors hover:bg-white/5 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-text-primary transition-colors hover:bg-surface-2 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
             >
               ← Back
             </button>

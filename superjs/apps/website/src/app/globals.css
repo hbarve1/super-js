@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
-/* Design tokens — SuperJS dark/orange theme (SPEC §Design System). */
+/*
+ * Design tokens. Every color is a CSS variable so the whole UI can flip
+ * between themes by overriding the variables under [data-theme="light"].
+ * @theme maps the variables to Tailwind utilities (bg-bg-deep, text-text-muted,
+ * border-border, bg-surface-2, …). The default (dark) values live on :root.
+ */
 @theme {
-  --color-bg-deep: #050510;
-  --color-bg-dark: #0d1117;
-  --color-bg-card: #0f1117;
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-bg-deep: var(--c-bg-deep);
+  --color-bg-dark: var(--c-bg-dark);
+  --color-bg-card: var(--c-bg-card);
+  --color-bg-elevated: var(--c-bg-elevated);
+  --color-border: var(--c-hairline);
 
-  --color-orange: #f97316;
-  --color-amber: #fbbf24;
-  --color-orange-dim: rgba(249, 115, 22, 0.15);
-  --color-amber-dim: rgba(251, 191, 36, 0.12);
+  --color-orange: var(--c-orange);
+  --color-amber: var(--c-amber);
+  --color-orange-dim: var(--c-orange-dim);
+  --color-amber-dim: var(--c-amber-dim);
 
-  --color-bg-elevated: #161b22;
+  --color-text-primary: var(--c-text-primary);
+  --color-text-secondary: var(--c-text-secondary);
+  --color-text-muted: var(--c-text-muted);
+  --color-text-subtle: var(--c-text-subtle);
 
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #e2e8f0;
-  --color-text-muted: #94a3b8;
-  --color-text-subtle: rgba(248, 250, 252, 0.4);
+  /* Elevation surfaces + hairlines (replace ad-hoc white/opacity utilities). */
+  --color-surface-1: var(--c-surface-1);
+  --color-surface-2: var(--c-surface-2);
+  --color-surface-3: var(--c-surface-3);
+  --color-surface-4: var(--c-surface-4);
+  --color-hairline: var(--c-hairline);
+  --color-hairline-soft: var(--c-hairline-soft);
+  --color-hairline-strong: var(--c-hairline-strong);
 
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), "Fira Code", monospace;
+}
+
+/* Dark theme — the default. */
+:root {
+  color-scheme: dark;
+  --c-bg-deep: #050510;
+  --c-bg-dark: #0d1117;
+  --c-bg-card: #0f1117;
+  --c-bg-elevated: #161b22;
+
+  --c-text-primary: #f8fafc;
+  --c-text-secondary: #e2e8f0;
+  --c-text-muted: #94a3b8;
+  --c-text-subtle: rgba(248, 250, 252, 0.4);
+
+  /* Brand orange/amber — vivid on the dark background. */
+  --c-orange: #f97316;
+  --c-amber: #fbbf24;
+  --c-orange-dim: rgba(249, 115, 22, 0.15);
+  --c-amber-dim: rgba(251, 191, 36, 0.12);
+
+  --c-surface-1: rgba(255, 255, 255, 0.02);
+  --c-surface-2: rgba(255, 255, 255, 0.05);
+  --c-surface-3: rgba(255, 255, 255, 0.10);
+  --c-surface-4: rgba(255, 255, 255, 0.20);
+  --c-hairline: rgba(255, 255, 255, 0.08);
+  --c-hairline-soft: rgba(255, 255, 255, 0.05);
+  --c-hairline-strong: rgba(255, 255, 255, 0.25);
+}
+
+/* Light theme. */
+[data-theme="light"] {
+  color-scheme: light;
+  --c-bg-deep: #ffffff;
+  --c-bg-dark: #f6f7f9;
+  --c-bg-card: #ffffff;
+  --c-bg-elevated: #eef1f5;
+
+  --c-text-primary: #0b1220;
+  --c-text-secondary: #1e293b;
+  --c-text-muted: #51607a;
+  --c-text-subtle: rgba(11, 18, 32, 0.62);
+
+  /* Darker orange/amber so accent text clears WCAG AA on light surfaces. */
+  --c-orange: #c2410c;
+  --c-amber: #b45309;
+  --c-orange-dim: rgba(249, 115, 22, 0.12);
+  --c-amber-dim: rgba(245, 158, 11, 0.14);
+
+  --c-surface-1: rgba(15, 23, 42, 0.025);
+  --c-surface-2: rgba(15, 23, 42, 0.05);
+  --c-surface-3: rgba(15, 23, 42, 0.08);
+  --c-surface-4: rgba(15, 23, 42, 0.14);
+  --c-hairline: rgba(15, 23, 42, 0.12);
+  --c-hairline-soft: rgba(15, 23, 42, 0.08);
+  --c-hairline-strong: rgba(15, 23, 42, 0.22);
 }
 
 * {
