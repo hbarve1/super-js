@@ -1,0 +1,152 @@
+---
+title: CLI Reference
+sidebar_position: 5.5
+description: The superjs command-line interface — build, check, explain, init, and doctor, plus configuration.
+---
+
+# CLI Reference
+
+The `superjs` binary drives compilation, type-checking, and project setup. All
+build behavior is configured through [`superjs.config.json`](#configuration) —
+the CLI keeps its flag surface small and reads the rest from config.
+
+```bash
+superjs <command> [files...] [flags]
+```
+
+## Global flags
+
+| Flag | Effect |
+|------|--------|
+| `-h`, `--help` | Print usage and exit `0` |
+| `-v`, `--version` | Print the compiler version and exit `0` |
+
+## Commands
+
+### `build`
+
+Compile `.sjs` source files to JavaScript.
+
+```bash
+superjs build src/            # compile every .sjs under src/ → dist/
+superjs build app.sjs --watch # recompile on change
+```
+
+Directories are walked recursively for `.sjs` files. Output `.js` (and, when
+enabled, `.js.map`) is written to the output directory.
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--out-dir <dir>` | path | `dist` | Output directory |
+| `--source-map <mode>` | `none` \| `inline` \| `external` | `external` | Sourcemap emission |
+| `--no-cache` | — | cache on | Force a cold build (ignore the `.superjs/` cache) |
+| `--watch` | — | off | Recompile when files change |
+
+### `check`
+
+Type-check without emitting any output. Ideal for CI and editors.
+
+```bash
+superjs check src/                 # human-readable diagnostics
+superjs check src/ --format json   # one JSON diagnostic per line
+```
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--format <mode>` | `pretty` \| `json` | `pretty` | Diagnostic output format |
+
+The `json` format emits one object per line:
+
+```json
+{
+  "code": "SJS-E001",
+  "severity": "error",
+  "message": "Null or undefined assigned to non-nullable type `string`",
+  "file": "/abs/path/src/app.sjs",
+  "line": 42,
+  "column": 14,
+  "endLine": 42,
+  "endColumn": 21
+}
+```
+
+### `explain`
+
+Print the full reference for a diagnostic code.
+
+```bash
+superjs explain E001        # short form
+superjs explain SJS-E001    # full code, case-insensitive
+```
+
+See the complete list on the [error code reference](/errors) page.
+
+### `init`
+
+Write a default `superjs.config.json` into the current directory. Idempotent —
+running it when a config already exists does nothing.
+
+```bash
+superjs init
+```
+
+### `doctor`
+
+Report environment health: Node.js version (must be ≥ 18), compiler version,
+and whether a `superjs.config.json` is present.
+
+```bash
+superjs doctor
+```
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — no errors |
+| `1` | Compilation errors, or a named file was missing |
+| `2` | Usage error (e.g. no files passed to `build`/`check`) |
+| `70` | Internal compiler error (reported to stderr) |
+
+These codes are stable; scripts and CI can rely on them.
+
+## Configuration
+
+Build options live in `superjs.config.json` rather than on the command line, so
+one config drives `build`, `check`, and your editor identically.
+
+```json
+{
+  "language": "1.0",
+  "compilerOptions": {
+    "strict": false,
+    "noEmitOnError": false,
+    "target": "ES2022",
+    "outDir": "dist",
+    "sourceMap": "none"
+  },
+  "jsx": {
+    "runtime": "automatic",
+    "importSource": "react"
+  },
+  "paths": {},
+  "output": {
+    "eol": "lf"
+  }
+}
+```
+
+| Key | Type | Default | Notes |
+|-----|------|---------|-------|
+| `compilerOptions.strict` | boolean | `false` | Promotes warnings to errors; warns on implicit `dynamic` |
+| `compilerOptions.noEmitOnError` | boolean | `false` | Skip emit when any error is present |
+| `compilerOptions.target` | `ES2020`…`ESNext` | `ES2022` | ECMAScript output level |
+| `compilerOptions.outDir` | path | — | Default output directory |
+| `compilerOptions.sourceMap` | `none` \| `inline` \| `external` | `none` | Sourcemap mode |
+| `jsx.runtime` | `automatic` \| `classic` | `automatic` | JSX transform |
+| `jsx.importSource` | string | `react` | JSX import source |
+| `paths` | record | `{}` | `tsconfig`-style path mapping |
+| `output.eol` | `lf` \| `crlf` \| `auto` | `lf` | Line ending of emitted files |
+
+> `--strict` is **not** a command-line flag — set `compilerOptions.strict` in
+> config so every tool (CLI, CI, editor) agrees on one source of truth.
