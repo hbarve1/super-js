@@ -1,7 +1,0 @@
-{
-  "target": "es2022",
-  "outDir": "./dist",
-  "jsxFactory": "React.createElement",
-  "jsxFragment": "React.Fragment",
-  "strict": false
-}

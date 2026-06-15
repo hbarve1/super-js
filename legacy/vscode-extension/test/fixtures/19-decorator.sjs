@@ -1,2 +1,0 @@
-@Injectable()
-class MyService {}
