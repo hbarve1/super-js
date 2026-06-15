@@ -1,5 +1,6 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import remarkGfm from 'remark-gfm'
 import { CodeBlockWrapper } from '@/components/ui/CodeBlock'
 import { slugify } from '@/lib/docs'
 
@@ -61,7 +62,11 @@ const mdxComponents = {
 export default function DocContent({ source }: { source: string }) {
   return (
     <article className="flex-1 min-w-0 max-w-3xl py-8" data-pagefind-body>
-      <MDXRemote source={source} components={mdxComponents} />
+      <MDXRemote
+        source={source}
+        components={mdxComponents}
+        options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+      />
     </article>
   )
 }
