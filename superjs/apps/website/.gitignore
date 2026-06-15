@@ -9,3 +9,7 @@ next-env.d.ts
 
 # Pagefind index (generated post-build)
 /public/pagefind/
+.open-next/
+
+# wrangler local state
+/.wrangler/

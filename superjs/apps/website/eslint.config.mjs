@@ -7,7 +7,7 @@ import nextPlugin from '@next/eslint-plugin-next'
  */
 export default [
   {
-    ignores: ['.next/**', '.vercel/**', 'next-env.d.ts'],
+    ignores: ['.next/**', '.open-next/**', '.vercel/**', 'next-env.d.ts'],
   },
   {
     plugins: { '@next/next': nextPlugin },

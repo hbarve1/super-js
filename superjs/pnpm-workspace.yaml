@@ -3,6 +3,6 @@ packages:
   - 'libs/*'
   - 'apps/*'
 allowBuilds:
-  esbuild: false
+  esbuild: true
   sharp: false
-  workerd: false
+  workerd: true
