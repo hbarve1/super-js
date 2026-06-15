@@ -29,14 +29,14 @@ export interface CompileResult {
 interface UseCompilerReturn {
   result: CompileResult | null
   isCompiling: boolean
-  compile: (source: string) => Promise<void>
+  compile: (source: string) => Promise<CompileResult>
 }
 
 export function useCompiler(): UseCompilerReturn {
   const [result, setResult] = useState<CompileResult | null>(null)
   const [isCompiling, setIsCompiling] = useState(false)
 
-  const compile = useCallback(async (source: string) => {
+  const compile = useCallback(async (source: string): Promise<CompileResult> => {
     setIsCompiling(true)
     try {
       const res = await fetch('/api/compile', {
@@ -44,14 +44,23 @@ export function useCompiler(): UseCompilerReturn {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source }),
       })
+      let next: CompileResult
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as Partial<CompileResult>
-        setResult({ output: '', errors: err.errors ?? [{ message: `HTTP ${res.status}` }], diagnostics: [] })
-        return
+        next = { output: '', errors: err.errors ?? [{ message: `HTTP ${res.status}` }], diagnostics: [] }
+      } else {
+        next = (await res.json()) as CompileResult
       }
-      setResult((await res.json()) as CompileResult)
+      setResult(next)
+      return next
     } catch (e) {
-      setResult({ output: '', errors: [{ message: e instanceof Error ? e.message : 'Network error' }], diagnostics: [] })
+      const next: CompileResult = {
+        output: '',
+        errors: [{ message: e instanceof Error ? e.message : 'Network error' }],
+        diagnostics: [],
+      }
+      setResult(next)
+      return next
     } finally {
       setIsCompiling(false)
     }
