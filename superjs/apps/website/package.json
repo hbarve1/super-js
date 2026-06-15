@@ -7,6 +7,7 @@
     "build": "next build",
     "postbuild": "npx pagefind --site .next/server/app --output-path public/pagefind || true",
     "start": "next start",
+    "doctor": "react-doctor --no-telemetry",
     "build:cf": "npx @cloudflare/next-on-pages",
     "preview:cf": "npm run build:cf && npx wrangler pages dev .vercel/output/static",
     "deploy:cf": "npm run build:cf && npx wrangler pages deploy .vercel/output/static --project-name superjs-website"
@@ -43,6 +44,7 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.184.1",
     "eslint": "^9",
+    "react-doctor": "^0.5.5",
     "tailwindcss": "^4",
     "typescript": "~5.9.2"
   }
