@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Analytics } from '@vercel/analytics/next'
 import { Navbar } from '@/components/ui/Navbar'
 import { GITHUB_REPO } from '@/lib/site'
 import './globals.css'
@@ -74,6 +75,7 @@ export default async function RootLayout({
         </a>
         <Navbar stars={stars} />
         {children}
+        <Analytics />
       </body>
     </html>
   )
