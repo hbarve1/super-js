@@ -53,7 +53,10 @@ function expandInputs(io: IO, paths: readonly string[]): string[] {
   const out: string[] = [];
   for (const p of paths) {
     const abs = resolve(io, p);
-    if (io.isDirectory(abs)) walkSjs(io, abs, p.replace(/\/+$/, ''), out);
+    // Strip trailing slashes without a backtracking regex (avoids ReDoS).
+    let base = p;
+    while (base.endsWith('/')) base = base.slice(0, -1);
+    if (io.isDirectory(abs)) walkSjs(io, abs, base, out);
     else out.push(p);
   }
   return out;

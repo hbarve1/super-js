@@ -52,7 +52,9 @@ export function apiHash(exportSignatures: readonly string[]): string {
  * invalidate doc-generation and LSP hover caches but never trigger a re-check.
  */
 export function docHash(source: string): string {
-  const blocks = source.match(/\/\*\*[\s\S]*?\*\//g) ?? [];
+  // Unrolled `/** … */` matcher — linear time, no catastrophic backtracking
+  // (the naive `[\s\S]*?` form is a ReDoS sink on unterminated comments).
+  const blocks = source.match(/\/\*\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g) ?? [];
   return sha256(blocks.join('\n'));
 }
 
