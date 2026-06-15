@@ -10,8 +10,7 @@ export const dynamic = 'force-static'
  * authoritative pages without crawling HTML.
  */
 export async function GET(): Promise<Response> {
-  const docs = await getDocNavTree()
-  const posts = await getAllPosts()
+  const [docs, posts] = await Promise.all([getDocNavTree(), getAllPosts()])
 
   const docLinks = docs
     .map((d) => {

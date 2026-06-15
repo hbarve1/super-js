@@ -10,13 +10,12 @@ export const dynamic = 'force-static'
 export async function GET(): Promise<Response> {
   const docs = await getDocNavTree()
 
-  const sections: string[] = []
-  for (const nav of docs) {
-    const doc = await getDocBySlug(nav.slug.split('/'))
-    sections.push(
-      `# ${doc.frontmatter.title ?? nav.title}\n\nSource: ${SITE_URL}${nav.href}\n\n${doc.content.trim()}`,
-    )
-  }
+  const sections = await Promise.all(
+    docs.map(async (nav) => {
+      const doc = await getDocBySlug(nav.slug.split('/'))
+      return `# ${doc.frontmatter.title ?? nav.title}\n\nSource: ${SITE_URL}${nav.href}\n\n${doc.content.trim()}`
+    }),
+  )
 
   const body = `# ${SITE_NAME} — Full Documentation
 

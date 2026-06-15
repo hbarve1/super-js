@@ -8,7 +8,7 @@ import { EXAMPLES } from './examples'
 import { useCompiler } from '@/hooks/useCompiler'
 import { buildShareUrl, readSharedCode } from '@/lib/share'
 
-export const DEFAULT_CODE = `// Super.js — null-safe, sum types, match expressions
+const DEFAULT_CODE = `// Super.js — null-safe, sum types, match expressions
 
 type Result<T, E> = Ok(T) | Err(E)
 
