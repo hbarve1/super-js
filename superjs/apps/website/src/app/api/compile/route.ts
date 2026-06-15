@@ -2,10 +2,10 @@ import { transform } from '@superjs/compiler'
 
 /**
  * Compile endpoint for the playground. Runs on the Node.js runtime (not edge):
- * `@superjs/compiler` reaches `node:crypto` for config hashing, and Cloudflare
- * Pages serves this with `nodejs_compat` enabled (see wrangler.toml).
+ * `@superjs/compiler` reaches `node:crypto` for config hashing.
  *
- * POST { source: string } → { output: string, errors: { message, line? }[] }
+ * POST { source } → { output, errors: {message,line?}[], diagnostics: rich[] }
+ * `diagnostics` carry 1-based line + 1-based column spans for editor markers.
  */
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,7 @@ export async function POST(req: Request): Promise<Response> {
     const body = (await req.json()) as { source?: unknown }
     source = typeof body.source === 'string' ? body.source : ''
   } catch {
-    return Response.json({ output: '', errors: [{ message: 'Invalid JSON body' }] }, { status: 400 })
+    return Response.json({ output: '', errors: [{ message: 'Invalid JSON body' }], diagnostics: [] }, { status: 400 })
   }
 
   try {
@@ -25,11 +25,26 @@ export async function POST(req: Request): Promise<Response> {
       message: `${d.code}: ${d.message}`,
       line: d.span?.start?.line,
     }))
-    return Response.json({ output: result.code ?? '', errors })
+    // Span: 1-based line, 0-based column → Monaco wants 1-based columns.
+    const diagnostics = result.diagnostics.map((d) => {
+      const start = d.span?.start
+      const end = d.span?.end ?? start
+      return {
+        code: d.code,
+        severity: d.severity,
+        message: d.message,
+        startLine: start?.line ?? 1,
+        startColumn: (start?.column ?? 0) + 1,
+        endLine: end?.line ?? start?.line ?? 1,
+        endColumn: (end?.column ?? start?.column ?? 0) + 1,
+      }
+    })
+    return Response.json({ output: result.code ?? '', errors, diagnostics })
   } catch (e) {
     return Response.json({
       output: '',
       errors: [{ message: e instanceof Error ? e.message : 'Compilation failed' }],
+      diagnostics: [],
     })
   }
 }
