@@ -81,3 +81,4 @@ graphify-out/
 # Pagefind search index (generated at build time)
 website/public/pagefind/
 .claude/worktrees/
+.vercel
