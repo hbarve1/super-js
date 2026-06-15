@@ -1,4 +1,5 @@
 import { highlight } from '@/lib/shiki'
+import { CompareTabs, type CompareLang } from './CompareTabs'
 
 const JS_CODE = `// JavaScript
 function divide(a, b) {
@@ -35,30 +36,41 @@ export async function Compare() {
     highlight(SJS_CODE, 'typescript'),
   ])
 
+  const langs: CompareLang[] = [
+    {
+      label: 'JavaScript',
+      html: js,
+      accent: '#f7df1e',
+      verdict: '❌ Silent NaN at runtime',
+      problem:
+        'b can be null. 10 / null is NaN — no error, no warning. The bug ships and surfaces somewhere far from its cause.',
+    },
+    {
+      label: 'TypeScript',
+      html: ts,
+      accent: '#3178c6',
+      verdict: '⚠️ any escapes the type system',
+      problem:
+        'The signature looks safe, but an any value (or an as cast) silently disables checking — the unsafe value flows straight in and TypeScript says nothing.',
+    },
+    {
+      label: 'Super.js',
+      html: sjs,
+      accent: '#f97316',
+      verdict: '✅ The compiler forces you to handle it',
+      problem:
+        'No any, no implicit null. divide returns a Result, and match must handle both Ok and Err — the error path simply cannot be forgotten.',
+    },
+  ]
+
   return (
     <section className="py-24 px-4 max-w-7xl mx-auto">
-      <div className="text-center mb-16">
+      <div className="text-center mb-12">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Comparison</p>
         <h2 className="text-4xl font-bold text-white">The same problem, solved correctly</h2>
+        <p className="mt-3 text-white/50">Switch tabs — same program, three outcomes.</p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {[
-          { label: 'JavaScript', html: js, accent: '#f7df1e', note: '❌ Silent NaN at runtime' },
-          { label: 'TypeScript', html: ts, accent: '#3178c6', note: '⚠️ any still escapes types' },
-          { label: 'Super.js', html: sjs, accent: '#f97316', note: '✅ Forces error handling' },
-        ].map(({ label, html, accent, note }) => (
-          <div key={label} className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-              <span className="text-sm font-medium" style={{ color: accent }}>{label}</span>
-              <span className="text-xs text-white/40">{note}</span>
-            </div>
-            <div
-              className="text-xs [&_pre]:p-4 [&_pre]:!bg-transparent [&_pre]:overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          </div>
-        ))}
-      </div>
+      <CompareTabs langs={langs} />
     </section>
   )
 }
