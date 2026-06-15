@@ -1,9 +1,0 @@
-.github/
-.vscode/
-test/
-media/
-tsconfig.json
-*.map
-*.ts
-node_modules/
-.gitignore
