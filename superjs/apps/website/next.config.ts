@@ -1,13 +1,13 @@
-import { join } from 'node:path'
 import type { NextConfig } from 'next'
 
 /**
  * SuperJS website — App Router, strict TS. Lives inside the NX monorepo at
- * `apps/website`; `outputFileTracingRoot` points at the repo root so Next traces
- * files correctly despite the workspace lockfile sitting above this directory.
+ * `apps/website`. `outputFileTracingRoot` is intentionally NOT set: pointing it
+ * above the app's directory makes Vercel's Next builder mis-resolve the app path
+ * (drops the `superjs/` segment). Vercel manages file tracing from the Root
+ * Directory; the dev-only multiple-lockfiles warning is harmless.
  */
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: join(import.meta.dirname, '..', '..'),
   experimental: {
     optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei'],
   },
