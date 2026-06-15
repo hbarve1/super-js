@@ -6,26 +6,25 @@ import ScrollTrigger from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Let GSAP own touch scrolling so the pinned, `touch-none` hero stays scrollable
-// on mobile (without this the page is trapped on the hero). Guard for SSR.
-if (typeof window !== 'undefined') {
-  ScrollTrigger.normalizeScroll(true)
-}
-
 /**
  * Scroll progress 0→1 over `scrollHeight` px, pinning the container. Drives the
- * scroll-told hero (SPEC §Phase B). 0 = top of trigger, 1 = after `scrollHeight`.
+ * scroll-told hero. When `enabled` is false (reduced-motion / pre-mount) the
+ * GSAP pin + touch normalization never attach, so the page scrolls normally.
  */
-export function useScrollProgress(scrollHeight = 2000): {
-  progress: number
-  containerRef: RefObject<HTMLDivElement | null>
-} {
+export function useScrollProgress(
+  scrollHeight = 2000,
+  enabled = true,
+): { progress: number; containerRef: RefObject<HTMLDivElement | null> } {
   const containerRef = useRef<HTMLDivElement>(null)
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
+    if (!enabled) return
     const el = containerRef.current
     if (!el) return
+
+    // GSAP owns touch scrolling so the pinned, touch-none hero stays scrollable.
+    ScrollTrigger.normalizeScroll(true)
 
     const tween = gsap.to(
       { value: 0 },
@@ -49,8 +48,9 @@ export function useScrollProgress(scrollHeight = 2000): {
     return () => {
       tween.scrollTrigger?.kill()
       tween.kill()
+      ScrollTrigger.normalizeScroll(false)
     }
-  }, [scrollHeight])
+  }, [scrollHeight, enabled])
 
   return { progress, containerRef }
 }

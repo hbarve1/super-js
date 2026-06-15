@@ -2,8 +2,10 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import { useScrollProgress } from '@/hooks/useScrollProgress'
 import { HeroContent } from './HeroContent'
+import { StaticHero } from './StaticHero'
 
 const EvolutionScene = dynamic(
   () => import('./EvolutionScene').then((m) => m.EvolutionScene),
@@ -11,14 +13,23 @@ const EvolutionScene = dynamic(
 )
 
 export function Hero() {
-  const { progress, containerRef } = useScrollProgress(2400)
-  const [canvasReady, setCanvasReady] = useState(false)
+  const reducedMotion = useReducedMotion()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
-  // Defer the heavy R3F canvas one tick so first paint (HTML overlay) is instant.
+  // Animate only after mount and when motion is allowed. SSR + first client
+  // render + reduced-motion all get the static hero (no scroll-jack, no WebGL).
+  const animate = mounted && !reducedMotion
+
+  const { progress, containerRef } = useScrollProgress(2400, animate)
+  const [canvasReady, setCanvasReady] = useState(false)
   useEffect(() => {
+    if (!animate) return
     const t = setTimeout(() => setCanvasReady(true), 100)
     return () => clearTimeout(t)
-  }, [])
+  }, [animate])
+
+  if (!animate) return <StaticHero />
 
   return (
     <div
