@@ -18,6 +18,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Lift Node's 10-listener cap (nx spawns parallel task processes) so logs
+      # aren't spammed with MaxListenersExceededWarning. Keeps real warnings.
+      NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
     defaults:
       run:
         working-directory: superjs
