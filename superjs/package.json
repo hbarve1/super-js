@@ -22,10 +22,11 @@
     "jsonc-eslint-parser": "^2.1.0",
     "nx": "22.7.5",
     "prettier": "^3.8.1",
+    "rollup": "^4.62.0",
+    "rollup-plugin-dts": "^6.4.1",
     "tslib": "^2.3.0",
     "typescript": "~5.9.2",
     "vite": "^8.0.0",
     "vitest": "~4.1.0"
-  },
-  "dependencies": {}
+  }
 }

@@ -32,7 +32,7 @@ const structuredData = [
     url: SITE_URL,
     softwareVersion: '1.0',
     programmingLanguage: 'JavaScript',
-    license: 'https://opensource.org/license/mit',
+    license: 'https://www.gnu.org/licenses/gpl-3.0.html',
     codeRepository: GITHUB_URL,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   },

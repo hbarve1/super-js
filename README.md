@@ -4,7 +4,7 @@ SuperJS is a new programming language that compiles to JavaScript. It is a stric
 
 SuperJS is **not** TypeScript with a different extension. It deliberately bans the parts of TypeScript that make type systems unsound (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Tests](https://img.shields.io/badge/tests-1011%20passing-brightgreen.svg)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#roadmap)
 
@@ -225,4 +225,4 @@ Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 
 ## License
 
-MIT
+GPL-3.0-or-later — see [LICENSE](./LICENSE).

@@ -48,3 +48,8 @@ Thumbs.db
 .nx/polygraph
 .nx/self-healing
 vitest.config.*.timestamp*
+# Generated publishable bundle (built by scripts/build-compiler-publish.mjs)
+libs/compiler/publish/index.js
+libs/compiler/publish/index.d.ts
+libs/compiler/publish/LICENSE
+*.tgz
