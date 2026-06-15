@@ -1,0 +1,2 @@
+@Injectable()
+class MyService {}

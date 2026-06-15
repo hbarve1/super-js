@@ -1,0 +1,280 @@
+[
+  {
+    "line": "type Color = Red | Green | Blue",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "storage.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 5,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 5,
+        "endIndex": 10,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 10,
+        "endIndex": 11,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 11,
+        "endIndex": 12,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.assignment.sjs"
+        ]
+      },
+      {
+        "startIndex": 12,
+        "endIndex": 13,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 13,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 16,
+        "endIndex": 17,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 17,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 18,
+        "endIndex": 19,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 19,
+        "endIndex": 24,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 24,
+        "endIndex": 25,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 25,
+        "endIndex": 26,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 26,
+        "endIndex": 27,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 27,
+        "endIndex": 31,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "type Direction = North | South | East | West",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 4,
+        "scopes": [
+          "source.sjs",
+          "storage.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 4,
+        "endIndex": 5,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 5,
+        "endIndex": 14,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.sjs"
+        ]
+      },
+      {
+        "startIndex": 14,
+        "endIndex": 15,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 15,
+        "endIndex": 16,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.assignment.sjs"
+        ]
+      },
+      {
+        "startIndex": 16,
+        "endIndex": 17,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 17,
+        "endIndex": 22,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 22,
+        "endIndex": 23,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 23,
+        "endIndex": 24,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 24,
+        "endIndex": 25,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 25,
+        "endIndex": 30,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 30,
+        "endIndex": 31,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 31,
+        "endIndex": 32,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 32,
+        "endIndex": 33,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 33,
+        "endIndex": 37,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 37,
+        "endIndex": 38,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 38,
+        "endIndex": 39,
+        "scopes": [
+          "source.sjs",
+          "keyword.operator.type.union.sjs"
+        ]
+      },
+      {
+        "startIndex": 39,
+        "endIndex": 40,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 40,
+        "endIndex": 44,
+        "scopes": [
+          "source.sjs",
+          "entity.name.type.variant.unit.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]

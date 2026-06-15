@@ -1,0 +1,56 @@
+[
+  {
+    "line": "class Foo extends Bar {}",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 6,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 6,
+        "endIndex": 9,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 9,
+        "endIndex": 18,
+        "scopes": [
+          "source.sjs"
+        ]
+      },
+      {
+        "startIndex": 18,
+        "endIndex": 21,
+        "scopes": [
+          "source.sjs",
+          "entity.name.function.constructor.variant.unit.sjs"
+        ]
+      },
+      {
+        "startIndex": 21,
+        "endIndex": 25,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  },
+  {
+    "line": "",
+    "tokens": [
+      {
+        "startIndex": 0,
+        "endIndex": 1,
+        "scopes": [
+          "source.sjs"
+        ]
+      }
+    ]
+  }
+]
