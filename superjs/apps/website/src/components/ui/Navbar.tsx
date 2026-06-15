@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { GITHUB_URL } from '@/lib/site'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 const LINKS = [
   { href: '/docs/intro', label: 'Docs' },
@@ -50,19 +51,23 @@ export function Navbar({ stars }: { stars?: number }) {
             </Link>
           ))}
           <GitHubLink stars={stars} />
+          <ThemeToggle />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={open}
-          className="md:hidden rounded p-2 text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
-        >
-          <span className="block h-0.5 w-5 bg-current" />
-          <span className="mt-1 block h-0.5 w-5 bg-current" />
-          <span className="mt-1 block h-0.5 w-5 bg-current" />
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={open}
+            className="rounded p-2 text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
+          >
+            <span className="block h-0.5 w-5 bg-current" />
+            <span className="mt-1 block h-0.5 w-5 bg-current" />
+            <span className="mt-1 block h-0.5 w-5 bg-current" />
+          </button>
+        </div>
       </nav>
 
       {open && (

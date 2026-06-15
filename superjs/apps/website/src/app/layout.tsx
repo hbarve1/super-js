@@ -66,10 +66,18 @@ export default async function RootLayout({
   const stars = await getStars()
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Apply the saved (or system) theme before paint to avoid a flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t||(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');if(d==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="bg-bg-deep text-text-primary font-sans antialiased" suppressHydrationWarning>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2 focus:bg-orange focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-4 focus:py-2 focus:bg-orange focus:text-text-primary focus:rounded-lg focus:font-semibold focus:shadow-lg"
         >
           Skip to content
         </a>

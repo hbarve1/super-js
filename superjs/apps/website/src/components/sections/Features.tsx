@@ -52,8 +52,8 @@ export async function Features() {
     <section className="py-24 px-4 max-w-7xl mx-auto">
       <div className="text-center mb-16">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Features</p>
-        <h2 className="text-4xl font-bold text-white">Everything TypeScript should have been</h2>
-        <p className="text-white/50 mt-3 max-w-xl mx-auto">
+        <h2 className="text-4xl font-bold text-text-primary">Everything TypeScript should have been</h2>
+        <p className="text-text-muted mt-3 max-w-xl mx-auto">
           Built from first principles. Every decision exists to make your code more correct.
         </p>
       </div>
@@ -61,11 +61,11 @@ export async function Features() {
         {FEATURES.map((f, i) => (
           <div
             key={f.title}
-            className="rounded-xl border border-white/5 bg-white/[0.02] p-6 hover:border-orange-500/30 transition-colors"
+            className="rounded-xl border border-hairline-soft bg-surface-1 p-6 hover:border-orange-500/30 transition-colors"
           >
             <div className="text-2xl mb-3">{f.icon}</div>
-            <h3 className="text-white font-semibold mb-1">{f.title}</h3>
-            <p className="text-white/50 text-sm mb-4">{f.desc}</p>
+            <h3 className="text-text-primary font-semibold mb-1">{f.title}</h3>
+            <p className="text-text-muted text-sm mb-4">{f.desc}</p>
             <div
               className="text-xs rounded-lg overflow-hidden [&_pre]:p-3 [&_pre]:!bg-bg-dark [&_pre]:overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: highlighted[i] }}

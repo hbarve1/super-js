@@ -37,7 +37,7 @@ export async function Quickstart() {
     <section className="py-24 px-4 max-w-5xl mx-auto">
       <div className="text-center mb-16">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Quickstart</p>
-        <h2 className="text-4xl font-bold text-white">From zero to type-safe in 60 seconds</h2>
+        <h2 className="text-4xl font-bold text-text-primary">From zero to type-safe in 60 seconds</h2>
       </div>
 
       <div className="space-y-6">
@@ -47,7 +47,7 @@ export async function Quickstart() {
               {i + 1}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white/70 text-sm mb-2">{step.label}</p>
+              <p className="text-text-secondary text-sm mb-2">{step.label}</p>
               <div
                 className="rounded-lg overflow-hidden [&_pre]:p-4 [&_pre]:!bg-bg-dark [&_pre]:overflow-x-auto"
                 dangerouslySetInnerHTML={{ __html: html[step.key] }}

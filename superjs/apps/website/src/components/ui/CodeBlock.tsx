@@ -32,7 +32,7 @@ export function CodeBlockWrapper({
       <pre
         ref={preRef}
         style={style}
-        className={`overflow-x-auto p-4 rounded-lg border border-white/10 text-sm leading-relaxed [&_code]:font-mono ${className}`}
+        className={`overflow-x-auto p-4 rounded-lg border border-border text-sm leading-relaxed [&_code]:font-mono ${className}`}
         {...rest}
       >
         {children}
@@ -41,7 +41,7 @@ export function CodeBlockWrapper({
         type="button"
         onClick={handleCopy}
         aria-label={copied ? 'Copied!' : 'Copy code'}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-text-muted hover:text-white"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 text-xs rounded bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text-primary"
       >
         {copied ? (
           <>

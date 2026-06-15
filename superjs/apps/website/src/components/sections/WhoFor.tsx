@@ -21,8 +21,8 @@ export function WhoFor() {
     <section className="py-24 px-4 max-w-6xl mx-auto">
       <div className="text-center mb-16">
         <p className="text-orange-400 text-sm uppercase tracking-widest mb-3">Who it&apos;s for</p>
-        <h2 className="text-4xl font-bold text-white">Built for people who ship JavaScript</h2>
-        <p className="text-white/50 mt-3 max-w-xl mx-auto">
+        <h2 className="text-4xl font-bold text-text-primary">Built for people who ship JavaScript</h2>
+        <p className="text-text-muted mt-3 max-w-xl mx-auto">
           If any of these sound like you, Super.js was designed for your workflow.
         </p>
       </div>
@@ -31,11 +31,11 @@ export function WhoFor() {
         {PERSONAS.map((p) => (
           <div
             key={p.title}
-            className="flex min-w-0 flex-col rounded-xl border border-white/5 bg-white/[0.02] p-6 hover:border-orange-500/30 transition-colors"
+            className="flex min-w-0 flex-col rounded-xl border border-hairline-soft bg-surface-1 p-6 hover:border-orange-500/30 transition-colors"
           >
             <div className="text-3xl mb-4">{p.icon}</div>
-            <h3 className="text-white font-semibold text-lg mb-3">{p.title}</h3>
-            <p className="text-white/50 text-sm leading-relaxed">{p.body}</p>
+            <h3 className="text-text-primary font-semibold text-lg mb-3">{p.title}</h3>
+            <p className="text-text-muted text-sm leading-relaxed">{p.body}</p>
           </div>
         ))}
       </div>

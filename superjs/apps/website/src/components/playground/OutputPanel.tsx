@@ -35,8 +35,8 @@ export function OutputPanel({ output, errors, isCompiling, embedded = false }: O
   if (embedded) return <Body output={output} errors={errors} />
 
   return (
-    <div className="flex flex-col h-full bg-bg-dark border border-white/10 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 bg-bg-elevated">
+    <div className="flex flex-col h-full bg-bg-dark border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-bg-elevated">
         <span className="text-xs text-text-muted font-mono uppercase tracking-wider">Output</span>
         {isCompiling && <span className="text-xs text-orange-400 animate-pulse">Compiling…</span>}
         {!isCompiling && errors.length > 0 && (

@@ -18,12 +18,12 @@ export function StaticHero() {
           null-safe · sum types · zero runtime
         </p>
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
-          <span className="text-white">JavaScript,</span>{' '}
+          <span className="text-text-primary">JavaScript,</span>{' '}
           <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
             Perfected.
           </span>
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg text-white/60">
+        <p className="mx-auto mt-6 max-w-xl text-lg text-text-muted">
           A sound, null-safe superset of JavaScript — sum types, exhaustive{' '}
           <code className="font-mono text-amber-300">match</code>, no{' '}
           <code className="font-mono text-amber-300">any</code>. Compiles to plain JS with zero

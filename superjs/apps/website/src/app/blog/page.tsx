@@ -18,7 +18,7 @@ export default async function BlogPage() {
           {posts.map((post) => (
             <article
               key={post.slug}
-              className="border border-white/10 rounded-xl p-6 hover:border-orange/40 transition-colors"
+              className="border border-border rounded-xl p-6 hover:border-orange/40 transition-colors"
             >
               <time className="text-xs text-text-muted font-mono">{post.frontmatter.date}</time>
               <h2 className="text-xl font-semibold text-text-primary mt-2 mb-2">

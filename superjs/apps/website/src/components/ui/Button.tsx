@@ -23,7 +23,7 @@ const variants: Record<Variant, string> = {
   primary:
     'bg-gradient-to-r from-orange-500 to-amber-400 text-black hover:from-orange-400 hover:to-amber-300 shadow-[0_0_20px_rgba(249,115,22,0.35)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]',
   ghost:
-    'border border-white/10 text-white/70 hover:border-white/25 hover:text-white bg-transparent',
+    'border border-border text-text-secondary hover:border-hairline-strong hover:text-text-primary bg-transparent',
 }
 
 /** Primary (orange→amber gradient) or ghost button. Renders a Link when `href` is set. */

@@ -25,7 +25,7 @@ export function DocsNavList({ items, onLinkClick }: { items: NavItem[]; onLinkCl
                   'block px-3 py-2 rounded-md text-sm transition-colors',
                   isActive
                     ? 'bg-orange/15 text-orange font-medium'
-                    : 'text-text-muted hover:text-text-primary hover:bg-white/5',
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-2',
                 ].join(' ')}
               >
                 {item.title}
@@ -48,7 +48,7 @@ export default function MobileDocsNav({ items }: { items: NavItem[] }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open documentation menu"
-        className="fixed bottom-6 left-4 z-40 flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-full shadow-lg shadow-orange-500/30"
+        className="fixed bottom-6 left-4 z-40 flex items-center gap-2 px-4 py-2 bg-orange-500 text-text-primary text-sm font-semibold rounded-full shadow-lg shadow-orange-500/30"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 6h16M4 12h16M4 18h16" />
@@ -66,7 +66,7 @@ export default function MobileDocsNav({ items }: { items: NavItem[] }) {
       />
       <div
         className={[
-          'fixed top-0 left-0 z-50 h-full w-72 bg-bg-dark border-r border-white/10 overflow-y-auto py-8 px-4 transition-transform duration-300 ease-in-out',
+          'fixed top-0 left-0 z-50 h-full w-72 bg-bg-dark border-r border-border overflow-y-auto py-8 px-4 transition-transform duration-300 ease-in-out',
           open ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
@@ -76,7 +76,7 @@ export default function MobileDocsNav({ items }: { items: NavItem[] }) {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close documentation menu"
-            className="p-1 text-text-muted hover:text-white"
+            className="p-1 text-text-muted hover:text-text-primary"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />

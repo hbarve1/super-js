@@ -11,8 +11,8 @@ export default function TourPage() {
   return (
     <main id="main-content" className="min-h-screen bg-bg-deep px-4 pt-24 pb-16 md:px-8">
       <div className="mx-auto mb-10 max-w-2xl text-center">
-        <h1 className="text-4xl font-bold text-white">Take the tour</h1>
-        <p className="mt-3 text-white/60">
+        <h1 className="text-4xl font-bold text-text-primary">Take the tour</h1>
+        <p className="mt-3 text-text-muted">
           Five steps, all runnable. Edit any example and press Run — it compiles with the real
           Super.js compiler.
         </p>
