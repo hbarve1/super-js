@@ -1,0 +1,109 @@
+---
+title: FAQ
+sidebar_position: 8.5
+description: Common questions about Super.js — any vs dynamic, null safety, what it compiles to, and how it relates to TypeScript.
+---
+
+# Frequently Asked Questions
+
+## Is Super.js a superset of TypeScript?
+
+No — it's a superset of **JavaScript**. Where TypeScript's motto is "JavaScript +
+Types," Super.js is "JavaScript + Type *Safety*." It keeps the parts of gradual,
+structural typing that work and removes the unsound escape hatches. Existing
+TypeScript types can be consumed through [interop](/docs/interop), but the
+language itself is intentionally smaller and stricter than TS.
+
+## Why is `any` banned? What do I use instead?
+
+`any` is an invisible escape hatch: it silently disables type checking and
+spreads through a codebase without a trace. Super.js rejects it (`SJS-E004`) and
+gives you two explicit replacements:
+
+- **`dynamic`** — a gradual type for genuinely untyped values (JSON, JS interop).
+  It's explicit in the source, it propagates through operations, and in `--strict`
+  mode an *implicit* `dynamic` warns (`SJS-W001`). It's the **only** escape hatch.
+- **`unknown`** — a safe top type you must narrow before using.
+
+```sjs
+const data: dynamic = JSON.parse(input)   // explicit, greppable
+console.log(data.user.name)               // allowed; you opted in
+```
+
+## Is it null-safe?
+
+Yes — null safety is a core invariant, always on. A plain `T` can never hold
+`null`; assigning `null` to it is an error (`SJS-E001`). Nullable values are
+spelled `T?` (shorthand for `T | null`):
+
+```sjs
+const a: string  = null     // ❌ SJS-E001
+const b: string? = null     // ✅
+const len = b?.length ?? 0  // narrow with ?. and ??
+```
+
+The compiler narrows by control flow (`if (b !== null) { /* b: string */ }`).
+The non-null assertion `!` is banned (`SJS-E011`) — it's an unverifiable claim,
+so you narrow instead.
+
+## What else is banned, and why?
+
+Features that make the type system undecidable or unsound to compile are removed,
+each with a sound alternative:
+
+| Banned | Code | Use instead |
+|--------|------|-------------|
+| `any` | E004 | `dynamic` or `unknown` |
+| `!` non-null assertion | E011 | narrowing (`?.`, `??`, `if`) |
+| `enum` | E010 | string-literal union |
+| `A & B` intersection | E005 | `interface AB extends A, B {}` |
+| conditional types | E008 | overloads / separate functions |
+| mapped types | E006 | write the interface explicitly |
+| `infer` | E009 | explicit annotations |
+| `namespace` | E012 | ES modules |
+
+See the full list with messages on the [error code reference](/errors).
+
+## What does it compile to? Is there runtime overhead?
+
+It compiles to **plain JavaScript**. Types are erased entirely — `T?` and
+`dynamic` have no runtime representation in the JS output. Modern syntax like
+`?.` and `??` lowers to native operators (or polyfills when targeting ES5). Sum
+types compile to a small tagged object; `match` to an exhaustive dispatch.
+
+```sjs
+function greet(name: string?): string {
+  return name ?? "stranger"
+}
+```
+
+```js
+function greet(name) {
+  return name ?? "stranger"
+}
+```
+
+A future LLVM backend will compile non-nullable types to bare values with zero
+overhead; that's on the roadmap, not in the current JS compiler.
+
+## What is gradual typing here?
+
+You annotate where you want and lean on inference elsewhere. `dynamic` is the
+explicit bridge for untyped code, so you can port JavaScript first and tighten
+types incrementally. In `--strict` mode the compiler points out every implicit
+`dynamic` (`SJS-W001`) and every `dynamic` flowing into a typed position
+(`SJS-W002`), giving you a worklist for migration.
+
+## What runtimes and targets are supported?
+
+The current compiler emits JavaScript targeting ES2020 through ESNext (default
+`ES2022`), configurable via `compilerOptions.target`. It runs on **Node.js ≥ 18**
+(checked by `superjs doctor`), and the output runs anywhere that JS does —
+browsers and edge runtimes included. A native LLVM target is planned for a later
+stage.
+
+## How do I try it?
+
+Use the [playground](/playground) to compile and run Super.js in the browser
+with no install, or take the [guided tour](/tour). To set up a project locally,
+see the [CLI reference](/docs/cli).

@@ -1,0 +1,87 @@
+---
+title: JavaScript & TypeScript Interop
+sidebar_position: 4.5
+description: How Super.js consumes existing JS and TypeScript types — .d.ts translation, the dynamic boundary, and current status.
+---
+
+# JavaScript & TypeScript Interop
+
+> **Status: planned (Stage 2).** Interop is specified and on the roadmap; it is
+> not shipped yet. This page documents the designed behavior so you can plan
+> migrations. Today, consume untyped JS through [`dynamic`](/docs/type-system).
+
+Super.js runs on the JavaScript runtime, so it must consume the existing npm
+ecosystem. The goal: bring third-party types in **without** importing
+TypeScript's unsound features. Anything that can't be translated soundly becomes
+an explicit, greppable `dynamic` — never a silent `any`.
+
+## How a package gets types
+
+Running `superjs add <pkg>` resolves the package and obtains SJS type
+declarations (`.d.sjs`) in this order:
+
+1. **Curated wrapper** — a hand-maintained `@superjs/types-<pkg>` on npm (preferred).
+2. **Automatic translation** — the translator reads the package's `.d.ts` and emits `.d.sjs`.
+
+The result is written under `node_modules/@superjs/types/<pkg>/` and wired up via
+the `paths` map in your `superjs.config.json`.
+
+The translator depends on `typescript` (pinned, **dev/tools tier only**) to walk
+the TypeScript AST. The Super.js core and runtime stay TypeScript-free.
+
+## Type mapping rules
+
+Constructs that map soundly are preserved; constructs that don't are lowered to
+`dynamic` with an explicit, machine-checkable reason.
+
+| TypeScript | Super.js | Notes |
+|------------|----------|-------|
+| `unknown` | `unknown` | Top type — must be narrowed before use |
+| `any` | `dynamic` | Marked `// @sjs:dynamic reason="any"` |
+| `A \| B` unions | `A \| B` | Preserved |
+| `interface` / `type` aliases | preserved | 1:1 |
+| `<T>`, `<T extends U>`, `<T = D>` | preserved | Generics, constraints, defaults |
+| `enum` | string/number union | `enum E { A, B }` → `"A" \| "B"` |
+| `A & B` intersection | merged interface, else `dynamic` | Auto-merges when fields don't conflict |
+| Conditional / mapped / template-literal types | `dynamic` | Marked with the matching reason |
+| `infer`, `keyof T`, `T[K]`, `this` types | `dynamic` | Marked with the matching reason |
+
+### The `// @sjs:dynamic` marker
+
+Every unmappable construct emits an explicit marker drawn from a **closed set**
+of reasons — the translator's CI rejects any reason outside the set, so a
+fallback to `dynamic` can never be silent:
+
+```sjs
+// @sjs:dynamic reason="conditional-type"
+// @sjs:dynamic reason="mapped-type"
+// @sjs:dynamic reason="intersection-not-mergeable"
+// @sjs:dynamic reason="infer-type"
+// @sjs:dynamic reason="keyof"
+```
+
+## Coverage target
+
+Wrapper quality is measured by **typed surface** — the share of identifier
+positions whose translation is *not* `dynamic`. The target is ≥ 70% average
+across the most-used packages, with each wrapper shipping a `STATUS.md` reporting
+its typed-surface percentage, license audit, and ESM/CJS support.
+
+## Current limitations
+
+These TypeScript features cannot be translated soundly and fall back to
+`dynamic`:
+
+- Conditional types (`T extends U ? A : B`)
+- Mapped types (`{ [K in keyof T]: ... }`)
+- Intersections with conflicting fields
+- `infer`, `keyof`, indexed access (`T[K]`), and `this` types
+
+This is by design — see [banned features](/docs/type-system) for why Super.js
+keeps these out of the language itself.
+
+## Runtime boundary
+
+A planned `@superjs/interop` package provides helpers for validating values as
+they cross the JS→SJS boundary, so a `dynamic` from the outside world is checked
+before it becomes a typed value rather than trusted blindly.
