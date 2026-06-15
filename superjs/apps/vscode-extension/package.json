@@ -62,7 +62,7 @@
     ]
   },
   "devDependencies": {
-    "@vscode/vsce": "^2.24.0",
+    "@vscode/vsce": "^3.9.2",
     "vscode-textmate": "^9.0.0",
     "vscode-oniguruma": "^1.7.0",
     "@types/node": "^20.0.0",
