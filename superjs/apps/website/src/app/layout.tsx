@@ -35,6 +35,11 @@ export const metadata: Metadata = {
     'match expressions',
   ],
   metadataBase: new URL('https://superjs.org'),
+  alternates: {
+    types: {
+      'application/rss+xml': [{ url: '/feed.xml', title: 'Super.js Blog' }],
+    },
+  },
   openGraph: {
     title: 'Super.js — JavaScript, Perfected',
     description: 'Null-safe. Sum types. Match expressions. Zero runtime overhead.',
