@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Hero } from '@/components/hero'
+import { WhySuperJS } from '@/components/sections/WhySuperJS'
+import { WhoFor } from '@/components/sections/WhoFor'
 import { Features } from '@/components/sections/Features'
 import { Compare } from '@/components/sections/Compare'
 import { PlaygroundEmbed } from '@/components/sections/PlaygroundEmbed'
@@ -41,9 +43,11 @@ export default function Home() {
     <main id="main-content">
       <JsonLd data={structuredData} />
       <Hero />
+      <WhySuperJS />
       <Features />
       <Compare />
       <PlaygroundEmbed />
+      <WhoFor />
       <Quickstart />
       <Ecosystem />
       <CallToAction />
