@@ -18,27 +18,48 @@
     "color": "#1e1e1e",
     "theme": "dark"
   },
-  "categories": ["Programming Languages", "Snippets"],
-  "keywords": ["superjs", "sjs", "syntax", "highlighting", "sum types", "match", "algebraic data types"],
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "superjs",
+    "sjs",
+    "syntax",
+    "highlighting",
+    "sum types",
+    "match",
+    "algebraic data types"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
-  "extensionKind": ["ui"],
+  "extensionKind": [
+    "ui"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "superjs",
-        "aliases": ["SuperJS", "superjs", "sjs"],
-        "extensions": [".sjs"],
+        "aliases": [
+          "SuperJS",
+          "superjs",
+          "sjs"
+        ],
+        "extensions": [
+          ".sjs"
+        ],
         "configuration": "./language-configuration.json",
         "icon": {
           "light": "./icons/sjs-file-dark.svg",
-          "dark":  "./icons/sjs-file.svg"
+          "dark": "./icons/sjs-file.svg"
         }
       },
       {
         "id": "json",
-        "filenames": ["superjs.config.json"]
+        "filenames": [
+          "superjs.config.json"
+        ]
       }
     ],
     "jsonValidation": [
@@ -62,11 +83,11 @@
     ]
   },
   "devDependencies": {
-    "@vscode/vsce": "^2.24.0",
-    "vscode-textmate": "^9.0.0",
-    "vscode-oniguruma": "^1.7.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0"
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.4.0",
+    "vscode-oniguruma": "^1.7.0",
+    "vscode-textmate": "^9.0.0"
   },
   "scripts": {
     "test": "node out/test/suite/grammar.test.js",

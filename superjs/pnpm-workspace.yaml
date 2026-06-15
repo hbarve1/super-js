@@ -5,6 +5,21 @@ packages:
   # Standalone npm package (own lockfile + native oniguruma dep); not part of
   # the pnpm workspace. Built/tested/published via npm in its own directory.
   - '!apps/vscode-extension'
+# Force patched versions of transitive deps flagged by Dependabot. Pinned to
+# the lowest safe version within the existing major to avoid breaking peers.
+overrides:
+  esbuild: '>=0.28.1'
+  form-data: '>=4.0.6'
+  tmp: '>=0.2.7'
+  undici: '^6.24.0'
+  ws: '>=8.21.0'
+  cookie: '^0.7.0'
+  dompurify: '>=3.4.10'
+  postcss: '>=8.5.15'
+  # NOTE: js-yaml is intentionally NOT overridden — gray-matter pins js-yaml 3.x
+  # and calls the removed `safeLoad`, so forcing >=4.2.0 breaks the build. The
+  # remaining js-yaml advisory is a transitive dev/build-time alert with no
+  # gray-matter-compatible fix.
 allowBuilds:
   esbuild: false
   sharp: false
