@@ -1,0 +1,41 @@
+{
+  "name": "@superjsorg/cli",
+  "version": "0.1.0",
+  "description": "The Super.js command-line compiler — build, check, and explain .sjs files. A null-safe, sum-typed superset of JavaScript.",
+  "license": "GPL-3.0-or-later",
+  "author": "Himank Barve",
+  "homepage": "https://superjs.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hbarve1/super-js.git",
+    "directory": "superjs/apps/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/hbarve1/super-js/issues"
+  },
+  "keywords": [
+    "superjs",
+    "compiler",
+    "cli",
+    "javascript",
+    "typescript",
+    "null-safety",
+    "sum-types",
+    "pattern-matching"
+  ],
+  "type": "module",
+  "bin": {
+    "superjs": "./main.js"
+  },
+  "files": [
+    "main.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
