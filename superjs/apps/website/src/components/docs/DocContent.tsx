@@ -1,7 +1,9 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import remarkGfm from 'remark-gfm'
+import rehypeShiki from '@shikijs/rehype'
 import { CodeBlockWrapper } from '@/components/ui/CodeBlock'
+import { superjsDark, SHIKI_LANGS } from '@/lib/shiki'
 import { slugify } from '@/lib/docs'
 
 /** Give headings stable slug ids so the TOC anchors line up with the rendered DOM. */
@@ -50,13 +52,19 @@ const mdxComponents = {
   td: (props: ComponentPropsWithoutRef<'td'>) => (
     <td className="px-4 py-2 text-[#94a3b8] border border-white/10" {...props} />
   ),
-  code: (props: ComponentPropsWithoutRef<'code'>) => (
-    <code className="px-1.5 py-0.5 rounded text-[#fbbf24] bg-white/10 font-mono text-sm" {...props} />
-  ),
+  // Inline code has a plain string child; Shiki-highlighted block code (inside
+  // <pre>) has element children (the token <span>s) — only style the inline case
+  // so the per-token highlighting in code blocks is left untouched.
+  code: ({ children, ...props }: ComponentPropsWithoutRef<'code'>) =>
+    typeof children === 'string' ? (
+      <code className="px-1.5 py-0.5 rounded text-[#fbbf24] bg-white/10 font-mono text-sm" {...props}>
+        {children}
+      </code>
+    ) : (
+      <code {...props}>{children}</code>
+    ),
   hr: () => <hr className="border-white/10 my-8" />,
-  pre: (props: ComponentPropsWithoutRef<'pre'>) => (
-    <CodeBlockWrapper>{props.children}</CodeBlockWrapper>
-  ),
+  pre: (props: ComponentPropsWithoutRef<'pre'>) => <CodeBlockWrapper {...props} />,
 }
 
 export default function DocContent({ source }: { source: string }) {
@@ -65,7 +73,22 @@ export default function DocContent({ source }: { source: string }) {
       <MDXRemote
         source={source}
         components={mdxComponents}
-        options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+        options={{
+          mdxOptions: {
+            remarkPlugins: [remarkGfm],
+            rehypePlugins: [
+              [
+                rehypeShiki,
+                {
+                  theme: superjsDark,
+                  langs: [...SHIKI_LANGS],
+                  // Unknown/unspecified fences fall back to plain text, never throw.
+                  fallbackLanguage: 'text',
+                },
+              ],
+            ],
+          },
+        }}
       />
     </article>
   )

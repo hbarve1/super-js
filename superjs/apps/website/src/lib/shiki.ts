@@ -2,12 +2,15 @@ import { createHighlighter, type Highlighter, type ThemeRegistration } from 'shi
 
 export type CodeLang = 'typescript' | 'javascript' | 'bash' | 'json'
 
+/** Languages loaded into every Shiki highlighter (imperative + MDX rehype). */
+export const SHIKI_LANGS = ['typescript', 'javascript', 'tsx', 'jsx', 'bash', 'json'] as const
+
 /**
  * `superjs-dark` — bespoke Shiki theme matching the site's orange/amber palette
  * (SPEC §Phase B): keywords orange, strings amber, types emerald, on the dark
  * card background.
  */
-const superjsDark: ThemeRegistration = {
+export const superjsDark: ThemeRegistration = {
   name: 'superjs-dark',
   type: 'dark',
   colors: {
@@ -34,7 +37,7 @@ function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: [superjsDark],
-      langs: ['typescript', 'javascript', 'bash', 'json'],
+      langs: [...SHIKI_LANGS],
     })
   }
   return highlighterPromise
