@@ -2,9 +2,8 @@ import { Button } from '@/components/ui/Button'
 import { CopyCommand } from '@/components/ui/CopyCommand'
 
 /**
- * Non-animated hero — served on SSR, before mount, and for visitors with
- * `prefers-reduced-motion`. No scroll-pin, no R3F canvas: instant paint, no
- * scroll-jacking, no WebGL cost.
+ * The landing hero — a simple, robust, static section. No scroll-pin, no R3F
+ * canvas: instant server-rendered paint, no scroll-jacking, no WebGL cost.
  */
 export function StaticHero() {
   return (
@@ -14,7 +13,7 @@ export function StaticHero() {
       </div>
 
       <div className="relative z-10 max-w-3xl">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-orange-400">
+        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-orange">
           null-safe · sum types · zero runtime
         </p>
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
@@ -25,8 +24,8 @@ export function StaticHero() {
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-lg text-text-muted">
           A sound, null-safe superset of JavaScript — sum types, exhaustive{' '}
-          <code className="font-mono text-amber-300">match</code>, no{' '}
-          <code className="font-mono text-amber-300">any</code>. Compiles to plain JS with zero
+          <code className="font-mono text-amber">match</code>, no{' '}
+          <code className="font-mono text-amber">any</code>. Compiles to plain JS with zero
           runtime overhead.
         </p>
 
