@@ -52,7 +52,19 @@ export function apiHash(exportSignatures: readonly string[]): string {
  * invalidate doc-generation and LSP hover caches but never trigger a re-check.
  */
 export function docHash(source: string): string {
-  const blocks = source.match(/\/\*\*[\s\S]*?\*\//g) ?? [];
+  // Collect `/** … */` blocks with a linear indexOf scan instead of a regex.
+  // Equivalent to the old lazy `/\/\*\*[\s\S]*?\*\//g` (first `*/` closes each
+  // block) but with no backtracking — CodeQL-clean, guaranteed O(n).
+  const blocks: string[] = [];
+  let i = 0;
+  for (;;) {
+    const start = source.indexOf('/**', i);
+    if (start === -1) break;
+    const end = source.indexOf('*/', start + 3);
+    if (end === -1) break;
+    blocks.push(source.slice(start, end + 2));
+    i = end + 2;
+  }
   return sha256(blocks.join('\n'));
 }
 
