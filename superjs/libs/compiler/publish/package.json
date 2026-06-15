@@ -1,5 +1,5 @@
 {
-  "name": "@hbarve1/compiler",
+  "name": "@superjsorg/compiler",
   "version": "0.1.0",
   "description": "The Super.js compiler — a null-safe, sum-typed superset of JavaScript that compiles to plain JS. Programmatic compile/transform API.",
   "license": "GPL-3.0-or-later",
