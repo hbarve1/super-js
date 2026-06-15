@@ -20,6 +20,7 @@
     "@superjs/compiler": "workspace:*",
     "@superjs/diagnostics": "workspace:*",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.40.0",
     "geist": "^1.7.1",
     "gray-matter": "^4.0.3",
