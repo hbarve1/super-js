@@ -2,7 +2,22 @@ import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Navbar } from '@/components/ui/Navbar'
+import { GITHUB_REPO } from '@/lib/site'
 import './globals.css'
+
+/** Live GitHub star count, revalidated hourly. Returns undefined on failure. */
+async function getStars(): Promise<number | undefined> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return undefined
+    const data = (await res.json()) as { stargazers_count?: number }
+    return typeof data.stargazers_count === 'number' ? data.stargazers_count : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export const metadata: Metadata = {
   title: {
@@ -33,11 +48,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   readonly children: React.ReactNode
 }) {
+  const stars = await getStars()
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body className="bg-bg-deep text-text-primary font-sans antialiased" suppressHydrationWarning>
@@ -47,7 +63,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <Navbar />
+        <Navbar stars={stars} />
         {children}
       </body>
     </html>

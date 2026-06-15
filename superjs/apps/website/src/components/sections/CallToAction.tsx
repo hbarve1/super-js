@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/Button'
+import { CopyCommand } from '@/components/ui/CopyCommand'
+import { GITHUB_URL } from '@/lib/site'
 
 export function CallToAction() {
   return (
@@ -15,12 +17,15 @@ export function CallToAction() {
           </span>{' '}
           today.
         </h2>
-        <p className="text-white/50 mb-10 max-w-md mx-auto">
+        <p className="text-white/50 mb-8 max-w-md mx-auto">
           Type-safe by default. Zero configuration. Compiles to plain JavaScript.
         </p>
+        <div className="mb-8 flex justify-center">
+          <CopyCommand command="npm i -g superjs" />
+        </div>
         <div className="flex gap-3 justify-center">
           <Button href="/docs/intro" size="md">Read the Docs →</Button>
-          <Button href="https://github.com/hbarve1/super-js" variant="ghost" size="md">
+          <Button href={GITHUB_URL} variant="ghost" size="md">
             View on GitHub
           </Button>
         </div>
