@@ -67,7 +67,7 @@ export async function Features() {
             <h3 className="text-white font-semibold mb-1">{f.title}</h3>
             <p className="text-white/50 text-sm mb-4">{f.desc}</p>
             <div
-              className="text-xs rounded-lg overflow-hidden [&_pre]:p-3 [&_pre]:!bg-[#0d1117] [&_pre]:overflow-x-auto"
+              className="text-xs rounded-lg overflow-hidden [&_pre]:p-3 [&_pre]:!bg-bg-dark [&_pre]:overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: highlighted[i] }}
             />
           </div>

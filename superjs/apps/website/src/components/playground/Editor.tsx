@@ -106,12 +106,12 @@ export function Editor({ value, onChange, onRun, diagnostics = [] }: EditorProps
 
   return (
     <div className="flex flex-col h-full border border-white/10 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#161b22]">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-bg-elevated">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500/60" />
           <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
           <div className="w-3 h-3 rounded-full bg-green-500/60" />
-          <span className="ml-2 text-xs text-[#94a3b8] font-mono">playground.sjs</span>
+          <span className="ml-2 text-xs text-text-muted font-mono">playground.sjs</span>
         </div>
         <button
           type="button"

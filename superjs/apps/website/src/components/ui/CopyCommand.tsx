@@ -20,10 +20,10 @@ export function CopyCommand({ command = 'npm i -g superjs', className = '' }: Co
 
   return (
     <div
-      className={`inline-flex items-center gap-3 rounded-lg border border-white/10 bg-[#0d1117] px-4 py-2.5 font-mono text-sm ${className}`}
+      className={`inline-flex items-center gap-3 rounded-lg border border-white/10 bg-bg-dark px-4 py-2.5 font-mono text-sm ${className}`}
     >
       <span className="select-none text-white/40">$</span>
-      <code className="text-[#f8fafc]">{command}</code>
+      <code className="text-text-primary">{command}</code>
       <button
         type="button"
         onClick={copy}

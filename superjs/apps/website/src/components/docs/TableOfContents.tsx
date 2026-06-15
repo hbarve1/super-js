@@ -30,7 +30,7 @@ export default function TableOfContents({ headings }: { headings: TocItem[] }) {
 
   return (
     <aside className="hidden xl:block w-56 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4" data-pagefind-ignore>
-      <div className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8] mb-4">
+      <div className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-4">
         On this page
       </div>
       <ul className="space-y-1">
@@ -40,7 +40,7 @@ export default function TableOfContents({ headings }: { headings: TocItem[] }) {
               href={`#${h.id}`}
               className={[
                 'block text-sm py-0.5 transition-colors',
-                activeId === h.id ? 'text-[#f97316]' : 'text-[#94a3b8] hover:text-[#f8fafc]',
+                activeId === h.id ? 'text-orange' : 'text-text-muted hover:text-text-primary',
               ].join(' ')}
             >
               {h.text}

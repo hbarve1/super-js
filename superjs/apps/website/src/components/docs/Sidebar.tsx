@@ -10,7 +10,7 @@ export function DocsNavList({ items, onLinkClick }: { items: NavItem[]; onLinkCl
   const pathname = usePathname()
   return (
     <nav data-pagefind-ignore>
-      <div className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8] mb-4 px-3">
+      <div className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-4 px-3">
         Documentation
       </div>
       <ul className="space-y-1">
@@ -24,8 +24,8 @@ export function DocsNavList({ items, onLinkClick }: { items: NavItem[]; onLinkCl
                 className={[
                   'block px-3 py-2 rounded-md text-sm transition-colors',
                   isActive
-                    ? 'bg-[#f97316]/15 text-[#f97316] font-medium'
-                    : 'text-[#94a3b8] hover:text-[#f8fafc] hover:bg-white/5',
+                    ? 'bg-orange/15 text-orange font-medium'
+                    : 'text-text-muted hover:text-text-primary hover:bg-white/5',
                 ].join(' ')}
               >
                 {item.title}
@@ -66,17 +66,17 @@ export default function MobileDocsNav({ items }: { items: NavItem[] }) {
       />
       <div
         className={[
-          'fixed top-0 left-0 z-50 h-full w-72 bg-[#0d1117] border-r border-white/10 overflow-y-auto py-8 px-4 transition-transform duration-300 ease-in-out',
+          'fixed top-0 left-0 z-50 h-full w-72 bg-bg-dark border-r border-white/10 overflow-y-auto py-8 px-4 transition-transform duration-300 ease-in-out',
           open ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >
         <div className="flex items-center justify-between mb-6">
-          <span className="font-semibold text-[#f8fafc]">Documentation</span>
+          <span className="font-semibold text-text-primary">Documentation</span>
           <button
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close documentation menu"
-            className="p-1 text-[#94a3b8] hover:text-white"
+            className="p-1 text-text-muted hover:text-white"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />

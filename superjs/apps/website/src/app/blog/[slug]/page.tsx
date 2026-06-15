@@ -58,8 +58,8 @@ export default async function BlogPostPage({ params }: PageProps) {
     <main id="main-content" className="min-h-screen bg-bg-deep pt-24 pb-16">
       <JsonLd data={structuredData} />
       <div className="max-w-3xl mx-auto px-6">
-        <time className="text-xs text-[#94a3b8] font-mono">{post.frontmatter.date}</time>
-        <h1 className="text-4xl font-bold text-[#f8fafc] mt-2 mb-8">{post.frontmatter.title}</h1>
+        <time className="text-xs text-text-muted font-mono">{post.frontmatter.date}</time>
+        <h1 className="text-4xl font-bold text-text-primary mt-2 mb-8">{post.frontmatter.title}</h1>
         <DocContent source={post.content} />
       </div>
     </main>
