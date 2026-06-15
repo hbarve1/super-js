@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/playground', label: 'Playground' },
   { href: '/errors', label: 'Errors' },
   { href: '/blog', label: 'Blog' },
+  { href: '/community', label: 'Community' },
 ] as const
 
 function formatStars(n: number): string {
