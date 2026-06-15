@@ -1,4 +1,8 @@
-name: Deploy Website
+name: Website CI
+
+# Deployment is handled by Vercel's Git integration (Root Directory
+# superjs/apps/website). This workflow only validates the website builds, so
+# breakage is caught on PRs before Vercel deploys main.
 
 on:
   push:
@@ -6,14 +10,14 @@ on:
     paths:
       - 'superjs/apps/website/**'
       - '.github/workflows/website.yml'
+  pull_request:
+    paths:
+      - 'superjs/apps/website/**'
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
     defaults:
       run:
         working-directory: superjs
@@ -21,6 +25,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -31,13 +37,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build (Cloudflare Pages)
-        run: pnpm --filter @superjs/website run build:cf
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: superjs/apps/website
-          command: pages deploy .vercel/output/static --project-name superjs-website
+      - name: Typecheck, lint & build the website
+        run: pnpm nx run-many -t typecheck lint build --projects=@superjs/website

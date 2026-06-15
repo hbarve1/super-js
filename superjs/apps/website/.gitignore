@@ -9,3 +9,7 @@ next-env.d.ts
 
 # Pagefind index (generated post-build)
 /public/pagefind/
+
+# OpenNext / wrangler build output (CF path, retained for local use)
+/.open-next/
+/.wrangler/
