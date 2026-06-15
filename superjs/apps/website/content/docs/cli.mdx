@@ -70,6 +70,24 @@ The `json` format emits one object per line:
 }
 ```
 
+### `translate`
+
+Translate TypeScript `.d.ts` declaration files into SuperJS `.d.sjs`. Output is
+written next to each source file, or under `--out-dir`.
+
+```bash
+superjs translate types.d.ts                 # → types.d.sjs
+superjs translate types.d.ts --out-dir gen   # → gen/types.d.sjs
+```
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--out-dir <dir>` | path | alongside source | Directory for the `.d.sjs` output |
+
+TypeScript forms SuperJS doesn't model (intersection, conditional, mapped,
+`infer`, `any`) degrade to `dynamic` and are reported as warnings — never
+silently dropped.
+
 ### `explain`
 
 Print the full reference for a diagnostic code.
@@ -98,6 +116,12 @@ and whether a `superjs.config.json` is present.
 ```bash
 superjs doctor
 ```
+
+### Planned commands
+
+`superjs doc` (sound, type-aware documentation generation — [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md)),
+`lint`, `format`, and `test` are reserved for later stages; invoking one today
+prints a not-yet-implemented notice and exits non-zero.
 
 ## Exit codes
 

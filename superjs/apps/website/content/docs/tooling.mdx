@@ -69,6 +69,31 @@ superjs check src                 # type-check a directory
 superjs check src --format json   # machine-readable diagnostics for CI
 ```
 
+### `superjs translate`
+
+Translates TypeScript `.d.ts` declaration files into SuperJS `.d.sjs`, so you can
+consume existing typed packages. Each file is written next to its source, or
+under `--out-dir`.
+
+```bash
+superjs translate types.d.ts                 # → types.d.sjs
+superjs translate types.d.ts --out-dir gen   # → gen/types.d.sjs
+```
+
+| Flag | Description |
+|------|-------------|
+| `--out-dir <dir>` | Write the `.d.sjs` output to this directory instead of alongside the source |
+
+TypeScript constructs SuperJS doesn't model (intersection, conditional, mapped,
+`infer`, `any`, …) degrade to `dynamic` and are reported as warnings — never
+silently dropped:
+
+```text
+$ superjs translate types.d.ts
+  warning: unsupported type `A & B` mapped to `dynamic`
+translated types.d.ts → types.d.sjs
+```
+
 ### `superjs explain`
 
 Prints the full spec write-up for a diagnostic code (description, example, fix).
@@ -86,9 +111,11 @@ Writes a default `superjs.config.json` into the current directory.
 
 Reports environment health — Node version, config presence and validity.
 
-> **Planned (Stage 3+):** `superjs lint`, `superjs format`, and `superjs test`
-> are reserved and currently print a not-yet-implemented notice. Linting and
-> formatting are tracked on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
+> **Planned (Stage 3+):** `superjs doc` (sound, type-aware code-documentation
+> generation — see [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md)),
+> `superjs lint`, `superjs format`, and `superjs test` are reserved and currently
+> print a not-yet-implemented notice. They're tracked on the
+> [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 
 ## Project Configuration
 
