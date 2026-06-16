@@ -15,7 +15,7 @@ SuperJS is **not** TypeScript with a different extension. It deliberately bans t
 - **Strict superset of JavaScript** — valid JS is valid SJS, no migration cliff
 - **Sound null safety** — types are non-nullable by default; `T?` is the explicit nullable form
 - **Sum types and match expressions** — algebraic variants with exhaustiveness checking
-- **Go-style structural interfaces** — implicit satisfaction, no `implements` boilerplate
+- **Go-style structural object types** — defined with `type X { … }`, implicit satisfaction, no `implements` boilerplate
 - **Gradual static typing** — annotate where you want guarantees; untyped code still runs
 - **`dynamic` instead of `any`** — runtime-checked, not a soundness hole
 - **JSX on by default** — no plugin or config required
@@ -28,11 +28,11 @@ SuperJS is **not** TypeScript with a different extension. It deliberately bans t
 | Banned | Reason | SJS Alternative |
 |--------|--------|-----------------|
 | `any` | Soundness hole | `dynamic` (runtime-checked) |
-| Mapped types `{ [K in keyof T]: ... }` | Complexity without safety | Structural interfaces |
+| Mapped types `{ [K in keyof T]: ... }` | Complexity without safety | Structural object types |
 | Conditional types `T extends U ? A : B` | Unpredictable | Sum types |
 | Template literal types | Complexity | — |
 | `infer`, `namespace`, TS-style `enum` | Complexity | Explicit constructs |
-| Intersection types `A & B` | Hidden unsoundness | Interface composition |
+| Intersection types `A & B` | Hidden unsoundness | `type X extends A, B { … }` |
 | `!` non-null assertion | Bypasses null safety | Narrowing |
 
 ---
@@ -104,10 +104,10 @@ const msg = match result {
 console.log(msg)
 ```
 
-### Generics and Structural Interfaces
+### Generics and Structural Object Types
 
 ```sjs
-interface Comparable<T> {
+type Comparable<T> {
   compareTo(other: T): number
 }
 

@@ -46,7 +46,7 @@
 
 ### Nominal vs structural typing
 
-A class in SJS introduces both a value (the constructor function) and a type (the instance shape). Class types are nominal for `instanceof` checks and subtype hierarchy tracking. They are structural for interface conformance: an instance of class `C` is assignable to interface `I` if `C` has all members required by `I` with compatible types, regardless of whether any explicit `implements` clause exists. See `specs/language/006-interfaces.md`.
+A class in SJS introduces both a value (the constructor function) and a type (the instance shape). Class types are nominal for `instanceof` checks and subtype hierarchy tracking. They are structural for object-type conformance: an instance of class `C` is assignable to an object type `I` (a `type` brace-form declaration) if `C` has all members required by `I` with compatible types, regardless of whether any explicit `implements` clause exists. SJS has no `implements` clause; conformance is purely structural. See `specs/language/006-interfaces.md`.
 
 ### Single inheritance
 

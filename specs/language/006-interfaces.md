@@ -1,17 +1,28 @@
-# 006 — Interfaces
+# 006 — Object Types (`type` brace form)
 
 **Status:** Implemented (Stage 1 type-checker)
-**Grammar:** `specs/grammar.ebnf` §InterfaceDecl, §InterfaceMember
+**Grammar:** `specs/grammar.ebnf` §TypeDecl, §ObjectTypeDecl, §InterfaceMember
 
 ---
 
 ## Syntax
 
+SuperJS has a single declaration keyword, `type`, with two forms. The **brace / object form** described here declares a named structural object type — the role that the `interface` keyword used to fill. (The `interface` keyword has been removed; using it is a parse error, `SJS-P001`.) The other form is the **alias form** `type X = …`, covered under "Object form vs alias form" below.
+
+The brace form has **no `=`**: the optional `extends` clause and the member body follow the name directly.
+
 ```ebnf
-<InterfaceDecl>   ::= "interface" <Identifier>
+<TypeDecl>        ::= <ObjectTypeDecl>
+                    | <TypeAliasDecl>
+
+<ObjectTypeDecl>  ::= "type" <Identifier>
                       [ <TypeParameters> ]
                       [ "extends" <TypeRef> { "," <TypeRef> } ]
                       "{" { <InterfaceMember> } "}"
+
+<TypeAliasDecl>   ::= "type" <Identifier>
+                      [ <TypeParameters> ]
+                      "=" <Type>
 
 <InterfaceMember> ::= <InterfaceProperty>
                     | <InterfaceMethod>
@@ -36,12 +47,12 @@
 
 ### Structural typing — Go-style conformance
 
-SJS uses **structural typing** for interfaces. A value satisfies an interface if it provides all required members with compatible types. There is no `implements` keyword; conformance is checked implicitly at every use site where an interface type is expected.
+SJS uses **structural typing** for object types. A value satisfies an object type if it provides all required members with compatible types. There is no `implements` keyword; conformance is checked implicitly at every use site where the object type is expected.
 
-The interface name is a type annotation only. It has no runtime representation, generates no code, and cannot appear as an expression.
+The type name is a type annotation only. It has no runtime representation, generates no code, and cannot appear as an expression.
 
 ```sjs
-interface Drawable {
+type Drawable {
   draw(): void
 }
 
@@ -62,12 +73,12 @@ The compiler checks, at the call `render(new Circle(5))`, that `Circle` provides
 
 ### Required vs optional members
 
-A member without `?` is **required**. Every value of the interface type must provide this member.
+A member without `?` is **required**. Every value of the object type must provide this member.
 
 A member with `?` is **optional**. The property may be absent. When absent, accessing it yields `undefined`. When present, its type is `T` (the declared type, narrowed). Inside the body of a function or block that has narrowed the member to be present, its type is `T`.
 
 ```sjs
-interface Config {
+type Config {
   host: string        // required
   port?: number       // optional — number | undefined
   tls?: boolean       // optional
@@ -79,7 +90,7 @@ interface Config {
 A `readonly` property cannot be reassigned after the object is constructed. This is a **type-level constraint only** — the JS output does not use `Object.defineProperty` or freeze; it is not enforced at runtime.
 
 ```sjs
-interface Point {
+type Point {
   readonly x: number
   readonly y: number
 }
@@ -92,56 +103,58 @@ function translate(p: Point, dx: number, dy: number): Point {
 
 ### Index signatures
 
-An index signature `[key: string]: T` declares that all string-keyed properties on the object have type `T`. Named properties on the same interface must also be assignable to `T` when an index signature is present.
+An index signature `[key: string]: T` declares that all string-keyed properties on the object have type `T`. Named properties in the same object type must also be assignable to `T` when an index signature is present.
 
 ```sjs
-interface StringMap {
+type StringMap {
   [key: string]: string
 }
 
-interface Headers {
+type Headers {
   [key: string]: string
   "content-type": string   // ✓ — string is compatible with index value type
 }
 ```
 
-### Interface extension
+### Object type extension
 
-An interface may `extend` one or more other interfaces. The extended interface inherits all members from each parent. If two parents declare the same member name, the types must be identical; otherwise a compile-time error is emitted.
+An object type may `extend` one or more other object types. The extended type inherits all members from each parent. If two parents declare the same member name, the types must be identical; otherwise a compile-time error is emitted. Note the brace form takes no `=` — the `extends` clause and body follow the name directly.
 
 ```sjs
-interface Shape {
+type Shape {
   area(): number
 }
 
-interface Colored {
+type Colored {
   color: string
 }
 
-interface ColoredShape extends Shape, Colored {
+type ColoredShape extends Shape, Colored {
   // has: area(): number, color: string
   label?: string   // additional member
 }
 ```
 
-### Interfaces vs type aliases
+### Object form vs alias form
 
-| | Interface | Type alias (`type X = ...`) |
+The two forms of `type` serve different purposes:
+
+| | Object form (`type X { … }`) | Alias form (`type X = …`) |
 |---|---|---|
-| Can extend | Yes (`extends`) | No (use union) |
-| Can be implemented by class | Yes (structural) | Only if alias is object type |
-| Can alias primitives | No | Yes |
-| Can alias unions/sum types | No | Yes |
+| Composes other types | Yes (`extends A, B`) | No (use union) |
+| Can be satisfied by a class | Yes (structural) | Only if the alias is itself an object type |
+| Can name a primitive | No | Yes (`type Id = string`) |
+| Can name a union / sum type | No | Yes (`type Result<T,E> = Ok(T) \| Err(E)`) |
 | Declaration merging | Planned (v2) | Not supported |
 
-Interfaces are preferred for objects and classes. Type aliases are preferred for unions, sum types, primitive wrappers, and utility types.
+The object form is preferred for objects and classes. The alias form is preferred for unions, sum types, primitive wrappers, and utility types.
 
-### Generic interfaces
+### Generic object types
 
-Interfaces may carry type parameters. See `005-generics.md` for the full rules. Generic interfaces follow the same structural conformance rules — a value satisfies a generic interface instantiation if it provides all members with types compatible with the instantiated form.
+The object form may carry type parameters. See `005-generics.md` for the full rules. Generic object types follow the same structural conformance rules — a value satisfies a generic instantiation if it provides all members with types compatible with the instantiated form.
 
 ```sjs
-interface Container<T> {
+type Container<T> {
   value: T
   transform<U>(fn: (x: T) => U): Container<U>
 }
@@ -149,9 +162,9 @@ interface Container<T> {
 
 ### No `implements` keyword
 
-SJS does not support `implements`. Classes do not declare which interfaces they satisfy. Adding `implements` to a class declaration is a **parse error**.
+SJS does not support `implements`. Classes do not declare which object types they satisfy. Adding `implements` to a class declaration is a **parse error**.
 
-The rationale: structural typing makes `implements` redundant. All conformance checking occurs at use sites. This reduces boilerplate and decouples class definitions from the interfaces they happen to satisfy.
+The rationale: structural typing makes `implements` redundant. All conformance checking occurs at use sites. This reduces boilerplate and decouples class definitions from the object types they happen to satisfy.
 
 ---
 
@@ -160,7 +173,7 @@ The rationale: structural typing makes `implements` redundant. All conformance c
 ### Structural satisfaction
 
 ```
-interface I { m1: T1; m2: T2; ... }
+type I { m1: T1; m2: T2; ... }
 Γ ⊢ e : { m1: S1; m2: S2; ...; mN: SN; ... }
 S1 <: T1    S2 <: T2    ...
 ─────────────────────────────────────────────── (structural-satisfy)
@@ -172,7 +185,7 @@ A value satisfies `I` if it structurally provides every required member with a c
 ### Optional member access
 
 ```
-interface I { p?: T }
+type I { p?: T }
 Γ ⊢ e : I
 ────────────────────────────────── (optional-access)
 Γ ⊢ e.p : T | undefined
@@ -181,18 +194,18 @@ interface I { p?: T }
 ### Readonly enforcement
 
 ```
-interface I { readonly p: T }
+type I { readonly p: T }
 Γ ⊢ e : I
 ────────────────────────────────── (readonly-write-fail)
 Γ ⊢ (e.p = v) : SJS-E002   (* assignment to readonly property *)
 ```
 
-### Interface extension (subtype)
+### Object type extension (subtype)
 
 ```
-interface J extends I
+type J extends I
 Γ ⊢ e : J
-────────────────────── (interface-extends-sub)
+────────────────────── (extends-sub)
 Γ ⊢ e : I
 ```
 
@@ -206,17 +219,17 @@ A value of type `J` is assignable to `I` if `J extends I`, because `J` is guaran
 Γ ⊢ e : { a: A }
 ```
 
-Objects with more members are assignable to interfaces with fewer members (open-world structural subtyping).
+Objects with more members are assignable to object types with fewer members (open-world structural subtyping).
 
 ---
 
 ## JS Lowering (Prototype)
 
-Interfaces are **erased entirely**. No runtime representation is generated. No `implements` check occurs. The compiled JS relies on duck typing — if the object has the right properties, it works.
+Object types are **erased entirely**. No runtime representation is generated. No `implements` check occurs. The compiled JS relies on duck typing — if the object has the right properties, it works.
 
 ```sjs
 // SJS input
-interface Serializable {
+type Serializable {
   serialize(): string
 }
 
@@ -234,7 +247,7 @@ encode(new User("Alice"))
 ```
 
 ```javascript
-// JS output — interface Serializable is gone
+// JS output — type Serializable is gone
 function encode(s) {
   return s.serialize();
 }
@@ -250,11 +263,13 @@ encode(new User("Alice"));
 
 `readonly` modifiers are erased. They exist only in the type-checker. The JS property is writable at runtime.
 
+> Note: in JS lowering, "interface" below refers to the AST node for an object-type declaration (internally `ObjectTypeDecl`). The member nodes are `InterfaceProperty` / `InterfaceMethod`.
+
 ---
 
 ## LLVM Lowering (Future)
 
-Interface conformance is verified statically by the type-checker. No vtable is generated in v1. At the LLVM level, a call through an interface type is resolved to a **direct function call** after monomorphization — the compiler knows the concrete type at every call site.
+Object-type conformance is verified statically by the type-checker. No vtable is generated in v1. At the LLVM level, a call through an object type is resolved to a **direct function call** after monomorphization — the compiler knows the concrete type at every call site.
 
 ```llvm
 ; render(d: Drawable) called with a Circle
@@ -271,7 +286,7 @@ Post-1.0 (polymorphic dispatch): when the concrete type cannot be determined sta
 call void %draw_fn(%Drawable* %d)
 ```
 
-`readonly` fields: the LLVM backend may place `readonly` interface properties in read-only data segments and elide stores.
+`readonly` fields: the LLVM backend may place `readonly` object-type properties in read-only data segments and elide stores.
 
 ---
 
@@ -279,11 +294,12 @@ call void %draw_fn(%Drawable* %d)
 
 | Code | When emitted |
 |------|-------------|
-| `SJS-E002` | Value assigned to interface type is missing a required member |
-| `SJS-E002` | Assignment to a `readonly` interface property |
-| `SJS-E005` | `A & B` intersection type used where interface extension should be used |
+| `SJS-P001` | `interface` keyword used (removed — use the `type` brace form) |
+| `SJS-E002` | Value assigned to an object type is missing a required member |
+| `SJS-E002` | Assignment to a `readonly` property |
+| `SJS-E005` | `A & B` intersection type used where object-type extension should be used (`type X extends A, B { … }`) |
 | Parse error | `implements` keyword on a class declaration (not supported in SJS) |
-| Type error | Interface extension conflict: same member name with incompatible types |
+| Type error | Object-type extension conflict: same member name with incompatible types |
 | Type error | Index signature value type incompatible with a named property type |
 
 ---
@@ -293,8 +309,8 @@ call void %draw_fn(%Drawable* %d)
 ### Valid
 
 ```sjs
-// ✓ Basic interface and structural conformance
-interface Printable {
+// ✓ Basic object type and structural conformance
+type Printable {
   print(): void
 }
 
@@ -307,12 +323,12 @@ class Document {
 function output(p: Printable): void { p.print() }
 output(new Document("hello"))    // ✓ structural match
 
-// ✓ Object literal satisfying interface
-interface Point { x: number; y: number }
+// ✓ Object literal satisfying an object type
+type Point { x: number; y: number }
 const origin: Point = { x: 0, y: 0 }
 
 // ✓ Optional and readonly members
-interface Config {
+type Config {
   readonly apiUrl: string
   timeout?: number
   retries?: number
@@ -321,24 +337,24 @@ interface Config {
 const cfg: Config = { apiUrl: "https://api.example.com" }
 const t: number | undefined = cfg.timeout
 
-// ✓ Interface extension (multiple)
-interface Shape { area(): number }
-interface Colored { color: string }
-interface Labeled { label: string }
+// ✓ Object-type extension (multiple)
+type Shape { area(): number }
+type Colored { color: string }
+type Labeled { label: string }
 
-interface TaggedShape extends Shape, Colored, Labeled {
+type TaggedShape extends Shape, Colored, Labeled {
   tag: string
 }
 
 // ✓ Index signature
-interface Registry {
+type Registry {
   [key: string]: string
 }
 const r: Registry = {}
 r["foo"] = "bar"
 
-// ✓ Generic interface
-interface Container<T> {
+// ✓ Generic object type
+type Container<T> {
   value: T
   isEmpty(): boolean
 }
@@ -355,8 +371,8 @@ function use<T>(c: Container<T>): void {
   }
 }
 
-// ✓ Class satisfying interface — no "implements" needed
-interface Comparable {
+// ✓ Class satisfying an object type — no "implements" needed
+type Comparable {
   compareTo(other: Comparable): number
 }
 
@@ -377,7 +393,7 @@ function sort(items: Comparable[]): Comparable[] {
 
 ```sjs
 // ✗ SJS-E002: missing required member
-interface Animal {
+type Animal {
   name: string
   speak(): string
 }
@@ -386,18 +402,22 @@ const cat: Animal = { name: "Whiskers" }
 //  ^^^  SJS-E002: property 'speak' is missing — Animal requires speak(): string
 
 // ✗ SJS-E002: assigning to readonly property
-interface Immutable { readonly id: number }
+type Immutable { readonly id: number }
 function mutate(x: Immutable): void {
   x.id = 99   // SJS-E002: cannot assign to readonly property 'id'
 }
 
-// ✗ SJS-E005: intersection type instead of interface extension
+// ✗ SJS-E005: intersection type instead of object-type extension
 type Both = Shape & Colored
 //               ^ SJS-E005: intersection types are not permitted in SJS
-//   Use: interface Both extends Shape, Colored {}
+//   Use: type Both extends Shape, Colored {}
+
+// ✗ SJS-P001: the 'interface' keyword has been removed
+interface Drawable { draw(): void }
+//  ^^^^^^^^^  SJS-P001: 'interface' is not a keyword — use: type Drawable { draw(): void }
 
 // ✗ Parse error: implements keyword
-interface Runnable { run(): void }
+type Runnable { run(): void }
 
 class Task implements Runnable {   // Parse error: 'implements' is not supported in SJS
   run(): void { /* ... */ }        // Structural conformance is automatic — remove 'implements'

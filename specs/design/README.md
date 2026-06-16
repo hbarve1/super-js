@@ -11,7 +11,7 @@ ADRs document the *why* behind key design choices — the constraints considered
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-001](ADR-001-dynamic-not-any.md) | `dynamic` replaces `any` | Accepted |
-| [ADR-002](ADR-002-structural-interfaces.md) | Structural interfaces without `implements` | Accepted |
+| [ADR-002](ADR-002-structural-interfaces.md) | Structural object types without `implements` | Accepted |
 | [ADR-003](ADR-003-sum-type-runtime-encoding.md) | Sum type runtime encoding as `{ _tag, _0, ... }` | Accepted |
 | [ADR-004](ADR-004-banned-ts-constructs.md) | Banned TypeScript constructs | Accepted |
 | [ADR-005](ADR-005-match-over-switch.md) | `match` expression over `switch` for sum types | Accepted |
@@ -23,7 +23,7 @@ ADRs document the *why* behind key design choices — the constraints considered
 **ADR-001 — `dynamic` not `any`**  
 `any` is permanently banned (SJS-E004). The `dynamic` keyword is the explicit, traceable escape hatch for interop boundaries. It propagates through operations and emits SJS-W001 on implicit use in `--strict` mode.
 
-**ADR-002 — Structural interfaces**  
+**ADR-002 — Structural object types**  
 Go-style structural conformance: no `implements` keyword. A class satisfies an interface if it provides all required members. Conformance is checked at use sites, not class definitions. Interface combination uses `extends`, not `A & B`.
 
 **ADR-003 — Sum type encoding**  

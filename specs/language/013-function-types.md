@@ -16,7 +16,7 @@
 <FunctionTypeParam>     ::= <Identifier> [ "?" ] ":" <Type>
 ```
 
-Function types appear wherever a `<Type>` is expected: variable annotations, parameter types, return types, interface properties, and type aliases.
+Function types appear wherever a `<Type>` is expected: variable annotations, parameter types, return types, object type (`type` brace form) members, and type aliases.
 
 Generic function types use `<TypeParameters>` from the grammar:
 

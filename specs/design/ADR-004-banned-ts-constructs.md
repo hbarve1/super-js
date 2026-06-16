@@ -42,7 +42,7 @@ Twelve TypeScript constructs are permanently banned in SJS. They are rejected at
 
 **`namespace` (SJS-E012):** TypeScript's pre-ES-module bundling mechanism. Compiles to an IIFE that mutates a shared object. Conflicts with the ES module system that SJS uses (`import`/`export`). No valid LLVM representation. Replaced by ES modules and barrel files.
 
-**`A & B` intersection types (SJS-E005):** Can produce unverifiable merged shapes (e.g., `{ x: string } & { x: number }` produces `{ x: never }`). Anonymous merged types have no stable name or declared layout, blocking LLVM monomorphization. `interface C extends A, B {}` is the named, declared alternative.
+**`A & B` intersection types (SJS-E005):** Can produce unverifiable merged shapes (e.g., `{ x: string } & { x: number }` produces `{ x: never }`). Anonymous merged types have no stable name or declared layout, blocking LLVM monomorphization. `type C extends A, B {}` is the named, declared alternative.
 
 **Conditional types `T extends U ? A : B` (SJS-E008):** Make the type system Turing-complete. TypeScript uses depth-limit heuristics to avoid non-termination. SJS targets decidable single-pass type checking. Explicit overloads or union return types are the alternatives.
 

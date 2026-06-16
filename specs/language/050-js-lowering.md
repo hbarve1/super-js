@@ -22,7 +22,7 @@ All type-level syntax is removed. The resulting AST is structurally identical to
 | SJS construct | JS output |
 |---|---|
 | `: T` annotation on variable / parameter / return | removed |
-| `interface I {}` declaration | removed entirely |
+| `type I {}` object-type declaration (brace form) | removed entirely |
 | `type X = ...` alias | removed entirely |
 | `import type { }` / `export type { }` | removed entirely |
 | `abstract` modifier on class or method | removed |
@@ -32,7 +32,7 @@ All type-level syntax is removed. The resulting AST is structurally identical to
 | `<T>` type parameter list on function / class / method | removed |
 | `expr as T` type assertion | `expr` (assertion removed, expression kept) |
 | `T?` nullable shorthand annotation | annotation removed |
-| `[key: string]: T` index signature in interface / object | removed |
+| `[key: string]: T` index signature in object type / object | removed |
 | Non-null assertion suffix `!` | forbidden (SJS-E011 before erasure) |
 
 Note: `private` keyword (access modifier) is removed. The JS private-field syntax `#field` is **not** a modifier — it is a distinct identifier form and is preserved as-is.

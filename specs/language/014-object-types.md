@@ -23,13 +23,13 @@
                         ":" <Type> ";"
 ```
 
-Object type literals are interchangeable with single-interface declarations for structural compatibility purposes.
+Object type literals are interchangeable with single object-type declarations (the `type` brace form, see `006-interfaces.md`) for structural compatibility purposes. The `<InterfaceMethod>` rule above is the shared method-signature rule, reused by both object type literals and the `type` brace form.
 
 ---
 
 ## Semantics
 
-An object type literal describes the structural shape required of a value. SJS uses **structural typing** for object types and interfaces: a value satisfies an object type if it provides all required members with compatible types, regardless of how the value was constructed or declared.
+An object type literal describes the structural shape required of a value. SJS uses **structural typing** for all object types — both anonymous literals and the named `type` brace form: a value satisfies an object type if it provides all required members with compatible types, regardless of how the value was constructed or declared.
 
 ### Required property
 
@@ -167,7 +167,7 @@ Object type annotations are erased. Object literals lower verbatim. `readonly` i
 
 ```sjs
 // SJS input
-interface Config {
+type Config {
   readonly host: string;
   port?: number;
 }
@@ -228,7 +228,7 @@ Index signatures lower to a hash map structure (`%sjs_map`) keyed by string, app
 const point: { x: number; y: number; } = { x: 3, y: 4 };
 
 // ✓ Optional property
-interface User {
+type User {
   name: string;
   age?: number;
 }
@@ -236,7 +236,7 @@ const u: User = { name: "Alice" };
 const age: number | undefined = u.age;
 
 // ✓ Readonly property
-interface Entity {
+type Entity {
   readonly id: number;
   label: string;
 }
@@ -254,12 +254,12 @@ const raw = { x: 1, y: 2, z: 3 };
 const p: Point = raw;  // ok — raw is not a fresh literal at this point
 
 // ✓ Structural satisfaction without explicit annotation
-interface Printable { toString(): string; }
+type Printable { toString(): string; }
 function print(p: Printable): void { console.log(p.toString()); }
 print({ toString() { return "hello"; } });  // satisfies Printable structurally
 
 // ✓ Object type with method
-interface Scalable {
+type Scalable {
   scale(factor: number): Scalable;
 }
 ```
@@ -273,7 +273,7 @@ const bad: Point = { x: 1, y: 2, z: 3 };
 //                               ^ SJS-W006: z is not in Point
 
 // ✗ SJS-E002: readonly property written after construction
-interface Frozen { readonly val: number; }
+type Frozen { readonly val: number; }
 const f: Frozen = { val: 10 };
 f.val = 20;  // SJS-E002: val is readonly
 

@@ -5,7 +5,7 @@ type HttpError =
 
 type Result<T, E> = Ok(T) | Err(E)
 
-interface User {
+type User {
   id: number
   name: string
   email: string?
