@@ -17,7 +17,7 @@ SuperJS is **not** TypeScript. It deliberately discards the parts of TypeScript 
 |---------|-----------|---------|
 | `any` | Allowed (soundness hole) | Banned — use `dynamic` instead |
 | Null safety | Opt-in (`strictNullChecks`) | On by default; `T?` is the nullable form |
-| Mapped types | Supported | Banned — use interfaces |
+| Mapped types | Supported | Banned — use object types |
 | Conditional types | Supported | Banned — use sum types |
 | Algebraic sum types | Not supported | First-class: `type R<T,E> = Ok(T) \| Err(E)` |
 | Match expressions | Not supported | Built-in with exhaustiveness checking |
@@ -122,6 +122,6 @@ Config lives in `superjs.config.json`:
 ## What's Next
 
 - [Language Reference](./language-reference) — full syntax and type system documentation
-- [Type System](./type-system) — null safety, sum types, generics, and structural interfaces
+- [Type System](./type-system) — null safety, sum types, generics, and structural object types
 - [Tooling](./tooling) — CLI options, config schema, and diagnostic codes
 - [Examples](./examples) — practical SJS code samples

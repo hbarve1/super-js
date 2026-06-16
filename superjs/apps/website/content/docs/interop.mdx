@@ -51,10 +51,10 @@ Constructs that map soundly are preserved; constructs that don't are lowered to
 | `unknown` | `unknown` | Top type — must be narrowed before use |
 | `any` | `dynamic` | Marked `// @sjs:dynamic reason="any"` |
 | `A \| B` unions | `A \| B` | Preserved |
-| `interface` / `type` aliases | preserved | 1:1 |
+| `interface` / `type` aliases | `type` (brace or alias form) | TS `interface X {}` → SJS `type X {}`; `type` aliases stay aliases |
 | `<T>`, `<T extends U>`, `<T = D>` | preserved | Generics, constraints, defaults |
 | `enum` | string/number union | `enum E { A, B }` → `"A" \| "B"` |
-| `A & B` intersection | merged interface, else `dynamic` | Auto-merges when fields don't conflict |
+| `A & B` intersection | merged object type, else `dynamic` | Auto-merges when fields don't conflict |
 | Conditional / mapped / template-literal types | `dynamic` | Marked with the matching reason |
 | `infer`, `keyof T`, `T[K]`, `this` types | `dynamic` | Marked with the matching reason |
 

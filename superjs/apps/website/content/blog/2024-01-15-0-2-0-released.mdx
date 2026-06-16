@@ -14,7 +14,7 @@ v0.1.0 shipped the core language — null safety, sum types, match expressions, 
 v0.2.0 will emit errors for all banned TypeScript features at the parser level rather than only in the type checker:
 
 - `any` → use `dynamic` or `unknown`
-- `A & B` intersection types → use `interface extends`
+- `A & B` intersection types → use `type` extension (`type AB extends A, B {}`)
 - `T extends U ? X : Y` conditional types
 - `{ [P in keyof T]: ... }` mapped types
 - `enum` → use sum types or string unions

@@ -15,7 +15,7 @@ SJS is designed around four convictions:
 
 **Sound type system.** Every type error caught at compile time is a guarantee. SJS does not include escape hatches that silently undermine soundness (no `any`, no `!` assertion). The `dynamic` type is the only opt-out, and it is explicit and runtime-checked.
 
-**Go-inspired simplicity.** The type system has a fixed, small surface area. There are exactly 10 types. Interfaces are structural and satisfied implicitly. There are no mapped types, conditional types, or `infer` — features that make TypeScript's type system Turing-complete but also opaque.
+**Go-inspired simplicity.** The type system has a fixed, small surface area. There are exactly 10 types. Object types are structural and satisfied implicitly. There are no mapped types, conditional types, or `infer` — features that make TypeScript's type system Turing-complete but also opaque.
 
 **Dart 2.12-style null safety.** Non-nullable by default. `T?` is the only way to express nullability. The compiler tracks null flow through `?.`, `??`, and narrowing. There is no non-null assertion operator.
 
@@ -48,7 +48,7 @@ SJS has exactly 10 built-in types. The set is closed — new built-in types cann
 
 ### 3.1 Non-nullable by default
 
-Every type `T` is non-nullable unless explicitly declared `T?`. This includes all 10 built-in types and all user-defined classes and interfaces.
+Every type `T` is non-nullable unless explicitly declared `T?`. This includes all 10 built-in types and all user-defined classes and object types.
 
 ```sjs
 const x: string = null        // SJS-E001
@@ -190,19 +190,21 @@ Unit variants: `None` matches when `_tag === "None"` with no binding.
 
 ---
 
-## 6. Structural Interfaces
+## 6. Structural Object Types
 
 ### 6.1 Definition
 
+Object types use the brace form of `type` (no `=`):
+
 ```sjs
-interface Printable {
+type Printable {
   toString(): string
 }
 ```
 
 ### 6.2 Implicit satisfaction
 
-A value of type `C` satisfies interface `I` if and only if `C` exposes every member declared in `I` with a compatible type. No `implements` declaration is required or supported.
+A value of type `C` satisfies object type `I` if and only if `C` exposes every member declared in `I` with a compatible type. No `implements` declaration is required or supported.
 
 ```sjs
 class Celsius {
@@ -217,26 +219,26 @@ function print(p: Printable): void {
 print(new Celsius(100))  // OK — Celsius satisfies Printable structurally
 ```
 
-### 6.3 Interface extension
+### 6.3 Object type extension
 
-Interfaces may extend one or more other interfaces. The extending interface inherits all member requirements.
+Object types may extend one or more other object types. The extending type inherits all member requirements.
 
 ```sjs
-interface Serializable extends Printable {
+type Serializable extends Printable {
   serialize(): string
 }
 ```
 
 ### 6.4 No intersection types
 
-`A & B` is not valid SJS syntax. Use interface extension to compose contracts:
+`A & B` is not valid SJS syntax. Use object type extension to compose contracts:
 
 ```sjs
 // Wrong (banned):
 type Named = HasName & HasAge
 
 // Correct:
-interface Named extends HasName, HasAge {}
+type Named extends HasName, HasAge {}
 ```
 
 ---
@@ -245,7 +247,7 @@ interface Named extends HasName, HasAge {}
 
 ### 7.1 Syntax
 
-Generic type parameters use angle brackets on functions, classes, and interfaces:
+Generic type parameters use angle brackets on functions, classes, and object types:
 
 ```sjs
 function identity<T>(x: T): T { return x }
@@ -256,7 +258,7 @@ class Stack<T> {
   pop(): T? { return this.items.pop() ?? null }
 }
 
-interface Container<T> {
+type Container<T> {
   get(): T?
   set(value: T): void
 }
@@ -264,7 +266,7 @@ interface Container<T> {
 
 ### 7.2 Constraints
 
-Use `: InterfaceName` to constrain a type parameter:
+Use `: TypeName` to constrain a type parameter:
 
 ```sjs
 function max<T: Comparable>(a: T, b: T): T {
@@ -272,7 +274,7 @@ function max<T: Comparable>(a: T, b: T): T {
 }
 ```
 
-The constraint is checked structurally — `T` must satisfy the `Comparable` interface.
+The constraint is checked structurally — `T` must satisfy the `Comparable` object type.
 
 ### 7.3 Monomorphization
 
@@ -447,12 +449,12 @@ The following features are not part of SJS and will not be added. They are exclu
 |---------|----------------------|
 | `any` | Unsound. Use `dynamic` — it is explicit and runtime-checked. |
 | `T extends U ? A : B` (conditional types) | Makes the type system Turing-complete; produces inscrutable error messages. Use sum types and match instead. |
-| `{ [K in keyof T]: ... }` (mapped types) | Produces types that are correct by construction but hard to read and diagnose. Use explicit interfaces. |
+| `{ [K in keyof T]: ... }` (mapped types) | Produces types that are correct by construction but hard to read and diagnose. Use explicit object types. |
 | Template literal types | Expressive but adds significant type checker complexity for marginal practical benefit. |
 | `infer` | Tied to conditional types; removed along with them. |
 | `namespace` | Superseded by ES modules. |
 | TypeScript `enum` | Enums have confusing runtime semantics. Use sum types — they are explicit, exhaustively matchable, and compile cleanly. |
-| `A & B` (intersection types) | Intersection of two object types is rarely what the author intends and is unsound in several positions. Use interface extension. |
+| `A & B` (intersection types) | Intersection of two object types is rarely what the author intends and is unsound in several positions. Use object type extension. |
 | `!` (non-null assertion) | Allows bypassing null safety without a runtime check. Use narrowing — it is both safe and readable. |
 
 ---

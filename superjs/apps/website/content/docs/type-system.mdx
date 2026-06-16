@@ -14,7 +14,7 @@ These TypeScript features do not exist in SJS:
 | Feature | Reason |
 |---|---|
 | `any` | Silent unsafety — use `dynamic` or `unknown` instead |
-| `A & B` intersection types | Unsound merging — use interfaces with `extends` |
+| `A & B` intersection types | Unsound merging — compose object types with `extends` |
 | `T extends U ? X : Y` conditional types | Complexity without soundness gain |
 | Mapped types (`{ [P in keyof T]: ... }`) | Implicit metaprogramming — spell out the shape |
 | `T!` non-null assertion | Defeats null safety — narrow explicitly |
@@ -52,12 +52,12 @@ let big: bigint = 123n
 
 ---
 
-## Interfaces
+## Object types
 
-Interfaces describe structural shapes. SJS uses structural typing — any value that satisfies the shape is compatible.
+Object types describe structural shapes. They use the brace form of `type` (no `=`). SJS uses structural typing — any value that satisfies the shape is compatible.
 
 ```sjs
-interface User {
+type User {
   id: number
   name: string
   email: string
@@ -65,7 +65,7 @@ interface User {
   readonly createdAt: Date
 }
 
-interface AdminUser extends User {
+type AdminUser extends User {
   role: string
   permissions: string[]
 }
@@ -74,7 +74,7 @@ interface AdminUser extends User {
 Index signatures use `unknown`, not `any`:
 
 ```sjs
-interface Registry {
+type Registry {
   [key: string]: unknown
 }
 ```
@@ -146,7 +146,7 @@ function first<T>(arr: T[]): T? {
   return arr.length > 0 ? arr[0] : null
 }
 
-interface Repository<T> {
+type Repository<T> {
   find(id: number): T?
   save(item: T): void
   findAll(): T[]
@@ -163,7 +163,7 @@ class Stack<T> {
 Generic constraints:
 
 ```sjs
-interface Measurable {
+type Measurable {
   length: number
 }
 
@@ -210,10 +210,10 @@ function double(n: number) {
 
 ## Structural typing
 
-SJS is structurally typed. A value satisfies an interface if it has the required shape — no `implements` needed at call sites.
+SJS is structurally typed. A value satisfies an object type if it has the required shape — no `implements` needed at call sites.
 
 ```sjs
-interface Point { x: number; y: number }
+type Point { x: number; y: number }
 
 function distance(a: Point, b: Point): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
