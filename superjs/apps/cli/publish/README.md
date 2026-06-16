@@ -1,7 +1,8 @@
 # @superjsorg/cli
 
-The [Super.js](https://superjs.org) command-line compiler — a null-safe,
-sum-typed superset of JavaScript that compiles to plain JS.
+The [Super.js](https://superjs.org) command-line compiler — a strict, type-safe
+superset of JavaScript that follows the ECMAScript standard (null safety, sum
+types, no `any`) and compiles to clean JS.
 
 Self-contained bundle with no runtime dependencies. Provides the `superjs` command.
 

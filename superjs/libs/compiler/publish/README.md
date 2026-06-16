@@ -1,7 +1,8 @@
 # @superjsorg/compiler
 
-The [Super.js](https://superjs.org) compiler — a null-safe, sum-typed superset
-of JavaScript that compiles to plain JS with zero runtime overhead.
+The [Super.js](https://superjs.org) compiler — a strict, type-safe superset of
+JavaScript that follows the ECMAScript standard (null safety, sum types, no
+`any`) and compiles to clean JS with zero runtime overhead.
 
 This package is a self-contained bundle of the compiler's public API. It has no
 runtime dependencies.

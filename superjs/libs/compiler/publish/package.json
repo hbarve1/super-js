@@ -1,7 +1,7 @@
 {
   "name": "@superjsorg/compiler",
   "version": "0.1.0",
-  "description": "The Super.js compiler — a null-safe, sum-typed superset of JavaScript that compiles to plain JS. Programmatic compile/transform API.",
+  "description": "The Super.js compiler — a strict, type-safe, ECMAScript-faithful superset of JavaScript (null safety, sum types, no any) that compiles to clean JS. Programmatic compile/transform API.",
   "license": "GPL-3.0-or-later",
   "author": "Himank Barve",
   "homepage": "https://superjs.org",

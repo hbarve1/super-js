@@ -2,14 +2,14 @@
 
 ## What
 
-SuperJS (`.sjs`) is a strict superset of JavaScript that adds:
+SuperJS (`.sjs`) is a strict, type-safe superset of JavaScript that follows the ECMAScript standard (ES5–ES2025) and adds:
 
 - **Gradual static typing** — annotate when you want, infer when you don't
 - **Null safety by default** — `T` is non-nullable; `T?` is nullable
 - **Sum types + pattern matching** — `type Result<T,E> = Ok(T) | Err(E)` with exhaustive `match`
 - **`dynamic` escape hatch** — explicit runtime-checked replacement for `any`
-- **Unified CLI** — `superjs build | lint | format | test` in one tool
 - **Native JSX** — first-class without separate transform config
+- **One source, every target** — compiles to clean JS today; native binaries and WASM on the roadmap (v2.0)
 
 ## Why
 
