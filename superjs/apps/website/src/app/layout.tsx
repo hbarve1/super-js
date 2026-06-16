@@ -27,14 +27,18 @@ export const metadata: Metadata = {
     template: '%s | Super.js',
   },
   description:
-    'A null-safe, sum-typed superset of JavaScript. Compile to plain JS with zero runtime overhead.',
+    'A strict, type-safe superset of JavaScript that follows the ECMAScript standard — sound types, null safety, sum types, no any. Compiles to clean JS today; native binaries and WASM on the roadmap.',
   keywords: [
     'javascript',
     'typescript',
+    'ecmascript',
     'superset',
     'type safety',
+    'null safety',
     'sum types',
     'match expressions',
+    'wasm',
+    'compiler',
   ],
   metadataBase: new URL('https://superjs.org'),
   alternates: {
@@ -44,7 +48,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Super.js — JavaScript, Perfected',
-    description: 'Null-safe. Sum types. Match expressions. Zero runtime overhead.',
+    description:
+      'Strict types. Null safety. Sum types. No any. ECMAScript-faithful — compiles to clean JS, with native & WASM next.',
     url: 'https://superjs.org',
     siteName: 'Super.js',
     type: 'website',

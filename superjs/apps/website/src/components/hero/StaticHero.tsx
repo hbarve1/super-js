@@ -14,7 +14,7 @@ export function StaticHero() {
 
       <div className="relative z-10 max-w-3xl">
         <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-orange">
-          null-safe · sum types · zero runtime
+          strict types · ecmascript-faithful · one source, every target
         </p>
         <h1 className="text-5xl font-black tracking-tight sm:text-7xl">
           <span className="text-text-primary">JavaScript,</span>{' '}
@@ -23,10 +23,11 @@ export function StaticHero() {
           </span>
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-lg text-text-muted">
-          A sound, null-safe superset of JavaScript — sum types, exhaustive{' '}
+          A strict, type-safe superset of JavaScript that follows the ECMAScript standard —
+          sound types, null safety, exhaustive{' '}
           <code className="font-mono text-amber">match</code>, no{' '}
-          <code className="font-mono text-amber">any</code>. Compiles to plain JS with zero
-          runtime overhead.
+          <code className="font-mono text-amber">any</code>. Compiles to clean JS today;
+          native binaries and WASM are on the roadmap.
         </p>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

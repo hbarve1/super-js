@@ -9,16 +9,16 @@ const BEATS: { step: string; label: string; title: string; body: string; evidenc
   {
     step: '02',
     label: 'The solution',
-    title: 'Sound types and exhaustive matching.',
-    body: 'T? is the only nullable type — a plain string can never be null. Sum types model data as named variants, and match forces you to handle every one. any is banned; the escape hatch is spelled dynamic — explicit and greppable.',
-    evidence: 'Whole classes of bugs become unrepresentable, caught at compile time.',
+    title: 'Strict types, faithful to ECMAScript.',
+    body: 'Super.js tracks the ECMAScript standard — every modern JS feature, ES5 through ES2025, type-checked. T? is the only nullable type. Sum types model data as named variants and match forces you to handle every one. any is banned; the escape hatch is spelled dynamic — explicit and greppable.',
+    evidence: 'A superset, not a fork — adopt it file by file, no rewrite.',
   },
   {
     step: '03',
     label: 'The payoff',
-    title: 'Fewer runtime bugs, zero overhead.',
-    body: 'Super.js compiles to plain JavaScript — no runtime library, no wrapper objects, no startup cost. The safety lives entirely in the compiler. Ship the same JS you would have, minus the bugs the compiler refused to emit.',
-    evidence: 'Output is readable JS that runs anywhere JS runs.',
+    title: 'One source. Every target.',
+    body: 'Super.js compiles to clean, readable JavaScript today — no runtime library, no wrapper objects, no startup cost. The safety lives entirely in the compiler. And the same source is headed further: native binaries and WASM are on the roadmap, no language change required.',
+    evidence: 'Zero-overhead JS now; native & WASM backends next.',
   },
 ]
 
