@@ -15,9 +15,21 @@ ecosystem. The goal: bring third-party types in **without** importing
 TypeScript's unsound features. Anything that can't be translated soundly becomes
 an explicit, greppable `dynamic` — never a silent `any`.
 
-## How a package gets types
+## Translating a declaration file today
 
-Running `superjs add <pkg>` resolves the package and obtains SJS type
+The `.d.ts` → `.d.sjs` translator is available now via the
+[`superjs translate`](/docs/cli#translate) command — point it at any TypeScript
+declaration file and it writes the SuperJS equivalent:
+
+```bash
+superjs translate node_modules/some-lib/index.d.ts --out-dir types
+```
+
+Forms SuperJS doesn't model degrade to `dynamic` and are reported as warnings.
+
+## How a whole package gets types (planned)
+
+Running `superjs add <pkg>` (Stage 2) will resolve a package and obtain SJS type
 declarations (`.d.sjs`) in this order:
 
 1. **Curated wrapper** — a hand-maintained `@superjs/types-<pkg>` on npm (preferred).
@@ -82,6 +94,7 @@ keeps these out of the language itself.
 
 ## Runtime boundary
 
-A planned `@superjs/interop` package provides helpers for validating values as
-they cross the JS→SJS boundary, so a `dynamic` from the outside world is checked
-before it becomes a typed value rather than trusted blindly.
+The `@superjs/interop` package (which powers `superjs translate`) is also planned
+to provide runtime helpers for validating values as they cross the JS→SJS
+boundary, so a `dynamic` from the outside world is checked before it becomes a
+typed value rather than trusted blindly.

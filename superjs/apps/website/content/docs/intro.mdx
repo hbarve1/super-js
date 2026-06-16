@@ -37,21 +37,19 @@ Types are **non-nullable by default**. A `string` cannot hold `null`. Use `strin
 
 ## Quick Start
 
-SJS 0.1.0 is a prototype — install from source:
+Install the CLI from npm — a self-contained bundle with no runtime dependencies:
 
 ```bash
-git clone https://github.com/hbarve1/super-js.git
-cd super-js/prototype
-npm install
-npm run build
-npm link          # makes `superjs` available globally
+npm install -g @superjsorg/cli      # provides the `superjs` command
 ```
 
 Compile your first file:
 
 ```bash
-superjs build --source hello.sjs
+superjs build hello.sjs             # → hello.js (+ source map)
 ```
+
+Prefer the programmatic API? Install [`@superjsorg/compiler`](https://www.npmjs.com/package/@superjsorg/compiler) and call `transform()` / `compile()`.
 
 ---
 
@@ -107,16 +105,16 @@ console.log(msg)
 ## CLI at a Glance
 
 ```bash
-superjs build  --source <file>   # compile .sjs → .js
-superjs lint   --source <file>   # lint with SJS rules
-superjs format --source <file>   # format code
-superjs test                     # run tests
+superjs build src/          # compile .sjs → .js (+ source maps)
+superjs check src/          # type-check only
+superjs explain SJS-E001    # explain a diagnostic code
+superjs init                # write a default config
 ```
 
 Config lives in `superjs.config.json`:
 
 ```json
-{ "target": "es2022", "outDir": "./dist", "strict": false }
+{ "compilerOptions": { "target": "ES2022", "outDir": "dist", "strict": false } }
 ```
 
 ---

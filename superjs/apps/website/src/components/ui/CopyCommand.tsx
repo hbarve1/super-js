@@ -8,7 +8,7 @@ interface CopyCommandProps {
 }
 
 /** Terminal-style install command with a copy button. */
-export function CopyCommand({ command = 'npm i -g superjs', className = '' }: CopyCommandProps) {
+export function CopyCommand({ command = 'npm i -g @superjsorg/cli', className = '' }: CopyCommandProps) {
   const [copied, setCopied] = useState(false)
 
   const copy = () => {

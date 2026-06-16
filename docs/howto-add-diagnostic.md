@@ -1,6 +1,9 @@
 # HOWTO: Add a New SJS Diagnostic Code
 
-This guide walks you through adding a brand-new diagnostic code (e.g., `SJS-E020`) end-to-end, from reserving the number to merging a PR. Follow every step in order.
+This guide walks you through adding a brand-new diagnostic code (e.g., `SJS-E021`) end-to-end, from reserving the number to merging a PR. Follow every step in order.
+
+> The compiler lives in the NX monorepo under `superjs/`. Diagnostics are defined
+> in `libs/diagnostics` and emitted by the type checker in `libs/checker`.
 
 ---
 
@@ -10,12 +13,14 @@ Open `specs/error-codes.md` and find the highest existing number in the category
 
 | Category | Letter | Current highest (as of this writing) |
 |---|---|---|
-| Type errors | `E` | SJS-E019 |
-| Warnings | `W` | SJS-W010 |
-| Lint | `L` | SJS-L005 |
+| Type errors | `E` | SJS-E020 |
+| Warnings | `W` | SJS-W012 |
+| Lint | `L` | SJS-L011 |
 | Parser | `P` | SJS-P005, SJS-P099 |
 
-Pick the next number. **Do not skip numbers.** If `SJS-E019` is the highest, your new code is `SJS-E020`.
+The canonical list is the `TABLE` in `superjs/libs/diagnostics/src/lib/registry.ts`
+(mirrored by `specs/error-codes.md`). Pick the next number. **Do not skip
+numbers.** If `SJS-E020` is the highest, your new code is `SJS-E021`.
 
 If two people are adding codes simultaneously, coordinate in your PR to avoid collisions.
 
@@ -26,19 +31,19 @@ If two people are adding codes simultaneously, coordinate in your PR to avoid co
 Open `specs/error-codes.md` and insert a new row in the correct table. Example for a type-error code:
 
 ```markdown
-| SJS-E020 | error | type-check | Your short message here | Stage 1 |
+| SJS-E021 | error | type-check | Your short message here | Stage 1 |
 ```
 
 Fill in all five columns: code, severity, category, short message, owning stage. The short message should be brief (under 80 chars) and match the `message` string you'll emit in code.
 
 ---
 
-## 3. Create `specs/error-codes/SJS-E020.md`
+## 3. Create `specs/error-codes/SJS-E021.md`
 
-Create a new file at `specs/error-codes/SJS-E020.md`. Model it on an existing file such as `specs/error-codes/SJS-E001.md`:
+Create a new file at `specs/error-codes/SJS-E021.md`. Model it on an existing file such as `specs/error-codes/SJS-E001.md`:
 
 ```markdown
-# SJS-E020 — Short description matching the registry entry
+# SJS-E021 — Short description matching the registry entry
 
 **Severity:** error
 **Category:** type-check
@@ -53,7 +58,7 @@ Reference the relevant ECMA-262 section if applicable.
 
 ```sjs
 // ✗ error
-let bad: number = someInvalidThing  // SJS-E020
+let bad: number = someInvalidThing  // SJS-E021
 ```
 
 ## Fix
@@ -77,101 +82,81 @@ Open `specs/language/060-error-codes-map.md` and add an entry that maps the lang
 
 ---
 
-## 5. Emit the code in the prototype (`backends/prototype/`)
+## 5. Register the code in `@superjs/diagnostics`
 
-The prototype in `backends/prototype/src/typeChecker/index.ts` is where all type-checking rules live. Add your emission there.
-
-### Find the right location
-
-The `TypeChecker.check(path)` method dispatches on `path.type`. Find the relevant AST node type for your rule. Examples:
-
-- Variable declarations: look for `checkVariableDeclarator`
-- Function return types: look for `checkFunctionDeclaration`
-- Assignment expressions: look for `AssignmentExpression` handling
-- Member access: look for `MemberExpression` handling
-
-### Add the `this.report(...)` call
+The registry is the single source of truth for `code → severity, category,
+template, stage`. Open `superjs/libs/diagnostics/src/lib/registry.ts` and add a
+row to the `TABLE`, in the correct category block:
 
 ```ts
-this.report({
-  code: 'SJS-E020',
-  severity: 'error',
-  message: `Clear human-readable explanation. Mention the type/value involved.`,
-  node: path.node,          // the offending AST node (for location)
-  specUrl: 'https://tc39.es/ecma262/#relevant-section',
-})
+'SJS-E021': d('error', 'type-check', 'Your short message; `{token}` slots are filled at emit time', 'Stage 1'),
 ```
 
-The `specUrl` should point to the ECMA-262 section that defines the constraint, or to the SJS spec file in `specs/` if it's a SJS-specific rule.
-
-### Wire into the visitor
-
-If you added a new private method, make sure it is called from the main `check(path)` dispatcher or from another method that is already called for the relevant path type.
+The `d(...)` helper is `defineCode(severity, category, template, stage)`. The
+`template` may contain `{name}` tokens — they are interpolated by
+`formatMessage` from the `params` you pass when emitting. Use a `category` that
+already exists in the union (e.g. `null-safety`, `type-check`, `match`,
+`classes`, `modules`). The `Codes` constant for your code is generated from the
+table key automatically.
 
 ---
 
-## 6. Write a test (golden file pattern — prototype)
+## 6. Emit the code from the type checker
 
-Create or add to a test file under `backends/prototype/tests/typeChecker/`. Use the standard helper pattern:
+The checker lives in `superjs/libs/checker/src/lib/checker.ts`. It is a
+bidirectional checker (`synth`/`check`) that walks the parsed AST; diagnostics
+are collected in a `DiagnosticBag`. Find the method that handles the relevant
+construct (e.g. variable declarations, assignments, member access, match arms)
+and emit via the bag:
 
 ```ts
-import { parse } from '@babel/parser'
-import traverse from '@babel/traverse'
-import { TypeChecker } from '../../src/typeChecker'
-import type { PrototypeDiagnostic } from '../../src/typeChecker/types'
-
-function typeCheck(source: string): PrototypeDiagnostic[] {
-  const ast = parse(source, { sourceType: 'module', plugins: ['typescript'] })
-  const checker = new TypeChecker()
-  traverse(ast, { enter(path) { checker.check(path) } })
-  return checker.getDiagnostics()
-}
-
-function errors(source: string): PrototypeDiagnostic[] {
-  return typeCheck(source).filter(d => d.severity === 'error')
-}
-
-describe('SJS-E020: your rule description', () => {
-  it('emits SJS-E020 for the violation', () => {
-    const diags = errors(`
-      // SJS source that triggers your rule
-    `)
-    expect(diags.some(d => d.code === 'SJS-E020')).toBe(true)
-  })
-
-  it('does not emit SJS-E020 for valid code', () => {
-    const diags = errors(`
-      // SJS source that is valid
-    `)
-    expect(diags.some(d => d.code === 'SJS-E020')).toBe(false)
-  })
-
-  it('includes a useful message', () => {
-    const diags = errors(`/* violating source */`)
-    const d = diags.find(d => d.code === 'SJS-E020')
-    expect(d?.message).toContain('some key phrase from your message')
-  })
-})
+this.bag.report({
+  code: Codes['E021'],
+  span,                                  // the offending node's Span (for location)
+  params: { type: display(found) },      // fills {type} in the template — omit if none
+});
 ```
 
-Run the tests from `backends/prototype/`:
+`span` comes from the AST node you are checking (every node carries a `Span`).
+The pretty-printer and JSON formatter both render the message from the registry
+template + your `params`, so the message text lives in the registry, not here.
+
+---
+
+## 7. Write a test
+
+Checker tests are colocated and run with Vitest:
+`superjs/libs/checker/src/lib/checker.spec.ts`. Add cases asserting the code
+fires on the violation and is absent on valid code. The suite uses a small
+helper that runs the real checker and returns its diagnostics:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { codesOf } from '@superjs/test-utils';
+import { check } from './checker';   // or the suite's existing check helper
+
+describe('SJS-E021: your rule description', () => {
+  it('emits SJS-E021 for the violation', () => {
+    const diags = check(`/* SJS source that triggers your rule */`);
+    expect(codesOf(diags)).toContain('SJS-E021');
+  });
+
+  it('does not emit SJS-E021 for valid code', () => {
+    const diags = check(`/* valid SJS source */`);
+    expect(codesOf(diags)).not.toContain('SJS-E021');
+  });
+});
+```
+
+Run it from the workspace:
 
 ```bash
-npm test
+cd superjs
+pnpm nx test @superjs/checker
 ```
 
-Confirm all tests pass before proceeding.
-
----
-
-## 7. Mirror the code in `compiler/` (Phase 2)
-
-The plain-JS compiler at `compiler/src/type-checker/type-checker.js` needs to emit the same code for the same input. The compiler is less complete than the prototype, so it may not yet parse the construct your rule targets. Either:
-
-- Add the check if the compiler's parser already handles the relevant node type, OR
-- Add a `// TODO SJS-E020: mirror from prototype` comment near the relevant section
-
-The compiler tests use a different pattern (throw-on-error, not collect). See `compiler/CLAUDE.md` for the exact pattern.
+For an end-to-end assertion (source → compiled), add a fixture under
+`superjs/apps/e2e/fixtures/` and a case in the matching `*.spec.ts`.
 
 ---
 
@@ -180,10 +165,11 @@ The compiler tests use a different pattern (throw-on-error, not collect). See `c
 Before opening a PR for a new diagnostic code:
 
 - [ ] `specs/error-codes.md` — new row added in the correct table
-- [ ] `specs/error-codes/SJS-E020.md` — spec file created with description, example, fix, related codes
+- [ ] `specs/error-codes/SJS-E021.md` — spec file created with description, example, fix, related codes
 - [ ] `specs/language/060-error-codes-map.md` — mapping added
-- [ ] `backends/prototype/src/typeChecker/index.ts` — `this.report(...)` call added
-- [ ] `backends/prototype/tests/typeChecker/` — test covering violation and valid form
-- [ ] `npm test` passes in `backends/prototype/` with zero failures
+- [ ] `superjs/libs/diagnostics/src/lib/registry.ts` — `TABLE` entry added
+- [ ] `superjs/libs/checker/src/lib/checker.ts` — `this.bag.report(...)` call added
+- [ ] `superjs/libs/checker/src/lib/checker.spec.ts` — test covering violation and valid form
+- [ ] `pnpm nx run-many -t test lint typecheck` passes with zero failures
 - [ ] PR description references the owning stage and the issue/ticket motivating the diagnostic
 - [ ] No existing code number reused (double-check the Retired Codes section too)

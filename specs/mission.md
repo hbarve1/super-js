@@ -26,7 +26,7 @@ Ship **SuperJS 1.0** — a production-grade language toolchain usable by real pr
 
 | Stage | Goal |
 |---|---|
-| 0 — Foundations | Monorepo, `@superjs/compiler-types`, formal spec (grammar.ebnf, error codes, schemas), CI matrix, RFCs 0001–0005 |
+| 0 — Foundations | Monorepo, `@superjs/types`, formal spec (grammar.ebnf, error codes, schemas), CI matrix, RFCs 0001–0005 |
 | 1 — Compiler Core | Production parser with error recovery, full type checker, LSP server, deterministic output |
 | 2 — Interop | `.d.ts` consumption, npm package wrappers, `tsconfig.json` paths inheritance |
 | 3 — DX Tools | Formatter, linter (17 rules), test runner, watch mode, VS Code extension on marketplace |

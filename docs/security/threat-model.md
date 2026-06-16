@@ -15,7 +15,7 @@
 |-------|----------------|
 | **Compiler process integrity** | The `superjs` CLI runs in developer environments and CI pipelines. A compiler that crashes, hangs, or produces wrong output silently is a supply-chain risk. |
 | **Source-file confidentiality** | Source files fed to the compiler may contain business secrets, credentials embedded in comments, or PII. Compiler-generated artifacts (crash logs, diagnostics) must not inadvertently leak this material. |
-| **Published packages** | `@superjs/compiler-types` and future `@superjs/*` packages are installed by downstream projects. Tampering with the published artifact is a classic supply-chain attack. |
+| **Published packages** | `@superjsorg/cli`, `@superjsorg/compiler`, and future published packages are installed by downstream projects. Tampering with the published artifact is a classic supply-chain attack. |
 | **Playground users** | The browser-based REPL (Stage 3+) runs untrusted SJS snippets. A sandbox escape could execute code in the user's browser context. |
 | **LSP client (editor) integrity** | The LSP server runs as a long-lived background process with file-system access. Malformed editor messages or malicious workspace files must not escalate into arbitrary code execution or memory exhaustion. |
 | **Developer identity** | Publish credentials (npm token, GitHub Actions secrets) grant the ability to push malicious package versions. These must be protected by 2FA and scope-limited tokens. |
@@ -122,7 +122,7 @@
 
 **Description.** npm supports signed provenance attestations (SLSA) linking a published package to the GitHub Actions run that produced it. Without `--provenance`, consumers cannot verify that the installed package matches the source repository.
 
-**Attack scenario.** A maintainer's machine is compromised. An attacker runs local `npm publish`, uploading `@superjs/compiler-types` with code that exfiltrates environment variables from every project that installs it.
+**Attack scenario.** A maintainer's machine is compromised. An attacker runs local `npm publish`, uploading `@superjsorg/cli` with code that exfiltrates environment variables from every project that installs it.
 
 **Mitigations:**
 

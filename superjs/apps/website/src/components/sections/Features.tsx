@@ -40,7 +40,7 @@ const FEATURES: { icon: string; title: string; desc: string; code: string; lang:
     icon: '0',
     title: 'Zero Runtime',
     desc: 'Compiles to plain JS. No runtime library, no overhead, ships anywhere.',
-    code: `// sjs compile app.sjs --out app.js\n// → plain JavaScript, no imports`,
+    code: `// superjs build app.sjs\n// → plain JavaScript, no imports`,
     lang: 'bash',
   },
 ]

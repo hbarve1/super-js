@@ -75,32 +75,17 @@ docs(readme): update installation instructions
 
 ---
 
-## Changeset Rules
+## Releases
 
-SuperJS uses [Changesets](https://github.com/changesets/changesets) to manage versioning and changelogs.
+SuperJS publishes two npm packages from the NX monorepo:
 
-**When a changeset IS required:**
-- Any PR that modifies code under `packages/`.
+- [`@superjsorg/cli`](https://www.npmjs.com/package/@superjsorg/cli) — the `superjs` command.
+- [`@superjsorg/compiler`](https://www.npmjs.com/package/@superjsorg/compiler) — the programmatic API.
 
-**When a changeset is NOT required:**
-- PRs that only touch `docs/`, `rfcs/`, or `spec/`.
-- PRs that only affect CI configuration, tooling, or repository metadata.
-
-**Adding a changeset:**
-
-```bash
-npx changeset add
-```
-
-Follow the prompts to select the affected packages and bump type (`patch`, `minor`, or `major`). Commit the generated `.changeset/*.md` file with your PR.
-
----
-
-## `compiler-types` Bump Declaration Rule
-
-Any PR that touches files under `packages/compiler-types/src/` **must** explicitly declare the semver bump category in the changeset. Refer to the bump category table in [`packages/compiler-types/SEMVER.md`](packages/compiler-types/SEMVER.md) to determine whether the change warrants a `patch`, `minor`, or `major` bump.
-
-This rule exists because `compiler-types` is a public contract: downstream tooling depends on the exported types, and an incorrect bump category can cause silent breakage for consumers.
+Releases are **tag-triggered**: pushing a `v*` tag (e.g. `v0.1.1`) runs
+`.github/workflows/release-npm.yml`, which stamps the version into both manifests,
+builds the self-contained bundles, and publishes them to npm with provenance.
+Maintainers cut releases; contributors do not need to touch versioning in a PR.
 
 ---
 
@@ -110,30 +95,37 @@ Before opening a PR, confirm the following:
 
 - [ ] All commits are signed off (`Signed-off-by:` trailer present).
 - [ ] Commit messages follow Conventional Commits format.
-- [ ] `npm run lint` passes with no errors.
-- [ ] `npm test` passes with no failures.
-- [ ] `npm run typecheck` passes with no errors.
-- [ ] A changeset has been added (if the PR modifies code under `packages/`).
+- [ ] `pnpm nx run-many -t lint test typecheck` passes with no errors.
 - [ ] Documentation has been updated if the PR adds or changes user-facing behavior.
-- [ ] If `packages/compiler-types/src/` was changed, the changeset declares the correct bump category per `packages/compiler-types/SEMVER.md`.
 
 ---
 
 ## How to Run Tests
 
-**Prototype (super-js workspace):**
+All work happens in the NX workspace under `superjs/` with [pnpm](https://pnpm.io):
+
 ```bash
-npm test --workspace=super-js
+cd superjs
+pnpm install
 ```
 
-**Type-checking the compiler types package:**
+Run a target for a single project (build, test, typecheck, lint):
+
 ```bash
-npm run typecheck --workspace=@superjs/compiler-types
+pnpm nx test @superjs/checker
+pnpm nx build @superjs/compiler
 ```
 
-To run all checks from the repository root:
+Run every check across the whole workspace (what CI runs):
+
 ```bash
-npm run lint && npm test && npm run typecheck
+pnpm nx run-many -t lint test typecheck build
+```
+
+Only re-run what your change affected:
+
+```bash
+pnpm nx affected -t test lint
 ```
 
 ---

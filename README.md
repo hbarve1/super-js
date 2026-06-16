@@ -5,7 +5,7 @@ SuperJS is a new programming language that compiles to JavaScript. It is a stric
 SuperJS is **not** TypeScript with a different extension. It deliberately bans the parts of TypeScript that make type systems unsound (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Tests](https://img.shields.io/badge/tests-1011%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#roadmap)
 
 ---
@@ -39,20 +39,34 @@ SuperJS is **not** TypeScript with a different extension. It deliberately bans t
 
 ## Quick Start
 
-SJS 0.1.0 is a prototype — install from source:
+Install the CLI from npm — it ships as a self-contained bundle with no runtime dependencies:
 
 ```bash
-git clone https://github.com/hbarve1/super-js.git
-cd super-js/backends/prototype
-npm install
-npm run build
-npm link          # makes `superjs` available globally
+npm install -g @superjsorg/cli      # provides the `superjs` command
 ```
 
-Verify:
+Compile your first file:
 
 ```bash
-superjs build --source examples/basics/hello-world.sjs
+superjs build hello.sjs             # → hello.js (+ source map)
+superjs check src/                  # type-check a directory
+superjs explain SJS-E001            # explain a diagnostic code
+```
+
+Or use the compiler as a library:
+
+```bash
+npm install @superjsorg/compiler
+```
+
+```js
+import { transform } from '@superjsorg/compiler'
+
+const { code, diagnostics } = await transform(
+  'const name: string? = null\nconsole.log(name ?? "world")',
+  'app.sjs',
+  {},
+)
 ```
 
 ---
@@ -162,28 +176,38 @@ SJS emits structured diagnostic codes. Full registry: [`specs/error-codes.md`](s
 
 ## Repo Structure
 
+The compiler and tooling live in an [NX](https://nx.dev) monorepo under `superjs/`
+(see [`ADR-008`](specs/design/ADR-008-nx-monorepo.md)):
+
 ```
 super-js/
-├── backends/
-│   ├── prototype/       # Active reference compiler — TypeScript, 1011 tests (Stage 1)
-│   └── llvm/            # Future: LLVM native backend (C++/LLVM 17) — see v2.0 vision
-├── compiler/            # Earlier standalone JS compiler exploration — not in workspaces/CI
-├── examples/            # .sjs demo files with reading order
-├── packages/
-│   ├── compiler-types/  # @superjs/compiler-types — shared AST/Diagnostic types
-│   └── stdlib/          # @superjs/stdlib — placeholder, planned Stage 4
-├── specs/               # Formal spec: grammar, error codes, language docs, ADRs, roadmap
-├── docs/                # HOWTO guides + language comparisons (docs/comparisons/)
-├── rfcs/                # RFC-NNNN-title.md proposals
-├── tools/               # AST graph tooling
-├── vscode-extension/    # VS Code extension
-└── website/             # Next.js documentation site + playground
+├── superjs/                  # NX monorepo (pnpm workspace)
+│   ├── libs/                 # The compiler pipeline, by tier:
+│   │   ├── types/            # @superjs/types — shared AST / Diagnostic / Type model
+│   │   ├── diagnostics/      # @superjs/diagnostics — error-code registry + factory
+│   │   ├── config/           # @superjs/config — superjs.config.json loader/validator
+│   │   ├── lexer/            # @superjs/lexer
+│   │   ├── parser/           # @superjs/parser — recursive-descent + Pratt, error recovery
+│   │   ├── checker/          # @superjs/checker — bidirectional type checker
+│   │   ├── ir/               # @superjs/ir — TypedAST → SJS-IR lowering
+│   │   ├── codegen-js/       # @superjs/codegen-js — SJS-IR → ES2022 + source maps
+│   │   ├── compiler/         # @superjs/compiler — public API façade (published)
+│   │   ├── interop/          # @superjs/interop — .d.ts → .sjs translator (Stage 2)
+│   │   ├── runtime/          # @superjs/runtime — panic/iterator/inspect helpers
+│   │   └── test-utils/       # @superjs/test-utils — shared test harness (private)
+│   └── apps/
+│       ├── cli/              # superjs binary (published as @superjsorg/cli)
+│       ├── e2e/              # end-to-end corpus harness
+│       ├── vscode-extension/ # VS Code extension (TextMate grammar)
+│       └── website/          # Next.js documentation site + playground (superjs.org)
+├── specs/                    # Formal spec: grammar, error codes, language docs, ADRs, roadmap
+├── docs/                     # HOWTO guides + language comparisons (docs/comparisons/)
+└── rfcs/                     # RFC-NNNN-title.md proposals
 ```
 
-> **Forward direction:** the next major step is a fresh NX monorepo rewrite in
-> TypeScript (see [`ADR-008`](specs/design/ADR-008-nx-monorepo.md)). The current
-> tree is frozen as reference — `backends/prototype` is the working compiler;
-> `compiler/` is an earlier exploration kept for history, not built or tested.
+> Published npm packages: [`@superjsorg/cli`](https://www.npmjs.com/package/@superjsorg/cli)
+> (the `superjs` command) and [`@superjsorg/compiler`](https://www.npmjs.com/package/@superjsorg/compiler)
+> (the programmatic API). Internal libraries use the `@superjs/*` workspace scope.
 
 ---
 
@@ -191,10 +215,10 @@ super-js/
 
 | Stage | Status | Goal |
 |-------|--------|------|
-| 0 — Foundations | **Complete** | Monorepo, shared types, grammar spec, error codes, CI, RFCs 0001–0005 |
-| 1 — Compiler Core | **In progress** | Production parser, full type checker, deterministic codegen, LSP API |
-| 2 — Interop | Planned | `.d.ts` consumption, npm package wrappers, `tsconfig.json` paths |
-| 3 — DX Tools | Planned | Formatter, linter (17 rules), VS Code extension, watch mode |
+| 0 — Foundations | **Complete** | NX monorepo, shared types, grammar spec, error codes, CI, RFCs 0001–0005 |
+| 1 — Compiler Core | **Complete** | Production parser, full type checker, deterministic codegen, incremental cache, `superjs` CLI, compiler API |
+| 2 — Interop | **In progress** | `.d.ts` → `.sjs` translator landed (`@superjs/interop`); npm wrappers, `tsconfig.json` paths next |
+| 3 — DX Tools | **In progress** | VS Code extension + `--watch` shipped; formatter & linter (17 rules) next |
 | 4 — Stdlib | Planned | `@superjs/stdlib` — Result, Option, Iterator, collections |
 | 5 — Ecosystem | Planned | React wrapper, Node.js types, Jest transform, Vite plugin |
 | 6 — Stability | Planned | 1.0 semver, migration guide, public docs, community open |
@@ -219,7 +243,7 @@ Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 | [`docs/comparisons/`](docs/comparisons/) | SJS vs JS, TypeScript, Rust, Go, Dart, JVM languages |
 | [`specs/design/`](specs/design/) | Architecture Decision Records (ADRs) |
 | [`rfcs/`](rfcs/) | Language change proposals |
-| [`website/`](website/) | Public docs site |
+| [`superjs/apps/website/`](superjs/apps/website/) | Public docs site + playground ([superjs.org](https://superjs.org)) |
 
 ---
 

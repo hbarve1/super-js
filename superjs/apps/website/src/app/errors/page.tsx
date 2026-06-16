@@ -64,10 +64,9 @@ export default function ErrorsPage() {
             Every diagnostic the Super.js compiler can emit. Codes are permanent — never renumbered
             or reused. <span className="text-text-secondary">SJS-P</span> are parser errors,{' '}
             <span className="text-text-secondary">SJS-E</span> type errors,{' '}
-            <span className="text-text-secondary">SJS-W</span> warnings (promoted to errors under{' '}
-            <code className="font-mono text-orange-300">--strict</code>), and{' '}
-            <span className="text-text-secondary">SJS-L</span> lint rules (off under{' '}
-            <code className="font-mono text-orange-300">--loose</code>).
+            <span className="text-text-secondary">SJS-W</span> warnings (promoted to errors in{' '}
+            <code className="font-mono text-orange-300">strict</code> mode), and{' '}
+            <span className="text-text-secondary">SJS-L</span> lint rules.
           </p>
           <p className="mt-3 text-sm text-text-subtle">
             {all.length} codes, generated from the{' '}

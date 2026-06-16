@@ -39,7 +39,7 @@ export function StaticHero() {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <CopyCommand command="npm i -g superjs" />
+          <CopyCommand command="npm i -g @superjsorg/cli" />
         </div>
       </div>
     </section>

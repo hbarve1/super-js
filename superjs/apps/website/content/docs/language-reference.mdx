@@ -41,7 +41,7 @@ function greet(name: string): string {
 
 ## Type Annotations
 
-Type annotations are optional. When omitted, SJS infers the type from context. In `--strict` mode, missing annotations on public API boundaries emit `SJS-W001`.
+Type annotations are optional. When omitted, SJS infers the type from context. In strict mode, missing annotations on public API boundaries emit `SJS-W001`.
 
 ```sjs
 // annotated
@@ -415,7 +415,7 @@ These are not missing features — they are deliberate omissions. SJS prioritize
 | `SJS-E001` | Error | Null/undefined assigned to non-nullable type |
 | `SJS-E002` | Error | Type mismatch on assignment or return |
 | `SJS-E007` | Error | Non-exhaustive match on sum type |
-| `SJS-W001` | Warning | Implicit `dynamic` — only in `--strict` mode |
+| `SJS-W001` | Warning | Implicit `dynamic` — only in strict mode |
 
 ---
 

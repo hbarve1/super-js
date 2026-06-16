@@ -1,7 +1,7 @@
 import { highlight } from '@/lib/shiki'
 import { Button } from '@/components/ui/Button'
 
-const INSTALL = `npm install -g superjs`
+const INSTALL = `npm install -g @superjsorg/cli`
 
 const FIRST_PROGRAM = `// hello.sjs
 type Greeting = Formal(string) | Casual(string)
@@ -16,8 +16,8 @@ function greet(g: Greeting): string {
 console.log(greet(Formal("World")))  // Good day, World.
 console.log(greet(Casual("friend"))) // Hey friend!`
 
-const COMPILE = `sjs compile hello.sjs --out hello.js
-node hello.js`
+const COMPILE = `superjs build hello.sjs
+node dist/hello.js`
 
 const STEPS = [
   { label: 'Install the compiler', key: 'install' },
