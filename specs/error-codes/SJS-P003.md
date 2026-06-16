@@ -7,7 +7,7 @@
 ## Description
 
 A type annotation in a variable declaration, function parameter, return type position, or
-interface/class member contains syntax that the SJS type grammar does not accept.
+object-type or class member contains syntax that the SJS type grammar does not accept.
 
 This diagnostic is emitted in preference to the general `SJS-P001` when the parser has
 already consumed a `:` (or `->` in a function return position) and has entered type-annotation
@@ -30,10 +30,10 @@ Common triggers:
 ## Example
 
 ```sjs
-// ✗ error — intersection type is not allowed in SJS (use interface extension)
+// ✗ error — intersection type is not allowed in SJS (use object-type extension)
 function merge(a: Foo & Bar): void { }
 //                    ^ SJS-P003: Invalid syntax in type annotation; '&' intersection types
-//                               are not allowed — use interface extension instead (SJS-E005)
+//                               are not allowed — use object-type extension instead (SJS-E005)
 
 // ✗ error — conditional type is not allowed
 type NonNull<T> = T extends null ? never : T
@@ -54,8 +54,8 @@ function foo(x: ): void { }
 Replace disallowed TypeScript-specific constructs with their SJS equivalents:
 
 ```sjs
-// ✓ correct — interface extension instead of intersection
-interface Merged extends Foo, Bar { }
+// ✓ correct — object-type extension instead of intersection
+type Merged extends Foo, Bar { }
 function merge(a: Merged): void { }
 
 // ✓ correct — explicit nullable union instead of conditional type

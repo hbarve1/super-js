@@ -74,8 +74,8 @@ function handle(err: Error | string): string {
 `"prop" in x` narrows `x` to the subset of the union whose types declare `prop`. Members that do not declare `prop` are narrowed out in the true branch.
 
 ```sjs
-interface A { a: number; }
-interface B { b: string; }
+type A { a: number; }
+type B { b: string; }
 type AB = A | B;
 
 function use(v: AB): string {

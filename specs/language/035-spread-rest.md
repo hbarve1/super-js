@@ -99,7 +99,7 @@ const a: number[] = [1, 2, 3];
 const b: number[] = [4, 5, 6];
 const merged: number[] = [...a, ...b];
 
-interface Options { timeout: number; retries: number; }
+type Options { timeout: number; retries: number; }
 const defaults: Options = { timeout: 5000, retries: 3 };
 const overrides: Options = { ...defaults, timeout: 1000 };
 
@@ -174,8 +174,8 @@ const ys: number[] = [3, 4];
 const all: number[] = [...xs, ...ys, 5];
 
 // Object spread — explicit result type
-interface Point { x: number; y: number; }
-interface Point3D { x: number; y: number; z: number; }
+type Point { x: number; y: number; }
+type Point3D { x: number; y: number; z: number; }
 const p2: Point = { x: 1, y: 2 };
 const p3: Point3D = { ...p2, z: 3 };
 

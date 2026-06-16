@@ -45,7 +45,7 @@ T?  ≡  T | null
 
 ### Optional property: `prop?: T`
 
-A property declared as `prop?: T` on an interface or object type has the type `T | undefined` within the object. When the property is absent from an object literal, its value is `undefined`. Inside a function or block that has narrowed the property to be present, its type is `T`.
+A property declared as `prop?: T` on an object type has the type `T | undefined` within the object. When the property is absent from an object literal, its value is `undefined`. Inside a function or block that has narrowed the property to be present, its type is `T`.
 
 ```
 { prop?: T }  means: prop is absent (undefined) or T
@@ -255,7 +255,7 @@ if (name !== null) {
 }
 
 // Optional chaining
-interface User {
+type User {
   address?: { city: string; };
 }
 function getCity(u: User): string | undefined {
@@ -276,7 +276,7 @@ function greet(title?: string): string {
 }
 
 // Chained optional access
-interface Config {
+type Config {
   server?: { host?: string; };
 }
 function getHost(cfg: Config): string | undefined {
@@ -308,7 +308,7 @@ function unsafe(x: string?): string {
 }
 
 // SJS-E003: method call on nullable
-interface Node {
+type Node {
   getValue(): number;
 }
 function use(n: Node?): number {

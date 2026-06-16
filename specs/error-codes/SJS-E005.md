@@ -9,7 +9,7 @@
 TypeScript intersection types (`A & B`) are not valid SJS syntax. They allow types to be merged
 silently, producing shapes that are difficult to reason about and can be unsound.
 
-Use interface extension (`extends`) to compose named shapes explicitly.
+Use object-type extension (`extends`) to compose named shapes explicitly.
 
 ## Example
 
@@ -22,12 +22,12 @@ type AdminUser = User & { role: string }    // SJS-E005
 
 ```sjs
 // ✓ correct — explicit extension
-interface AdminUser extends User {
+type AdminUser extends User {
   role: string
 }
 ```
 
-If the two interfaces are from separate sources and you cannot extend them, define a new interface
+If the two object types are from separate sources and you cannot extend them, define a new object type
 that includes both sets of properties explicitly.
 
 ## Related codes

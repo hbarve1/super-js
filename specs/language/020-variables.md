@@ -187,7 +187,7 @@ score = score + 10;
 const PI = 3.14159;
 
 // Object destructuring with typed bindings
-interface Point { x: number; y: number; }
+type Point { x: number; y: number; }
 const origin: Point = { x: 0, y: 0 };
 const { x: number, y: number } = origin;
 
