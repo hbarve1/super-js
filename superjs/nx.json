@@ -29,6 +29,7 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
+      "exclude": ["apps/vscode-extension/**"],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
