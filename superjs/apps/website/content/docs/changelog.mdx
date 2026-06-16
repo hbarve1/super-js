@@ -42,7 +42,7 @@ and Source Map v3 generation.
 - **Sound null safety** (SJS-E001 / SJS-E003): types are non-nullable by default; `T?` is the nullable form, with control-flow narrowing
 - **Type mismatch detection** (SJS-E002): assignment and return-type checking
 - **Sum types + exhaustive `match`** (SJS-E007): `type Result<T,E> = Ok(T) | Err(E)`, lowered to tagged objects; non-exhaustive matches are a compile error
-- **Structural interfaces** (Go-style), **generics** with inference, and a `dynamic` escape hatch instead of `any`
+- **Structural object types** (Go-style), **generics** with inference, and a `dynamic` escape hatch instead of `any`
 - **Strict mode** (SJS-W001): promotes implicit-`dynamic` warnings to errors
 
 ### Configuration & JSX

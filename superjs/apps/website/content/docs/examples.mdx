@@ -76,13 +76,13 @@ console.log(display)           // "Unknown"
 ### Optional Chaining and Nullish Coalescing
 
 ```sjs
-interface Address {
+type Address {
   street: string
   city: string
   zip: string?
 }
 
-interface User {
+type User {
   name: string
   address: Address?
 }
@@ -218,12 +218,12 @@ console.log(zip([1, 2, 3], ["a", "b", "c"]))
 // [[1, "a"], [2, "b"], [3, "c"]]
 ```
 
-## 5. Structural Interfaces
+## 5. Structural Object Types
 
-SJS interfaces are structural — a class satisfies an interface by having the right shape, no `implements` keyword required.
+SJS object types are structural — a class satisfies an object type by having the right shape, no `implements` keyword required. Object types use the brace form of `type` (no `=`).
 
 ```sjs
-interface Shape {
+type Shape {
   area(): number
   perimeter(): number
 }
@@ -260,18 +260,18 @@ console.log(describe(new Circle(5)))
 console.log(describe(new Rectangle(4, 6)))
 ```
 
-### Interface Composition
+### Object Type Composition
 
 ```sjs
-interface Named {
+type Named {
   name: string
 }
 
-interface Aged {
+type Aged {
   age: number
 }
 
-interface Person extends Named, Aged {
+type Person extends Named, Aged {
   email: string
 }
 
@@ -288,7 +288,7 @@ JSX is enabled by default in SJS. Use it directly in `.sjs` files with no extra 
 
 ```sjs
 // card.sjs
-interface CardProps {
+type CardProps {
   title: string
   body: string
   footer?: string
@@ -308,7 +308,7 @@ function Card({ title, body, footer }: CardProps) {
 ### Component with Event Handlers
 
 ```sjs
-interface ButtonProps {
+type ButtonProps {
   label: string
   onClick: () => void
   disabled?: boolean
@@ -330,7 +330,7 @@ function Button({ label, onClick, disabled = false }: ButtonProps) {
 ### List Rendering
 
 ```sjs
-interface ListProps {
+type ListProps {
   items: string[]
   emptyMessage?: string
 }
@@ -358,7 +358,7 @@ function List({ items, emptyMessage = "Nothing here." }: ListProps) {
 import fs from 'fs'
 import path from 'path'
 
-interface FileStats {
+type FileStats {
   path: string
   lines: number
   sizeBytes: number
@@ -421,7 +421,7 @@ files.forEach(f => console.log(f))
 // server.sjs
 import http from 'http'
 
-interface Route {
+type Route {
   method: string
   path: string
   handler: (body: string) => string

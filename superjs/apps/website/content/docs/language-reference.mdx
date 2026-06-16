@@ -161,12 +161,12 @@ const label = match status {
 
 ---
 
-## Structural Interfaces
+## Structural Object Types
 
-SJS interfaces are satisfied implicitly — Go-style. A type satisfies an interface if it has all the required members. No `implements` keyword is needed or supported.
+SJS object types are satisfied implicitly — Go-style. A type satisfies an object type if it has all the required members. No `implements` keyword is needed or supported. Object types use the brace form of `type` (no `=`).
 
 ```sjs
-interface Shape {
+type Shape {
   area(): number
   perimeter(): number
 }
@@ -192,19 +192,19 @@ printShape(new Circle(5))
 printShape(new Rect(4, 6))
 ```
 
-Interfaces can extend other interfaces:
+Object types can extend other object types:
 
 ```sjs
-interface Printable {
+type Printable {
   toString(): string
 }
 
-interface Serializable extends Printable {
+type Serializable extends Printable {
   serialize(): string
 }
 ```
 
-**Intersection types (`A & B`) are banned.** Extend interfaces instead.
+**Intersection types (`A & B`) are banned.** Compose object types with `extends` instead.
 
 ---
 
@@ -251,10 +251,10 @@ s.push(2)
 const top: number? = s.pop()  // number?
 ```
 
-Generic interfaces:
+Generic object types:
 
 ```sjs
-interface Container<T> {
+type Container<T> {
   get(): T?
   set(value: T): void
 }
@@ -309,7 +309,7 @@ class Dog extends Animal {
 JSX is on by default in SJS — no pragma or config needed.
 
 ```sjs
-interface ButtonProps {
+type ButtonProps {
   label: string
   onClick: () => void
   disabled?: boolean
@@ -396,12 +396,12 @@ These features from TypeScript are **permanently excluded** from SJS to keep the
 |----------------|-------------|
 | `any` | `dynamic` |
 | `T extends U ? A : B` (conditional types) | Sum types + match |
-| `{ [K in keyof T]: ... }` (mapped types) | Explicit interfaces |
+| `{ [K in keyof T]: ... }` (mapped types) | Explicit object types |
 | Template literal types | — |
 | `infer` | — |
 | `namespace` | ES modules |
 | TypeScript `enum` | Sum types |
-| `A & B` (intersection types) | Interface extension |
+| `A & B` (intersection types) | Object type extension (`extends`) |
 | `!` non-null assertion | Narrowing (`if (x !== null)`) |
 
 These are not missing features — they are deliberate omissions. SJS prioritizes a sound, predictable type system over maximum expressiveness.
