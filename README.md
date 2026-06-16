@@ -1,6 +1,6 @@
 # SuperJS (SJS)
 
-SuperJS is a new programming language that compiles to JavaScript. It is a strict superset of JavaScript — every valid `.js` file is also valid `.sjs` — extended with a sound, Go-inspired type system, first-class null safety, algebraic sum types, match expressions, and JSX support with no configuration required.
+SuperJS is a strict, type-safe superset of JavaScript that follows the ECMAScript standard — every valid `.js` file is also valid `.sjs`, with every modern JS feature (ES5 through ES2025) type-checked. It adds a sound, Go-inspired type system, first-class null safety, algebraic sum types, match expressions, and JSX support with no configuration required. It compiles to clean JavaScript today; native binaries and WebAssembly are on the roadmap — one source, every target.
 
 SuperJS is **not** TypeScript with a different extension. It deliberately bans the parts of TypeScript that make type systems unsound (`any`, mapped types, conditional types, `infer`) and replaces them with simpler, safer constructs.
 
@@ -13,13 +13,14 @@ SuperJS is **not** TypeScript with a different extension. It deliberately bans t
 ## Key Features
 
 - **Strict superset of JavaScript** — valid JS is valid SJS, no migration cliff
+- **ECMAScript-faithful** — tracks the standard; every feature ES5 through ES2025 is type-checked
 - **Sound null safety** — types are non-nullable by default; `T?` is the explicit nullable form
 - **Sum types and match expressions** — algebraic variants with exhaustiveness checking
 - **Go-style structural object types** — defined with `type X { … }`, implicit satisfaction, no `implements` boilerplate
-- **Gradual static typing** — annotate where you want guarantees; untyped code still runs
 - **`dynamic` instead of `any`** — runtime-checked, not a soundness hole
+- **Gradual static typing** — annotate where you want guarantees; untyped code still runs
 - **JSX on by default** — no plugin or config required
-- **Unified CLI** — `superjs build | lint | format | test`
+- **One source, every target** — compiles to clean JS today; native binaries and WASM on the roadmap
 
 ---
 

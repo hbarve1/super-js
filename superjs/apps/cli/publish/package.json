@@ -1,7 +1,7 @@
 {
   "name": "@superjsorg/cli",
   "version": "0.1.0",
-  "description": "The Super.js command-line compiler — build, check, and explain .sjs files. A null-safe, sum-typed superset of JavaScript.",
+  "description": "The Super.js command-line compiler — build, check, translate, and explain .sjs files. A strict, type-safe, ECMAScript-faithful superset of JavaScript.",
   "license": "GPL-3.0-or-later",
   "author": "Himank Barve",
   "homepage": "https://superjs.org",

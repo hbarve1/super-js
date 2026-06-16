@@ -18,7 +18,7 @@ export function CallToAction() {
           today.
         </h2>
         <p className="text-text-muted mb-8 max-w-md mx-auto">
-          Type-safe by default. Zero configuration. Compiles to plain JavaScript.
+          Strict types, null-safe, ECMAScript-faithful. Zero config — compiles to clean JavaScript.
         </p>
         <div className="mb-8 flex justify-center">
           <CopyCommand command="npm i -g @superjsorg/cli" />
