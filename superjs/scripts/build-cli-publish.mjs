@@ -20,9 +20,24 @@ const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' })
 run('pnpm nx build @superjs/cli')
 
 // 2. Bundle the binary to a single self-contained ESM file (shebang preserved).
+//    The `translate` command pulls in the TypeScript compiler — a CommonJS module
+//    that at init calls `require('fs')` and reads `__filename`/`__dirname`, none
+//    of which exist in an ESM bundle. Inject the standard CJS shims: esbuild's
+//    `__require` shim picks up a real `require` when one is in scope, and TS's
+//    filesystem probing needs the dirname globals. Without these, TS init throws
+//    "Dynamic require of 'fs'…" / "__filename is not defined".
+const requireBanner = [
+  "import{createRequire as __cr}from'node:module';",
+  "import{fileURLToPath as __furl}from'node:url';",
+  "import{dirname as __dir}from'node:path';",
+  'const require=__cr(import.meta.url);',
+  'const __filename=__furl(import.meta.url);',
+  'const __dirname=__dir(__filename);',
+].join('')
 run(
   'node_modules/.bin/esbuild apps/cli/src/main.ts' +
     ' --bundle --platform=node --format=esm --target=node18' +
+    ` --banner:js=${JSON.stringify(requireBanner)}` +
     ' --outfile=apps/cli/publish/main.js',
 )
 

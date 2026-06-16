@@ -6,7 +6,7 @@
 
 import { type IO, nodeIO, line, errline } from './io.js';
 import {
-  type ParsedArgs, VERSION, check, build, explain, init, doctor, stub,
+  type ParsedArgs, VERSION, check, build, translate, explain, init, doctor, stub,
 } from './commands.js';
 
 const STUBS = new Set(['format', 'lint', 'add', 'doc', 'verify', 'migrate', 'test', 'lsp', 'repl']);
@@ -40,6 +40,7 @@ usage: superjs <command> [options]
 commands:
   build <files...>     compile to JS (+ source maps) under --out-dir (default dist)
   check <files...>     type-check and report diagnostics  [--format pretty|json]
+  translate <d.ts...>  translate TypeScript .d.ts declarations to .d.sjs  [--out-dir dir]
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
   init                 write a default ${'superjs.config.json'}
   doctor               report environment + toolchain health
@@ -69,6 +70,7 @@ export async function run(argv: readonly string[], io: IO = nodeIO): Promise<num
   switch (command) {
     case 'check': return check(args, io);
     case 'build': return build(args, io);
+    case 'translate': return translate(args, io);
     case 'explain': return explain(args, io);
     case 'init': return init(args, io);
     case 'doctor': return doctor(args, io);

@@ -156,6 +156,43 @@ describe('build', () => {
   });
 });
 
+describe('translate (.d.ts → .d.sjs)', () => {
+  it('translates a .d.ts file alongside the source by default', async () => {
+    const io = makeIO({ '/work/types.d.ts': 'export type Id = string;\nexport interface User { name: string; age: number; }' });
+    expect(await run(['translate', 'types.d.ts'], io)).toBe(0);
+    const out = io.fs.get('/work/types.d.sjs');
+    expect(out).toBeDefined();
+    expect(out).toContain('type Id = string');
+    expect(out).toContain('type User');
+    expect(io.stdout()).toContain('translated types.d.ts → types.d.sjs');
+  });
+  it('honours --out-dir', async () => {
+    const io = makeIO({ '/work/types.d.ts': 'export type Id = string;' });
+    expect(await run(['translate', 'types.d.ts', '--out-dir', 'sjs'], io)).toBe(0);
+    expect(io.fs.has('/work/sjs/types.d.sjs')).toBe(true);
+  });
+  it('reports unsupported TS forms as warnings (degraded to dynamic)', async () => {
+    const io = makeIO({ '/work/x.d.ts': 'export type X = A & B;' });
+    await run(['translate', 'x.d.ts'], io);
+    expect(io.stderr()).toContain('warning');
+  });
+  it('rejects a non-.d.ts file', async () => {
+    const io = makeIO({ '/work/foo.ts': 'export const x = 1;' });
+    expect(await run(['translate', 'foo.ts'], io)).toBe(1);
+    expect(io.stderr()).toContain('is not a .d.ts file');
+  });
+  it('fails on a missing file', async () => {
+    const io = makeIO();
+    expect(await run(['translate', 'missing.d.ts'], io)).toBe(1);
+    expect(io.stderr()).toContain("cannot find file 'missing.d.ts'");
+  });
+  it('usage error with no arguments', async () => {
+    const io = makeIO();
+    expect(await run(['translate'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs translate');
+  });
+});
+
 describe('init & doctor', () => {
   it('init writes a default config, then leaves it untouched', async () => {
     const io = makeIO();
