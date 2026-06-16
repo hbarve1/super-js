@@ -1,17 +1,17 @@
 import { sjs } from '../../src/runtime/jsx';
 
-interface CardProps {
+type CardProps {
   title: string;
   children?: dynamic;
 }
 
-interface TabProps {
+type TabProps {
   label: string;
   active?: boolean;
   onClick?: () => void;
 }
 
-interface TabPanelProps {
+type TabPanelProps {
   children?: dynamic;
   active?: boolean;
 }

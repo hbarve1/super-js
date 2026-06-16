@@ -7,7 +7,7 @@ type Age = number
 type Status = 'active' | 'inactive' | 'pending'
 
 // Interface definitions
-interface User {
+type User {
   id: ID
   name: Name
   age: Age

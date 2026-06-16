@@ -5,18 +5,18 @@
 
 // ─── Behavior interfaces ──────────────────────────────────────────────────────
 
-interface Timestamped {
+type Timestamped {
   createdAt: number
   updatedAt: number
   touch(): void
 }
 
-interface Validatable {
+type Validatable {
   validate(): string[]   // empty array = valid
   isValid(): boolean
 }
 
-interface Serializable {
+type Serializable {
   toJSON(): string
 }
 
@@ -45,7 +45,7 @@ function withSerialization<T>(obj: T): T & Serializable {
 
 // ─── Domain objects ───────────────────────────────────────────────────────────
 
-interface UserData {
+type UserData {
   name: string
   email: string
   role: string
@@ -76,7 +76,7 @@ function createUser(name: string, email: string, role: string): User {
 
 // ─── Another domain object ────────────────────────────────────────────────────
 
-interface ProductData {
+type ProductData {
   sku: string
   price: number
   stock: number

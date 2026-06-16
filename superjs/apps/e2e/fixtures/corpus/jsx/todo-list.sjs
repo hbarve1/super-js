@@ -1,18 +1,18 @@
 import { sjs } from '../../src/runtime/jsx';
 
-interface TodoItem {
+type TodoItem {
   id: number;
   text: string;
   completed: boolean;
 }
 
-interface TodoListProps {
+type TodoListProps {
   items: TodoItem[];
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-interface TodoInputProps {
+type TodoInputProps {
   onAdd: (text: string) => void;
 }
 

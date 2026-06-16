@@ -154,7 +154,7 @@ export class Cursor {
       if (this.current.precededByLineBreak) return;
       if (
         this.isAny(
-          '}', 'const', 'let', 'var', 'function', 'class', 'interface', 'type',
+          '}', 'const', 'let', 'var', 'function', 'class', 'type',
           'if', 'for', 'while', 'do', 'switch', 'return', 'throw', 'try',
           'import', 'export', 'break', 'continue',
         )

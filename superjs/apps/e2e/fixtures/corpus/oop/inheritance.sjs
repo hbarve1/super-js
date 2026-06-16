@@ -5,7 +5,7 @@
 
 // ─── Base interface ───────────────────────────────────────────────────────────
 
-interface Vehicle {
+type Vehicle {
   make: string
   model: string
   year: number
@@ -15,13 +15,13 @@ interface Vehicle {
 
 // ─── Extended interfaces (structural subtypes) ────────────────────────────────
 
-interface ElectricVehicle extends Vehicle {
+type ElectricVehicle extends Vehicle {
   batteryKwh: number
   range(): number
   charge(): string
 }
 
-interface HybridVehicle extends Vehicle {
+type HybridVehicle extends Vehicle {
   batteryKwh: number
   fuelLitres: number
   range(): number
@@ -87,7 +87,7 @@ function describeVehicle(v: Vehicle): void {
 }
 
 // Structural narrowing: accept any Vehicle that also has `range()`
-interface HasRange {
+type HasRange {
   range(): number
 }
 

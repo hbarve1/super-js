@@ -22,8 +22,8 @@ describe('basic emission', () => {
   it('emits a function declaration', () => {
     expect(js('function add(a: number, b: number): number { return a + b; }')).toContain('function add(a, b) {');
   });
-  it('drops interfaces and type aliases entirely', () => {
-    expect(js('interface I { x: number; }\ntype A = string;\nconst y = 1;').trim()).toBe('const y = 1;');
+  it('drops object types and type aliases entirely', () => {
+    expect(js('type I { x: number; }\ntype A = string;\nconst y = 1;').trim()).toBe('const y = 1;');
   });
 });
 

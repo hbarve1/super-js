@@ -5,23 +5,23 @@
 
 // --- Constraint interfaces ---
 
-interface Ordered {
+type Ordered {
   lessThan(other: Ordered): boolean
 }
 
-interface Serializable {
+type Serializable {
   serialize(): string
 }
 
-interface HasId {
+type HasId {
   id: number
 }
 
-interface Describable {
+type Describable {
   describe(): string
 }
 
-interface Measurable {
+type Measurable {
   measure(): number
 }
 

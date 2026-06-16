@@ -1,13 +1,13 @@
 // Builder Pattern in SJS
 
-interface QueryConfig {
+type QueryConfig {
   table: string
   conditions: string[]
   limit: number?
   orderBy: string?
 }
 
-interface QueryBuilder {
+type QueryBuilder {
   from(table: string): QueryBuilder
   where(condition: string): QueryBuilder
   limitTo(n: number): QueryBuilder

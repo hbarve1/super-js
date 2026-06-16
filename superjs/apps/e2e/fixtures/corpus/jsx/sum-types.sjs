@@ -6,7 +6,7 @@ type LoadingState<T> =
   | Failed { error: string }
 
 // Props using sum type
-interface DataCardProps<T> {
+type DataCardProps<T> {
   state: LoadingState<T>
   renderData: (data: T) => JSX.Element
 }
@@ -34,7 +34,7 @@ function DataCard<T>(props: DataCardProps<T>): JSX.Element {
 // Using Result<T,E> in props
 type Result<T, E> = | Ok(T) | Err(E)
 
-interface FormFieldProps {
+type FormFieldProps {
   label: string
   value: string
   validation: Result<string, string>
@@ -65,7 +65,7 @@ function FormField(props: FormFieldProps): JSX.Element {
 // Sum type for button variants
 type ButtonVariant = | Primary | Secondary | Danger
 
-interface ButtonProps {
+type ButtonProps {
   variant: ButtonVariant
   label: string
   onClick: () => void

@@ -178,13 +178,13 @@ title ??= "Untitled";
 // title is now "Untitled"
 
 // &&= to update only when present/truthy
-interface Counter { hits: number; }
+type Counter { hits: number; }
 function increment(c: Counter): void {
   c.hits &&= c.hits + 1;
 }
 
 // ??= on object property
-interface Config { timeout: number?; }
+type Config { timeout: number?; }
 function normalize(cfg: Config): void {
   cfg.timeout ??= 5000;
 }
@@ -208,7 +208,7 @@ name ??= 42;
 //       ^^ SJS-E001: number is not assignable to string
 
 // SJS-E001: ||= on const property (readonly)
-interface Frozen { readonly value: number; }
+type Frozen { readonly value: number; }
 const f: Frozen = { value: 0 };
 f.value ||= 1;
 // ^^^^^^^ SJS-E001: cannot assign to readonly property value

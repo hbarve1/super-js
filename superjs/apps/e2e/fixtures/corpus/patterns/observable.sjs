@@ -1,7 +1,7 @@
 // Observable Pattern Example
 
 // Observer interface
-interface Observer<T> {
+type Observer<T> {
   update(value: T): void;
 }
 
@@ -35,7 +35,7 @@ class Observable<T> {
 }
 
 // Example: Stock price monitoring system
-interface StockData {
+type StockData {
   symbol: string;
   price: number;
   timestamp: Date;

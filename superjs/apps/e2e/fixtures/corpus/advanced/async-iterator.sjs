@@ -1,7 +1,7 @@
 // Async Iterator Example
 
 // Async data source interface
-interface DataSource<T> {
+type DataSource<T> {
   fetch(page: number): Promise<T[]>;
   hasMore(page: number): Promise<boolean>;
 }

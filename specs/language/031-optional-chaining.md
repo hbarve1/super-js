@@ -153,8 +153,8 @@ merge:
 ### Valid
 
 ```sjs
-interface Address { city: string; zip: string; }
-interface User    { name: string; address?: Address; }
+type Address { city: string; zip: string; }
+type User    { name: string; address?: Address; }
 
 // Optional property access
 function getCity(u: User): string | undefined {
@@ -162,7 +162,7 @@ function getCity(u: User): string | undefined {
 }
 
 // Chained optional access
-interface Config { db?: { host?: string; } }
+type Config { db?: { host?: string; } }
 function getHost(cfg: Config): string | undefined {
   return cfg.db?.host;
 }
@@ -187,7 +187,7 @@ function cityOrDefault(u: User): string {
 
 ```sjs
 // SJS-E003: plain . on nullable type
-interface Node { value: number; next?: Node; }
+type Node { value: number; next?: Node; }
 
 function bad(n: Node?): number {
   return n.value;

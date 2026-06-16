@@ -5,7 +5,7 @@
 
 // ─── Animal contract ──────────────────────────────────────────────────────────
 
-interface Animal {
+type Animal {
   name: string
   sound(): string
   describe(): string
@@ -38,7 +38,7 @@ function createParrot(name: string, phrase: string): Animal {
 
 // ─── Shape contract ───────────────────────────────────────────────────────────
 
-interface Shape {
+type Shape {
   area(): number
   perimeter(): number
   toString(): string

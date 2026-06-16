@@ -11,15 +11,15 @@
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 
-interface Named {
+type Named {
   name: string
 }
 
-interface Printable {
+type Printable {
   print(): void
 }
 
-interface Serializable {
+type Serializable {
   serialize(): string
 }
 

@@ -42,7 +42,7 @@
       ]
     },
     "sjs-sum-type-decl": {
-      "begin": "\\b(type)\\s+([A-Z][A-Za-z0-9_$]*)\\s*(<[^>]*>)?\\s*(=)",
+      "begin": "\\b(type)\\s+([A-Z][A-Za-z0-9_$]*)\\s*(<[^>]*>)?\\s*(=)?",
       "beginCaptures": {
         "1": { "name": "storage.type.sjs" },
         "2": { "name": "entity.name.type.sjs" },
@@ -52,7 +52,7 @@
         },
         "4": { "name": "keyword.operator.assignment.sjs" }
       },
-      "end": "(?=;|^\\s*\\n|^\\s*(?:type|function|const|let|var|class|interface|export|import|return|throw|if|else|switch|for|while|do|try|catch|finally|async|await|yield|new|void|break|continue|@)\\b)",
+      "end": "(?=;|^\\s*\\n|^\\s*(?:type|function|const|let|var|class|export|import|return|throw|if|else|switch|for|while|do|try|catch|finally|async|await|yield|new|void|break|continue|@)\\b)",
       "patterns": [
         {
           "match": "\\|",

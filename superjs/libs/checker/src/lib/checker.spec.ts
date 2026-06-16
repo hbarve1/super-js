@@ -47,13 +47,13 @@ describe('assignability (E002)', () => {
     clean('let x: number = 42;');
   });
   it('accepts structural object assignment', () => {
-    clean('interface P { x: number; } const p: P = { x: 1 };');
+    clean('type P { x: number; } const p: P = { x: 1 };');
   });
   it('rejects structurally incompatible object', () => {
-    expect(has('interface P { x: number; } const p: P = { x: "no" };', 'SJS-E002')).toBe(true);
+    expect(has('type P { x: number; } const p: P = { x: "no" };', 'SJS-E002')).toBe(true);
   });
   it('rejects missing required property', () => {
-    expect(has('interface P { x: number; y: number; } const p: P = { x: 1 };', 'SJS-E002')).toBe(true);
+    expect(has('type P { x: number; y: number; } const p: P = { x: 1 };', 'SJS-E002')).toBe(true);
   });
 });
 

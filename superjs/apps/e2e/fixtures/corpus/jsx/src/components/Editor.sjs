@@ -1,6 +1,6 @@
 // Markdown editor textarea component
 
-interface EditorProps {
+type EditorProps {
   value: string
   onChange: (value: string) => void
   onFormat: (type: string) => void

@@ -4,15 +4,15 @@
 
 // --- Constraint interfaces ---
 
-interface HasLength {
+type HasLength {
   length: number
 }
 
-interface Comparable<T> {
+type Comparable<T> {
   compareTo(other: T): number
 }
 
-interface Printable {
+type Printable {
   toString(): string
 }
 

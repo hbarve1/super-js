@@ -276,7 +276,7 @@ function collectDeclarations(program: Program): DeclRecord[] {
       }
       case 'FunctionDecl': return push(n['id'], 'function');
       case 'ClassDecl': return push(n['id'], 'class');
-      case 'InterfaceDecl': return push(n['id'], 'interface');
+      case 'ObjectTypeDecl': return push(n['id'], 'type');
       case 'TypeDecl': return push(n['id'], 'type');
       case 'Parameter': {
         const pat = n['pattern'] as { kind?: string };

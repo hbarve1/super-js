@@ -5,7 +5,7 @@ import fs from 'fs'
 
 type AnalysisResult<T> = | Success(T) | Failure(string)
 
-interface FileStats {
+type FileStats {
   path: string
   extension: string
   totalLines: number
@@ -15,7 +15,7 @@ interface FileStats {
   sizeBytes: number
 }
 
-interface ProjectStats {
+type ProjectStats {
   directory: string
   totalFiles: number
   totalLines: number

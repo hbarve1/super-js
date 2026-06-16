@@ -18,7 +18,7 @@ JavaScript's type system has accumulated escape hatches (`any`, mapped types, co
 - No `any` — use `dynamic` with intent
 - No `!` non-null assertion — use `?.` or explicit null checks
 - No `enum`, mapped types, conditional types, intersection types — simpler mental model
-- Structural interfaces (Go-style) — no `implements` boilerplate needed
+- Structural object types via `type` (Go-style, no `implements`) — no boilerplate needed
 
 ## End Goal
 
@@ -57,6 +57,6 @@ Ship **SuperJS 1.0** — a production-grade language toolchain usable by real pr
 - Null safety: `T?` = `T | null | undefined`; non-nullable by default; no `!`
 - Banned: `any`, `enum`, mapped types, conditional types, `A & B` intersections
 - `dynamic` = runtime-checked escape hatch, warns in strict mode
-- Structural interfaces — conformance checked structurally, no explicit `implements`
+- Structural object types via `type` (Go-style, no `implements`) — `type X extends … { }`; conformance checked structurally
 - Error codes: `SJS-E001`–`SJS-E019` (type errors), `SJS-W001`–`SJS-W012` (warnings), `SJS-L001`–`SJS-L011` (lint/security), `SJS-P001`–`SJS-P099` (parser)
 - CLI: `superjs build | lint | format | test [--watch] [--strict] [--json]`

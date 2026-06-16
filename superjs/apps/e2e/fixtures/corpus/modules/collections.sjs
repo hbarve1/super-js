@@ -1,5 +1,5 @@
 // modules/collections.sjs — generic Stack<T> and Queue<T> exports
-export interface Collection<T> { size: number; isEmpty(): boolean; toArray(): T[] }
+export type Collection<T> { size: number; isEmpty(): boolean; toArray(): T[] }
 
 export class Stack<T> {
   #items: T[] = []

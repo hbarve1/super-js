@@ -1,17 +1,17 @@
 // Dependency Injection Example
 
 // Service interfaces
-interface Logger {
+type Logger {
   log(message: string): void;
   error(message: string): void;
 }
 
-interface Storage {
+type Storage {
   get(key: string): string?;
   set(key: string, value: string): void;
 }
 
-interface UserService {
+type UserService {
   getCurrentUser(): string?;
   login(username: string): void;
   logout(): void;

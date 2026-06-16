@@ -52,7 +52,7 @@ Inside an async function, `throw expr` rejects the enclosing promise. `try/catch
 
 ### `for await...of` — async iteration
 
-Iterates over an `AsyncIterable<T>`. The loop variable has type `T`. The right-hand side must implement the `AsyncIterable<T>` interface (i.e., have a `[Symbol.asyncIterator]()` method returning `AsyncIterator<T>`). Each iteration implicitly awaits the next value.
+Iterates over an `AsyncIterable<T>`. The loop variable has type `T`. The right-hand side must satisfy the `AsyncIterable<T>` object type (i.e., have a `[Symbol.asyncIterator]()` method returning `AsyncIterator<T>`). Each iteration implicitly awaits the next value.
 
 ```sjs
 for await (const chunk: Buffer of stream) {

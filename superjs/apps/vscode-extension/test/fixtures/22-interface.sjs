@@ -1,3 +1,3 @@
-interface Comparable<T> {
+type Comparable<T> {
   compareTo(other: T): number
 }

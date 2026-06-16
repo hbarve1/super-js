@@ -74,8 +74,8 @@ The type-checker applies the following normalizations before comparing union typ
 When every member of a union has a literal-typed discriminant property at the same key, the union is called a **discriminated union**. The compiler uses the discriminant to narrow the full union to a single member in match arms and `if` branches.
 
 ```sjs
-interface Circle { kind: "circle"; radius: number; }
-interface Rect   { kind: "rect";   width: number; height: number; }
+type Circle { kind: "circle"; radius: number; }
+type Rect   { kind: "rect";   width: number; height: number; }
 
 type Shape = Circle | Rect;
 
@@ -119,7 +119,7 @@ function stringify(x) {
 
 **Union of pointer/reference types:** Lowered to a pointer with a tag stored in the low bits (pointer tagging), or as a `{ i8 tag, i8* ptr }` pair depending on alignment guarantees.
 
-**Discriminated unions of interface/object types:** Lowered to a pointer to the concrete struct; the discriminant field is checked at runtime for narrowing branches.
+**Discriminated unions of object types:** Lowered to a pointer to the concrete struct; the discriminant field is checked at runtime for narrowing branches.
 
 ---
 
@@ -197,8 +197,8 @@ function format(x: string | number): string {
 let name: string? = null;  // string | null
 
 // ✓ Discriminated union narrowing
-interface Success { status: "ok";   value: number; }
-interface Failure { status: "fail"; error: string; }
+type Success { status: "ok";   value: number; }
+type Failure { status: "fail"; error: string; }
 type Response = Success | Failure;
 
 function handle(r: Response): string {

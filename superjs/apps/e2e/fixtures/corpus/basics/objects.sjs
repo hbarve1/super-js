@@ -1,7 +1,7 @@
 // Objects in SJS
 
 // Interface definition
-interface Person {
+type Person {
   name: string
   age: number
   email: string?
@@ -32,7 +32,7 @@ console.log('older:', older.age)
 console.log('email length:', alice.email?.length)
 
 // Object methods via interface
-interface Counter {
+type Counter {
   value: number
   increment(): void
   decrement(): void
@@ -50,13 +50,13 @@ function createCounter(initial: number): Counter {
 }
 
 // Nested objects
-interface Address {
+type Address {
   street: string
   city: string
   country: string
 }
 
-interface Employee {
+type Employee {
   person: Person
   address: Address
   department: string

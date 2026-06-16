@@ -71,7 +71,7 @@ class Lowering {
 
   private stmtInner(s: Statement): IrStatement | IrStatement[] | null {
     switch (s.kind) {
-      case 'TypeDecl': case 'InterfaceDecl':
+      case 'TypeDecl': case 'ObjectTypeDecl':
         return null; // type-level — erased
       case 'ImportDecl':
         if (s.typeOnly) return null;

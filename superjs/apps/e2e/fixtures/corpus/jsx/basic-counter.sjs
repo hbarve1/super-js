@@ -1,6 +1,6 @@
 import { sjs } from '../../src/runtime/jsx';
 
-interface CounterProps {
+type CounterProps {
   initialCount?: number;
   label?: string;
 }

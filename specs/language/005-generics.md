@@ -24,9 +24,9 @@
                        [ "implements" <TypeRef> { "," <TypeRef> } ]
                        "{" { <ClassMember> } "}"
 
-<GenericInterface> ::= "interface" <Identifier> <TypeParameters>
+<GenericType>      ::= "type" <Identifier> <TypeParameters>
                        [ "extends" <TypeRef> { "," <TypeRef> } ]
-                       "{" { <InterfaceMember> } "}"
+                       "{" { <TypeMember> } "}"
 
 <GenericTypeAlias> ::= "type" <Identifier> <TypeParameters> "=" <Type> ";"
 ```
@@ -39,12 +39,12 @@ Type parameter names are conventionally single uppercase letters (`T`, `U`, `K`,
 
 ### Scope of type parameters
 
-Type parameters are scoped to the declaration that introduces them. A type parameter `T` introduced on a function is bound for the duration of that function's parameter list, return type, and body. On a class, `T` is bound for all instance members (but not static members, which must introduce their own parameters if needed). On an interface or type alias, `T` is bound within the body.
+Type parameters are scoped to the declaration that introduces them. A type parameter `T` introduced on a function is bound for the duration of that function's parameter list, return type, and body. On a class, `T` is bound for all instance members (but not static members, which must introduce their own parameters if needed). On a `type` declaration (either brace form or alias form), `T` is bound within the body.
 
 ```sjs
 function identity<T>(x: T): T { return x }   // T bound here only
 class Box<T> { value: T }                     // T bound to instance scope
-interface Pair<A, B> { first: A; second: B }  // A, B bound in body
+type Pair<A, B> { first: A; second: B }       // A, B bound in body
 type Result<T> = { ok: true; value: T } | { ok: false; error: string }
 ```
 
@@ -53,7 +53,7 @@ type Result<T> = { ok: true; value: T } | { ok: false; error: string }
 SJS bans `T extends U` type constraints entirely. This rule exists because:
 
 1. Constraint checking requires subtype decidability that conflicts with the SJS native compiler.
-2. Constraints are typically needed only because the type system lacks another mechanism; in SJS, structural interfaces handle the common case.
+2. Constraints are typically needed only because the type system lacks another mechanism; in SJS, structural object types handle the common case.
 3. Monomorphization generates one concrete function per instantiation; the compiler can verify structural compatibility at each call site without a general constraint mechanism.
 
 See the "Constraints workaround" section below for the recommended patterns.
@@ -94,12 +94,12 @@ All generic type parameters are **invariant** in v1. No `in`/`out` variance anno
 
 ### Constraints workaround
 
-Since `T extends Interface` is banned, the recommended patterns for constraining generic behaviour are:
+Since `T extends Type` is banned, the recommended patterns for constraining generic behaviour are:
 
-**Pattern 1 — Accept the interface directly (most common):**
+**Pattern 1 — Accept the object type directly (most common):**
 ```sjs
 // Instead of: function process<T extends Serializable>(x: T): string
-interface Serializable { serialize(): string }
+type Serializable { serialize(): string }
 function process(x: Serializable): string { return x.serialize() }
 ```
 
@@ -359,8 +359,8 @@ function wrap<T>(value: T): { wrapped: T } {
 const w1 = wrap(true)         // inferred: T = boolean
 const w2 = wrap<string>("x")  // explicit: T = string
 
-// ✓ Generic interface
-interface Container<T> {
+// ✓ Generic object type (`type` brace form)
+type Container<T> {
   value: T
   map<U>(fn: (x: T) => U): Container<U>
 }

@@ -27,8 +27,8 @@ The parser consults the innermost active production first, then walks outward.
 
 | Production | Sync tokens |
 |---|---|
-| `<Program>` | `import`, `export`, `const`, `let`, `function`, `class`, `interface`, `type`, `EOF` |
-| `<Statement>` | `const`, `let`, `var`, `function`, `class`, `interface`, `type`, `return`, `if`, `while`, `for`, `break`, `continue`, `throw`, `try`, `}` |
+| `<Program>` | `import`, `export`, `const`, `let`, `function`, `class`, `type`, `EOF` |
+| `<Statement>` | `const`, `let`, `var`, `function`, `class`, `type`, `return`, `if`, `while`, `for`, `break`, `continue`, `throw`, `try`, `}` |
 | `<FunctionDecl>` | `{` (start of body), `)` (end of params) |
 | `<ClassDecl>` | `{` (start of body) |
 | `<TypeAnnotation>` | `:`, `=`, `{`, `}`, `,`, `)`, `=>` |

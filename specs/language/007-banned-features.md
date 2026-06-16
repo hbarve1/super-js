@@ -150,24 +150,24 @@ type Shape =
 
 **Error code:** `SJS-E005`
 
-**SJS alternative:** Interface extension (`interface C extends A, B {}`) for named combined types. Named interfaces give the compiler a stable, declared layout.
+**SJS alternative:** Object type extension (`type C extends A, B {}`) for named combined types. Named object types give the compiler a stable, declared layout.
 
 ```sjs
 // ✗ Before (TypeScript intersection):
 type ColoredShape = Shape & Colored
 function render(cs: Shape & Colored): void { /* ... */ }
 
-// ✓ After (SJS interface extension):
-interface Shape { area(): number }
-interface Colored { color: string }
-interface ColoredShape extends Shape, Colored {}
+// ✓ After (SJS object type extension):
+type Shape { area(): number }
+type Colored { color: string }
+type ColoredShape extends Shape, Colored {}
 function render(cs: ColoredShape): void { /* ... */ }
 
 // ✗ Before (inline intersection in function param):
 function process(x: { id: number } & { name: string }): void { /* ... */ }
 
-// ✓ After (named interface):
-interface Entity { id: number; name: string }
+// ✓ After (named object type):
+type Entity { id: number; name: string }
 function process(x: Entity): void { /* ... */ }
 ```
 
@@ -211,21 +211,21 @@ function processNumber(x: number): number { return x * 2 }
 
 **Error code:** `SJS-E006`
 
-**SJS alternative:** Declare the target type explicitly with named members. For utility-type use cases, write the transformed interface by hand or use a generator script.
+**SJS alternative:** Declare the target type explicitly with named members. For utility-type use cases, write the transformed object type by hand or use a generator script.
 
 ```sjs
 // ✗ Before (TypeScript mapped type):
 type Partial<T> = { [K in keyof T]?: T[K] }
 type Readonly<T> = { readonly [K in keyof T]: T[K] }
 
-// ✓ After (SJS — explicit interface):
-interface PartialUser {
+// ✓ After (SJS — explicit object type):
+type PartialUser {
   name?: string
   email?: string
   age?: number
 }
 
-interface ReadonlyPoint {
+type ReadonlyPoint {
   readonly x: number
   readonly y: number
 }
@@ -234,7 +234,7 @@ interface ReadonlyPoint {
 type Nullable<T> = { [K in keyof T]: T[K] | null }
 
 // ✓ After (SJS — explicitly written out):
-interface NullableUser {
+type NullableUser {
   name: string?
   email: string?
   age: number?
@@ -251,7 +251,7 @@ interface NullableUser {
 
 **Error code:** `SJS-E009`
 
-**SJS alternative:** Explicit type annotations; generic type parameters on functions and interfaces.
+**SJS alternative:** Explicit type annotations; generic type parameters on functions and object types.
 
 ```sjs
 // ✗ Before (TypeScript infer):
@@ -288,8 +288,8 @@ type ConfigValue = Config['server']['port']
 // ✓ After (SJS — explicit type alias):
 type UserName = string   // the type of User.name
 
-interface ServerConfig { port: number; host: string }
-interface Config { server: ServerConfig }
+type ServerConfig { port: number; host: string }
+type Config { server: ServerConfig }
 type ConfigPort = number   // the type of Config.server.port
 ```
 
@@ -308,7 +308,7 @@ type ConfigPort = number   // the type of Config.server.port
 ```sjs
 // ✗ Before (TypeScript namespace):
 namespace Geometry {
-  export interface Point { x: number; y: number }
+  export type Point { x: number; y: number }
   export function distance(a: Point, b: Point): number {
     return Math.hypot(a.x - b.x, a.y - b.y)
   }
@@ -317,7 +317,7 @@ const d = Geometry.distance({ x: 0, y: 0 }, { x: 3, y: 4 })
 
 // ✓ After (SJS ES modules):
 // geometry.sjs
-export interface Point { x: number; y: number }
+export type Point { x: number; y: number }
 export function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }
@@ -346,8 +346,8 @@ type Config = typeof config   // SJS-E006
 
 function update(cfg: typeof config): void { /* ... */ }   // SJS-E006
 
-// ✓ After (SJS — explicit interface):
-interface Config { host: string; port: number }
+// ✓ After (SJS — explicit object type):
+type Config { host: string; port: number }
 const config: Config = { host: "localhost", port: 3000 }
 function update(cfg: Config): void { /* ... */ }
 ```
@@ -459,14 +459,14 @@ type Color = "red" | "green" | "blue"
 function paint(c: Color): void { /* ... */ }
 paint("red")
 
-// ✓ interface extension instead of intersection
-interface Named { name: string }
-interface Aged { age: number }
-interface Person extends Named, Aged {}
+// ✓ object type extension instead of intersection
+type Named { name: string }
+type Aged { age: number }
+type Person extends Named, Aged {}
 
 // ✓ ES module instead of namespace
 // shapes.sjs
-export interface Circle { radius: number }
+export type Circle { radius: number }
 export function circleArea(c: Circle): number { return Math.PI * c.radius ** 2 }
 ```
 

@@ -1,6 +1,6 @@
 // Custom hook for managing markdown editor state
 
-interface MarkdownState {
+type MarkdownState {
   raw: string
   rendered: string
   wordCount: number

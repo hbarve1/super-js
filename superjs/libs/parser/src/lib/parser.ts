@@ -111,7 +111,6 @@ class Parser {
       case 'function': return this.parseFunctionDecl(false);
       case 'class': return this.parseClassDecl(false);
       case 'abstract': return this.parseClassDecl(false);
-      case 'interface': return this.parseInterfaceDecl();
       case 'return': return this.parseReturn();
       case 'if': return this.parseIf();
       case 'while': return this.parseWhile();
@@ -454,26 +453,6 @@ class Parser {
     return false;
   }
 
-  private parseInterfaceDecl(): Statement {
-    const start = this.pos();
-    this.c.advance();
-    const id = this.parseIdentifier();
-    const typeParams = this.parseTypeParamsOpt();
-    const ext: ReturnType<Parser['parseTypeRef']>[] = [];
-    if (this.c.eat('extends')) {
-      ext.push(this.parseTypeRef());
-      while (this.c.eat(',')) ext.push(this.parseTypeRef());
-    }
-    this.c.expect('{');
-    const members: InterfaceMember[] = [];
-    while (!this.c.is('}') && !this.c.atEnd && !this.c.isAbandoned) {
-      if (this.c.eat(';')) continue;
-      members.push(this.parseInterfaceMember());
-    }
-    this.c.expect('}');
-    return this.fin(start, { kind: 'InterfaceDecl', id, ...(typeParams ? { typeParams } : {}), extends: ext, members });
-  }
-
   private parseInterfaceMember(): InterfaceMember {
     const start = this.pos();
     const readonly = this.eatModifier('readonly');
@@ -498,6 +477,28 @@ class Parser {
     this.c.advance(); // type
     const id = this.parseIdentifier();
     const typeParams = this.parseTypeParamsOpt();
+
+    // Brace form — `type X [extends A, B] { members }`. A named structural
+    // object type with optional multi-base extension (the role `interface` used
+    // to play). No `=`; the body follows the name (or the `extends` clause).
+    if (this.c.is('extends') || this.c.is('{')) {
+      const ext: ReturnType<Parser['parseTypeRef']>[] = [];
+      if (this.c.eat('extends')) {
+        ext.push(this.parseTypeRef());
+        while (this.c.eat(',')) ext.push(this.parseTypeRef());
+      }
+      this.c.expect('{');
+      const members: InterfaceMember[] = [];
+      while (!this.c.is('}') && !this.c.atEnd && !this.c.isAbandoned) {
+        if (this.c.eat(';')) continue;
+        members.push(this.parseInterfaceMember());
+      }
+      this.c.expect('}');
+      return this.fin(start, { kind: 'ObjectTypeDecl', id, ...(typeParams ? { typeParams } : {}), extends: ext, members });
+    }
+
+    // Alias form — `type X = <value>` (primitive, union, sum type, object
+    // literal, function type, …).
     this.c.expect('=');
     const value = this.parseTypeDeclValue();
     this.c.consumeSemicolon();

@@ -12,15 +12,15 @@
 // ─── Interfaces ────────────────────────────────────────────────────────────
 
 // Self-referential: T must be comparable to itself.
-interface Comparable<T> {
+type Comparable<T> {
   compareTo(other: T): number  // negative = less, 0 = equal, positive = greater
 }
 
-interface Printable {
+type Printable {
   print(): void
 }
 
-interface HasLength {
+type HasLength {
   length: number
 }
 

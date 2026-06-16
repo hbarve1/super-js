@@ -1,14 +1,14 @@
 // Middleware Pattern Example
 
 // Request and response types
-interface Request {
+type Request {
   path: string;
   method: string;
   headers: Record<string, string>;
   body: dynamic;
 }
 
-interface Response {
+type Response {
   status: number;
   headers: Record<string, string>;
   body: dynamic;

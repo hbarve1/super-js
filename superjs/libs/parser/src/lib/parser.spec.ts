@@ -38,9 +38,21 @@ describe('declarations', () => {
   it('class with members and access modifiers', () => {
     ok('class C<T> extends Base { private x: number = 0; static m(): void {} get v(): number { return 1 } }');
   });
-  it('interface (structural, no implements)', () => {
-    const s = first('interface Cmp<T> { compareTo(other: T): number; readonly id: string; }');
-    expect(s.kind).toBe('InterfaceDecl');
+  it('type brace form (structural object type, no implements)', () => {
+    const s = first('type Cmp<T> { compareTo(other: T): number; readonly id: string; }');
+    expect(s.kind).toBe('ObjectTypeDecl');
+  });
+  it('type brace form with extends (multi-base)', () => {
+    const s = first('type ColoredShape extends Shape, Colored { label?: string; }');
+    expect(s.kind).toBe('ObjectTypeDecl');
+  });
+  it('type alias form still parses', () => {
+    expect(first('type Id = string;').kind).toBe('TypeDecl');
+    expect(first('type Result<T, E> = Ok(T) | Err(E);').kind).toBe('TypeDecl');
+  });
+  it('the removed `interface` keyword is a parse error', () => {
+    const { diagnostics } = parse('interface Foo { x: number; }');
+    expect(diagnostics.some((d) => d.code === 'SJS-P001')).toBe(true);
   });
   it('import / export', () => {
     ok('import React, { useState as us } from "react";');

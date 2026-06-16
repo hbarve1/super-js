@@ -17,7 +17,7 @@
 import type {
   Program, Statement, Expression, TypeNode, Type, FunctionType, ObjectType,
   SumType, SumVariantType, PropertySignature, ParamType, Parameter, Pattern,
-  VariableDecl, FunctionDecl, ClassDecl, InterfaceDecl, TypeDecl, BlockStatement,
+  VariableDecl, FunctionDecl, ClassDecl, ObjectTypeDecl, TypeDecl, BlockStatement,
   IfStatement, MatchExpression, MatchArm, MatchPattern, Identifier, Span,
 } from '@superjs/types';
 import { DiagnosticBag, Codes } from '@superjs/diagnostics';
@@ -83,7 +83,7 @@ export class Checker implements TypeResolver {
   private collectTypes(body: readonly Statement[]): void {
     // 1a. Register shells so references resolve during 1b.
     const sumShells: { decl: TypeDecl; shell: SumType }[] = [];
-    const objShells: { node: ClassDecl | InterfaceDecl; shell: ObjectType }[] = [];
+    const objShells: { node: ClassDecl | ObjectTypeDecl; shell: ObjectType }[] = [];
     const aliases: TypeDecl[] = [];
 
     for (const s of body) {
@@ -100,7 +100,7 @@ export class Checker implements TypeResolver {
         } else {
           aliases.push(decl);
         }
-      } else if (decl.kind === 'InterfaceDecl' || decl.kind === 'ClassDecl') {
+      } else if (decl.kind === 'ObjectTypeDecl' || decl.kind === 'ClassDecl') {
         const shell: ObjectType = {
           kind: 'object', name: decl.id.name, properties: [],
           ...(decl.kind === 'ClassDecl' ? { nominal: true } : {}),
@@ -159,9 +159,9 @@ export class Checker implements TypeResolver {
     });
   }
 
-  private buildMembers(node: ClassDecl | InterfaceDecl): PropertySignature[] {
+  private buildMembers(node: ClassDecl | ObjectTypeDecl): PropertySignature[] {
     const out: PropertySignature[] = [];
-    if (node.kind === 'InterfaceDecl') {
+    if (node.kind === 'ObjectTypeDecl') {
       for (const m of node.members) {
         if (m.kind === 'InterfaceProperty') {
           out.push({ name: keyName(m.name), type: resolveType(m.type, this), optional: m.optional, readonly: m.readonly });
@@ -219,7 +219,7 @@ export class Checker implements TypeResolver {
       case 'VariableDecl': return this.checkVarDecl(s);
       case 'FunctionDecl': return this.checkFunctionDecl(s);
       case 'ClassDecl': return this.checkClassDecl(s);
-      case 'InterfaceDecl': case 'TypeDecl': case 'EmptyStatement':
+      case 'ObjectTypeDecl': case 'TypeDecl': case 'EmptyStatement':
       case 'ImportDecl': case 'DebuggerStatement': case 'BreakStatement':
       case 'ContinueStatement': return;
       case 'ExportNamedDecl':

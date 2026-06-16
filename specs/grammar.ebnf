@@ -17,7 +17,8 @@
 (*   - Match expressions (exhaustive)                           *)
 (*   - Nullable shorthand: T?  (not T | null)                   *)
 (*   - `dynamic` type  (replaces banned `any`)                  *)
-(*   - Structural interfaces (Go-style, no `implements`)        *)
+(*   - Structural object types via `type` (Go-style, no         *)
+(*     `implements`, no separate `interface` keyword)            *)
 (*                                                               *)
 (* BANNED (compiler error if present):                          *)
 (*   any, A & B (intersection), conditional types, mapped types,*)
@@ -34,7 +35,6 @@
 <Statement> ::= <VariableDecl>
               | <FunctionDecl>
               | <ClassDecl>
-              | <InterfaceDecl>
               | <TypeDecl>
               | <ImportDecl>
               | <ExportDecl>
@@ -155,24 +155,8 @@
 <IndexSignature> ::= "[" <Identifier> ":" <PrimitiveType> "]" ":" <Type> ";"
 
 
-(* ============================================================= *)
-(* INTERFACE DECLARATIONS (structural / Go-style)                *)
-(* ============================================================= *)
-(* No `implements` keyword. A value satisfies an interface       *)
-(* if it structurally provides all required members.             *)
-
-<InterfaceDecl> ::= "interface" <Identifier>
-                    [ <TypeParameters> ]
-                    [ "extends" <TypeRef> { "," <TypeRef> } ]
-                    "{" { <InterfaceMember> } "}"
-
-<InterfaceMember> ::= <InterfaceProperty>
-                    | <InterfaceMethod>
-                    | <IndexSignature>
-                    | ";"
-
-<InterfaceProperty> ::= [ "readonly" ] <Identifier> [ "?" ] ":" <Type> ";"
-
+(* InterfaceMethod = a method signature in an object type. Shared by the object  *)
+(* form of a type declaration and by inline <ObjectTypeLiteral>s.                 *)
 <InterfaceMethod> ::= <Identifier>
                       [ <TypeParameters> ]
                       "(" [ <ParameterList> ] ")"
@@ -180,15 +164,28 @@
 
 
 (* ============================================================= *)
-(* TYPE DECLARATIONS                                              *)
+(* TYPE DECLARATIONS (one keyword: `type`)                       *)
 (* ============================================================= *)
-(* SJS supports two forms of type aliases:                       *)
-(*   1. Plain alias:   type Alias<T> = SomeType                  *)
-(*   2. Sum type:      type Result<T,E> = Ok(T) | Err(E)         *)
-(* The distinction is syntactic: the RHS uses <VariantDef> form. *)
+(* SJS has a single declaration keyword, `type`, with two forms. *)
+(* There is no `interface` keyword (using it is a parse error).  *)
+(*                                                               *)
+(*   1. Alias:  type Alias<T> = SomeType                        *)
+(*              type Result<T,E> = Ok(T) | Err(E)               *)
+(*   2. Object: type Point { x: number; y: number }            *)
+(*              type J extends A, B { c: number }              *)
+(*                                                               *)
+(* The object form is structural / Go-style: no `implements`; a  *)
+(* value satisfies it if it provides all required members.       *)
+(* Intersection `A & B` is banned — compose bases with `extends`.*)
 
-<TypeDecl> ::= "type" <Identifier> [ <TypeParameters> ] "="
-               ( <SumTypeDef> | <Type> ) ";"
+<TypeDecl> ::= <TypeAliasDecl> | <ObjectTypeDecl>
+
+<TypeAliasDecl> ::= "type" <Identifier> [ <TypeParameters> ] "="
+                    ( <SumTypeDef> | <Type> ) ";"
+
+<ObjectTypeDecl> ::= "type" <Identifier> [ <TypeParameters> ]
+                     [ "extends" <TypeRef> { "," <TypeRef> } ]
+                     "{" { <ObjectTypeMember> } "}"
 
 <SumTypeDef> ::= <VariantDef> { "|" <VariantDef> }
                  (* note: at least two variants makes it a sum type;
@@ -230,7 +227,7 @@
                | "export" "type" "{" [ <ExportSpecifier> { "," <ExportSpecifier> } [ "," ] ] "}"
                            [ "from" <StringLiteral> ] ";"
                | "export" ( <VariableDecl> | <FunctionDecl> | <ClassDecl>
-                           | <InterfaceDecl> | <TypeDecl> )
+                           | <TypeDecl> )
 
 <ExportSpecifier> ::= <Identifier> [ "as" <Identifier> ]
 
@@ -293,6 +290,7 @@
 <ObjectTypeMember> ::= [ "readonly" ] <Identifier> [ "?" ] ":" <Type> ";"
                      | <IndexSignature>
                      | <InterfaceMethod>
+                     | ";"
 
 
 (* ============================================================= *)
@@ -628,7 +626,7 @@
 (* finally, for, function, if, import, in, instanceof, let,      *)
 (* match, new, null, of, return, static, super, switch, this,    *)
 (* throw, true, try, typeof, undefined, var, void, while, with,  *)
-(* yield, abstract, async, as, declare, from, get, interface,    *)
+(* yield, abstract, async, as, declare, from, get,               *)
 (* object, readonly, set, type                                    *)
 
 (* Banned identifiers (compiler emits an error if used):         *)

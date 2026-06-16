@@ -6,20 +6,20 @@
 // That is why functions using ?. have return type T | undefined even when the field type is T?.
 // Use ?. to traverse nullable object chains without manual null checks at every step.
 
-interface Address {
+type Address {
   street: string
   city: string
   zip: string?
 }
 
-interface Profile {
+type Profile {
   displayName: string?
   address: Address?
   tags: string[]?
   greet: (() => string)?
 }
 
-interface Organization {
+type Organization {
   name: string
   owner: Profile?
   auditor: Profile?

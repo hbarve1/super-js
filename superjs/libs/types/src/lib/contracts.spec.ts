@@ -52,7 +52,7 @@ describe('span helpers', () => {
 
 describe('keyword tables', () => {
   it('recognises SJS-specific keywords', () => {
-    for (const kw of ['match', 'dynamic', 'type', 'interface', 'readonly']) {
+    for (const kw of ['match', 'dynamic', 'type', 'readonly']) {
       expect(KEYWORD_SET.has(kw)).toBe(true);
     }
   });

@@ -1,6 +1,6 @@
 // Main App component — wires editor, preview, and toolbar together
 
-interface MarkdownState {
+type MarkdownState {
   raw: string
   rendered: string
   wordCount: number

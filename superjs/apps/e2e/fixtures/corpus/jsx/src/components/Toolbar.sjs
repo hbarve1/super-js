@@ -1,12 +1,12 @@
 // Toolbar component with formatting buttons and stats display
 
-interface ToolbarProps {
+type ToolbarProps {
   onFormat: (type: string) => void
   wordCount: number
   charCount: number
 }
 
-interface FormatButton {
+type FormatButton {
   type: string
   label: string
   title: string

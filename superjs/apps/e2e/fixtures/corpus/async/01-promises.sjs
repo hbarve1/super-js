@@ -24,7 +24,7 @@ function fetchAll(urls: string[]): Promise<string[]> {
 }
 
 // Promise.allSettled for partial success
-interface SettledResult {
+type SettledResult {
   url: string
   success: boolean
   value: string?

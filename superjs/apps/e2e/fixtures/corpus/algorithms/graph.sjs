@@ -1,6 +1,6 @@
 // Graph (Adjacency List) in SJS
 
-interface Graph {
+type Graph {
   addVertex(vertex: string): void
   addEdge(from: string, to: string): void
   neighbors(vertex: string): string[]

@@ -10,7 +10,7 @@
 
 // ─── 1. T? — value may be absent, shape is known ───────────────────────────
 
-interface User {
+type User {
   id: number
   nickname: string?   // may be null — but when present it is always a string
 }

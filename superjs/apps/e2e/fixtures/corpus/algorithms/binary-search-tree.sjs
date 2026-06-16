@@ -1,12 +1,12 @@
 // Binary Search Tree in SJS
 
-interface BSTNode<T> {
+type BSTNode<T> {
   value: T
   left: BSTNode<T>?
   right: BSTNode<T>?
 }
 
-interface BST<T> {
+type BST<T> {
   root: BSTNode<T>?
   insert(value: T): void
   contains(value: T): boolean
