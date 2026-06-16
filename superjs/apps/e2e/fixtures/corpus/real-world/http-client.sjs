@@ -8,7 +8,7 @@ type HttpError =
 
 type Result<T, E> = | Ok(T) | Err(E)
 
-interface RequestConfig {
+type RequestConfig {
   method: string
   headers: Record<string, string>
   body: string?
@@ -83,7 +83,7 @@ async function withRetry<T>(
   return Err(NetworkError({ message: 'Exhausted retries' }))
 }
 
-interface HttpClient {
+type HttpClient {
   get<T>(url: string, headers?: Record<string, string>): Promise<Result<T, HttpError>>
   post<T>(url: string, body: dynamic, headers?: Record<string, string>): Promise<Result<T, HttpError>>
 }
@@ -118,7 +118,7 @@ function describeError(e: HttpError): string {
   }
 }
 
-interface Todo { id: number; title: string; completed: boolean }
+type Todo { id: number; title: string; completed: boolean }
 
 async function main(): Promise<void> {
   const client = createClient('https://jsonplaceholder.typicode.com')

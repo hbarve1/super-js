@@ -4,7 +4,7 @@
 // || returns the right-hand side for ANY falsy value (0, "", false, null, undefined).
 // ??= assigns only when the variable is currently null or undefined — leaves other values intact.
 
-interface AppSettings {
+type AppSettings {
   theme: string?
   fontSize: number?
   language: string?

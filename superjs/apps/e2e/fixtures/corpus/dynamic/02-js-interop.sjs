@@ -31,7 +31,7 @@ function extractBoolean(raw: dynamic): boolean? {
 
 // ─── Typed config record ───────────────────────────────────────────────────
 
-interface ServerConfig {
+type ServerConfig {
   host: string
   port: number
   tls: boolean

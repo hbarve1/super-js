@@ -1,11 +1,11 @@
 // Linked List in SJS
 
-interface ListNode<T> {
+type ListNode<T> {
   value: T
   next: ListNode<T>?
 }
 
-interface LinkedList<T> {
+type LinkedList<T> {
   head: ListNode<T>?
   size: number
   prepend(value: T): void

@@ -7,12 +7,12 @@ type AppEvent =
   | DataLoaded { count: number }
   | ErrorOccurred { message: string }
 
-interface EventHandler<E> {
+type EventHandler<E> {
   handle(event: E): void
 }
 
 // Simple typed event bus
-interface EventBus {
+type EventBus {
   emit(event: AppEvent): void
   on(handler: (event: AppEvent) => void): void
   off(handler: (event: AppEvent) => void): void

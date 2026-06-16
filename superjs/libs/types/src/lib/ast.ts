@@ -30,7 +30,7 @@ export type Statement =
   | VariableDecl
   | FunctionDecl
   | ClassDecl
-  | InterfaceDecl
+  | ObjectTypeDecl
   | TypeDecl
   | ImportDecl
   | ExportNamedDecl
@@ -87,8 +87,14 @@ export interface ClassDecl extends NodeBase {
   readonly members: readonly ClassMember[];
 }
 
-export interface InterfaceDecl extends NodeBase {
-  readonly kind: 'InterfaceDecl';
+/**
+ * The brace form of a `type` declaration: `type X [extends A, B] { members }`.
+ * A named structural object type with optional multi-base extension — the role
+ * the (now removed) `interface` keyword used to fill. The alias form
+ * (`type X = …`) is {@link TypeDecl}; both come from the single `type` keyword.
+ */
+export interface ObjectTypeDecl extends NodeBase {
+  readonly kind: 'ObjectTypeDecl';
   readonly id: Identifier;
   readonly typeParams?: readonly TypeParam[];
   readonly extends: readonly TypeRefNode[];

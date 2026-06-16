@@ -4,7 +4,7 @@
 // Non-nullable fields (string, number) can never be null; the compiler rejects null assignment.
 // Narrowing: after `if (x === null)` branch, x is the non-null type in the else / continuing path.
 
-interface User {
+type User {
   id: number
   name: string
   email: string?

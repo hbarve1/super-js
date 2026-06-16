@@ -1,7 +1,7 @@
 // Generic Types Example
 
 // Generic interface
-interface Container<T> {
+type Container<T> {
   value: T;
   timestamp: Date;
 }
@@ -36,7 +36,7 @@ function wrapInContainer<T>(value: T): Container<T> {
 }
 
 // Generic type with constraints
-interface Identifiable {
+type Identifiable {
   id: number | string;
 }
 
@@ -71,7 +71,7 @@ function main(): void {
   console.log('Date container:', dateContainer);
 
   // Using generic function with constraints
-  interface User extends Identifiable {
+  type User extends Identifiable {
     id: number;
     name: string;
   }

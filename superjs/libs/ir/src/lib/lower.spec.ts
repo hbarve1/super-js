@@ -30,8 +30,8 @@ function find(node: unknown, t: string): Record<string, unknown> | undefined {
 }
 
 describe('type erasure', () => {
-  it('drops interface and type-alias declarations', () => {
-    const ir = lowerSource('interface I { x: number; }\ntype A = number;\nconst y = 1;');
+  it('drops object-type and type-alias declarations', () => {
+    const ir = lowerSource('type I { x: number; }\ntype A = number;\nconst y = 1;');
     expect(ir.body).toHaveLength(1);
     expect((ir.body[0] as { type: string }).type).toBe('VariableDeclaration');
   });

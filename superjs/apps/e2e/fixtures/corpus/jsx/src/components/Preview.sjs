@@ -1,6 +1,6 @@
 // Markdown preview component — renders HTML produced by useMarkdown
 
-interface PreviewProps {
+type PreviewProps {
   html: string
 }
 

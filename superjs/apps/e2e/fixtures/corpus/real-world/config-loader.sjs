@@ -12,7 +12,7 @@ type ConfigError =
 
 type Result<T, E> = | Ok(T) | Err(E)
 
-interface AppConfig {
+type AppConfig {
   host: string
   port: number
   database: DatabaseConfig
@@ -21,7 +21,7 @@ interface AppConfig {
 
 type LogLevel = | Debug | Info | Warn | Error
 
-interface DatabaseConfig {
+type DatabaseConfig {
   url: string
   maxConnections: number
   timeoutMs: number

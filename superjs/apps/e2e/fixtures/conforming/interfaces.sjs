@@ -1,4 +1,4 @@
-interface Point { x: number; y: number; }
+type Point { x: number; y: number; }
 
 function manhattan(p: Point): number {
   return p.x + p.y;

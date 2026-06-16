@@ -11,7 +11,7 @@ function parseUser2(raw: dynamic) {
 }
 
 // STAGE 3: Add return type
-interface User { name: string; age: number }
+type User { name: string; age: number }
 function parseUser3(raw: dynamic): User {
   return { name: raw.name || "unknown", age: raw.age || 0 }
 }

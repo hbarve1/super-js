@@ -1,7 +1,7 @@
 // Class Features Example
 
 // Shape interface
-interface Shape {
+type Shape {
   getArea(): number;
   getPerimeter(): number;
 }

@@ -7,7 +7,7 @@ type Action =
   | Reset
   | SetValue { value: number }
 
-interface State {
+type State {
   count: number
   history: number[]
 }
@@ -21,7 +21,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-interface Store<S> {
+type Store<S> {
   getState(): S
   dispatch(action: Action): void
   subscribe(listener: (state: S) => void): () => void

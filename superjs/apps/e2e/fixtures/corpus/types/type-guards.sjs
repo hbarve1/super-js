@@ -45,8 +45,8 @@ function printLength(value: string | null | undefined): void {
 }
 
 // User-defined type guard (type predicate)
-interface Car  { make: string; model: string }
-interface Bike { brand: string; gears: number }
+type Car  { make: string; model: string }
+type Bike { brand: string; gears: number }
 
 function isCar(vehicle: Car | Bike): vehicle is Car {
   return "make" in vehicle

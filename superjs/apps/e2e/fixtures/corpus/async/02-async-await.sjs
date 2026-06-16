@@ -2,13 +2,13 @@
 
 type Result<T, E> = | Ok(T) | Err(E)
 
-interface User {
+type User {
   id: number
   name: string
   email: string
 }
 
-interface Post {
+type Post {
   id: number
   userId: number
   title: string

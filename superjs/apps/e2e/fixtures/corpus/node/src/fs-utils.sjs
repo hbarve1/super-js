@@ -3,7 +3,7 @@
 import fs from 'fs'
 import path from 'path'
 
-interface WalkOptions {
+type WalkOptions {
   extensions: string[]
   maxDepth: number
 }

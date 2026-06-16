@@ -16,7 +16,7 @@ const display = username ?? 'Guest'
 console.log(display)
 
 // Optional chaining
-interface User {
+type User {
   name: string
   address: { city: string }?
 }

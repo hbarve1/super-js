@@ -1,6 +1,6 @@
 import { sjs } from '../../src/runtime/jsx';
 
-interface Article {
+type Article {
   id: number;
   title: string;
   content: string;
@@ -8,7 +8,7 @@ interface Article {
   date: string;
 }
 
-interface BlogProps {
+type BlogProps {
   articles: Article[];
 }
 

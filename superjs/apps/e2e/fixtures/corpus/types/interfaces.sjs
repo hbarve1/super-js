@@ -4,16 +4,16 @@
 
 // --- Interface declarations ---
 
-interface Shape {
+type Shape {
   area(): number
   perimeter(): number
 }
 
-interface Drawable {
+type Drawable {
   draw(): void
 }
 
-interface Named {
+type Named {
   name: string
 }
 

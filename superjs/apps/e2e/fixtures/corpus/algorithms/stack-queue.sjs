@@ -1,6 +1,6 @@
 // Stack and Queue in SJS
 
-interface Stack<T> {
+type Stack<T> {
   push(item: T): void
   pop(): T?
   peek(): T?
@@ -8,7 +8,7 @@ interface Stack<T> {
   size(): number
 }
 
-interface Queue<T> {
+type Queue<T> {
   enqueue(item: T): void
   dequeue(): T?
   front(): T?

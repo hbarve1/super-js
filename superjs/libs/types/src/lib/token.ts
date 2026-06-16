@@ -17,7 +17,7 @@ export const KEYWORDS = [
   'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let',
   'match', 'new', 'null', 'of', 'return', 'static', 'super', 'switch', 'this',
   'throw', 'true', 'try', 'typeof', 'undefined', 'var', 'void', 'while', 'with',
-  'yield', 'abstract', 'async', 'as', 'declare', 'from', 'get', 'interface',
+  'yield', 'abstract', 'async', 'as', 'declare', 'from', 'get',
   'object', 'readonly', 'set', 'type',
 ] as const;
 

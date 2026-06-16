@@ -1,7 +1,7 @@
 // Todo item type definition
 type Priority = 'low' | 'medium' | 'high';
 
-interface TodoItem {
+type TodoItem {
   id: number;
   title: string;
   description: string | null;

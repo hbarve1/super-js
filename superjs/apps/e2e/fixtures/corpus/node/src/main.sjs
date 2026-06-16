@@ -5,7 +5,7 @@ import path from 'path'
 import { analyzeDirectory, ProjectStats } from './analyzer'
 import { formatStats, formatStatsJson } from './formatter'
 
-interface CliOptions {
+type CliOptions {
   directory: string
   json: boolean
   top: number

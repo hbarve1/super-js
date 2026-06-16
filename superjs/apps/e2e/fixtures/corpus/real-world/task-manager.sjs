@@ -9,7 +9,7 @@ type Priority = | Low | Medium | High
 
 type TaskStatus = | Todo | InProgress | Done
 
-interface Task {
+type Task {
   id: string
   title: string
   description: string?
@@ -27,7 +27,7 @@ type TaskError =
 
 type Result<T, E> = | Ok(T) | Err(E)
 
-interface TaskUpdate {
+type TaskUpdate {
   title?: string
   status?: TaskStatus
   priority?: Priority
@@ -35,7 +35,7 @@ interface TaskUpdate {
 }
 
 // Storage interface
-interface TaskStore {
+type TaskStore {
   getAll(): Result<Task[], TaskError>
   getById(id: string): Result<Task, TaskError>
   create(title: string, priority: Priority, description?: string): Result<Task, TaskError>
