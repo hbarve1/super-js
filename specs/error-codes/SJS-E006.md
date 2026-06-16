@@ -23,11 +23,11 @@ type Optional<T> = {
 
 ## Fix
 
-Declare the explicit interface:
+Declare the explicit object type:
 
 ```sjs
 // ✓ correct — explicit optional shape
-interface OptionalUser {
+type OptionalUser {
   id?: number
   name?: string
   email?: string
@@ -35,7 +35,7 @@ interface OptionalUser {
 ```
 
 For library code that genuinely needs parameterised shapes, restructure as explicit generic
-interfaces with optional members.
+object types with optional members.
 
 ## Related codes
 

@@ -161,14 +161,14 @@ const timeout: number = userTimeout ?? 5000;
 // If userTimeout is 0, result is 0 — not 5000
 
 // Nullish assignment to initialize lazily
-interface Cache { data: string?; }
+type Cache { data: string?; }
 function getOrInit(c: Cache): string {
   c.data ??= "default";
   return c.data;
 }
 
 // Chained optional + nullish coalescing
-interface User { profile?: { displayName?: string; } }
+type User { profile?: { displayName?: string; } }
 function getName(u: User): string {
   return u.profile?.displayName ?? "Anonymous";
 }

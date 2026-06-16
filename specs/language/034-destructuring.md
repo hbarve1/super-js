@@ -159,21 +159,21 @@ Struct field extraction is direct pointer arithmetic — no runtime overhead for
 ### Valid
 
 ```sjs
-interface Point { x: number; y: number; }
+type Point { x: number; y: number; }
 const origin: Point = { x: 0, y: 0 };
 const { x: number, y: number } = origin;
 
 // Default values
-interface Options { timeout?: number; retries?: number; }
+type Options { timeout?: number; retries?: number; }
 function connect({ timeout = 5000, retries = 3 }: Options): void { }
 
 // Rename with type
-interface Response { statusCode: number; }
+type Response { statusCode: number; }
 const res: Response = { statusCode: 200 };
 const { statusCode as code: number } = res;
 
 // Nested destructuring
-interface Nested { a: { b: number; }; }
+type Nested { a: { b: number; }; }
 const data: Nested = { a: { b: 42 } };
 const { a: { b: number } } = data;
 
