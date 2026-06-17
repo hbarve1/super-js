@@ -160,6 +160,27 @@ Rules:
 | SJS-L004 | prefer `for…of` over `for…in` |
 | SJS-L005 | no `debugger` statement |
 
+### `doc`
+
+Generate API documentation from a module's exported declarations. Because SJS
+types are explicit and sound, the signature *is* the documentation — no
+`@param {type}` tags to drift. A leading JSDoc-style comment adds prose and tags
+(`@example`, `@since`, `@deprecated`, `@see`, …).
+
+```bash
+superjs doc src/api.sjs                  # Markdown to stdout
+superjs doc src/ --format json           # machine-readable
+superjs doc src/ --out-dir docs          # write one .md per file
+```
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--format <mode>` | `md` \| `json` | `md` | Output format |
+| `--out-dir <dir>` | path | stdout | Write one file per input instead of printing |
+
+> MVP: signatures + doc comments. The full doc site (`--serve`, HTML, validated
+> `@example` blocks) is later work — see [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md).
+
 ### `explain`
 
 Print the full reference for a diagnostic code.
@@ -194,14 +215,6 @@ superjs doctor
 
 These subcommands are reserved — invoking one today prints a not-yet-implemented
 notice and exits non-zero.
-
-#### `superjs doc` — documentation generator (planned, Stage 3)
-
-A built-in **JSDoc / TypeDoc alternative**. Because SJS types are sound, `doc`
-generates API documentation straight from the type system — no `@param` /
-`@returns` tags to drift out of sync with the code. Nullability (`T?`),
-sum-type variants, and structural shapes render exactly as the checker sees
-them, so the docs are as correct as the types. Design: [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md).
 
 #### `superjs test` — test runner (planned, Stage 5)
 

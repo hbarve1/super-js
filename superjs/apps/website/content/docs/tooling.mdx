@@ -138,6 +138,22 @@ superjs lint src/                 # human-readable
 superjs lint src/ --format json   # machine-readable for CI
 ```
 
+### `superjs doc`
+
+Generates API documentation from a module's exported declarations — a built-in
+**JSDoc / TypeDoc alternative**. SJS types are explicit and sound, so the
+signature is the documentation; a leading doc comment adds prose and tags.
+Outputs Markdown (default) or JSON.
+
+```bash
+superjs doc src/api.sjs            # Markdown to stdout
+superjs doc src/ --out-dir docs    # one .md per file
+superjs doc src/ --format json     # machine-readable
+```
+
+(MVP: signatures + doc comments. HTML site / `--serve` / validated `@example`
+blocks are later work — see ADR-009.)
+
 ### `superjs explain`
 
 Prints the full spec write-up for a diagnostic code (description, example, fix).
@@ -160,9 +176,6 @@ per-package typed-surface report for everything pulled in with `superjs add`.
 
 These are reserved and currently print a not-yet-implemented notice:
 
-- **`superjs doc`** *(Stage 3)* — a built-in **JSDoc / TypeDoc alternative**.
-  Sound types mean the docs come straight from the type system (no `@param`
-  tags to drift); see [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md).
 - **`superjs test`** *(Stage 5)* — a **Jest alternative** for `.sjs`. Planned as
   both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
   in your existing Jest/Vitest) and a native zero-config `superjs test` runner.

@@ -337,10 +337,36 @@ describe('lint', () => {
   });
 });
 
+describe('doc', () => {
+  it('prints Markdown API docs to stdout', async () => {
+    const io = makeIO({ '/work/m.sjs': '/** Adds. */\nexport function add(a: number, b: number): number { return a + b; }' });
+    expect(await run(['doc', 'm.sjs'], io)).toBe(0);
+    expect(io.stdout()).toContain('## `add`');
+    expect(io.stdout()).toContain('function add(a: number, b: number): number');
+    expect(io.stdout()).toContain('Adds.');
+  });
+  it('writes a .md file with --out-dir', async () => {
+    const io = makeIO({ '/work/m.sjs': 'export const x: number = 1;' });
+    expect(await run(['doc', 'm.sjs', '--out-dir', 'docs'], io)).toBe(0);
+    expect(io.fs.get('/work/docs/m.md')).toContain('## `x`');
+    expect(io.stdout()).toContain('documented m.sjs → docs/m.md');
+  });
+  it('emits JSON with --format json', async () => {
+    const io = makeIO({ '/work/m.sjs': 'export const x: number = 1;' });
+    await run(['doc', 'm.sjs', '--format', 'json'], io);
+    expect(JSON.parse(io.stdout())[0].name).toBe('x');
+  });
+  it('usage error with no arguments', async () => {
+    const io = makeIO();
+    expect(await run(['doc'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs doc');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['doc'], io)).toBe(2);
+    expect(await run(['lsp'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {
