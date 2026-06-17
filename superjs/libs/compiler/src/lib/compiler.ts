@@ -10,7 +10,7 @@
 
 import type { Program, Diagnostic, Type, Span, Identifier } from '@superjs/types';
 import { parse } from '@superjs/parser';
-import { checkProgram, type TypedSpan } from '@superjs/checker';
+import { checkProgram, type TypedSpan, type ModuleSurface } from '@superjs/checker';
 import { lower } from '@superjs/ir';
 import { generate } from '@superjs/codegen-js';
 import {
@@ -26,6 +26,9 @@ const EMPTY_PROGRAM: Program = {
   span: { start: { offset: 0, line: 1, column: 0 }, end: { offset: 0, line: 1, column: 0 } },
 };
 
+/** Empty export surface for persistent-cache hits (which carry no analysis). */
+const EMPTY_SURFACE: ModuleSurface = { types: new Map(), sums: new Map(), values: new Map() };
+
 /** Everything the compiler derives and caches for one source file. */
 interface FileState {
   readonly source: string;
@@ -36,6 +39,8 @@ interface FileState {
   readonly fileHash: string;
   readonly apiHash: string;
   readonly docHash: string;
+  /** Exported type + value surface, for files that import this one. */
+  readonly surface: ModuleSurface;
 }
 
 /**
@@ -45,6 +50,10 @@ interface FileState {
  */
 export class Compiler {
   private readonly files = new Map<string, FileState>();
+  /** Raw sources by filename — lets import resolution analyse a dependency on demand. */
+  private readonly rawSources = new Map<string, string>();
+  /** Files currently mid-analysis, to break import cycles (cycle → dynamic). */
+  private readonly analysing = new Set<string>();
   private readonly opts: CompileOpts;
   private readonly cfgHash: string;
   private readonly cache: CacheStore | undefined;
@@ -55,6 +64,11 @@ export class Compiler {
     this.cache = cache;
   }
 
+  /** Register a file's source without analysing it — so imports can find it later. */
+  addSource(filename: string, source: string): void {
+    this.rawSources.set(filename, source);
+  }
+
   /** The config-hash component of this session's cache key. */
   get configHash(): string {
     return this.cfgHash;
@@ -62,6 +76,7 @@ export class Compiler {
 
   /** Analyse + cache a file. No-op recompute when content + config are unchanged. */
   setFile(filename: string, source: string): FileState {
+    this.rawSources.set(filename, source);
     const cached = this.files.get(filename);
     if (cached && cached.fileHash === fileHash(source)) return cached;
     const state = this.analyse(filename, source);
@@ -72,23 +87,50 @@ export class Compiler {
   /** Drop a file from the session. */
   removeFile(filename: string): void {
     this.files.delete(filename);
+    this.rawSources.delete(filename);
   }
 
-  private analyse(filename: string, source: string): FileState {
+  /**
+   * Resolve a relative module specifier to the imported file's export surface,
+   * analysing that dependency on demand. Non-relative specifiers and unknown
+   * files return `undefined` (imported names stay `dynamic`); import cycles are
+   * broken by returning `undefined` for a file already mid-analysis.
+   */
+  private resolveSurface(fromFile: string, specifier: string): ModuleSurface | undefined {
+    if (!specifier.startsWith('./') && !specifier.startsWith('../')) return undefined;
+    const dep = resolveRelative(fromFile, specifier);
+    const done = this.files.get(dep);
+    if (done) return done.surface;
+    if (this.analysing.has(dep)) return undefined; // cycle
+    const src = this.rawSources.get(dep);
+    if (src === undefined) return undefined;
+    this.analysing.add(dep);
+    try {
+      const state = this.analyse(dep, src, /*skipCache*/ true);
+      this.files.set(dep, state);
+      return state.surface;
+    } finally {
+      this.analysing.delete(dep);
+    }
+  }
+
+  private analyse(filename: string, source: string, skipCache = false): FileState {
     // Persistent-cache hit: skip the whole pipeline. The cached file carries no
-    // program/types — fine for builds; LSP sessions run without a cache.
+    // program/types — fine for builds; LSP sessions run without a cache. A file
+    // pulled in as an import dependency skips the cache so its surface is real.
     const key = cacheKey(source, this.cfgHash);
-    const hit = this.cache?.get(key);
+    const hit = skipCache ? undefined : this.cache?.get(key);
     if (hit) {
       return {
         source, program: EMPTY_PROGRAM, diagnostics: [...hit.diagnostics], types: [],
         output: { code: hit.code, map: hit.map },
-        fileHash: fileHash(source), apiHash: '', docHash: '',
+        fileHash: fileHash(source), apiHash: '', docHash: '', surface: EMPTY_SURFACE,
       };
     }
     const parsed = parse(source, { file: filename, strict: this.opts.strict });
     const checked = checkProgram(parsed.program, {
       file: filename, strict: this.opts.strict, recordTypes: true,
+      resolveModule: (spec) => this.resolveSurface(filename, spec),
     });
     const ir = lower(parsed.program);
     const outName = outputName(filename);
@@ -110,6 +152,7 @@ export class Compiler {
       fileHash: fileHash(source),
       apiHash: apiHash(exportSignatures(parsed.program)),
       docHash: docHash(source),
+      surface: checked.surface,
     };
   }
 
@@ -181,6 +224,8 @@ export class Compiler {
  */
 export async function compile(sources: readonly SourceFile[], opts: CompileOpts = {}, cache?: CacheStore): Promise<CompileResult> {
   const compiler = new Compiler(opts, cache);
+  // Register every source first so relative imports resolve regardless of order.
+  for (const f of sources) compiler.addSource(f.filename, f.source);
   for (const f of sources) compiler.setFile(f.filename, f.source);
   return compiler.compileAll();
 }
@@ -220,6 +265,24 @@ function spanWidth(s: Span): number {
 
 function outputName(filename: string): string {
   return filename.replace(/\.sjs$/, '.js').replace(/\.ts$/, '.js');
+}
+
+/**
+ * Resolve a relative specifier against the importing file's directory, returning
+ * a normalised `.sjs` path. POSIX-style `/` segments; `.`/`..` collapsed. The
+ * `.sjs` extension is appended when the specifier omits it.
+ */
+function resolveRelative(fromFile: string, specifier: string): string {
+  const sep = Math.max(fromFile.lastIndexOf('/'), fromFile.lastIndexOf('\\'));
+  const dir = sep >= 0 ? fromFile.slice(0, sep) : '';
+  const out: string[] = [];
+  for (const seg of (dir ? `${dir}/${specifier}` : specifier).split('/')) {
+    if (seg === '.') continue;
+    if (seg === '..') { if (out.length && out[out.length - 1] !== '') out.pop(); continue; }
+    out.push(seg);
+  }
+  const path = out.join('/');
+  return path.endsWith('.sjs') ? path : `${path}.sjs`;
 }
 
 /** Last path segment (POSIX or Windows separators), for relative map URLs. */
