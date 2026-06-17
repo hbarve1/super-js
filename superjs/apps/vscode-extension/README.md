@@ -5,7 +5,23 @@
 
 > **Note:** Theme screenshots will be added after the first VS Code Extension Development Host smoke test. See [Known Limitations](#known-limitations) for current v0.1 status.
 
-Syntax highlighting and snippets for [SuperJS](https://github.com/hbarve1/super-js) (`.sjs`) files in Visual Studio Code.
+Syntax highlighting, snippets, and full language-server support for
+[SuperJS](https://github.com/hbarve1/super-js) (`.sjs`) files in Visual Studio Code.
+
+## Language server
+
+The extension launches the SuperJS language server (`superjs lsp`) and connects
+it as an LSP client, so the compiler powers the editor directly:
+
+- diagnostics, hover types, and go-to-definition
+- completion, signature help, and inlay type hints
+- document outline, folding, and semantic-token highlighting
+- formatting, rename, find-all-references, and quick-fix code actions
+
+It looks for `superjs` on your `PATH`; set `superjs.server.path` to point at a
+specific binary, and `superjs.lsp.memoryBudgetMB` to size the server's cache.
+The **SuperJS: Restart Language Server** command reloads it. (Install the CLI
+with `npm install -g @superjsorg/cli`.)
 
 ## Features
 
@@ -58,20 +74,20 @@ The custom `.sjs` file icon is visible when using VS Code's built-in **Seti** ic
 
 ## Known Limitations
 
-- **`new MyClass()`** — `MyClass` is colored as a variant constructor (PascalCase heuristic). Semantic tokens (LSP phase) will fix this.
-- **Class names in `extends`** — `class Foo extends Bar {}` colors `Bar` as a variant. Same fix planned.
-- **Generic constraints beyond first parameter** — `<T: A, U: B>` highlights `T: A` but not `U: B` (TextMate grammar limitation). Full support requires the Language Server.
-- **Material Icon Theme** — overrides the custom file icon. Open a PR to [PKief/vscode-material-icon-theme](https://github.com/PKief/vscode-material-icon-theme) is tracked for v0.2.
+- **TextMate coloring heuristics** — without the language server running, `new MyClass()` and `class Foo extends Bar {}` color the class as a variant constructor (PascalCase heuristic), and generic constraints past the first parameter (`<T: A, U: B>`) aren't fully colored. The language server's semantic tokens supersede these heuristics when active.
+- **Material Icon Theme** — overrides the custom file icon. A PR to [PKief/vscode-material-icon-theme](https://github.com/PKief/vscode-material-icon-theme) is tracked for v0.2.
 
 ## Roadmap
 
-Phase 1 (this extension) provides syntax highlighting only. Full IntelliSense, hover types, go-to-definition, diagnostics, and formatter integration are planned for Phase 2 (Language Server Protocol). See the [SuperJS production roadmap](https://github.com/hbarve1/super-js/blob/master/specs/002-production-roadmap/spec.md).
+Phase 1 shipped syntax highlighting; Phase 2 (this release) adds the language
+server — diagnostics, hover, completion, navigation, formatting, and code
+actions. See the [SuperJS production roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 
 ## Contributing
 
-This extension lives inside the [super-js monorepo](https://github.com/hbarve1/super-js) at `vscode-extension/`. See [CONTRIBUTING.md](https://github.com/hbarve1/super-js/blob/master/CONTRIBUTING.md) for development setup.
+This extension lives inside the [super-js monorepo](https://github.com/hbarve1/super-js) at `superjs/apps/vscode-extension/` (a standalone npm package — own lockfile, outside the pnpm workspace).
 
-Grammar tests: `cd vscode-extension && npm test`
+Tests (grammar snapshots + server-command unit): `cd superjs/apps/vscode-extension && npm test`
 Add a failing fixture: create `test/fixtures/NN-description.sjs`, run `UPDATE_SNAPSHOTS=1 npm test`, verify the snapshot, commit.
 
 ## License

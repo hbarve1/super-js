@@ -1,15 +1,15 @@
 {
   "name": "superjs-syntax",
   "displayName": "SuperJS",
-  "description": "Syntax highlighting and snippets for SuperJS (.sjs) files.",
-  "version": "0.1.0",
+  "description": "Syntax highlighting, snippets, and language-server support for SuperJS (.sjs) files.",
+  "version": "0.2.0",
   "publisher": "hbarve1",
   "license": "MIT",
   "homepage": "https://github.com/hbarve1/super-js",
   "repository": {
     "type": "git",
     "url": "https://github.com/hbarve1/super-js.git",
-    "directory": "vscode-extension"
+    "directory": "superjs/apps/vscode-extension"
   },
   "bugs": {
     "url": "https://github.com/hbarve1/super-js/issues"
@@ -35,7 +35,11 @@
     "vscode": "^1.85.0"
   },
   "extensionKind": [
-    "ui"
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:superjs"
   ],
   "contributes": {
     "languages": [
@@ -80,21 +84,51 @@
         "language": "superjs",
         "path": "./snippets/superjs.code-snippets"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "superjs.restartServer",
+        "title": "SuperJS: Restart Language Server"
+      }
+    ],
+    "configuration": {
+      "title": "SuperJS",
+      "properties": {
+        "superjs.server.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the `superjs` binary. Empty uses the one found on PATH."
+        },
+        "superjs.lsp.memoryBudgetMB": {
+          "type": "number",
+          "default": 128,
+          "minimum": 1,
+          "description": "Language-server source/AST cache budget, in megabytes."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/vscode": "~1.85.0",
     "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
     "typescript": "^5.4.0",
     "vscode-oniguruma": "^1.7.0",
     "vscode-textmate": "^9.0.0"
   },
   "scripts": {
-    "test": "node out/test/suite/grammar.test.js",
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node18 --external:vscode --outfile=dist/extension.js",
+    "compile": "tsc -p tsconfig.json",
+    "test": "npm run compile && node out/test/suite/grammar.test.js && node out/test/suite/server-options.test.js",
     "compile:test": "tsc -p tsconfig.json",
     "pretest": "npm run compile:test",
-    "package": "npx vsce package",
-    "publish:marketplace": "npx vsce publish",
-    "publish:openvsx": "npx ovsx publish"
+    "vscode:prepublish": "npm run build",
+    "package": "npm run build && npx vsce package",
+    "publish:marketplace": "npm run build && npx vsce publish",
+    "publish:openvsx": "npm run build && npx ovsx publish"
   }
 }
