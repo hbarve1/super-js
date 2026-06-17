@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/rename', params: {} });
+    server.handle({ id: 7, method: 'textDocument/inlayHint', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -291,5 +291,53 @@ describe('LspServer — formatting', () => {
     const { sent, server } = harness();
     server.handle({ id: 6, method: 'textDocument/formatting', params: td('file:///gone.sjs') });
     expect(sent.at(-1)).toMatchObject({ id: 6, result: [] });
+  });
+});
+
+describe('LspServer — references / highlight / rename', () => {
+  const SRC = 'const foo = 1;\nfoo();\nbar();';
+  // line 1 (0-based), char 0 → the `foo` use.
+  const onFoo = (uri: string) => at(uri, 1, 0);
+
+  it('advertises references, highlight and rename providers', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities).toMatchObject({
+      referencesProvider: true, documentHighlightProvider: true, renameProvider: true,
+    });
+  });
+
+  it('references returns a Location per occurrence', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///r.sjs', SRC));
+    server.handle({ id: 3, method: 'textDocument/references', params: onFoo('file:///r.sjs') });
+    const locs = sent.at(-1)!.result as { uri: string; range: unknown }[];
+    expect(locs).toHaveLength(2);
+    expect(locs.every((l) => l.uri === 'file:///r.sjs')).toBe(true);
+  });
+
+  it('documentHighlight returns Text highlights', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///h.sjs', SRC));
+    server.handle({ id: 4, method: 'textDocument/documentHighlight', params: onFoo('file:///h.sjs') });
+    const hs = sent.at(-1)!.result as { kind: number }[];
+    expect(hs).toHaveLength(2);
+    expect(hs.every((h) => h.kind === 1)).toBe(true);
+  });
+
+  it('rename returns a WorkspaceEdit covering every occurrence', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///n.sjs', SRC));
+    server.handle({ id: 5, method: 'textDocument/rename', params: { ...onFoo('file:///n.sjs'), newName: 'baz' } });
+    const edit = sent.at(-1)!.result as { changes: Record<string, { newText: string }[]> };
+    expect(edit.changes['file:///n.sjs']).toHaveLength(2);
+    expect(edit.changes['file:///n.sjs']!.every((e) => e.newText === 'baz')).toBe(true);
+  });
+
+  it('rename rejects an empty new name', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///n2.sjs', SRC));
+    server.handle({ id: 6, method: 'textDocument/rename', params: { ...onFoo('file:///n2.sjs'), newName: '' } });
+    expect(sent.at(-1)).toMatchObject({ id: 6, result: null });
   });
 });
