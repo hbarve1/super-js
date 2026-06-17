@@ -119,9 +119,32 @@ superjs doctor
 
 ### Planned commands
 
-`superjs doc` (sound, type-aware documentation generation — [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md)),
-`lint`, `format`, and `test` are reserved for later stages; invoking one today
-prints a not-yet-implemented notice and exits non-zero.
+These subcommands are reserved — invoking one today prints a not-yet-implemented
+notice and exits non-zero.
+
+#### `superjs doc` — documentation generator (planned, Stage 3)
+
+A built-in **JSDoc / TypeDoc alternative**. Because SJS types are sound, `doc`
+generates API documentation straight from the type system — no `@param` /
+`@returns` tags to drift out of sync with the code. Nullability (`T?`),
+sum-type variants, and structural shapes render exactly as the checker sees
+them, so the docs are as correct as the types. Design: [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md).
+
+#### `superjs test` — test runner (planned, Stage 5)
+
+A **Jest alternative** for `.sjs`, planned along two tracks:
+
+- **Run in your existing runner** — `@superjs/jest-transform` and
+  `@superjs/vitest-transform` will compile `.sjs` test files through the
+  compiler's `transform()` API so they run under Jest or Vitest unchanged.
+- **Native runner** — `superjs test`, a zero-config runner for `.sjs` test
+  files (watch + coverage), is planned for Stage 5 / post-1.0.
+
+#### Also reserved
+
+`superjs lint` and `superjs format` (Stage 3 — linter + formatter),
+`superjs lsp` (Stage 3 — editor language server), and `superjs add` (Stage 2 —
+pull a TypeScript package's types in as `.d.sjs`, building on `translate`).
 
 ## Exit codes
 

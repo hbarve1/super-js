@@ -111,11 +111,19 @@ Writes a default `superjs.config.json` into the current directory.
 
 Reports environment health — Node version, config presence and validity.
 
-> **Planned (Stage 3+):** `superjs doc` (sound, type-aware code-documentation
-> generation — see [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md)),
-> `superjs lint`, `superjs format`, and `superjs test` are reserved and currently
-> print a not-yet-implemented notice. They're tracked on the
-> [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
+### Planned commands
+
+These are reserved and currently print a not-yet-implemented notice:
+
+- **`superjs doc`** *(Stage 3)* — a built-in **JSDoc / TypeDoc alternative**.
+  Sound types mean the docs come straight from the type system (no `@param`
+  tags to drift); see [ADR-009](https://github.com/hbarve1/super-js/blob/main/specs/design/ADR-009-doc-gen.md).
+- **`superjs test`** *(Stage 5)* — a **Jest alternative** for `.sjs`. Planned as
+  both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
+  in your existing Jest/Vitest) and a native zero-config `superjs test` runner.
+- **`superjs lint`**, **`superjs format`** *(Stage 3)* — linter + formatter.
+
+Full plan on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 
 ## Project Configuration
 
