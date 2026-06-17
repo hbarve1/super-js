@@ -341,3 +341,39 @@ describe('LspServer — references / highlight / rename', () => {
     expect(sent.at(-1)).toMatchObject({ id: 6, result: null });
   });
 });
+
+const inRange = (uri: string, l0: number, c0: number, l1: number, c1: number) =>
+  ({ textDocument: { uri }, range: { start: { line: l0, character: c0 }, end: { line: l1, character: c1 } } });
+
+describe('LspServer — codeAction', () => {
+  it('advertises a codeAction provider', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities.codeActionProvider).toBe(true);
+  });
+
+  it('offers a quickfix for a lint finding in range', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///ca.sjs', 'var x = 1;\nx;'));
+    server.handle({ id: 3, method: 'textDocument/codeAction', params: inRange('file:///ca.sjs', 0, 0, 0, 10) });
+    const actions = sent.at(-1)!.result as { title: string; kind: string; edit: { changes: Record<string, { newText: string }[]> } }[];
+    const fix = actions.find((a) => a.title.includes('let'));
+    expect(fix).toBeDefined();
+    expect(fix!.kind).toBe('quickfix');
+    expect(fix!.edit.changes['file:///ca.sjs']![0]!.newText).toBe('let');
+  });
+
+  it('returns no actions for a range with no fixable findings', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///ca2.sjs', 'var x = 1;\nx;'));
+    // Line 1 holds only `x;` — no fixable finding there.
+    server.handle({ id: 4, method: 'textDocument/codeAction', params: inRange('file:///ca2.sjs', 1, 0, 1, 2) });
+    expect(sent.at(-1)!.result).toEqual([]);
+  });
+
+  it('returns no actions for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 5, method: 'textDocument/codeAction', params: inRange('file:///none.sjs', 0, 0, 0, 1) });
+    expect(sent.at(-1)!.result).toEqual([]);
+  });
+});

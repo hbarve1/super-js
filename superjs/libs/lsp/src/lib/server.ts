@@ -9,7 +9,7 @@
  * construction. `connectStdio` (see `transport.ts`) wires it to a real process.
  */
 
-import { Compiler, offsetAt, format } from '@superjs/compiler';
+import { Compiler, offsetAt, format, lint } from '@superjs/compiler';
 import { model } from '@superjs/checker';
 import type { Diagnostic, Severity, Span } from '@superjs/types';
 import type { JsonRpcMessage } from './jsonrpc.js';
@@ -106,6 +106,7 @@ export class LspServer {
             referencesProvider: true,
             documentHighlightProvider: true,
             renameProvider: true,
+            codeActionProvider: true,
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -144,6 +145,8 @@ export class LspServer {
         return this.reply(msg.id, this.documentHighlight(msg.params));
       case 'textDocument/rename':
         return this.reply(msg.id, this.rename(msg.params));
+      case 'textDocument/codeAction':
+        return this.reply(msg.id, this.codeAction(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -262,6 +265,37 @@ export class LspServer {
     const r = this.occurrencesAt(params);
     if (!r || r.spans.length === 0) return null;
     return { changes: { [r.uri]: r.spans.map((s) => ({ range: toRange(s), newText: newName })) } };
+  }
+
+  /**
+   * `textDocument/codeAction` — quick fixes for the requested range, drawn from
+   * lint findings that carry an auto-fix (e.g. `var` → `let`, remove `debugger`).
+   * Each fix becomes a `quickfix` action with a WorkspaceEdit.
+   */
+  private codeAction(params: unknown): unknown[] {
+    const p = params as { textDocument?: { uri?: string }; range?: LspRange };
+    const uri = p?.textDocument?.uri;
+    const range = p?.range;
+    const src = uri ? this.sources.get(uri) : undefined;
+    if (!uri || !range || src === undefined) return [];
+    const start = offsetAt(src, range.start.line + 1, range.start.character);
+    const end = offsetAt(src, range.end.line + 1, range.end.character);
+    if (start === null || end === null) return [];
+
+    const actions: unknown[] = [];
+    for (const d of lint(src, uri)) {
+      if (!d.fixes?.length) continue;
+      if (d.span.end.offset < start || d.span.start.offset > end) continue; // outside the request
+      for (const fix of d.fixes) {
+        actions.push({
+          title: fix.description,
+          kind: 'quickfix',
+          diagnostics: [toLspDiagnostic(d)],
+          edit: { changes: { [uri]: fix.edits.map((e) => ({ range: toRange(e.span), newText: e.newText })) } },
+        });
+      }
+    }
+    return actions;
   }
 
   private sourceOf(params: unknown): string | null {
