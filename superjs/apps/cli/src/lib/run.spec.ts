@@ -238,6 +238,26 @@ describe('add (npm package types → .d.sjs)', () => {
     expect(await run(['add'], io)).toBe(2);
     expect(io.stderr()).toContain('usage: superjs add');
   });
+  it('ignores a malformed paths map in config (no crash, import stays dynamic)', async () => {
+    const io = makeIO({
+      '/work/superjs.config.json': JSON.stringify({ language: '1.0', paths: { widget: 'not-an-array' } }),
+      '/work/app.sjs': 'import { Widget } from "widget";\nconst x: number = 1;',
+    });
+    expect(await run(['check', 'app.sjs'], io)).toBe(0);
+    expect(io.stdout()).toContain('No errors.');
+  });
+  it('end-to-end: a package added with `add` is then resolved by `check`', async () => {
+    const io = makeIO({
+      '/work/node_modules/widget/package.json': JSON.stringify({ name: 'widget', types: 'index.d.ts' }),
+      '/work/node_modules/widget/index.d.ts': 'export interface Widget { id: string; }',
+      '/work/app.sjs': 'import { Widget } from "widget";\nconst w: Widget = 5;',
+    });
+    expect(await run(['add', 'widget'], io)).toBe(0);
+    // `check` loads config paths + reads the generated .d.sjs: Widget's real
+    // (object) type flows in, so assigning `5` is a mismatch.
+    expect(await run(['check', 'app.sjs'], io)).toBe(1);
+    expect(io.stdout()).toContain('SJS-E002');
+  });
 });
 
 describe('init & doctor', () => {

@@ -33,6 +33,7 @@ export function configHash(opts: CompileOpts): string {
     jsx: opts.jsx?.runtime ?? 'automatic',
     strict: opts.strict ?? false,
     selfBootstrap: opts.selfBootstrap ?? false,
+    paths: opts.paths ?? {},
   });
   return sha256(canonical);
 }

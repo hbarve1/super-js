@@ -105,6 +105,10 @@ npm install fastify        # install the package as usual
 superjs add fastify        # → node_modules/@superjs/types/fastify/index.d.sjs
 ```
 
+Once added, `import { … } from "fastify"` resolves to these types during
+`superjs check` / `superjs build` — the bare specifier is matched through the
+`paths` map `add` wrote.
+
 `add` prints a **typed-surface** estimate — how much of the package's API kept a
 real type vs degraded to `dynamic` — and records it in a `surface.json` sidecar
 that `superjs doctor` reads back. The same `dynamic` fallbacks as `translate`

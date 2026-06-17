@@ -74,6 +74,40 @@ function readSources(io: IO, paths: readonly string[]): { files: { filename: str
   return { files, missing };
 }
 
+/**
+ * Read the `paths` map out of superjs.config.json, keeping only well-formed
+ * entries (string-array values). A missing/invalid config or a malformed `paths`
+ * value yields `{}` — resolution then leaves those specifiers `dynamic`.
+ */
+function loadConfigPaths(io: IO, root: string): Record<string, readonly string[]> {
+  const path = join(root, CONFIG_FILENAME);
+  if (!io.exists(path)) return {};
+  try {
+    const cfg = JSON.parse(io.readFile(path)) as { paths?: unknown };
+    if (!cfg.paths || typeof cfg.paths !== 'object' || Array.isArray(cfg.paths)) return {};
+    const out: Record<string, readonly string[]> = {};
+    for (const [k, v] of Object.entries(cfg.paths as Record<string, unknown>)) {
+      if (Array.isArray(v) && v.every((x) => typeof x === 'string')) out[k] = v as string[];
+    }
+    return out;
+  } catch { return {}; }
+}
+
+/** Resolution config shared by `check` + `build`: config `paths` + a disk-read seam. */
+function resolutionOpts(io: IO): { paths: Record<string, readonly string[]>; rootDir: string; readFile: (p: string) => string | undefined } {
+  const root = io.cwd();
+  return {
+    paths: loadConfigPaths(io, root),
+    rootDir: root,
+    // Must never throw — a read that fails between exists() and readFile() (race,
+    // permissions) degrades to an unresolved import, not an internal error.
+    readFile: (p) => {
+      if (!io.exists(p)) return undefined;
+      try { return io.readFile(p); } catch { return undefined; }
+    },
+  };
+}
+
 function emitDiagnostics(io: IO, diags: readonly Diagnostic[], format: DiagnosticFormat): void {
   if (format === 'json') { line(io, formatJson(diags)); return; }
   if (diags.length) line(io, formatPretty(diags));
@@ -89,7 +123,7 @@ export async function check(args: ParsedArgs, io: IO): Promise<number> {
   if (args.positionals.length === 0) { errline(io, 'usage: superjs check <files...> [--format pretty|json]'); return 2; }
   const format: DiagnosticFormat = args.flags['format'] === 'json' ? 'json' : 'pretty';
   const { files, missing } = readSources(io, args.positionals);
-  const result = await compile(files);
+  const result = await compile(files, resolutionOpts(io));
   emitDiagnostics(io, result.diagnostics, format);
   if (format !== 'json') {
     summary(io, result.diagnostics);
@@ -110,7 +144,7 @@ export async function build(args: ParsedArgs, io: IO): Promise<number> {
   /** One build pass. Returns the exit code for that pass. */
   const buildOnce = async (): Promise<number> => {
     const { files, missing } = readSources(io, args.positionals);
-    const result = await compile(files, { sourceMap }, cache);
+    const result = await compile(files, { sourceMap, ...resolutionOpts(io) }, cache);
     if (result.diagnostics.length) emitDiagnostics(io, result.diagnostics, 'pretty');
     const errors = countErrors(result.diagnostics);
     if (errors > 0) { errline(io, `build failed: ${errors} error${errors === 1 ? '' : 's'}`); return 1; }
