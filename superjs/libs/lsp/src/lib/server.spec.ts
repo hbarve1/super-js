@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/inlayHint', params: {} });
+    server.handle({ id: 7, method: 'textDocument/typeDefinition', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -374,6 +374,29 @@ describe('LspServer — codeAction', () => {
   it('returns no actions for an unopened document', () => {
     const { sent, server } = harness();
     server.handle({ id: 5, method: 'textDocument/codeAction', params: inRange('file:///none.sjs', 0, 0, 0, 1) });
+    expect(sent.at(-1)!.result).toEqual([]);
+  });
+});
+
+describe('LspServer — inlayHint', () => {
+  it('advertises an inlayHint provider', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities.inlayHintProvider).toBe(true);
+  });
+
+  it('returns an inferred-type hint for an un-annotated binding', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///i.sjs', 'const n = 1;'));
+    server.handle({ id: 3, method: 'textDocument/inlayHint', params: inRange('file:///i.sjs', 0, 0, 0, 20) });
+    const hints = sent.at(-1)!.result as { label: string; kind: number }[];
+    expect(hints).toHaveLength(1);
+    expect(hints[0]!.label.startsWith(':')).toBe(true);
+  });
+
+  it('returns no hints for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 4, method: 'textDocument/inlayHint', params: inRange('file:///none.sjs', 0, 0, 0, 1) });
     expect(sent.at(-1)!.result).toEqual([]);
   });
 });

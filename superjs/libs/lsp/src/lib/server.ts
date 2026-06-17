@@ -18,6 +18,7 @@ import { completions } from './completion.js';
 import { signatureHelp } from './signature.js';
 import { semanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS } from './semantic-tokens.js';
 import { identifierAt, occurrences } from './references.js';
+import { inlayHints } from './inlay.js';
 
 /** LSP `DiagnosticSeverity`. */
 const SEVERITY: Record<Severity, number> = { error: 1, warning: 2, info: 3, hint: 4 };
@@ -107,6 +108,7 @@ export class LspServer {
             documentHighlightProvider: true,
             renameProvider: true,
             codeActionProvider: true,
+            inlayHintProvider: true,
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -147,6 +149,8 @@ export class LspServer {
         return this.reply(msg.id, this.rename(msg.params));
       case 'textDocument/codeAction':
         return this.reply(msg.id, this.codeAction(msg.params));
+      case 'textDocument/inlayHint':
+        return this.reply(msg.id, this.inlayHint(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -296,6 +300,18 @@ export class LspServer {
       }
     }
     return actions;
+  }
+
+  /** `textDocument/inlayHint` — inferred-type hints, optionally clipped to the request range. */
+  private inlayHint(params: unknown): ReturnType<typeof inlayHints> {
+    const p = params as { textDocument?: { uri?: string }; range?: LspRange };
+    const uri = p?.textDocument?.uri;
+    const src = uri ? this.sources.get(uri) : undefined;
+    if (!uri || src === undefined) return [];
+    const hints = inlayHints(src, (line, column) => this.compiler.typeAt(uri, line, column));
+    const range = p.range;
+    if (!range) return hints;
+    return hints.filter((h) => h.position.line >= range.start.line && h.position.line <= range.end.line);
   }
 
   private sourceOf(params: unknown): string | null {
