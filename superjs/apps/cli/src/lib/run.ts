@@ -43,7 +43,7 @@ commands:
   translate <d.ts...>  translate TypeScript .d.ts declarations to .d.sjs  [--out-dir dir]
   add <package>        resolve an installed npm package's types to .d.sjs
   format <files...>    rewrite .sjs files in canonical style  [--check]
-  lint <files...>      report style findings (SJS-L*)  [--format pretty|json]
+  lint <files...>      report style findings (SJS-L*)  [--format pretty|json] [--fix]
   doc <files...>       generate API docs from exports  [--format md|json] [--out-dir dir]
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
   init                 write a default ${'superjs.config.json'}

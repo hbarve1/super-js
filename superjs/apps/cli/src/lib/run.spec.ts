@@ -374,6 +374,22 @@ describe('lsp', () => {
   });
 });
 
+describe('lint --fix', () => {
+  it('rewrites var→let and removes debugger, writing the file in place', async () => {
+    const io = makeIO({ '/work/a.sjs': 'var x = 1;\nx;\ndebugger;' });
+    await run(['lint', 'a.sjs', '--fix'], io);
+    const fixed = io.fs.get('/work/a.sjs')!;
+    expect(fixed).toContain('let x = 1;');
+    expect(fixed).not.toContain('debugger');
+    expect(io.stdout()).toContain('fixed');
+  });
+  it('reports nothing to fix when there are no fixable findings', async () => {
+    const io = makeIO({ '/work/clean.sjs': 'const x: number = 1;\nx;' });
+    expect(await run(['lint', 'clean.sjs', '--fix'], io)).toBe(0);
+    expect(io.stdout()).toContain('No auto-fixable findings.');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();

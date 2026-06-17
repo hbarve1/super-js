@@ -138,6 +138,7 @@ no-unused-import (L009), and import-order (L010).
 ```bash
 superjs lint src/                 # human-readable
 superjs lint src/ --format json   # machine-readable for CI
+superjs lint src/ --fix           # apply auto-fixes (no-var → let, drop debugger) in place
 ```
 
 ### `superjs doc`

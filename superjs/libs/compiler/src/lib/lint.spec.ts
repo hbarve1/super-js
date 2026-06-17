@@ -93,6 +93,15 @@ describe('lint — other rules', () => {
   it('L010 resets the order check across a non-import statement', () => {
     expect(codes('import { b } from "b";\nb();\nimport { a } from "a";\na();')).not.toContain('SJS-L010');
   });
+  it('L002 carries a var→let auto-fix', () => {
+    const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
+    expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');
+    expect(d.fixes![0]!.edits[0]!.span.start.offset).toBe(0);
+  });
+  it('L005 carries a remove-debugger auto-fix', () => {
+    const d = lint('debugger;').find((x) => x.code === 'SJS-L005')!;
+    expect(d.fixes?.[0]?.edits[0]?.newText).toBe('');
+  });
 });
 
 describe('lint — output shape', () => {
