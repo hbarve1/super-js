@@ -1,8 +1,10 @@
 .github/
 .vscode/
+src/
 test/
 out/
 media/
+dist/**/*.map
 tsconfig.json
 **/*.map
 **/*.ts
@@ -10,3 +12,4 @@ package-lock.json
 node_modules/
 .gitignore
 .vscodeignore
+esbuild.config.*

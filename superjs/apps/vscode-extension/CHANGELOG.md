@@ -1,6 +1,17 @@
 # Change Log
 
-All notable changes to the SuperJS Syntax Highlighting extension will be documented here.
+All notable changes to the SuperJS extension will be documented here.
+
+## [0.2.0] — 2026-06-17
+
+### Added
+- **Language-server support.** The extension now launches `superjs lsp` and
+  connects it as an LSP client: diagnostics, hover, go-to-definition,
+  completion, signature help, inlay hints, document outline, folding, semantic
+  tokens, formatting, rename, references, and quick-fix code actions.
+- Settings: `superjs.server.path` (binary location) and
+  `superjs.lsp.memoryBudgetMB` (server cache budget).
+- Command: **SuperJS: Restart Language Server**.
 
 ## [0.1.0] — 2026-05-31
 
