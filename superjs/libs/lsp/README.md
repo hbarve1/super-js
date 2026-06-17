@@ -19,6 +19,8 @@ Implemented:
   computed from the parsed AST.
 - `textDocument/completion` (MVP: local declarations + keywords + primitive
   types; scope-aware filtering and member completion are later work).
+- `textDocument/signatureHelp` — the callee signature and active argument when
+  the cursor is inside a call.
 
-Following slices add `signatureHelp` and `semanticTokens/full`, plus the
-memory budget (M6). See `specs/roadmap/stage-3-dx-tools.md`.
+The last M1 method, `semanticTokens/full`, plus the memory budget (M6), follow.
+See `specs/roadmap/stage-3-dx-tools.md`.
