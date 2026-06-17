@@ -25,6 +25,7 @@
     "tslib": "^2.3.0",
     "@superjs/types": "workspace:*",
     "@superjs/config": "workspace:*",
+    "@superjs/diagnostics": "workspace:*",
     "@superjs/parser": "workspace:*",
     "@superjs/checker": "workspace:*",
     "@superjs/ir": "workspace:*",

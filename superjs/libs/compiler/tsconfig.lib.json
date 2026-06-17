@@ -11,6 +11,9 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../diagnostics/tsconfig.lib.json"
+    },
+    {
       "path": "../codegen-js/tsconfig.lib.json"
     },
     {

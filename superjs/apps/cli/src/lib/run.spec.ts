@@ -313,10 +313,34 @@ describe('format', () => {
   });
 });
 
+describe('lint', () => {
+  it('reports findings and exits 1', async () => {
+    const io = makeIO({ '/work/a.sjs': 'var x = 1;\ndebugger;' });
+    expect(await run(['lint', 'a.sjs'], io)).toBe(1);
+    expect(io.stdout()).toContain('SJS-L002');
+    expect(io.stdout()).toContain('SJS-L005');
+  });
+  it('exits 0 and reports clean for tidy code', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const x: number = 1;\n' });
+    expect(await run(['lint', 'a.sjs'], io)).toBe(0);
+    expect(io.stdout()).toContain('No lint findings.');
+  });
+  it('emits JSON with --format json', async () => {
+    const io = makeIO({ '/work/a.sjs': 'var x = 1;' });
+    await run(['lint', 'a.sjs', '--format', 'json'], io);
+    expect(JSON.parse(io.stdout())[0].code).toBe('SJS-L002');
+  });
+  it('usage error with no arguments', async () => {
+    const io = makeIO();
+    expect(await run(['lint'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs lint');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['lint'], io)).toBe(2);
+    expect(await run(['doc'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {
