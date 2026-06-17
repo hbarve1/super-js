@@ -13,6 +13,7 @@ import type { CompileOpts, SymbolInfo } from './lib/options.js';
 
 export { Compiler, compile, transform, offsetAt } from './lib/compiler.js';
 export { parseTypeDecl, emitTypeDecl, type TypeDeclAst } from './lib/type-decl.js';
+export { format, type FormatResult } from './lib/format.js';
 export {
   COMPILER_VERSION, sha256, fileHash, configHash, apiHash, docHash, cacheKey,
 } from './lib/hash.js';

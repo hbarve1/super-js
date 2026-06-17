@@ -288,6 +288,31 @@ describe('init & doctor', () => {
   });
 });
 
+describe('format', () => {
+  it('rewrites a file in place and reports it', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const   x:number=1' });
+    expect(await run(['format', 'a.sjs'], io)).toBe(0);
+    expect(io.fs.get('/work/a.sjs')).toBe('const x: number = 1;\n');
+    expect(io.stdout()).toContain('formatted a.sjs');
+  });
+  it('--check reports without writing and exits 1 when a file would change', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const   x=1' });
+    expect(await run(['format', 'a.sjs', '--check'], io)).toBe(1);
+    expect(io.fs.get('/work/a.sjs')).toBe('const   x=1'); // untouched
+    expect(io.stdout()).toContain('would reformat a.sjs');
+  });
+  it('--check exits 0 when everything is already formatted', async () => {
+    const io = makeIO({ '/work/a.sjs': 'const x = 1;\n' });
+    expect(await run(['format', 'a.sjs', '--check'], io)).toBe(0);
+    expect(io.stdout()).toContain('All files are formatted.');
+  });
+  it('usage error with no arguments', async () => {
+    const io = makeIO();
+    expect(await run(['format'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs format');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
