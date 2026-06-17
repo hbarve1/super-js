@@ -15,8 +15,8 @@
 
 import ts from 'typescript';
 import type {
-  TypeNode, FunctionTypeParam, InterfaceProperty, IndexSignature, Identifier,
-  PrimitiveTypeName,
+  TypeNode, FunctionTypeParam, InterfaceProperty, InterfaceMethod, IndexSignature,
+  Identifier, PrimitiveTypeName,
 } from '@superjs/types';
 import { SYNTHETIC_SPAN } from '@superjs/types';
 import { emitTypeDecl } from '@superjs/compiler';
@@ -137,6 +137,9 @@ function mapType(node: ts.TypeNode, unsupported: string[]): TypeNode {
   if (ts.isUnionTypeNode(node)) {
     return { kind: 'UnionTypeNode', types: node.types.map((t) => mapType(t, unsupported)), span: S };
   }
+  if (ts.isIntersectionTypeNode(node)) {
+    return mapIntersection(node, unsupported);
+  }
   if (ts.isParenthesizedTypeNode(node)) {
     return { kind: 'ParenthesizedTypeNode', inner: mapType(node.type, unsupported), span: S };
   }
@@ -158,8 +161,51 @@ function mapType(node: ts.TypeNode, unsupported: string[]): TypeNode {
   }
   if (node.kind === ts.SyntaxKind.NullKeyword) return prim('null');
 
-  // Intersection / conditional / mapped / keyof / typeof / indexed-access / infer …
+  // Conditional / mapped / keyof / typeof / indexed-access / infer …
   unsupported.push(`unsupported type \`${shortText(node)}\` mapped to \`dynamic\``);
+  return prim('dynamic');
+}
+
+type ObjectType = Extract<TypeNode, { kind: 'ObjectTypeNode' }>;
+type ObjectMember = InterfaceProperty | InterfaceMethod | IndexSignature;
+
+/**
+ * Auto-merge an intersection of object-type literals into one object type:
+ * `{ a: number } & { b: string }` → `{ a: number; b: string }`. Recovers real
+ * type surface that would otherwise fall back to `dynamic`.
+ *
+ * Sound only when every branch is a structural object literal and no property
+ * name collides. A named branch (`A & B`) can't be merged without resolving it,
+ * and a property-name conflict can't be reconciled — both degrade to `dynamic`
+ * with `reason="intersection-not-mergeable"` (closed reason set, M8).
+ */
+function mapIntersection(node: ts.IntersectionTypeNode, unsupported: string[]): TypeNode {
+  const childNotes: string[] = [];
+  const branches = node.types.map((t) => mapType(t, childNotes));
+  const objects = branches.filter((b): b is ObjectType => b.kind === 'ObjectTypeNode');
+
+  if (objects.length === branches.length && objects.length > 0) {
+    const merged: ObjectMember[] = [];
+    const seen = new Set<string>();
+    let conflict = false;
+    for (const obj of objects) {
+      for (const m of obj.members) {
+        const key = m.kind !== 'IndexSignature' && m.name.kind === 'Identifier' ? m.name.name : null;
+        if (key !== null) {
+          if (seen.has(key)) { conflict = true; break; }
+          seen.add(key);
+        }
+        merged.push(m);
+      }
+      if (conflict) break;
+    }
+    if (!conflict) {
+      unsupported.push(...childNotes); // keep notes from inside the merged branches
+      return { kind: 'ObjectTypeNode', members: merged, span: S };
+    }
+  }
+
+  unsupported.push(`intersection \`${shortText(node)}\` mapped to \`dynamic\` (reason: intersection-not-mergeable)`);
   return prim('dynamic');
 }
 
