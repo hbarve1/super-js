@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/signatureHelp', params: {} });
+    server.handle({ id: 7, method: 'textDocument/semanticTokens/full', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -202,5 +202,32 @@ describe('LspServer — completion', () => {
     const { sent, server } = harness();
     server.handle({ id: 4, method: 'textDocument/completion', params: at('file:///none.sjs', 0, 0) });
     expect(sent.at(-1)!.result).toEqual({ isIncomplete: false, items: [] });
+  });
+});
+
+describe('LspServer — signatureHelp', () => {
+  it('advertises a signatureHelp provider', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities.signatureHelpProvider)
+      .toBeDefined();
+  });
+
+  it('reports the callee signature and active parameter inside a call', () => {
+    const { sent, server } = harness();
+    const src = 'function add(a: number, b: number): number { return a + b; }\nconst r: number = add(1, 2);';
+    server.handle(open('file:///s.sjs', src));
+    // line 1 (0-based), char 25 → the `2` (second argument).
+    server.handle({ id: 3, method: 'textDocument/signatureHelp', params: at('file:///s.sjs', 1, 25) });
+    const help = sent.at(-1)!.result as { signatures: { label: string }[]; activeParameter: number };
+    expect(help.signatures[0]!.label).toContain('a: number');
+    expect(help.activeParameter).toBe(1);
+  });
+
+  it('returns null when the cursor is not inside a call', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///s2.sjs', 'const x: number = 1;'));
+    server.handle({ id: 4, method: 'textDocument/signatureHelp', params: at('file:///s2.sjs', 0, 6) });
+    expect(sent.at(-1)).toMatchObject({ id: 4, result: null });
   });
 });
