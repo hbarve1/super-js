@@ -21,6 +21,8 @@ Implemented:
   types; scope-aware filtering and member completion are later work).
 - `textDocument/signatureHelp` — the callee signature and active argument when
   the cursor is inside a call.
+- `textDocument/semanticTokens/full` — lexer-driven token classification
+  (keyword / string / number / variable; richer binder-aware classes later).
 
-The last M1 method, `semanticTokens/full`, plus the memory budget (M6), follow.
-See `specs/roadmap/stage-3-dx-tools.md`.
+The last M1 method, `textDocument/formatting`, plus the memory budget (M6),
+follow. See `specs/roadmap/stage-3-dx-tools.md`.

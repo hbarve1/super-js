@@ -16,6 +16,7 @@ import type { JsonRpcMessage } from './jsonrpc.js';
 import { documentSymbols, foldingRanges } from './symbols.js';
 import { completions } from './completion.js';
 import { signatureHelp } from './signature.js';
+import { semanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS } from './semantic-tokens.js';
 
 /** LSP `DiagnosticSeverity`. */
 const SEVERITY: Record<Severity, number> = { error: 1, warning: 2, info: 3, hint: 4 };
@@ -89,6 +90,10 @@ export class LspServer {
             foldingRangeProvider: true,
             completionProvider: {},
             signatureHelpProvider: { triggerCharacters: ['(', ','] },
+            semanticTokensProvider: {
+              legend: { tokenTypes: TOKEN_TYPES, tokenModifiers: TOKEN_MODIFIERS },
+              full: true,
+            },
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -117,6 +122,8 @@ export class LspServer {
         return this.reply(msg.id, this.completion(msg.params));
       case 'textDocument/signatureHelp':
         return this.reply(msg.id, this.signature(msg.params));
+      case 'textDocument/semanticTokens/full':
+        return this.reply(msg.id, this.semanticTokens(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -181,6 +188,12 @@ export class LspServer {
     const offset = offsetAt(src, pos.line, pos.character);
     if (offset === null) return null;
     return signatureHelp(src, offset, (line, column) => this.compiler.typeAt(pos.uri, line, column));
+  }
+
+  /** `textDocument/semanticTokens/full` — the LSP flat integer token array. */
+  private semanticTokens(params: unknown): { data: number[] } {
+    const src = this.sourceOf(params);
+    return { data: src === null ? [] : semanticTokens(src) };
   }
 
   private sourceOf(params: unknown): string | null {
