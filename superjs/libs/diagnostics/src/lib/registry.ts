@@ -95,6 +95,9 @@ const TABLE: Record<string, Omit<DiagnosticDescriptor, 'code'>> = {
   'SJS-L003': d('warning', 'lint', 'Use `===` / `!==` — `==` / `!=` performs type coercion', 'Stage 3'),
   'SJS-L004': d('warning', 'lint', 'Prefer `for…of` over `for…in` for array and iterable iteration', 'Stage 3'),
   'SJS-L005': d('warning', 'lint', '`debugger` statement found in committed code', 'Stage 3'),
+  'SJS-L006': d('warning', 'lint', '`match` expression has no arms', 'Stage 3'),
+  'SJS-L007': d('warning', 'lint', 'Redundant match arm — variant `{variant}` is already handled', 'Stage 3'),
+  'SJS-L008': d('warning', 'lint', 'Prefer an arrow function over a `function` expression callback', 'Stage 3'),
   'SJS-L011': d('error', 'security', 'BiDi control character rejected', 'Stage 1'),
 };
 

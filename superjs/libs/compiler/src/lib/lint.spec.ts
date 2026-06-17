@@ -40,6 +40,30 @@ describe('lint — other rules', () => {
   it('L005 flags debugger', () => {
     expect(codes('debugger;')).toContain('SJS-L005');
   });
+  it('L006 flags an empty match', () => {
+    expect(codes('const r = match s {};')).toContain('SJS-L006');
+  });
+  it('L006 does not flag a match with arms', () => {
+    expect(codes('const r = match s { Active => 1, Inactive => 2 };')).not.toContain('SJS-L006');
+  });
+  it('L007 flags a duplicated match variant', () => {
+    const ds = lint('const r = match s { Active => 1, Active => 2 };');
+    const dup = ds.find((d) => d.code === 'SJS-L007');
+    expect(dup).toBeDefined();
+    expect(dup!.message).toContain('Active');
+  });
+  it('L007 does not flag distinct variants', () => {
+    expect(codes('const r = match s { Active => 1, Inactive => 2 };')).not.toContain('SJS-L007');
+  });
+  it('L008 flags an anonymous function-expression callback', () => {
+    expect(codes('xs.map(function (x) { return x; });')).toContain('SJS-L008');
+  });
+  it('L008 does not flag an arrow callback', () => {
+    expect(codes('xs.map((x) => x);')).not.toContain('SJS-L008');
+  });
+  it('L008 does not flag a named function expression', () => {
+    expect(codes('xs.map(function keep(x) { return x; });')).not.toContain('SJS-L008');
+  });
 });
 
 describe('lint — output shape', () => {

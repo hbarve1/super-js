@@ -7,12 +7,18 @@
  * - **L003 eqeqeq** — `==` / `!=`; use `===` / `!==`.
  * - **L004 no-for-in** — `for…in`; prefer `for…of` for arrays / iterables.
  * - **L005 no-debugger** — a `debugger` statement.
+ * - **L006 no-empty-match** — a `match` expression with no arms.
+ * - **L007 no-redundant-match-arm** — an arm whose variant is already handled.
+ * - **L008 prefer-arrow-callback** — an anonymous `function` expression passed
+ *   directly as a call argument; an arrow is shorter and keeps lexical `this`.
  *
  * `prefer-const` is name-based and conservative: any assignment to a name (in any
  * scope) suppresses the finding, so shadowing never produces a false positive.
  */
 
-import type { Program, Diagnostic, DiagnosticCode, Span, Expression, Pattern, Node } from '@superjs/types';
+import type {
+  Program, Diagnostic, DiagnosticCode, Span, Expression, Pattern, Node, MatchPattern,
+} from '@superjs/types';
 import { parse } from '@superjs/parser';
 import { createDiagnostic, type MessageParams } from '@superjs/diagnostics';
 
@@ -43,6 +49,24 @@ export function lint(source: string, file?: string): Diagnostic[] {
         break;
       case 'ForInStatement': diag('SJS-L004', n.span); break;
       case 'DebuggerStatement': diag('SJS-L005', n.span); break;
+      case 'MatchExpression': {
+        if (n.arms.length === 0) { diag('SJS-L006', n.span); break; }
+        const seen = new Set<string>();
+        for (const arm of n.arms) {
+          const v = variantName(arm.pattern);
+          if (v === undefined) continue; // default arm — never redundant
+          if (seen.has(v)) diag('SJS-L007', arm.span, { variant: v });
+          else seen.add(v);
+        }
+        break;
+      }
+      case 'CallExpression':
+        for (const arg of n.args) {
+          if (arg.kind === 'FunctionExpression' && !arg.generator && !arg.id) {
+            diag('SJS-L008', arg.span);
+          }
+        }
+        break;
     }
   });
 
@@ -90,6 +114,18 @@ function addTargetNames(node: Expression | Pattern, out: Set<string>): void {
     case 'SpreadElement': addTargetNames(node.argument, out); break;
     case 'ParenthesizedExpression': addTargetNames(node.expression, out); break;
     // MemberExpression (`a.b = …`) rebinds a property, not the binding — ignore.
+  }
+}
+
+/** The variant tag of a match pattern, or undefined for the default pattern. */
+function variantName(p: MatchPattern): string | undefined {
+  switch (p.kind) {
+    case 'TupleVariantPattern':
+    case 'RecordVariantPattern':
+    case 'UnitVariantPattern':
+      return p.variant.name;
+    default:
+      return undefined; // DefaultPattern
   }
 }
 
