@@ -322,6 +322,9 @@ importers:
       '@superjs/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@superjs/parser':
+        specifier: workspace:*
+        version: link:../parser
       '@superjs/types':
         specifier: workspace:*
         version: link:../types

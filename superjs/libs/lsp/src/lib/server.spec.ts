@@ -149,3 +149,35 @@ describe('LspServer — definition', () => {
     expect(sent.at(-1)).toMatchObject({ id: 9, result: null });
   });
 });
+
+const td = (uri: string) => ({ textDocument: { uri } });
+
+describe('LspServer — outline + folding', () => {
+  it('advertises documentSymbol + foldingRange capabilities', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities)
+      .toMatchObject({ documentSymbolProvider: true, foldingRangeProvider: true });
+  });
+
+  it('returns the outline of an open document', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///o.sjs', 'export function f(): void {}\nconst x: number = 1;'));
+    server.handle({ id: 3, method: 'textDocument/documentSymbol', params: td('file:///o.sjs') });
+    const names = (sent.at(-1)!.result as { name: string }[]).map((s) => s.name);
+    expect(names).toEqual(['f', 'x']);
+  });
+
+  it('returns folding ranges for an open document', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///fold.sjs', 'function f(): void {\n  return;\n}'));
+    server.handle({ id: 4, method: 'textDocument/foldingRange', params: td('file:///fold.sjs') });
+    expect(sent.at(-1)!.result).toEqual([{ startLine: 0, endLine: 2 }]);
+  });
+
+  it('returns an empty outline for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 5, method: 'textDocument/documentSymbol', params: td('file:///gone.sjs') });
+    expect(sent.at(-1)).toMatchObject({ id: 5, result: [] });
+  });
+});
