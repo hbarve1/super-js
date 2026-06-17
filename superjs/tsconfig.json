@@ -44,6 +44,9 @@
     },
     {
       "path": "./libs/interop"
+    },
+    {
+      "path": "./libs/lsp"
     }
   ]
 }
