@@ -258,7 +258,9 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
     return 1;
   }
 
-  let translateDts: (source: string, fileName?: string) => { code: string; unsupported: readonly string[] };
+  let translateDts: (source: string, fileName?: string) => {
+    code: string; unsupported: readonly string[]; surface: { typed: number; total: number };
+  };
   try {
     ({ translateDts } = await import('@superjs/interop'));
   } catch {
@@ -266,18 +268,27 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
     return 2;
   }
 
-  const { code, unsupported } = translateDts(io.readFile(entry), basename(entry));
+  const { code, unsupported, surface } = translateDts(io.readFile(entry), basename(entry));
   const typesRel = `${TYPES_BASE}/${pkg}`;
-  io.writeFile(join(root, ...typesRel.split('/'), 'index.d.sjs'), code);
+  const typesDir = join(root, ...typesRel.split('/'));
+  io.writeFile(join(typesDir, 'index.d.sjs'), code);
+  // Sidecar coverage record `doctor` reads back later.
+  io.writeFile(join(typesDir, 'surface.json'),
+    `${JSON.stringify({ package: pkg, ...surface, unsupported }, null, 2)}\n`);
   updateConfigPaths(io, root, pkg, typesRel);
 
   for (const note of unsupported) errline(io, `  warning: ${note}`);
   const n = unsupported.length;
   line(io, `added ${pkg} → ${typesRel}/index.d.sjs`);
-  line(io, n === 0
-    ? '  fully typed — no dynamic fallbacks'
-    : `  ${n} construct${n === 1 ? '' : 's'} degraded or skipped (see warnings above)`);
+  line(io, `  typed surface: ${surfacePct(surface)}`);
+  if (n > 0) line(io, `  ${n} construct${n === 1 ? '' : 's'} degraded or skipped (see warnings above)`);
   return 0;
+}
+
+/** Render a typed-surface ratio as a percent + fraction, e.g. `83% (5/6)`. */
+function surfacePct(s: { typed: number; total: number }): string {
+  if (s.total === 0) return 'n/a (nothing translatable)';
+  return `${Math.round((s.typed / s.total) * 100)}% (${s.typed}/${s.total} identifiers)`;
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────
@@ -331,6 +342,39 @@ export function init(_args: ParsedArgs, io: IO): number {
 }
 
 // ── doctor ────────────────────────────────────────────────────────────────────
+
+/** Read the typed-surface sidecar a previous `superjs add` wrote for a package. */
+function readSurface(io: IO, root: string, dir: string): { typed: number; total: number; unsupported?: string[] } | null {
+  const abs = join(root, ...dir.split('/'), 'surface.json');
+  if (!io.exists(abs)) return null;
+  try { return JSON.parse(io.readFile(abs)) as { typed: number; total: number; unsupported?: string[] }; }
+  catch { return null; }
+}
+
+/** Print a per-package typed-surface report for everything `superjs add` mapped. */
+function reportPackages(io: IO, root: string): void {
+  const configPath = join(root, CONFIG_FILENAME);
+  if (!io.exists(configPath)) return;
+  let paths: Record<string, string[]>;
+  try {
+    const cfg = JSON.parse(io.readFile(configPath)) as { paths?: Record<string, string[]> };
+    paths = cfg.paths ?? {};
+  } catch { return; }
+
+  const entries = Object.entries(paths).filter(([, dirs]) => dirs?.[0]?.startsWith(TYPES_BASE));
+  if (entries.length === 0) return;
+
+  line(io, '');
+  line(io, `  added packages (${entries.length}):`);
+  for (const [pkg, dirs] of entries) {
+    const s = readSurface(io, root, dirs[0]!);
+    if (!s) { line(io, `    ${pkg}    (no coverage record — re-run \`superjs add ${pkg}\`)`); continue; }
+    const dyn = s.unsupported?.length ?? 0;
+    const tail = dyn > 0 ? `, ${dyn} dynamic/skipped` : '';
+    line(io, `    ${pkg}    typed surface ${surfacePct(s)}${tail}`);
+  }
+}
+
 export function doctor(_args: ParsedArgs, io: IO): number {
   const nodeOk = (() => { try { return Number(process.versions.node.split('.')[0]) >= 18; } catch { return false; } })();
   const hasConfig = io.exists(join(io.cwd(), CONFIG_FILENAME));
@@ -338,6 +382,7 @@ export function doctor(_args: ParsedArgs, io: IO): number {
   line(io, `  node ${process.versions.node}        ${nodeOk ? 'ok' : 'WARN: need ≥ 18'}`);
   line(io, `  compiler ${VERSION}            ok`);
   line(io, `  ${CONFIG_FILENAME}     ${hasConfig ? 'found' : 'not found (run `superjs init`)'}`);
+  reportPackages(io, io.cwd());
   return nodeOk ? 0 : 1;
 }
 

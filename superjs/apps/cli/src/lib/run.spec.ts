@@ -206,6 +206,9 @@ describe('add (npm package types → .d.sjs)', () => {
     const config = JSON.parse(io.fs.get('/work/superjs.config.json')!);
     expect(config.paths.widget).toEqual(['node_modules/@superjs/types/widget']);
     expect(io.stdout()).toContain('added widget →');
+    expect(io.stdout()).toContain('typed surface: 100% (3/3');
+    const surface = JSON.parse(io.fs.get('/work/node_modules/@superjs/types/widget/surface.json')!);
+    expect(surface).toMatchObject({ package: 'widget', typed: 3, total: 3 });
   });
   it('falls back to a DefinitelyTyped @types/<pkg> entry', async () => {
     const io = makeIO({
@@ -251,6 +254,17 @@ describe('init & doctor', () => {
     const code = await run(['doctor'], io);
     expect(code).toBe(0);
     expect(io.stdout()).toContain('superjs doctor');
+  });
+  it('doctor reports per-package typed surface for added packages', async () => {
+    const io = makeIO({
+      '/work/superjs.config.json': JSON.stringify({ language: '1.0', paths: { widget: ['node_modules/@superjs/types/widget'] } }),
+      '/work/node_modules/@superjs/types/widget/surface.json': JSON.stringify({ package: 'widget', typed: 4, total: 5, unsupported: ['x mapped to dynamic'] }),
+    });
+    expect(await run(['doctor'], io)).toBe(0);
+    expect(io.stdout()).toContain('added packages (1)');
+    expect(io.stdout()).toContain('widget');
+    expect(io.stdout()).toContain('80% (4/5');
+    expect(io.stdout()).toContain('1 dynamic/skipped');
   });
 });
 

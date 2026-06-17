@@ -110,8 +110,10 @@ superjs add fastify        # → node_modules/@superjs/types/fastify/index.d.sjs
 ```
 
 Unmappable TypeScript forms degrade to `dynamic` and are reported — never
-silently dropped. (Hand-curated wrappers for the top packages land in a later
-Stage 2 sprint; today `add` always translates the published `.d.ts`.)
+silently dropped. `add` prints a typed-surface estimate (how much of the API kept
+a real type) and records it for `superjs doctor`. (Hand-curated wrappers for the
+top packages land in a later Stage 2 sprint; today `add` always translates the
+published `.d.ts`.)
 
 ### `superjs explain`
 
@@ -128,7 +130,8 @@ Writes a default `superjs.config.json` into the current directory.
 
 ### `superjs doctor`
 
-Reports environment health — Node version, config presence and validity.
+Reports environment health — Node version, config presence and validity — plus a
+per-package typed-surface report for everything pulled in with `superjs add`.
 
 ### Planned commands
 

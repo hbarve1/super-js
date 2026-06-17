@@ -21,11 +21,26 @@ import type {
 import { SYNTHETIC_SPAN } from '@superjs/types';
 import { emitTypeDecl } from '@superjs/compiler';
 
+/**
+ * Translation-time typed-surface estimate: how many named identifier positions
+ * (declaration names, object members, function parameters) resolved to a real
+ * type vs degraded to `dynamic`. A coverage signal for `add` / `doctor` — not
+ * the locked B7 benchmark metric (that ships as a separate, version-locked tool).
+ */
+export interface Surface {
+  /** Identifier positions whose immediate type is not `dynamic`. */
+  readonly typed: number;
+  /** Total counted identifier positions. */
+  readonly total: number;
+}
+
 export interface TranslateResult {
   /** The emitted `.d.sjs` source. */
   readonly code: string;
   /** Human-readable notes for TS forms that degraded to `dynamic`. */
   readonly unsupported: string[];
+  /** Typed-surface estimate over the translated declarations. */
+  readonly surface: Surface;
 }
 
 const S = SYNTHETIC_SPAN;
@@ -37,19 +52,22 @@ export function translateDts(source: string, fileName = 'input.d.ts'): Translate
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, /*setParentNodes*/ true);
   const unsupported: string[] = [];
   const lines: string[] = [];
+  const surface = { typed: 0, total: 0 };
 
   for (const stmt of sf.statements) {
     if (ts.isTypeAliasDeclaration(stmt)) {
       const params = typeParams(stmt.typeParameters, unsupported);
-      const body = emitTypeDecl(mapType(stmt.type, unsupported));
-      lines.push(`type ${stmt.name.text}${params} = ${body};`);
+      const node = mapType(stmt.type, unsupported);
+      countDecl(node, surface);
+      lines.push(`type ${stmt.name.text}${params} = ${emitTypeDecl(node)};`);
     } else if (ts.isInterfaceDeclaration(stmt)) {
       const params = typeParams(stmt.typeParameters, unsupported);
       // Emit as a structural object-type alias (SuperJS interfaces are structural).
       const obj = objectFromMembers(stmt.members, unsupported);
+      countDecl(obj, surface);
       lines.push(`type ${stmt.name.text}${params} = ${emitTypeDecl(obj)};`);
     } else if (ts.isEnumDeclaration(stmt)) {
-      mapEnum(stmt, lines, unsupported);
+      mapEnum(stmt, lines, unsupported, surface);
     } else {
       // Everything else (functions, classes, namespaces, var/const declares) is
       // not yet translated — but it is *reported*, never silently dropped.
@@ -57,7 +75,56 @@ export function translateDts(source: string, fileName = 'input.d.ts'): Translate
     }
   }
 
-  return { code: lines.join('\n') + (lines.length ? '\n' : ''), unsupported };
+  return { code: lines.join('\n') + (lines.length ? '\n' : ''), unsupported, surface };
+}
+
+/** True when a type is `dynamic` in immediate position (`dynamic` or `dynamic?`). */
+function isImmediateDynamic(t: TypeNode): boolean {
+  if (t.kind === 'PrimitiveTypeNode') return t.name === 'dynamic';
+  if (t.kind === 'NullableTypeNode') return isImmediateDynamic(t.inner);
+  return false;
+}
+
+/** Count a declaration's name as one identifier position, then its members. */
+function countDecl(body: TypeNode, s: { typed: number; total: number }): void {
+  s.total++;
+  if (!isImmediateDynamic(body)) s.typed++;
+  countType(body, s);
+}
+
+/** Recursively count member/parameter identifier positions inside a type. */
+function countType(t: TypeNode, s: { typed: number; total: number }): void {
+  switch (t.kind) {
+    case 'ObjectTypeNode':
+      for (const m of t.members) {
+        if (m.kind === 'IndexSignature') { countType(m.valueType, s); continue; }
+        s.total++;
+        if (m.kind === 'InterfaceProperty') {
+          if (!isImmediateDynamic(m.type)) s.typed++;
+          countType(m.type, s);
+        } else {
+          // InterfaceMethod — name is a typed position; recurse the return type.
+          s.typed++;
+          countType(m.returnType, s);
+        }
+      }
+      break;
+    case 'FunctionTypeNode':
+      for (const p of t.params) {
+        s.total++;
+        if (!isImmediateDynamic(p.type)) s.typed++;
+        countType(p.type, s);
+      }
+      countType(t.returnType, s);
+      break;
+    case 'ArrayTypeNode': countType(t.element, s); break;
+    case 'NullableTypeNode': countType(t.inner, s); break;
+    case 'ParenthesizedTypeNode': countType(t.inner, s); break;
+    case 'TupleTypeNode': for (const e of t.elements) countType(e, s); break;
+    case 'UnionTypeNode': for (const u of t.types) countType(u, s); break;
+    case 'TypeRefNode': if (t.typeArgs) for (const a of t.typeArgs) countType(a, s); break;
+    // PrimitiveTypeNode — leaf, nothing to count.
+  }
 }
 
 /**
@@ -67,7 +134,12 @@ export function translateDts(source: string, fileName = 'input.d.ts'): Translate
  * the full type surface. A sum type needs at least two named variants; a 0- or
  * 1-member enum can't form one, so it is reported instead of emitting broken code.
  */
-function mapEnum(stmt: ts.EnumDeclaration, lines: string[], unsupported: string[]): void {
+function mapEnum(
+  stmt: ts.EnumDeclaration,
+  lines: string[],
+  unsupported: string[],
+  surface: { typed: number; total: number },
+): void {
   const names = stmt.members
     .map((m) => ts.isIdentifier(m.name) ? m.name.text
       : ts.isStringLiteral(m.name) ? m.name.text
@@ -77,6 +149,8 @@ function mapEnum(stmt: ts.EnumDeclaration, lines: string[], unsupported: string[
     unsupported.push(`enum \`${stmt.name.text}\` with ${names.length} usable member${names.length === 1 ? '' : 's'} skipped (a sum type needs ≥ 2 variants)`);
     return;
   }
+  surface.total++;
+  surface.typed++; // a sum type is a fully-typed declaration
   lines.push(`type ${stmt.name.text} = ${names.join(' | ')};`);
 }
 
