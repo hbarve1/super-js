@@ -14,6 +14,7 @@ import { model } from '@superjs/checker';
 import type { Diagnostic, Severity, Span } from '@superjs/types';
 import type { JsonRpcMessage } from './jsonrpc.js';
 import { documentSymbols, foldingRanges } from './symbols.js';
+import { completions } from './completion.js';
 
 /** LSP `DiagnosticSeverity`. */
 const SEVERITY: Record<Severity, number> = { error: 1, warning: 2, info: 3, hint: 4 };
@@ -85,6 +86,7 @@ export class LspServer {
             definitionProvider: true,
             documentSymbolProvider: true,
             foldingRangeProvider: true,
+            completionProvider: {},
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -109,6 +111,8 @@ export class LspServer {
         return this.reply(msg.id, this.outline(msg.params));
       case 'textDocument/foldingRange':
         return this.reply(msg.id, this.folding(msg.params));
+      case 'textDocument/completion':
+        return this.reply(msg.id, this.completion(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -156,6 +160,12 @@ export class LspServer {
   private folding(params: unknown): ReturnType<typeof foldingRanges> {
     const src = this.sourceOf(params);
     return src === null ? [] : foldingRanges(src);
+  }
+
+  /** `textDocument/completion` — an `isIncomplete: false` list of proposals. */
+  private completion(params: unknown): { isIncomplete: boolean; items: ReturnType<typeof completions> } {
+    const src = this.sourceOf(params);
+    return { isIncomplete: false, items: src === null ? [] : completions(src) };
   }
 
   private sourceOf(params: unknown): string | null {

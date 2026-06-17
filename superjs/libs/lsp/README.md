@@ -17,6 +17,8 @@ Implemented:
   (go-to-declaration), backed by the compiler's `typeAt` / `symbolAt`.
 - `textDocument/documentSymbol` (outline) and `textDocument/foldingRange`,
   computed from the parsed AST.
+- `textDocument/completion` (MVP: local declarations + keywords + primitive
+  types; scope-aware filtering and member completion are later work).
 
-Following slices add `completion`, `signatureHelp`, and `semanticTokens/full`,
-plus the memory budget (M6). See `specs/roadmap/stage-3-dx-tools.md`.
+Following slices add `signatureHelp` and `semanticTokens/full`, plus the
+memory budget (M6). See `specs/roadmap/stage-3-dx-tools.md`.
