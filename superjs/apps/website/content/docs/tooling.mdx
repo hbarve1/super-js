@@ -94,6 +94,23 @@ $ superjs translate types.d.ts
 translated types.d.ts → types.d.sjs
 ```
 
+### `superjs add`
+
+Resolves an installed npm package's types into SuperJS `.d.sjs` and wires them
+into your project. Finds the package's `.d.ts` (its own `types` entry or the
+DefinitelyTyped `@types/<pkg>` fallback), translates it to
+`node_modules/@superjs/types/<pkg>/index.d.sjs`, and maps the import specifier in
+`superjs.config.json` `paths`.
+
+```bash
+npm install fastify
+superjs add fastify        # → node_modules/@superjs/types/fastify/index.d.sjs
+```
+
+Unmappable TypeScript forms degrade to `dynamic` and are reported — never
+silently dropped. (Hand-curated wrappers for the top packages land in a later
+Stage 2 sprint; today `add` always translates the published `.d.ts`.)
+
 ### `superjs explain`
 
 Prints the full spec write-up for a diagnostic code (description, example, fix).
@@ -122,6 +139,7 @@ These are reserved and currently print a not-yet-implemented notice:
   both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
   in your existing Jest/Vitest) and a native zero-config `superjs test` runner.
 - **`superjs lint`**, **`superjs format`** *(Stage 3)* — linter + formatter.
+- **`superjs lsp`** *(Stage 3)* — editor language server.
 
 Full plan on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 

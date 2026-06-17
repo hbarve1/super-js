@@ -2,8 +2,8 @@
  * Command implementations. Each takes parsed args + an {@link IO} and returns a
  * POSIX-ish exit code (0 ok, 1 diagnostics, 2 usage/not-implemented, 64 unknown).
  *
- * Real at v1.0: build, check, translate, explain, init, doctor. Stubbed (print a
- * planned-stage notice, exit 2): format, lint, add, doc, verify, migrate, test,
+ * Real at v1.0: build, check, translate, add, explain, init, doctor. Stubbed (print
+ * a planned-stage notice, exit 2): format, lint, doc, verify, migrate, test,
  * lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
@@ -27,7 +27,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  format: 'Stage 3', lint: 'Stage 3', doc: 'Stage 3', add: 'Stage 2',
+  format: 'Stage 3', lint: 'Stage 3', doc: 'Stage 3',
   verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', lsp: 'Stage 3', repl: 'Stage 6',
 };
 
@@ -179,6 +179,105 @@ export async function translate(args: ParsedArgs, io: IO): Promise<number> {
     line(io, `translated ${p} → ${outDir ? `${outDir}/${outName}` : outName}`);
   }
   return failed > 0 ? 1 : 0;
+}
+
+// ── add (resolve an npm package's types → .d.sjs) ─────────────────────────────
+
+/** Where generated package types live, relative to the project root (posix). */
+const TYPES_BASE = 'node_modules/@superjs/types';
+
+/** Parse a package.json into an object; null if absent or invalid. */
+function readPackageJson(io: IO, abs: string): Record<string, unknown> | null {
+  if (!io.exists(abs)) return null;
+  try { return JSON.parse(io.readFile(abs)) as Record<string, unknown>; }
+  catch { return null; }
+}
+
+/**
+ * Locate a package's TypeScript declaration entry point under `node_modules`.
+ * Prefers the package's own `types`/`typings` field, then a bundled
+ * `index.d.ts`, then the DefinitelyTyped `@types/<pkg>` fallback (scoped names
+ * map `@scope/name` → `scope__name` per the DT convention).
+ */
+function findDtsEntry(io: IO, root: string, pkg: string): string | null {
+  const pkgDir = join(root, 'node_modules', ...pkg.split('/'));
+  const manifest = readPackageJson(io, join(pkgDir, 'package.json'));
+  if (manifest) {
+    const typesField = manifest['types'] ?? manifest['typings'];
+    if (typeof typesField === 'string') {
+      const entry = join(pkgDir, typesField);
+      if (io.exists(entry)) return entry;
+    }
+    const bundled = join(pkgDir, 'index.d.ts');
+    if (io.exists(bundled)) return bundled;
+  }
+  const dtName = pkg.startsWith('@') ? pkg.slice(1).replace('/', '__') : pkg;
+  const dtEntry = join(root, 'node_modules', '@types', dtName, 'index.d.ts');
+  if (io.exists(dtEntry)) return dtEntry;
+  return null;
+}
+
+/** Add/replace one `paths` mapping in superjs.config.json, creating it if absent. */
+function updateConfigPaths(io: IO, root: string, pkg: string, target: string): void {
+  const configPath = join(root, CONFIG_FILENAME);
+  let config: Record<string, unknown>;
+  if (io.exists(configPath)) {
+    try { config = JSON.parse(io.readFile(configPath)) as Record<string, unknown>; }
+    catch { config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Record<string, unknown>; }
+  } else {
+    config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Record<string, unknown>;
+  }
+  const paths = (config['paths'] && typeof config['paths'] === 'object')
+    ? config['paths'] as Record<string, string[]>
+    : {};
+  paths[pkg] = [target];
+  config['paths'] = paths;
+  io.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+}
+
+/**
+ * Resolve an installed npm package's types into SuperJS `.d.sjs` so the project
+ * can `import` it with type safety. Finds the package's `.d.ts` (own or
+ * DefinitelyTyped), runs the `@superjs/interop` translator, writes the result to
+ * `node_modules/@superjs/types/<pkg>/index.d.sjs`, and maps the import specifier
+ * in `superjs.config.json` `paths`. TS forms SuperJS can't model degrade to
+ * `dynamic` and are reported — never silently dropped.
+ *
+ * MVP scope (Stage 2 Sprint 2.1): translator-only. Hand-curated
+ * `@superjs/types-<pkg>` wrappers and npm-registry lookup land in a later sprint.
+ */
+export async function add(args: ParsedArgs, io: IO): Promise<number> {
+  const pkg = args.positionals[0];
+  if (!pkg) { errline(io, 'usage: superjs add <package>'); return 2; }
+
+  const root = io.cwd();
+  const entry = findDtsEntry(io, root, pkg);
+  if (!entry) {
+    errline(io, `error: no TypeScript declarations found for '${pkg}'.`);
+    errline(io, `  looked in node_modules/${pkg} and node_modules/@types/ — is the package installed?`);
+    return 1;
+  }
+
+  let translateDts: (source: string, fileName?: string) => { code: string; unsupported: readonly string[] };
+  try {
+    ({ translateDts } = await import('@superjs/interop'));
+  } catch {
+    errline(io, "error: the TypeScript interop layer failed to load — install 'typescript' (npm install -D typescript) and retry.");
+    return 2;
+  }
+
+  const { code, unsupported } = translateDts(io.readFile(entry), basename(entry));
+  const typesRel = `${TYPES_BASE}/${pkg}`;
+  io.writeFile(join(root, ...typesRel.split('/'), 'index.d.sjs'), code);
+  updateConfigPaths(io, root, pkg, typesRel);
+
+  for (const note of unsupported) errline(io, `  warning: ${note}`);
+  const n = unsupported.length;
+  line(io, `added ${pkg} → ${typesRel}/index.d.sjs`);
+  line(io, n === 0
+    ? '  fully typed — no dynamic fallbacks'
+    : `  ${n} construct${n === 1 ? '' : 's'} fell back to dynamic (see warnings above)`);
+  return 0;
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────
