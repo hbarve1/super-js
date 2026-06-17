@@ -414,10 +414,35 @@ describe('lint --fix', () => {
   });
 });
 
+describe('verify', () => {
+  const src = { '/work/src/a.sjs': 'export const x: number = 1;\n' };
+
+  it('passes when the expected output matches a prior build', async () => {
+    const io = makeIO(src);
+    expect(await run(['build', 'src', '--out-dir', 'out', '--source-map', 'none', '--no-cache'], io)).toBe(0);
+    expect(await run(['verify', 'src', 'out'], io)).toBe(0);
+    expect(io.stdout()).toContain('output matches');
+  });
+
+  it('fails when the expected output differs', async () => {
+    const io = makeIO(src);
+    await run(['build', 'src', '--out-dir', 'out', '--source-map', 'none', '--no-cache'], io);
+    const emitted = [...io.fs.keys()].find((k) => k.startsWith('/work/out/') && k.endsWith('.js'))!;
+    io.fs.set(emitted, '/* tampered */');
+    expect(await run(['verify', 'src', 'out'], io)).toBe(1);
+    expect(io.stderr()).toContain('differs');
+  });
+
+  it('usage error with fewer than two arguments', async () => {
+    const io = makeIO(src);
+    expect(await run(['verify', 'src'], io)).toBe(2);
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['verify'], io)).toBe(2);
+    expect(await run(['migrate'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {

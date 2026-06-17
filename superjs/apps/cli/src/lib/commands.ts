@@ -29,7 +29,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', repl: 'Stage 6',
+  migrate: 'Stage 2', test: 'Stage 5', repl: 'Stage 6',
 };
 
 function resolve(io: IO, p: string): string {
@@ -192,6 +192,36 @@ export async function build(args: ParsedArgs, io: IO): Promise<number> {
     return 0;
   }
   return code;
+}
+
+/**
+ * `superjs verify <input-dir> <expected-dir>` — recompile the inputs and byte-diff
+ * the emitted JavaScript against an expected output tree. Exits non-zero on any
+ * difference or missing file. Turns the build-determinism gate into a
+ * user-auditable command (no source maps, so the comparison is path-independent).
+ */
+export async function verify(args: ParsedArgs, io: IO): Promise<number> {
+  if (args.positionals.length < 2) {
+    errline(io, 'usage: superjs verify <input-dir> <expected-dir>');
+    return 2;
+  }
+  const [input, expected] = args.positionals as [string, string];
+  const { files, missing } = readSources(io, [input]);
+  const result = await compile(files, { sourceMap: 'none', ...resolutionOpts(io) });
+  const errors = countErrors(result.diagnostics);
+  if (errors > 0) { emitDiagnostics(io, result.diagnostics, 'pretty'); errline(io, `verify failed: ${errors} compile error${errors === 1 ? '' : 's'}`); return 1; }
+
+  let mismatches = 0;
+  let checked = 0;
+  for (const [name, output] of result.outputs) {
+    const expPath = join(resolve(io, expected), basename(name));
+    checked++;
+    if (!io.exists(expPath)) { errline(io, `missing: ${basename(name)} not found in ${expected}/`); mismatches++; continue; }
+    if (io.readFile(expPath) !== output.code) { errline(io, `differs: ${basename(name)}`); mismatches++; }
+  }
+  if (mismatches === 0 && missing === 0) { line(io, `verified ${checked} file${checked === 1 ? '' : 's'} — output matches ${expected}/`); return 0; }
+  errline(io, `verify failed: ${mismatches} mismatch${mismatches === 1 ? '' : 'es'}`);
+  return 1;
 }
 
 // ── translate (.d.ts → .d.sjs) ──────────────────────────────────────────────────

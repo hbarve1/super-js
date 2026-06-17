@@ -251,6 +251,23 @@ it automatically; for Neovim, Helix, or any LSP-aware editor, point the client a
 `stdout` is the JSON-RPC channel, so the command prints nothing else there; the
 process runs until the client sends `exit`.
 
+### `verify`
+
+Recompile an input tree and **byte-diff** the emitted JavaScript against an
+expected output tree — the build-determinism gate as a user-auditable command.
+Exits non-zero on any difference or missing file. Source maps are disabled so the
+comparison is path-independent.
+
+```bash
+superjs verify src/ expected-dist/
+```
+
+| Exit | Meaning |
+|------|---------|
+| `0` | every emitted file matches the expected tree |
+| `1` | a file differs, is missing, or the inputs failed to compile |
+| `2` | usage error (needs both `<input-dir>` and `<expected-dir>`) |
+
 ### Planned commands
 
 These subcommands are reserved — invoking one today prints a not-yet-implemented
