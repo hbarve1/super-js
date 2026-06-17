@@ -61,15 +61,36 @@ describe('translateDts — unsupported forms degrade to dynamic', () => {
     expect(r.code).toContain('dynamic');
     expect(r.unsupported.join('\n')).toMatch(/any.*dynamic/);
   });
-  it('maps an intersection to dynamic and reports it', async () => {
-    const r = await tr('type I = { a: number } & { b: string };');
-    expect(r.code).toContain('dynamic');
-    expect(r.unsupported.some((u) => u.includes('unsupported'))).toBe(true);
-  });
   it('reports a dropped type-parameter constraint', async () => {
     const r = await tr('type C<T extends object> = T[];');
     expect(r.unsupported.some((u) => u.includes('constraint'))).toBe(true);
     expect(r.code).toContain('type C<T> = T[];');
+  });
+});
+
+describe('translateDts — intersection auto-merge', () => {
+  it('merges two object-type literals into one object type', async () => {
+    const r = await tr('type I = { a: number } & { b: string };');
+    expect(r.code).toContain('a: number');
+    expect(r.code).toContain('b: string');
+    expect(r.code).not.toContain('dynamic');
+    expect(r.unsupported).toEqual([]);
+  });
+  it('merges three branches', async () => {
+    const r = await tr('type I = { a: number } & { b: string } & { c: boolean };');
+    expect(r.code).toContain('a: number');
+    expect(r.code).toContain('c: boolean');
+    expect(r.code).not.toContain('dynamic');
+  });
+  it('falls back to dynamic on a property-name conflict', async () => {
+    const r = await tr('type I = { a: number } & { a: string };');
+    expect(r.code).toContain('dynamic');
+    expect(r.unsupported.some((u) => u.includes('intersection-not-mergeable'))).toBe(true);
+  });
+  it('falls back to dynamic when a branch is a named type (not a literal)', async () => {
+    const r = await tr('type I = Foo & { b: string };');
+    expect(r.code).toContain('dynamic');
+    expect(r.unsupported.some((u) => u.includes('intersection-not-mergeable'))).toBe(true);
   });
 });
 

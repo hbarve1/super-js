@@ -84,11 +84,12 @@ superjs translate types.d.ts --out-dir gen   # → gen/types.d.sjs
 |------|--------|---------|--------|
 | `--out-dir <dir>` | path | alongside source | Directory for the `.d.sjs` output |
 
-Enums become sum types (`enum Color { Red, Green }` → `type Color = Red | Green`).
-TypeScript forms SuperJS doesn't model (intersection, conditional, mapped,
-`infer`, `any`) degrade to `dynamic`, and top-level functions, classes and
-namespaces are reported as not-yet-translated — every dropped or degraded
-construct is surfaced as a warning, never silently lost.
+Enums become sum types (`enum Color { Red, Green }` → `type Color = Red | Green`),
+and an intersection of object literals (`{ a } & { b }`) merges into one object
+type. TypeScript forms SuperJS doesn't model (conditional, mapped, `infer`,
+`any`, and intersections that can't be merged) degrade to `dynamic`, and
+top-level functions, classes and namespaces are reported as not-yet-translated —
+every dropped or degraded construct is surfaced as a warning, never silently lost.
 
 ### `add`
 
