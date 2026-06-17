@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/formatting', params: {} });
+    server.handle({ id: 7, method: 'textDocument/rename', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -254,5 +254,42 @@ describe('LspServer — semanticTokens', () => {
     const { sent, server } = harness();
     server.handle({ id: 4, method: 'textDocument/semanticTokens/full', params: td('file:///none.sjs') });
     expect(sent.at(-1)!.result).toEqual({ data: [] });
+  });
+});
+
+describe('LspServer — formatting', () => {
+  it('advertises a document-formatting provider', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities.documentFormattingProvider)
+      .toBe(true);
+  });
+
+  it('returns a whole-document edit for an unformatted document', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///f.sjs', 'const  x=1;'));
+    server.handle({ id: 3, method: 'textDocument/formatting', params: td('file:///f.sjs') });
+    const edits = sent.at(-1)!.result as { range: { start: { line: number; character: number } }; newText: string }[];
+    expect(edits).toHaveLength(1);
+    expect(edits[0]!.range.start).toEqual({ line: 0, character: 0 });
+    expect(edits[0]!.newText).toContain('const x = 1;');
+  });
+
+  it('returns no edits for an already-formatted document', () => {
+    const { sent, server } = harness();
+    // Format once to obtain the canonical form, then feed that back.
+    server.handle(open('file:///f1.sjs', 'const  x=1;'));
+    server.handle({ id: 4, method: 'textDocument/formatting', params: td('file:///f1.sjs') });
+    const canonical = (sent.at(-1)!.result as { newText: string }[])[0]!.newText;
+
+    server.handle(open('file:///f2.sjs', canonical));
+    server.handle({ id: 5, method: 'textDocument/formatting', params: td('file:///f2.sjs') });
+    expect(sent.at(-1)).toMatchObject({ id: 5, result: [] });
+  });
+
+  it('returns no edits for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 6, method: 'textDocument/formatting', params: td('file:///gone.sjs') });
+    expect(sent.at(-1)).toMatchObject({ id: 6, result: [] });
   });
 });
