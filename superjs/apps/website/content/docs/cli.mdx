@@ -136,6 +136,30 @@ The formatter is **safe by construction**: it reparses its own output and only
 rewrites a file when the result is provably the same program (identical AST).
 Anything it can't reproduce faithfully is left exactly as-is.
 
+### `lint`
+
+Report style findings — the `SJS-L*` rules. Exits non-zero when any are found,
+so it gates CI.
+
+```bash
+superjs lint src/                 # human-readable findings
+superjs lint src/ --format json   # one JSON diagnostic per line
+```
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--format <mode>` | `pretty` \| `json` | `pretty` | Diagnostic output format |
+
+Rules:
+
+| Code | Rule |
+|------|------|
+| SJS-L001 | prefer `const` — a `let` binding never reassigned |
+| SJS-L002 | no `var` — use `let` / `const` |
+| SJS-L003 | use `===` / `!==`, not `==` / `!=` |
+| SJS-L004 | prefer `for…of` over `for…in` |
+| SJS-L005 | no `debugger` statement |
+
 ### `explain`
 
 Print the full reference for a diagnostic code.
@@ -191,8 +215,7 @@ A **Jest alternative** for `.sjs`, planned along two tracks:
 
 #### Also reserved
 
-`superjs lint` (Stage 3 — linter) and `superjs lsp` (Stage 3 — editor language
-server).
+`superjs lsp` (Stage 3 — editor language server).
 
 ## Exit codes
 

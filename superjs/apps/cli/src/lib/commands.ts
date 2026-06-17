@@ -2,13 +2,13 @@
  * Command implementations. Each takes parsed args + an {@link IO} and returns a
  * POSIX-ish exit code (0 ok, 1 diagnostics, 2 usage/not-implemented, 64 unknown).
  *
- * Real at v1.0: build, check, translate, add, format, explain, init, doctor.
- * Stubbed (print a planned-stage notice, exit 2): lint, doc, verify, migrate,
- * test, lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
+ * Real at v1.0: build, check, translate, add, format, lint, explain, init, doctor.
+ * Stubbed (print a planned-stage notice, exit 2): doc, verify, migrate, test,
+ * lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
-import { compile, format } from '@superjs/compiler';
+import { compile, format, lint } from '@superjs/compiler';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
 import type { Diagnostic, DiagnosticCode } from '@superjs/types';
@@ -27,7 +27,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  lint: 'Stage 3', doc: 'Stage 3',
+  doc: 'Stage 3',
   verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', lsp: 'Stage 3', repl: 'Stage 6',
 };
 
@@ -323,6 +323,27 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
 function surfacePct(s: { typed: number; total: number }): string {
   if (s.total === 0) return 'n/a (nothing translatable)';
   return `${Math.round((s.typed / s.total) * 100)}% (${s.typed}/${s.total} identifiers)`;
+}
+
+// ── lint ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Lint `.sjs` files (style rules SJS-L001…). Reports findings and exits non-zero
+ * when any are present — lint findings are actionable by definition, so this
+ * gates CI. `--format json` emits machine-readable diagnostics.
+ */
+export function lintCmd(args: ParsedArgs, io: IO): number {
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs lint <files...> [--format pretty|json]'); return 2; }
+  const format: DiagnosticFormat = args.flags['format'] === 'json' ? 'json' : 'pretty';
+  const { files, missing } = readSources(io, args.positionals);
+  const findings: Diagnostic[] = [];
+  for (const f of files) findings.push(...lint(f.source, f.filename));
+  emitDiagnostics(io, findings, format);
+  if (format !== 'json') {
+    summary(io, findings);
+    if (findings.length === 0 && missing === 0) line(io, 'No lint findings.');
+  }
+  return findings.length > 0 || missing > 0 ? 1 : 0;
 }
 
 // ── format ────────────────────────────────────────────────────────────────────

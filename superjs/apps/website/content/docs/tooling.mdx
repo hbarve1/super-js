@@ -127,6 +127,17 @@ superjs format src/            # format in place
 superjs format src/ --check    # CI: non-zero exit if anything would change
 ```
 
+### `superjs lint`
+
+Reports style findings (`SJS-L*`) and exits non-zero when any are present, so it
+gates CI. Current rules: prefer-`const` (L001), no-`var` (L002), `===`/`!==`
+(L003), `for…of` over `for…in` (L004), no-`debugger` (L005).
+
+```bash
+superjs lint src/                 # human-readable
+superjs lint src/ --format json   # machine-readable for CI
+```
+
 ### `superjs explain`
 
 Prints the full spec write-up for a diagnostic code (description, example, fix).
@@ -155,7 +166,6 @@ These are reserved and currently print a not-yet-implemented notice:
 - **`superjs test`** *(Stage 5)* — a **Jest alternative** for `.sjs`. Planned as
   both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
   in your existing Jest/Vitest) and a native zero-config `superjs test` runner.
-- **`superjs lint`** *(Stage 3)* — linter.
 - **`superjs lsp`** *(Stage 3)* — editor language server.
 
 Full plan on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).

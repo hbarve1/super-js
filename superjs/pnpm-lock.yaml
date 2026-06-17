@@ -244,6 +244,9 @@ importers:
       '@superjs/config':
         specifier: workspace:*
         version: link:../config
+      '@superjs/diagnostics':
+        specifier: workspace:*
+        version: link:../diagnostics
       '@superjs/ir':
         specifier: workspace:*
         version: link:../ir
