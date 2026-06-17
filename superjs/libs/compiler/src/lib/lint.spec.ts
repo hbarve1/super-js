@@ -139,6 +139,21 @@ describe('lint — other rules', () => {
     expect(codes('export function a(x: number): number { return x; }\nexport function b(x: number): number { return x; }'))
       .not.toContain('SJS-L014');
   });
+  it('L015 flags a floating promise (unawaited call as a statement)', () => {
+    const src = 'export async function f(): Promise<number> { return 1; }\n'
+      + 'export async function g(): Promise<void> { f(); }';
+    expect(codes(src)).toContain('SJS-L015');
+  });
+  it('L015 does not flag an awaited promise', () => {
+    const src = 'export async function f(): Promise<number> { return 1; }\n'
+      + 'export async function g(): Promise<void> { await f(); }';
+    expect(codes(src)).not.toContain('SJS-L015');
+  });
+  it('L015 does not flag a non-promise call statement', () => {
+    const src = 'export function h(): number { return 1; }\n'
+      + 'export function k(): void { h(); }';
+    expect(codes(src)).not.toContain('SJS-L015');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');
