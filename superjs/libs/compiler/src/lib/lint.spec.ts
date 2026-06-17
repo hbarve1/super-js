@@ -64,6 +64,25 @@ describe('lint — other rules', () => {
   it('L008 does not flag a named function expression', () => {
     expect(codes('xs.map(function keep(x) { return x; });')).not.toContain('SJS-L008');
   });
+  it('L009 flags an unused named import', () => {
+    const ds = lint('import { foo } from "./m";');
+    const u = ds.find((d) => d.code === 'SJS-L009');
+    expect(u).toBeDefined();
+    expect(u!.message).toContain('foo');
+  });
+  it('L009 does not flag an import used in value position', () => {
+    expect(codes('import { foo } from "./m";\nfoo();')).not.toContain('SJS-L009');
+  });
+  it('L009 does not flag an import used only in type position', () => {
+    expect(codes('import { Foo } from "./m";\nconst x: Foo = bar;')).not.toContain('SJS-L009');
+  });
+  it('L009 does not flag a namespace import used via member access', () => {
+    expect(codes('import * as ns from "./m";\nns.run();')).not.toContain('SJS-L009');
+  });
+  it('L009 flags an aliased import by its local name', () => {
+    const ds = lint('import { foo as bar } from "./m";');
+    expect(ds.find((d) => d.code === 'SJS-L009')!.message).toContain('bar');
+  });
 });
 
 describe('lint — output shape', () => {

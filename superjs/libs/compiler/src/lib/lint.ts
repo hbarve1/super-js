@@ -11,13 +11,16 @@
  * - **L007 no-redundant-match-arm** — an arm whose variant is already handled.
  * - **L008 prefer-arrow-callback** — an anonymous `function` expression passed
  *   directly as a call argument; an arrow is shorter and keeps lexical `this`.
+ * - **L009 no-unused-import** — an import binding never referenced anywhere
+ *   (value, type, or JSX position) outside the import statement itself.
  *
- * `prefer-const` is name-based and conservative: any assignment to a name (in any
- * scope) suppresses the finding, so shadowing never produces a false positive.
+ * `prefer-const` and `no-unused-import` are name-based and conservative: any
+ * occurrence of the name (in any scope, value or type position) suppresses the
+ * finding, so shadowing never produces a false positive.
  */
 
 import type {
-  Program, Diagnostic, DiagnosticCode, Span, Expression, Pattern, Node, MatchPattern,
+  Program, Diagnostic, DiagnosticCode, Span, Expression, Pattern, Node, MatchPattern, Identifier,
 } from '@superjs/types';
 import { parse } from '@superjs/parser';
 import { createDiagnostic, type MessageParams } from '@superjs/diagnostics';
@@ -28,6 +31,7 @@ export function lint(source: string, file?: string): Diagnostic[] {
   const out: Diagnostic[] = diagnostics.filter((d) => d.severity === 'error').map((d) => ({ ...d }));
 
   const reassigned = collectReassigned(program);
+  const usedNames = collectUsedNames(program);
   const diag = (code: DiagnosticCode, span: Span, params?: MessageParams): void => {
     out.push(createDiagnostic({ code, span, ...(file !== undefined ? { file } : {}), ...(params ? { params } : {}) }));
   };
@@ -65,6 +69,11 @@ export function lint(source: string, file?: string): Diagnostic[] {
           if (arg.kind === 'FunctionExpression' && !arg.generator && !arg.id) {
             diag('SJS-L008', arg.span);
           }
+        }
+        break;
+      case 'ImportDecl':
+        for (const b of importBindings(n)) {
+          if (!usedNames.has(b.name)) diag('SJS-L009', b.span, { name: b.name });
         }
         break;
     }
@@ -115,6 +124,34 @@ function addTargetNames(node: Expression | Pattern, out: Set<string>): void {
     case 'ParenthesizedExpression': addTargetNames(node.expression, out); break;
     // MemberExpression (`a.b = …`) rebinds a property, not the binding — ignore.
   }
+}
+
+/** The local binding identifiers introduced by an import declaration. */
+function importBindings(n: Extract<Node, { kind: 'ImportDecl' }>): Identifier[] {
+  const out: Identifier[] = [];
+  if (n.defaultImport) out.push(n.defaultImport);
+  if (n.namespaceImport) out.push(n.namespaceImport);
+  for (const s of n.named) out.push(s.local);
+  return out;
+}
+
+/**
+ * Every identifier name referenced outside import declarations — value, JSX, and
+ * type positions (`TypeRefNode` carries dotted string segments, not identifier
+ * nodes, so those are collected explicitly). Used to detect unused imports;
+ * over-collection only ever suppresses a finding, never invents one.
+ */
+function collectUsedNames(program: Program): Set<string> {
+  const used = new Set<string>();
+  const visit = (n: Node): void => {
+    if (n.kind === 'Identifier') used.add(n.name);
+    else if (n.kind === 'TypeRefNode') for (const seg of n.name) used.add(seg);
+  };
+  for (const stmt of program.body) {
+    if (stmt.kind === 'ImportDecl') continue; // bindings here are declarations, not uses
+    walk(stmt, visit);
+  }
+  return used;
 }
 
 /** The variant tag of a match pattern, or undefined for the default pattern. */

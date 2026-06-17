@@ -99,6 +99,7 @@ These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be confi
 | SJS-L006 | warning | lint | `match` expression has no arms | Stage 3 |
 | SJS-L007 | warning | lint | Redundant match arm — variant is already handled | Stage 3 |
 | SJS-L008 | warning | lint | Prefer an arrow function over a `function` expression callback | Stage 3 |
+| SJS-L009 | warning | lint | Unused import — binding is never used | Stage 3 |
 | SJS-L011 | error | security | BiDi control character rejected | Stage 1 |
 
 ---
