@@ -24,8 +24,8 @@ describe('registry integrity', () => {
     for (const code of ['SJS-P001', 'SJS-E001', 'SJS-E019', 'SJS-W012', 'SJS-L011']) {
       expect(getDescriptor(code)).toBeDefined();
     }
-    // 6 parser + 20 type + 11 warning + 6 lint = 43
-    expect(allCodes().length).toBe(43);
+    // 6 parser + 20 type + 11 warning + 9 lint = 46
+    expect(allCodes().length).toBe(46);
   });
 
   it('severity matches spec: parser/E* error, L001 warning, L011 error', () => {
