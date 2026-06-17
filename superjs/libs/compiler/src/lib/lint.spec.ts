@@ -83,6 +83,16 @@ describe('lint — other rules', () => {
     const ds = lint('import { foo as bar } from "./m";');
     expect(ds.find((d) => d.code === 'SJS-L009')!.message).toContain('bar');
   });
+  it('L010 flags imports not sorted by source', () => {
+    const ds = lint('import { b } from "b";\nimport { a } from "a";\nb(); a();');
+    expect(ds.find((d) => d.code === 'SJS-L010')!.message).toContain('`a`');
+  });
+  it('L010 does not flag sorted imports', () => {
+    expect(codes('import { a } from "a";\nimport { b } from "b";\na(); b();')).not.toContain('SJS-L010');
+  });
+  it('L010 resets the order check across a non-import statement', () => {
+    expect(codes('import { b } from "b";\nb();\nimport { a } from "a";\na();')).not.toContain('SJS-L010');
+  });
 });
 
 describe('lint — output shape', () => {
