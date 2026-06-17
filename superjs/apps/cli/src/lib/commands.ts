@@ -276,7 +276,7 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
   line(io, `added ${pkg} → ${typesRel}/index.d.sjs`);
   line(io, n === 0
     ? '  fully typed — no dynamic fallbacks'
-    : `  ${n} construct${n === 1 ? '' : 's'} fell back to dynamic (see warnings above)`);
+    : `  ${n} construct${n === 1 ? '' : 's'} degraded or skipped (see warnings above)`);
   return 0;
 }
 
