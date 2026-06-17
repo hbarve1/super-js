@@ -127,6 +127,11 @@ superjs format src/            # format in place
 superjs format src/ --check    # CI: non-zero exit if anything would change
 ```
 
+A gitignore-style `.sjsignore` at the project root excludes files from directory
+walks (for `format`, `lint`, `check`, `build`, and `doc`); explicitly-named files
+are always processed. See the [formatter integration guide](https://github.com/hbarve1/super-js/blob/main/specs/design/formatter-integration.md)
+for the `.sjsignore` syntax and the Prettier / Husky coexistence story.
+
 ### `superjs lint`
 
 Reports style findings (`SJS-L*`) and exits non-zero when any are present, so it

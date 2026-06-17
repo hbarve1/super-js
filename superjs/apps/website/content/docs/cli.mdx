@@ -136,6 +136,10 @@ The formatter is **safe by construction**: it reparses its own output and only
 rewrites a file when the result is provably the same program (identical AST).
 Anything it can't reproduce faithfully is left exactly as-is.
 
+A gitignore-style `.sjsignore` at the project root excludes files from directory
+walks (shared by `format`, `lint`, `check`, `build`, and `doc`); a file passed
+explicitly on the command line is always processed.
+
 ### `lint`
 
 Report style findings — the `SJS-L*` rules. Exits non-zero when any are found,
