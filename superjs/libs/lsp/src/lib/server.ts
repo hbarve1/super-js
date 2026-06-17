@@ -17,6 +17,7 @@ import { documentSymbols, foldingRanges } from './symbols.js';
 import { completions } from './completion.js';
 import { signatureHelp } from './signature.js';
 import { semanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS } from './semantic-tokens.js';
+import { identifierAt, occurrences } from './references.js';
 
 /** LSP `DiagnosticSeverity`. */
 const SEVERITY: Record<Severity, number> = { error: 1, warning: 2, info: 3, hint: 4 };
@@ -102,6 +103,9 @@ export class LspServer {
               full: true,
             },
             documentFormattingProvider: true,
+            referencesProvider: true,
+            documentHighlightProvider: true,
+            renameProvider: true,
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -134,6 +138,12 @@ export class LspServer {
         return this.reply(msg.id, this.semanticTokens(msg.params));
       case 'textDocument/formatting':
         return this.reply(msg.id, this.formatting(msg.params));
+      case 'textDocument/references':
+        return this.reply(msg.id, this.references(msg.params));
+      case 'textDocument/documentHighlight':
+        return this.reply(msg.id, this.documentHighlight(msg.params));
+      case 'textDocument/rename':
+        return this.reply(msg.id, this.rename(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -218,6 +228,40 @@ export class LspServer {
     const { code, changed } = format(src);
     if (!changed) return [];
     return [{ range: wholeDocumentRange(src), newText: code }];
+  }
+
+  /** The matching identifier spans for the symbol under the cursor, if any. */
+  private occurrencesAt(params: unknown): { uri: string; spans: Span[] } | null {
+    const pos = position(params);
+    if (!pos) return null;
+    const src = this.sources.get(pos.uri);
+    if (src === undefined) return null;
+    const offset = offsetAt(src, pos.line, pos.character);
+    if (offset === null) return null;
+    const name = identifierAt(src, offset);
+    if (name === null) return null;
+    return { uri: pos.uri, spans: occurrences(src, name) };
+  }
+
+  /** `textDocument/references` — every occurrence as a Location. */
+  private references(params: unknown): { uri: string; range: LspRange }[] {
+    const r = this.occurrencesAt(params);
+    return r ? r.spans.map((s) => ({ uri: r.uri, range: toRange(s) })) : [];
+  }
+
+  /** `textDocument/documentHighlight` — every occurrence as a Text highlight. */
+  private documentHighlight(params: unknown): { range: LspRange; kind: number }[] {
+    const r = this.occurrencesAt(params);
+    return r ? r.spans.map((s) => ({ range: toRange(s), kind: 1 /* Text */ })) : [];
+  }
+
+  /** `textDocument/rename` — a WorkspaceEdit renaming every occurrence. */
+  private rename(params: unknown): { changes: Record<string, { range: LspRange; newText: string }[]> } | null {
+    const newName = (params as { newName?: string })?.newName;
+    if (typeof newName !== 'string' || newName.length === 0) return null;
+    const r = this.occurrencesAt(params);
+    if (!r || r.spans.length === 0) return null;
+    return { changes: { [r.uri]: r.spans.map((s) => ({ range: toRange(s), newText: newName })) } };
   }
 
   private sourceOf(params: unknown): string | null {

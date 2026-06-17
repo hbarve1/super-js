@@ -26,7 +26,13 @@ All nine M1 methods implemented:
 - `textDocument/formatting` — a whole-document edit via the compiler's safe
   `format()` (no edits when already canonical).
 
-Next: the memory budget + `SJS-W010` over-budget behaviour (M6), the M2
-methods (rename, references, code actions, inlay hints), and wiring the
-`superjs lsp` CLI command to `serveStdio` with the VS Code extension
-(Sprint 3.2). See `specs/roadmap/stage-3-dx-tools.md`.
+M2 navigation (in progress):
+- `textDocument/references`, `textDocument/documentHighlight`, and
+  `textDocument/rename` — name-based occurrence matching within a single
+  document (the v1.0 rename model). Cross-file and scope-precise resolution
+  are later work once the LSP shares the checker's binder.
+
+The `superjs lsp` CLI command is wired to `serveStdio`. Next: the memory
+budget + `SJS-W010` over-budget behaviour (M6), the remaining M2 methods
+(code actions, inlay hints), and the VS Code extension (Sprint 3.2). See
+`specs/roadmap/stage-3-dx-tools.md`.
