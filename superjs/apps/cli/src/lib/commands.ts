@@ -2,13 +2,13 @@
  * Command implementations. Each takes parsed args + an {@link IO} and returns a
  * POSIX-ish exit code (0 ok, 1 diagnostics, 2 usage/not-implemented, 64 unknown).
  *
- * Real at v1.0: build, check, translate, add, format, lint, explain, init, doctor.
- * Stubbed (print a planned-stage notice, exit 2): doc, verify, migrate, test,
+ * Real at v1.0: build, check, translate, add, format, lint, doc, explain, init,
+ * doctor. Stubbed (print a planned-stage notice, exit 2): verify, migrate, test,
  * lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
-import { compile, format, lint } from '@superjs/compiler';
+import { compile, format, lint, doc as extractDoc, renderMarkdown, renderJson } from '@superjs/compiler';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
 import type { Diagnostic, DiagnosticCode } from '@superjs/types';
@@ -27,7 +27,6 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  doc: 'Stage 3',
   verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', lsp: 'Stage 3', repl: 'Stage 6',
 };
 
@@ -323,6 +322,35 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
 function surfacePct(s: { typed: number; total: number }): string {
   if (s.total === 0) return 'n/a (nothing translatable)';
   return `${Math.round((s.typed / s.total) * 100)}% (${s.typed}/${s.total} identifiers)`;
+}
+
+// ── doc ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Generate API documentation from exported declarations (ADR-009, MVP). Prints
+ * Markdown (default) or JSON to stdout; `--out-dir` writes one `.md`/`.json`
+ * per input file instead. Docs come from the type annotations + leading doc
+ * comments — no `@param {type}` tags, the types are the source of truth.
+ */
+export function docCmd(args: ParsedArgs, io: IO): number {
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs doc <files...> [--format md|json] [--out-dir dir]'); return 2; }
+  const json = args.flags['format'] === 'json';
+  const ext = json ? 'json' : 'md';
+  const outDir = typeof args.flags['out-dir'] === 'string' ? (args.flags['out-dir'] as string) : undefined;
+  const { files, missing } = readSources(io, args.positionals);
+  for (const f of files) {
+    const symbols = extractDoc(f.source, f.filename);
+    const title = basename(f.filename).replace(/\.sjs$/, '');
+    const rendered = json ? renderJson(symbols) : renderMarkdown(symbols, title);
+    if (outDir) {
+      const outPath = join(resolve(io, outDir), `${title}.${ext}`);
+      io.writeFile(outPath, rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+      line(io, `documented ${f.filename} → ${outDir}/${title}.${ext}`);
+    } else {
+      line(io, rendered);
+    }
+  }
+  return missing > 0 ? 1 : 0;
 }
 
 // ── lint ──────────────────────────────────────────────────────────────────────

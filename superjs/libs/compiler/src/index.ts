@@ -16,6 +16,10 @@ export { parseTypeDecl, emitTypeDecl, type TypeDeclAst } from './lib/type-decl.j
 export { format, type FormatResult } from './lib/format.js';
 export { lint } from './lib/lint.js';
 export {
+  doc, renderMarkdown, renderJson,
+  type DocSymbol, type DocComment, type DocTag, type DocKind,
+} from './lib/doc.js';
+export {
   COMPILER_VERSION, sha256, fileHash, configHash, apiHash, docHash, cacheKey,
 } from './lib/hash.js';
 export type {
