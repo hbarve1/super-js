@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/completion', params: {} });
+    server.handle({ id: 7, method: 'textDocument/signatureHelp', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -179,5 +179,28 @@ describe('LspServer — outline + folding', () => {
     const { sent, server } = harness();
     server.handle({ id: 5, method: 'textDocument/documentSymbol', params: td('file:///gone.sjs') });
     expect(sent.at(-1)).toMatchObject({ id: 5, result: [] });
+  });
+});
+
+describe('LspServer — completion', () => {
+  it('advertises a completion provider', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities.completionProvider).toBeDefined();
+  });
+
+  it('returns a complete list including local declarations', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///c.sjs', 'const widget: number = 1;'));
+    server.handle({ id: 3, method: 'textDocument/completion', params: at('file:///c.sjs', 0, 25) });
+    const r = sent.at(-1)!.result as { isIncomplete: boolean; items: { label: string }[] };
+    expect(r.isIncomplete).toBe(false);
+    expect(r.items.map((i) => i.label)).toContain('widget');
+  });
+
+  it('returns an empty item list for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 4, method: 'textDocument/completion', params: at('file:///none.sjs', 0, 0) });
+    expect(sent.at(-1)!.result).toEqual({ isIncomplete: false, items: [] });
   });
 });
