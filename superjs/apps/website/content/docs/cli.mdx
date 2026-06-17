@@ -118,6 +118,24 @@ apply and are reported as warnings.
 > `@superjs/types-<pkg>` wrappers (richer types for the top packages) are
 > resolved first in a later Stage 2 sprint.
 
+### `format`
+
+Rewrite `.sjs` files in the canonical style — 2-space indent, semicolons, one
+statement per line. There are no options to bikeshed.
+
+```bash
+superjs format src/            # format every .sjs under src/, in place
+superjs format src/ --check    # report what would change, write nothing (CI)
+```
+
+| Flag | Effect |
+|------|--------|
+| `--check` | Don't write; list files that would change and exit non-zero if any |
+
+The formatter is **safe by construction**: it reparses its own output and only
+rewrites a file when the result is provably the same program (identical AST).
+Anything it can't reproduce faithfully is left exactly as-is.
+
 ### `explain`
 
 Print the full reference for a diagnostic code.
@@ -173,8 +191,8 @@ A **Jest alternative** for `.sjs`, planned along two tracks:
 
 #### Also reserved
 
-`superjs lint` and `superjs format` (Stage 3 — linter + formatter),
-and `superjs lsp` (Stage 3 — editor language server).
+`superjs lint` (Stage 3 — linter) and `superjs lsp` (Stage 3 — editor language
+server).
 
 ## Exit codes
 

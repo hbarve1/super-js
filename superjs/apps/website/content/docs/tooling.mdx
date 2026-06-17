@@ -115,6 +115,18 @@ a real type) and records it for `superjs doctor`. (Hand-curated wrappers for the
 top packages land in a later Stage 2 sprint; today `add` always translates the
 published `.d.ts`.)
 
+### `superjs format`
+
+Rewrites `.sjs` files in the canonical style (2-space indent, semicolons, one
+statement per line). `--check` reports what would change without writing — for
+CI. The formatter reparses its own output and only rewrites a file when the
+result is provably the same program, so it never corrupts code.
+
+```bash
+superjs format src/            # format in place
+superjs format src/ --check    # CI: non-zero exit if anything would change
+```
+
 ### `superjs explain`
 
 Prints the full spec write-up for a diagnostic code (description, example, fix).
@@ -143,7 +155,7 @@ These are reserved and currently print a not-yet-implemented notice:
 - **`superjs test`** *(Stage 5)* — a **Jest alternative** for `.sjs`. Planned as
   both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
   in your existing Jest/Vitest) and a native zero-config `superjs test` runner.
-- **`superjs lint`**, **`superjs format`** *(Stage 3)* — linter + formatter.
+- **`superjs lint`** *(Stage 3)* — linter.
 - **`superjs lsp`** *(Stage 3)* — editor language server.
 
 Full plan on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).

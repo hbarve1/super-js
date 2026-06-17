@@ -2,13 +2,13 @@
  * Command implementations. Each takes parsed args + an {@link IO} and returns a
  * POSIX-ish exit code (0 ok, 1 diagnostics, 2 usage/not-implemented, 64 unknown).
  *
- * Real at v1.0: build, check, translate, add, explain, init, doctor. Stubbed (print
- * a planned-stage notice, exit 2): format, lint, doc, verify, migrate, test,
- * lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
+ * Real at v1.0: build, check, translate, add, format, explain, init, doctor.
+ * Stubbed (print a planned-stage notice, exit 2): lint, doc, verify, migrate,
+ * test, lsp, repl — they land in later stages but are wired so `superjs <cmd>` is defined.
  */
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
-import { compile } from '@superjs/compiler';
+import { compile, format } from '@superjs/compiler';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
 import type { Diagnostic, DiagnosticCode } from '@superjs/types';
@@ -27,7 +27,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  format: 'Stage 3', lint: 'Stage 3', doc: 'Stage 3',
+  lint: 'Stage 3', doc: 'Stage 3',
   verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', lsp: 'Stage 3', repl: 'Stage 6',
 };
 
@@ -323,6 +323,34 @@ export async function add(args: ParsedArgs, io: IO): Promise<number> {
 function surfacePct(s: { typed: number; total: number }): string {
   if (s.total === 0) return 'n/a (nothing translatable)';
   return `${Math.round((s.typed / s.total) * 100)}% (${s.typed}/${s.total} identifiers)`;
+}
+
+// ── format ────────────────────────────────────────────────────────────────────
+
+/**
+ * Format `.sjs` files in place (the canonical formatter). `--check` reports which
+ * files would change and exits non-zero without writing — for CI. Files the
+ * formatter can't prove it reproduces faithfully are left untouched.
+ */
+export function fmt(args: ParsedArgs, io: IO): number {
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs format <files...> [--check]'); return 2; }
+  const check = args.flags['check'] === true;
+  let changed = 0, failed = 0;
+  for (const p of expandInputs(io, args.positionals)) {
+    const abs = resolve(io, p);
+    if (!io.exists(abs)) { errline(io, `error: cannot find file '${p}'`); failed++; continue; }
+    const result = format(io.readFile(abs));
+    if (!result.changed) continue;
+    changed++;
+    if (check) { line(io, `would reformat ${p}`); }
+    else { io.writeFile(abs, result.code); line(io, `formatted ${p}`); }
+  }
+  if (check) {
+    line(io, changed === 0 ? 'All files are formatted.' : `${changed} file${changed === 1 ? '' : 's'} would be reformatted.`);
+    return (changed > 0 || failed > 0) ? 1 : 0;
+  }
+  if (changed === 0 && failed === 0) line(io, 'All files already formatted.');
+  return failed > 0 ? 1 : 0;
 }
 
 // ── explain ───────────────────────────────────────────────────────────────────
