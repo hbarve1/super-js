@@ -23,9 +23,11 @@
  *   scope (function, block, `for`, or `catch`).
  * - **L015 no-floating-promise** — a `Promise`-typed expression used as a
  *   statement without being awaited, returned, or otherwise consumed.
+ * - **L016 no-unhandled-result** — a `Result`-typed expression used as a
+ *   statement without being matched, returned, or otherwise consumed.
  *
- * L015 is type-aware: it type-checks the program and inspects the synthesized
- * type at each expression-statement.
+ * L015/L016 are type-aware: they type-check the program and inspect the
+ * synthesized type at each expression-statement.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -119,10 +121,11 @@ export function lint(source: string, file?: string): Diagnostic[] {
         if (n.name === 'dynamic' && !dynamicOptedOut(n.span)) diag('SJS-L013', n.span);
         break;
       case 'ExpressionStatement': {
-        // L015 no-floating-promise: a Promise-typed expression used as a
-        // statement (not awaited, returned, or otherwise consumed).
+        // L015 no-floating-promise / L016 no-unhandled-result: a Promise- or
+        // Result-typed expression used as a statement without being consumed.
         const t = typeOf(n.expression.span);
         if (t?.kind === 'promise') diag('SJS-L015', n.expression.span);
+        else if (t?.kind === 'sum' && t.name === 'Result') diag('SJS-L016', n.expression.span);
         break;
       }
     }

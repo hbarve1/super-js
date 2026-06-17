@@ -154,6 +154,18 @@ describe('lint — other rules', () => {
       + 'export function k(): void { h(); }';
     expect(codes(src)).not.toContain('SJS-L015');
   });
+  it('L016 flags an unhandled Result used as a statement', () => {
+    const src = 'type Result<T, E> = Ok(T) | Err(E);\n'
+      + 'export function f(): Result<number, string> { return Ok(1); }\n'
+      + 'export function g(): void { f(); }';
+    expect(codes(src)).toContain('SJS-L016');
+  });
+  it('L016 does not flag a returned Result', () => {
+    const src = 'type Result<T, E> = Ok(T) | Err(E);\n'
+      + 'export function f(): Result<number, string> { return Ok(1); }\n'
+      + 'export function g(): Result<number, string> { return f(); }';
+    expect(codes(src)).not.toContain('SJS-L016');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');
