@@ -102,6 +102,7 @@ const TABLE: Record<string, Omit<DiagnosticDescriptor, 'code'>> = {
   'SJS-L010': d('warning', 'lint', 'Import `{source}` is out of order — sort imports by source', 'Stage 3'),
   'SJS-L011': d('error', 'security', 'BiDi control character rejected', 'Stage 1'),
   'SJS-L012': d('warning', 'lint', 'Unused declaration — `{name}` is never used', 'Stage 3'),
+  'SJS-L013': d('warning', 'lint', 'Explicit `dynamic` type — annotate precisely, or add `// @sjs:dynamic-ok`', 'Stage 3'),
 };
 
 export const REGISTRY: Readonly<Record<string, DiagnosticDescriptor>> = Object.freeze(

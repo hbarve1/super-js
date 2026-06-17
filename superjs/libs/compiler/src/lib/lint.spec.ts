@@ -114,6 +114,18 @@ describe('lint — other rules', () => {
   it('L012 does not flag a binding used only in a re-export', () => {
     expect(codes('const x: number = 1;\nexport { x };')).not.toContain('SJS-L012');
   });
+  it('L013 flags an explicit dynamic annotation', () => {
+    expect(codes('export const x: dynamic = load();')).toContain('SJS-L013');
+  });
+  it('L013 is silenced by @sjs:dynamic-ok on the same line', () => {
+    expect(codes('export const x: dynamic = load(); // @sjs:dynamic-ok')).not.toContain('SJS-L013');
+  });
+  it('L013 is silenced by @sjs:dynamic-ok on the line above', () => {
+    expect(codes('// @sjs:dynamic-ok\nexport const x: dynamic = load();')).not.toContain('SJS-L013');
+  });
+  it('L013 does not flag a precise annotation', () => {
+    expect(codes('export const x: number = 1;')).not.toContain('SJS-L013');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');

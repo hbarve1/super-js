@@ -17,6 +17,8 @@
  *   specifiers must be sorted ascending.
  * - **L012 no-unused-var** — a non-exported top-level binding (const/let/var,
  *   function, class) referenced nowhere else in the module.
+ * - **L013 no-explicit-dynamic** — an explicit `dynamic` type annotation; add a
+ *   `// @sjs:dynamic-ok` comment on the line (or the line above) to opt out.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -37,6 +39,13 @@ export function lint(source: string, file?: string): Diagnostic[] {
 
   const reassigned = collectReassigned(program);
   const usedNames = collectUsedNames(program);
+  const lines = source.split('\n');
+  // L013 opt-out: `@sjs:dynamic-ok` on the annotation's line or the line above.
+  const dynamicOptedOut = (span: Span): boolean => {
+    const li = span.start.line - 1;
+    return (lines[li] ?? '').includes('@sjs:dynamic-ok')
+      || (lines[li - 1] ?? '').includes('@sjs:dynamic-ok');
+  };
   const diag = (code: DiagnosticCode, span: Span, params?: MessageParams, fixes?: readonly DiagnosticFix[]): void => {
     out.push(createDiagnostic({
       code, span,
@@ -95,6 +104,9 @@ export function lint(source: string, file?: string): Diagnostic[] {
         for (const b of importBindings(n)) {
           if (!usedNames.has(b.name)) diag('SJS-L009', b.span, { name: b.name });
         }
+        break;
+      case 'PrimitiveTypeNode':
+        if (n.name === 'dynamic' && !dynamicOptedOut(n.span)) diag('SJS-L013', n.span);
         break;
     }
   });
