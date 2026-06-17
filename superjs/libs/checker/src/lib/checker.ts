@@ -112,35 +112,45 @@ export class Checker implements TypeResolver {
    * Bind names imported from other modules so they resolve to real types instead
    * of `dynamic`. Runs before type collection so imported *types* are visible to
    * this file's annotations. Unresolved specifiers are left alone (stay dynamic).
-   * Default / namespace imports and `export … from` re-exports are not yet wired.
+   * Handles named, default (`import D from`), and namespace (`import * as N`)
+   * imports.
    */
   private resolveImports(body: readonly Statement[]): void {
     if (!this.resolveModule) return;
     for (const s of body) {
-      if (s.kind !== 'ImportDecl' || s.named.length === 0) continue;
+      if (s.kind !== 'ImportDecl') continue;
       const surface = this.resolveModule(s.source.value);
       if (!surface) continue;
-      for (const spec of s.named) {
-        const from = spec.imported.name;
-        const local = spec.local.name;
-        const sum = surface.sums.get(from);
-        const type = surface.types.get(from);
-        if (sum) {
-          this.namedTypes.set(local, sum);
-          this.sums.set(local, sum);
-          for (const v of sum.variants) {
-            const list = this.variantIndex.get(v.tag) ?? [];
-            list.push({ owner: local, variant: v });
-            this.variantIndex.set(v.tag, list);
-          }
-        } else if (type) {
-          this.namedTypes.set(local, type);
-        }
-        if (!s.typeOnly) {
-          const val = surface.values.get(from);
-          if (val) this.scope.define(local, { type: val, mutable: false, kind: 'const' });
-        }
+      for (const spec of s.named) this.bindImport(surface, spec.imported.name, spec.local.name, s.typeOnly);
+      if (s.defaultImport) this.bindImport(surface, 'default', s.defaultImport.name, s.typeOnly);
+      if (s.namespaceImport && !s.typeOnly) {
+        // `import * as N` → a value of object type whose props are the exports.
+        this.scope.define(s.namespaceImport.name, {
+          type: namespaceObject(s.namespaceImport.name, surface.values),
+          mutable: false, kind: 'const',
+        });
       }
+    }
+  }
+
+  /** Bind one imported name (`from` in the source module) to a local name. */
+  private bindImport(surface: ModuleSurface, from: string, local: string, typeOnly: boolean): void {
+    const sum = surface.sums.get(from);
+    const type = surface.types.get(from);
+    if (sum) {
+      this.namedTypes.set(local, sum);
+      this.sums.set(local, sum);
+      for (const v of sum.variants) {
+        const list = this.variantIndex.get(v.tag) ?? [];
+        list.push({ owner: local, variant: v });
+        this.variantIndex.set(v.tag, list);
+      }
+    } else if (type) {
+      this.namedTypes.set(local, type);
+    }
+    if (!typeOnly) {
+      const val = surface.values.get(from);
+      if (val) this.scope.define(local, { type: val, mutable: false, kind: 'const' });
     }
   }
 
@@ -157,14 +167,38 @@ export class Checker implements TypeResolver {
       const b = this.scope.lookup(local);
       if (b) values.set(exported, b.type);
     };
+    /** Re-export `from` of another module's surface under `as`. */
+    const reExport = (src: ModuleSurface, from: string, as: string): void => {
+      const t = src.types.get(from); if (t) types.set(as, t);
+      const sm = src.sums.get(from); if (sm) sums.set(as, sm);
+      const v = src.values.get(from); if (v) values.set(as, v);
+    };
     for (const s of body) {
       if (s.kind === 'ExportNamedDecl') {
         if (s.declaration) for (const n of declaredNames(s.declaration)) exportAs(n, n);
-        if (!s.source) for (const spec of s.specifiers) exportAs(spec.local.name, spec.exported.name);
+        if (s.source) {
+          // `export { a, b as c } from "./m"` — re-export from the source module.
+          const src = this.resolveModule?.(s.source.value);
+          if (src) for (const spec of s.specifiers) reExport(src, spec.local.name, spec.exported.name);
+        } else {
+          for (const spec of s.specifiers) exportAs(spec.local.name, spec.exported.name);
+        }
       } else if (s.kind === 'ExportDefaultDecl'
         && (s.declaration.kind === 'FunctionDecl' || s.declaration.kind === 'ClassDecl')
         && s.declaration.id) {
         exportAs(s.declaration.id.name, 'default');
+      } else if (s.kind === 'ExportAllDecl') {
+        const src = this.resolveModule?.(s.source.value);
+        if (!src) continue;
+        if (s.exported) {
+          // `export * as N from "./m"` — a namespace value of the module's exports.
+          values.set(s.exported.name, namespaceObject(s.exported.name, src.values));
+        } else {
+          // `export * from "./m"` — splice the whole surface in.
+          for (const [k, t] of src.types) types.set(k, t);
+          for (const [k, sm] of src.sums) sums.set(k, sm);
+          for (const [k, v] of src.values) values.set(k, v);
+        }
       }
     }
     return { types, sums, values };
@@ -1098,6 +1132,14 @@ function unwrapExport(s: Statement): Statement {
   if (s.kind === 'ExportNamedDecl' && s.declaration) return s.declaration;
   if (s.kind === 'ExportDefaultDecl' && (s.declaration.kind === 'FunctionDecl' || s.declaration.kind === 'ClassDecl')) return s.declaration;
   return s;
+}
+
+/** Build the object type for a namespace import/export from a module's values. */
+function namespaceObject(name: string, values: ReadonlyMap<string, Type>): ObjectType {
+  const properties: PropertySignature[] = [...values]
+    .filter(([k]) => k !== 'default')
+    .map(([propName, type]) => ({ name: propName, type, optional: false, readonly: true }));
+  return { kind: 'object', name, properties };
 }
 
 /** Top-level names introduced by an inline `export <decl>` statement. */

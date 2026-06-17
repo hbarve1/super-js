@@ -369,6 +369,13 @@ export type { UserRecord } from './types'
 export * from './utils'
 ```
 
+Imports resolve to the exporting module's real types — named, default,
+namespace (`import * as M`), and `export … from` re-exports all carry types
+across files. Relative specifiers resolve against the importing file; bare
+specifiers resolve through `superjs.config.json` `paths` (how `superjs add`
+wires in package types). An unresolved specifier leaves its bindings `dynamic`
+rather than erroring.
+
 ---
 
 ## The `dynamic` Type

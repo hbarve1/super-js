@@ -92,6 +92,40 @@ describe('compile()', () => {
     expect(r.outputs.size).toBe(2);
   });
 
+  it('resolves a default import', async () => {
+    const r = await compile([
+      { filename: 'm.sjs', source: 'export default function make(): number { return 1; }' },
+      { filename: 'app.sjs', source: 'import make from "./m";\nconst x: string = make();' },
+    ]);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
+  it('resolves a namespace import (member access keeps types)', async () => {
+    const r = await compile([
+      { filename: 'm.sjs', source: 'export function f(): number { return 1; }' },
+      { filename: 'app.sjs', source: 'import * as M from "./m";\nconst x: string = M.f();' },
+    ]);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
+  it('resolves a re-exported name through `export { x } from`', async () => {
+    const r = await compile([
+      { filename: 'base.sjs', source: 'export type Id = string;' },
+      { filename: 'mid.sjs', source: 'export { Id } from "./base";' },
+      { filename: 'app.sjs', source: 'import { Id } from "./mid";\nconst x: Id = 5;' },
+    ]);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
+  it('resolves names through `export * from`', async () => {
+    const r = await compile([
+      { filename: 'base.sjs', source: 'export function f(): number { return 1; }' },
+      { filename: 'mid.sjs', source: 'export * from "./base";' },
+      { filename: 'app.sjs', source: 'import { f } from "./mid";\nconst x: string = f();' },
+    ]);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
   it('resolves a bare specifier through config paths + the readFile seam', async () => {
     const disk: Record<string, string> = {
       '/proj/node_modules/@superjs/types/widget/index.d.sjs': 'export type Widget = { id: string; };',
