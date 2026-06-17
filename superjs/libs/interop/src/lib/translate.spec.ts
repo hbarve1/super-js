@@ -134,6 +134,28 @@ describe('translateDts — untranslated top-level decls are reported, never drop
   });
 });
 
+describe('translateDts — typed-surface estimate', () => {
+  it('counts a fully-typed module as 100% surface', () => {
+    const r = translateDts('interface User { id: string; age: number; }');
+    // 1 decl name + 2 members = 3 positions, all typed.
+    expect(r.surface).toEqual({ typed: 3, total: 3 });
+  });
+  it('counts an `any` member as untyped (dynamic)', () => {
+    const r = translateDts('interface Bag { id: string; payload: any; }');
+    expect(r.surface.total).toBe(3);
+    expect(r.surface.typed).toBe(2); // payload degraded to dynamic
+  });
+  it('counts function parameters', () => {
+    const r = translateDts('type F = (a: number, b: any) => string;');
+    // decl name + 2 params = 3; `b: any` is dynamic → 2 typed.
+    expect(r.surface).toEqual({ typed: 2, total: 3 });
+  });
+  it('reports an empty surface for a module with nothing translatable', () => {
+    const r = translateDts('export declare function f(): void;');
+    expect(r.surface).toEqual({ typed: 0, total: 0 });
+  });
+});
+
 describe('translateDts — multiple declarations', () => {
   it('translates a small .d.ts module', async () => {
     const r = await tr([

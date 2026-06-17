@@ -105,7 +105,10 @@ npm install fastify        # install the package as usual
 superjs add fastify        # → node_modules/@superjs/types/fastify/index.d.sjs
 ```
 
-The same `dynamic` fallbacks as `translate` apply and are reported as warnings.
+`add` prints a **typed-surface** estimate — how much of the package's API kept a
+real type vs degraded to `dynamic` — and records it in a `surface.json` sidecar
+that `superjs doctor` reads back. The same `dynamic` fallbacks as `translate`
+apply and are reported as warnings.
 
 > Today `add` always translates the package's published `.d.ts`. Hand-curated
 > `@superjs/types-<pkg>` wrappers (richer types for the top packages) are
@@ -134,7 +137,8 @@ superjs init
 ### `doctor`
 
 Report environment health: Node.js version (must be ≥ 18), compiler version,
-and whether a `superjs.config.json` is present.
+whether a `superjs.config.json` is present, and a typed-surface report for every
+package brought in with `superjs add`.
 
 ```bash
 superjs doctor
