@@ -193,6 +193,50 @@ describe('translate (.d.ts → .d.sjs)', () => {
   });
 });
 
+describe('add (npm package types → .d.sjs)', () => {
+  it("resolves a package's own types, writes .d.sjs and maps it in config paths", async () => {
+    const io = makeIO({
+      '/work/node_modules/widget/package.json': JSON.stringify({ name: 'widget', types: 'index.d.ts' }),
+      '/work/node_modules/widget/index.d.ts': 'export interface Widget { id: string; size: number; }',
+    });
+    expect(await run(['add', 'widget'], io)).toBe(0);
+    const out = io.fs.get('/work/node_modules/@superjs/types/widget/index.d.sjs');
+    expect(out).toBeDefined();
+    expect(out).toContain('type Widget');
+    const config = JSON.parse(io.fs.get('/work/superjs.config.json')!);
+    expect(config.paths.widget).toEqual(['node_modules/@superjs/types/widget']);
+    expect(io.stdout()).toContain('added widget →');
+  });
+  it('falls back to a DefinitelyTyped @types/<pkg> entry', async () => {
+    const io = makeIO({
+      '/work/node_modules/@types/legacy/index.d.ts': 'export type Id = string;',
+    });
+    expect(await run(['add', 'legacy'], io)).toBe(0);
+    expect(io.fs.has('/work/node_modules/@superjs/types/legacy/index.d.sjs')).toBe(true);
+  });
+  it('preserves an existing config when adding a path mapping', async () => {
+    const io = makeIO({
+      '/work/superjs.config.json': JSON.stringify({ language: '1.0', compilerOptions: { strict: true } }),
+      '/work/node_modules/widget/package.json': JSON.stringify({ name: 'widget' }),
+      '/work/node_modules/widget/index.d.ts': 'export type Id = string;',
+    });
+    expect(await run(['add', 'widget'], io)).toBe(0);
+    const config = JSON.parse(io.fs.get('/work/superjs.config.json')!);
+    expect(config.compilerOptions.strict).toBe(true);
+    expect(config.paths.widget).toEqual(['node_modules/@superjs/types/widget']);
+  });
+  it('errors when the package has no declarations installed', async () => {
+    const io = makeIO();
+    expect(await run(['add', 'ghost'], io)).toBe(1);
+    expect(io.stderr()).toContain("no TypeScript declarations found for 'ghost'");
+  });
+  it('usage error with no arguments', async () => {
+    const io = makeIO();
+    expect(await run(['add'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs add');
+  });
+});
+
 describe('init & doctor', () => {
   it('init writes a default config, then leaves it untouched', async () => {
     const io = makeIO();
