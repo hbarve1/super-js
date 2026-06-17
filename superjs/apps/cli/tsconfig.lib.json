@@ -11,6 +11,9 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../../libs/lsp/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/interop/tsconfig.lib.json"
     },
     {

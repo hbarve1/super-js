@@ -102,6 +102,9 @@ importers:
       '@superjs/interop':
         specifier: workspace:*
         version: link:../../libs/interop
+      '@superjs/lsp':
+        specifier: workspace:*
+        version: link:../../libs/lsp
       '@superjs/types':
         specifier: workspace:*
         version: link:../../libs/types

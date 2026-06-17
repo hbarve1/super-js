@@ -6,10 +6,10 @@
 
 import { type IO, nodeIO, line, errline } from './io.js';
 import {
-  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, explain, init, doctor, stub,
+  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, explain, init, doctor, lsp, stub,
 } from './commands.js';
 
-const STUBS = new Set(['verify', 'migrate', 'test', 'lsp', 'repl']);
+const STUBS = new Set(['verify', 'migrate', 'test', 'repl']);
 
 /** Parse `argv` into command + positionals + `--flag[=value]` map. */
 export function parseArgs(argv: readonly string[]): ParsedArgs {
@@ -48,8 +48,9 @@ commands:
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
   init                 write a default ${'superjs.config.json'}
   doctor               report environment + toolchain health
+  lsp                  start the language server over stdio (for editors)
 
-  verify migrate test lsp repl   (planned — later stages)
+  verify migrate test repl   (planned — later stages)
 
 options:
   -h, --help           show this help
@@ -82,6 +83,7 @@ export async function run(argv: readonly string[], io: IO = nodeIO): Promise<num
     case 'explain': return explain(args, io);
     case 'init': return init(args, io);
     case 'doctor': return doctor(args, io);
+    case 'lsp': return lsp(args, io);
     default:
       if (STUBS.has(command)) return stub(command, io);
       errline(io, `unknown command '${command}'. Run 'superjs --help'.`);

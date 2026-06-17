@@ -172,6 +172,20 @@ Writes a default `superjs.config.json` into the current directory.
 Reports environment health — Node version, config presence and validity — plus a
 per-package typed-surface report for everything pulled in with `superjs add`.
 
+### `superjs lsp`
+
+Starts the SuperJS **language server** over stdio for editor integration. Speaks
+standard [LSP](https://microsoft.github.io/language-server-protocol/) and
+implements the full M1 method set: diagnostics, hover, go-to-definition, document
+outline, folding, completion, signature help, semantic tokens, and formatting.
+
+```bash
+superjs lsp        # JSON-RPC over stdin/stdout — launched by your editor
+```
+
+Normally an editor spawns it. The VS Code extension does so automatically; for
+Neovim, Helix, or any LSP-aware editor, point the client at `superjs lsp`.
+
 ### Planned commands
 
 These are reserved and currently print a not-yet-implemented notice:
@@ -179,7 +193,6 @@ These are reserved and currently print a not-yet-implemented notice:
 - **`superjs test`** *(Stage 5)* — a **Jest alternative** for `.sjs`. Planned as
   both `@superjs/jest-transform` / `@superjs/vitest-transform` (run `.sjs` tests
   in your existing Jest/Vitest) and a native zero-config `superjs test` runner.
-- **`superjs lsp`** *(Stage 3)* — editor language server.
 
 Full plan on the [roadmap](https://github.com/hbarve1/super-js/tree/main/specs/roadmap).
 
