@@ -31,8 +31,11 @@ M2 navigation (in progress):
   `textDocument/rename` — name-based occurrence matching within a single
   document (the v1.0 rename model). Cross-file and scope-precise resolution
   are later work once the LSP shares the checker's binder.
+- `textDocument/codeAction` — quick fixes drawn from lint findings that carry
+  an auto-fix (e.g. `var` → `let`, remove `debugger`), as `quickfix` actions
+  with a WorkspaceEdit.
 
-The `superjs lsp` CLI command is wired to `serveStdio`. Next: the memory
-budget + `SJS-W010` over-budget behaviour (M6), the remaining M2 methods
-(code actions, inlay hints), and the VS Code extension (Sprint 3.2). See
+The `superjs lsp` CLI command is wired to `serveStdio`. Next: `inlayHint`
+(the last M2 method), the memory budget + `SJS-W010` over-budget behaviour
+(M6), and the VS Code extension (Sprint 3.2). See
 `specs/roadmap/stage-3-dx-tools.md`.
