@@ -9,7 +9,7 @@
  * construction. `connectStdio` (see `transport.ts`) wires it to a real process.
  */
 
-import { Compiler, offsetAt } from '@superjs/compiler';
+import { Compiler, offsetAt, format } from '@superjs/compiler';
 import { model } from '@superjs/checker';
 import type { Diagnostic, Severity, Span } from '@superjs/types';
 import type { JsonRpcMessage } from './jsonrpc.js';
@@ -49,6 +49,13 @@ function position(params: unknown): { uri: string; line: number; character: numb
   const pos = p?.position;
   if (!uri || typeof pos?.line !== 'number' || typeof pos.character !== 'number') return null;
   return { uri, line: pos.line + 1, character: pos.character };
+}
+
+/** The LSP range covering an entire document, end at the last character. */
+function wholeDocumentRange(source: string): LspRange {
+  const lines = source.split('\n');
+  const lastLine = lines.length - 1;
+  return { start: { line: 0, character: 0 }, end: { line: lastLine, character: lines[lastLine]!.length } };
 }
 
 function toLspDiagnostic(d: Diagnostic): LspDiagnostic {
@@ -94,6 +101,7 @@ export class LspServer {
               legend: { tokenTypes: TOKEN_TYPES, tokenModifiers: TOKEN_MODIFIERS },
               full: true,
             },
+            documentFormattingProvider: true,
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -124,6 +132,8 @@ export class LspServer {
         return this.reply(msg.id, this.signature(msg.params));
       case 'textDocument/semanticTokens/full':
         return this.reply(msg.id, this.semanticTokens(msg.params));
+      case 'textDocument/formatting':
+        return this.reply(msg.id, this.formatting(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -194,6 +204,20 @@ export class LspServer {
   private semanticTokens(params: unknown): { data: number[] } {
     const src = this.sourceOf(params);
     return { data: src === null ? [] : semanticTokens(src) };
+  }
+
+  /**
+   * `textDocument/formatting` — a single whole-document edit in the canonical
+   * style, or no edits when the document is already formatted (or unopened).
+   * The formatter is safe by construction: it returns the input unchanged on
+   * anything it can't faithfully reprint, so this never corrupts the document.
+   */
+  private formatting(params: unknown): { range: LspRange; newText: string }[] {
+    const src = this.sourceOf(params);
+    if (src === null) return [];
+    const { code, changed } = format(src);
+    if (!changed) return [];
+    return [{ range: wholeDocumentRange(src), newText: code }];
   }
 
   private sourceOf(params: unknown): string | null {
