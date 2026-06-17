@@ -1,0 +1,98 @@
+---
+title: Editor Setup
+sidebar_position: 5.7
+---
+
+# Editor Setup
+
+SuperJS ships a language server in the CLI — `superjs lsp` speaks the standard
+[Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+over stdio, so any LSP-aware editor gets diagnostics, hover types,
+go-to-definition, completion, signature help, inlay hints, document outline,
+folding, semantic tokens, formatting, rename, find-all-references, and quick-fix
+code actions.
+
+Install the CLI first so `superjs` is on your `PATH`:
+
+```bash
+npm install -g @superjsorg/cli
+```
+
+## VS Code
+
+Install the **SuperJS** extension from the Marketplace. It bundles the syntax
+grammar and snippets and launches `superjs lsp` automatically — no configuration
+needed. Settings:
+
+- `superjs.server.path` — path to the `superjs` binary (default: found on `PATH`).
+- `superjs.lsp.memoryBudgetMB` — language-server cache budget (default `128`).
+
+The **SuperJS: Restart Language Server** command reloads the server.
+
+## Neovim
+
+SuperJS isn't a built-in `nvim-lspconfig` server yet, so register it directly.
+On Neovim 0.11+ with the built-in client:
+
+```lua
+-- Treat .sjs files as the `superjs` filetype.
+vim.filetype.add({ extension = { sjs = 'superjs' } })
+
+vim.lsp.config('superjs', {
+  cmd = { 'superjs', 'lsp' },
+  filetypes = { 'superjs' },
+  root_markers = { 'superjs.config.json', '.git' },
+})
+vim.lsp.enable('superjs')
+```
+
+On older Neovim, start it from an autocmd:
+
+```lua
+vim.filetype.add({ extension = { sjs = 'superjs' } })
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'superjs',
+  callback = function(args)
+    vim.lsp.start({
+      name = 'superjs',
+      cmd = { 'superjs', 'lsp' },
+      root_dir = vim.fs.root(args.buf, { 'superjs.config.json', '.git' }),
+    })
+  end,
+})
+```
+
+## Helix
+
+Add the server and language to your `languages.toml`
+(`~/.config/helix/languages.toml`):
+
+```toml
+[language-server.superjs]
+command = "superjs"
+args = ["lsp"]
+
+[[language]]
+name = "superjs"
+scope = "source.sjs"
+file-types = ["sjs"]
+roots = ["superjs.config.json"]
+language-servers = ["superjs"]
+comment-token = "//"
+indent = { tab-width = 2, unit = "  " }
+```
+
+Run `hx --health superjs` to confirm Helix found the binary.
+
+## Zed
+
+Zed discovers language servers through extensions; a dedicated SuperJS extension
+is planned. Until then, point Zed at `superjs lsp` via a custom local extension
+using the same command (`superjs lsp`) and the `.sjs` file association.
+
+## Other editors
+
+Any LSP client works — the command is always `superjs lsp` over stdio. Pass the
+server cache budget as the `memoryBudgetMB` field of the LSP
+`initializationOptions` if you want to override the 128 MB default.
