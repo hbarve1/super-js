@@ -68,6 +68,21 @@ describe('translateDts — unsupported forms degrade to dynamic', () => {
   });
 });
 
+describe('translateDts — export modifier is preserved', () => {
+  it('emits `export type` for an exported interface', async () => {
+    const r = await tr('export interface User { id: string; }');
+    expect(r.code).toContain('export type User = {');
+  });
+  it('emits `export type` for an exported type alias and enum', async () => {
+    expect((await tr('export type Id = string;')).code).toContain('export type Id = string;');
+    expect((await tr('export enum Color { Red, Green }')).code).toContain('export type Color = Red | Green;');
+  });
+  it('leaves a non-exported declaration without `export`', async () => {
+    const r = await tr('type Local = number;');
+    expect(r.code.trim()).toBe('type Local = number;');
+  });
+});
+
 describe('translateDts — intersection auto-merge', () => {
   it('merges two object-type literals into one object type', async () => {
     const r = await tr('type I = { a: number } & { b: string };');

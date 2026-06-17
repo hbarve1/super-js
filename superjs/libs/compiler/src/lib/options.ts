@@ -23,6 +23,20 @@ export interface CompileOpts {
   /** Promote warnings to errors (parser + checker strict mode). */
   readonly strict?: boolean;
   readonly jsx?: { readonly runtime: 'automatic' | 'classic' };
+  /**
+   * Bare-specifier → target-directory map (from `superjs.config.json` `paths`).
+   * Each target holds an `index.d.sjs` (or `index.sjs`); resolution reads it via
+   * {@link CompileOpts.readFile}. E.g. `{ "fastify": ["node_modules/@superjs/types/fastify"] }`.
+   */
+  readonly paths?: Readonly<Record<string, readonly string[]>>;
+  /** Base directory `paths` targets resolve against (default `'.'`). */
+  readonly rootDir?: string;
+  /**
+   * Read a dependency file off disk during import resolution (`.d.sjs` / `.sjs`
+   * not passed to `compile`). Returns `undefined` when absent. Without this seam
+   * only in-session + relative imports resolve; bare specifiers stay `dynamic`.
+   */
+  readonly readFile?: (absolutePath: string) => string | undefined;
 }
 
 /** Subset of {@link CompileOpts} safe for single-file in-memory transforms. */

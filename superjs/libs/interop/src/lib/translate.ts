@@ -44,6 +44,13 @@ export interface TranslateResult {
 }
 
 const S = SYNTHETIC_SPAN;
+
+/** `'export '` when the declaration carries the `export` modifier, else `''`. */
+function keyword(stmt: ts.Statement): string {
+  const mods = ts.canHaveModifiers(stmt) ? ts.getModifiers(stmt) : undefined;
+  return mods?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ? 'export ' : '';
+}
+
 const id = (name: string): Identifier => ({ kind: 'Identifier', name, span: S });
 const prim = (name: PrimitiveTypeName): TypeNode => ({ kind: 'PrimitiveTypeNode', name, span: S });
 
@@ -59,13 +66,13 @@ export function translateDts(source: string, fileName = 'input.d.ts'): Translate
       const params = typeParams(stmt.typeParameters, unsupported);
       const node = mapType(stmt.type, unsupported);
       countDecl(node, surface);
-      lines.push(`type ${stmt.name.text}${params} = ${emitTypeDecl(node)};`);
+      lines.push(`${keyword(stmt)}type ${stmt.name.text}${params} = ${emitTypeDecl(node)};`);
     } else if (ts.isInterfaceDeclaration(stmt)) {
       const params = typeParams(stmt.typeParameters, unsupported);
       // Emit as a structural object-type alias (SuperJS interfaces are structural).
       const obj = objectFromMembers(stmt.members, unsupported);
       countDecl(obj, surface);
-      lines.push(`type ${stmt.name.text}${params} = ${emitTypeDecl(obj)};`);
+      lines.push(`${keyword(stmt)}type ${stmt.name.text}${params} = ${emitTypeDecl(obj)};`);
     } else if (ts.isEnumDeclaration(stmt)) {
       mapEnum(stmt, lines, unsupported, surface);
     } else {
@@ -151,7 +158,7 @@ function mapEnum(
   }
   surface.total++;
   surface.typed++; // a sum type is a fully-typed declaration
-  lines.push(`type ${stmt.name.text} = ${names.join(' | ')};`);
+  lines.push(`${keyword(stmt)}type ${stmt.name.text} = ${names.join(' | ')};`);
 }
 
 /** Report a top-level declaration we don't translate yet — never drop silently. */

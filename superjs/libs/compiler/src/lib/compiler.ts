@@ -52,6 +52,8 @@ export class Compiler {
   private readonly files = new Map<string, FileState>();
   /** Raw sources by filename — lets import resolution analyse a dependency on demand. */
   private readonly rawSources = new Map<string, string>();
+  /** Off-session dependency files (disk-resolved `.d.sjs`/`.sjs`) — analysed but never emitted. */
+  private readonly deps = new Map<string, FileState>();
   /** Files currently mid-analysis, to break import cycles (cycle → dynamic). */
   private readonly analysing = new Set<string>();
   private readonly opts: CompileOpts;
@@ -91,27 +93,46 @@ export class Compiler {
   }
 
   /**
-   * Resolve a relative module specifier to the imported file's export surface,
-   * analysing that dependency on demand. Non-relative specifiers and unknown
-   * files return `undefined` (imported names stay `dynamic`); import cycles are
-   * broken by returning `undefined` for a file already mid-analysis.
+   * Resolve a module specifier to the imported file's export surface, analysing
+   * that dependency on demand. Relative (`./`, `../`) specifiers resolve against
+   * the importer's directory; bare specifiers resolve through the config `paths`
+   * map. Sources come from the in-session set or, failing that, the {@link
+   * CompileOpts.readFile} disk seam. Unknown specifiers return `undefined`
+   * (imported names stay `dynamic`); import cycles are broken by returning
+   * `undefined` for a file already mid-analysis.
    */
   private resolveSurface(fromFile: string, specifier: string): ModuleSurface | undefined {
-    if (!specifier.startsWith('./') && !specifier.startsWith('../')) return undefined;
-    const dep = resolveRelative(fromFile, specifier);
-    const done = this.files.get(dep);
-    if (done) return done.surface;
+    const dep = specifier.startsWith('./') || specifier.startsWith('../')
+      ? resolveRelative(fromFile, specifier)
+      : this.resolveBare(specifier);
+    if (!dep) return undefined;
+
+    const known = this.files.get(dep) ?? this.deps.get(dep);
+    if (known) return known.surface;
     if (this.analysing.has(dep)) return undefined; // cycle
-    const src = this.rawSources.get(dep);
+
+    const inSession = this.rawSources.has(dep);
+    const src = inSession ? this.rawSources.get(dep)! : this.opts.readFile?.(dep);
     if (src === undefined) return undefined;
+
     this.analysing.add(dep);
     try {
       const state = this.analyse(dep, src, /*skipCache*/ true);
-      this.files.set(dep, state);
+      // In-session files are primary (emitted); disk-loaded deps are types-only.
+      (inSession ? this.files : this.deps).set(dep, state);
       return state.surface;
     } finally {
       this.analysing.delete(dep);
     }
+  }
+
+  /** Map a bare specifier to its declaration file via config `paths` (else null). */
+  private resolveBare(specifier: string): string | null {
+    const target = this.opts.paths?.[specifier]?.[0];
+    if (!target) return null;
+    const base = `${this.opts.rootDir ?? '.'}/${target}`;
+    // The mapped target is a directory holding the package's entry declaration.
+    return resolveRelative(`${base}/_`, './index.d.sjs');
   }
 
   private analyse(filename: string, source: string, skipCache = false): FileState {

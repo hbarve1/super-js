@@ -91,6 +91,32 @@ describe('compile()', () => {
     ]);
     expect(r.outputs.size).toBe(2);
   });
+
+  it('resolves a bare specifier through config paths + the readFile seam', async () => {
+    const disk: Record<string, string> = {
+      '/proj/node_modules/@superjs/types/widget/index.d.sjs': 'export type Widget = { id: string; };',
+    };
+    const r = await compile(
+      [{ filename: '/proj/app.sjs', source: 'import { Widget } from "widget";\nconst w: Widget = 5;' }],
+      {
+        paths: { widget: ['node_modules/@superjs/types/widget'] },
+        rootDir: '/proj',
+        readFile: (p) => disk[p],
+      },
+    );
+    // Widget resolved to an object type → number `5` is a mismatch.
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+    // The off-session .d.sjs dependency is analysed for types but never emitted.
+    expect([...r.outputs.keys()]).toEqual(['/proj/app.js']);
+  });
+
+  it('leaves a bare specifier without a paths entry as dynamic', async () => {
+    const r = await compile(
+      [{ filename: '/proj/app.sjs', source: 'import { Widget } from "widget";\nconst w: Widget = 5;' }],
+      { rootDir: '/proj', readFile: () => undefined },
+    );
+    expect(r.diagnostics).toEqual([]);
+  });
 });
 
 describe('transform() — single-file async', () => {
