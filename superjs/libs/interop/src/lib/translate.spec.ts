@@ -73,6 +73,46 @@ describe('translateDts — unsupported forms degrade to dynamic', () => {
   });
 });
 
+describe('translateDts — enums become sum types', () => {
+  it('maps a numeric enum to a sum type of its member names', async () => {
+    const r = await tr('enum Color { Red, Green, Blue }');
+    expect(r.code.trim()).toBe('type Color = Red | Green | Blue;');
+  });
+  it('maps a string enum to a sum type (values dropped — runtime data)', async () => {
+    const r = await tr('enum Dir { Up = "UP", Down = "DOWN" }');
+    expect(r.code.trim()).toBe('type Dir = Up | Down;');
+  });
+  it('reports a single-member enum instead of emitting a broken sum type', () => {
+    const r = translateDts('enum Solo { Only }');
+    expect(r.code.trim()).toBe('');
+    expect(r.unsupported.some((u) => u.includes('Solo') && u.includes('≥ 2'))).toBe(true);
+  });
+});
+
+describe('translateDts — untranslated top-level decls are reported, never dropped', () => {
+  it('reports a top-level function declaration', () => {
+    const r = translateDts('export declare function greet(name: string): string;');
+    expect(r.unsupported.some((u) => u.includes('greet') && u.includes('function'))).toBe(true);
+  });
+  it('reports a class declaration', () => {
+    const r = translateDts('export declare class Widget { id: string; }');
+    expect(r.unsupported.some((u) => u.includes('Widget') && u.includes('class'))).toBe(true);
+  });
+  it('reports a namespace declaration', () => {
+    const r = translateDts('declare namespace NS { type X = number; }');
+    expect(r.unsupported.some((u) => u.includes('NS'))).toBe(true);
+  });
+  it('reports a top-level variable declaration', () => {
+    const r = translateDts('export declare const VERSION: string;');
+    expect(r.unsupported.some((u) => u.includes('VERSION') && u.includes('variable'))).toBe(true);
+  });
+  it('does not report bare imports (no type surface lost)', () => {
+    const r = translateDts('import { Foo } from "./foo";\ntype Bar = number;');
+    expect(r.code).toContain('type Bar = number;');
+    expect(r.unsupported).toEqual([]);
+  });
+});
+
 describe('translateDts — multiple declarations', () => {
   it('translates a small .d.ts module', async () => {
     const r = await tr([

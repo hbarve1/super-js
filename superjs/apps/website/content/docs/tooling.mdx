@@ -84,9 +84,10 @@ superjs translate types.d.ts --out-dir gen   # → gen/types.d.sjs
 |------|-------------|
 | `--out-dir <dir>` | Write the `.d.sjs` output to this directory instead of alongside the source |
 
-TypeScript constructs SuperJS doesn't model (intersection, conditional, mapped,
-`infer`, `any`, …) degrade to `dynamic` and are reported as warnings — never
-silently dropped:
+Enums translate to sum types. TypeScript constructs SuperJS doesn't model
+(intersection, conditional, mapped, `infer`, `any`, …) degrade to `dynamic`, and
+top-level functions/classes/namespaces are flagged as not-yet-translated — every
+case is reported as a warning, never silently dropped:
 
 ```text
 $ superjs translate types.d.ts

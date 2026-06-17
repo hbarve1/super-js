@@ -9,6 +9,8 @@
  * TS forms SuperJS bans or doesn't model (intersection, conditional, mapped,
  * `infer`, keyof/typeof, …) degrade to `dynamic` and are reported in
  * `unsupported` — never silently dropped. `any` maps to `dynamic` by design.
+ * `enum` becomes a sum type; top-level functions/classes/namespaces are not yet
+ * translated but are reported, never dropped silently.
  */
 
 import ts from 'typescript';
@@ -46,11 +48,54 @@ export function translateDts(source: string, fileName = 'input.d.ts'): Translate
       // Emit as a structural object-type alias (SuperJS interfaces are structural).
       const obj = objectFromMembers(stmt.members, unsupported);
       lines.push(`type ${stmt.name.text}${params} = ${emitTypeDecl(obj)};`);
+    } else if (ts.isEnumDeclaration(stmt)) {
+      mapEnum(stmt, lines, unsupported);
+    } else {
+      // Everything else (functions, classes, namespaces, var/const declares) is
+      // not yet translated — but it is *reported*, never silently dropped.
+      reportSkipped(stmt, unsupported);
     }
-    // Other top-level statements (var/func declares, imports) are skipped in v1.
   }
 
   return { code: lines.join('\n') + (lines.length ? '\n' : ''), unsupported };
+}
+
+/**
+ * Translate a TS `enum` to a SuperJS sum type: `enum Color { Red, Green }` →
+ * `type Color = Red | Green;`. Member *values* (numeric/string initialisers) are
+ * runtime data, not type surface, so they are dropped — the variant names carry
+ * the full type surface. A sum type needs at least two named variants; a 0- or
+ * 1-member enum can't form one, so it is reported instead of emitting broken code.
+ */
+function mapEnum(stmt: ts.EnumDeclaration, lines: string[], unsupported: string[]): void {
+  const names = stmt.members
+    .map((m) => ts.isIdentifier(m.name) ? m.name.text
+      : ts.isStringLiteral(m.name) ? m.name.text
+      : null)
+    .filter((n): n is string => n !== null);
+  if (names.length < 2) {
+    unsupported.push(`enum \`${stmt.name.text}\` with ${names.length} usable member${names.length === 1 ? '' : 's'} skipped (a sum type needs ≥ 2 variants)`);
+    return;
+  }
+  lines.push(`type ${stmt.name.text} = ${names.join(' | ')};`);
+}
+
+/** Report a top-level declaration we don't translate yet — never drop silently. */
+function reportSkipped(stmt: ts.Statement, unsupported: string[]): void {
+  if (ts.isFunctionDeclaration(stmt)) {
+    unsupported.push(`function \`${stmt.name?.text ?? '<anonymous>'}\` skipped (top-level functions not yet translated)`);
+  } else if (ts.isClassDeclaration(stmt)) {
+    unsupported.push(`class \`${stmt.name?.text ?? '<anonymous>'}\` skipped (classes not yet translated)`);
+  } else if (ts.isModuleDeclaration(stmt)) {
+    unsupported.push(`namespace/module \`${stmt.name.getText()}\` skipped (not yet translated)`);
+  } else if (ts.isVariableStatement(stmt)) {
+    const names = stmt.declarationList.declarations
+      .map((d) => ts.isIdentifier(d.name) ? d.name.text : null)
+      .filter((n): n is string => n !== null);
+    unsupported.push(`variable declaration${names.length ? ` \`${names.join(', ')}\`` : ''} skipped (not yet translated)`);
+  }
+  // Imports, re-exports and export-assignments introduce no new type surface —
+  // they reference names handled elsewhere or external modules. Skipped quietly.
 }
 
 function typeParams(
