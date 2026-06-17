@@ -21,6 +21,11 @@
  *   `// @sjs:dynamic-ok` comment on the line (or the line above) to opt out.
  * - **L014 no-shadowing** — a binding whose name shadows one from an enclosing
  *   scope (function, block, `for`, or `catch`).
+ * - **L015 no-floating-promise** — a `Promise`-typed expression used as a
+ *   statement without being awaited, returned, or otherwise consumed.
+ *
+ * L015 is type-aware: it type-checks the program and inspects the synthesized
+ * type at each expression-statement.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -32,6 +37,8 @@ import type {
   MatchPattern, Identifier, DiagnosticFix,
 } from '@superjs/types';
 import { parse } from '@superjs/parser';
+import { checkProgram } from '@superjs/checker';
+import type { Type } from '@superjs/types';
 import { createDiagnostic, type MessageParams } from '@superjs/diagnostics';
 
 /** Lint source. Parse errors are returned alongside any lint findings. */
@@ -41,6 +48,7 @@ export function lint(source: string, file?: string): Diagnostic[] {
 
   const reassigned = collectReassigned(program);
   const usedNames = collectUsedNames(program);
+  const typeOf = buildTypeLookup(program);
   const lines = source.split('\n');
   // L013 opt-out: `@sjs:dynamic-ok` on the annotation's line or the line above.
   const dynamicOptedOut = (span: Span): boolean => {
@@ -110,6 +118,13 @@ export function lint(source: string, file?: string): Diagnostic[] {
       case 'PrimitiveTypeNode':
         if (n.name === 'dynamic' && !dynamicOptedOut(n.span)) diag('SJS-L013', n.span);
         break;
+      case 'ExpressionStatement': {
+        // L015 no-floating-promise: a Promise-typed expression used as a
+        // statement (not awaited, returned, or otherwise consumed).
+        const t = typeOf(n.expression.span);
+        if (t?.kind === 'promise') diag('SJS-L015', n.expression.span);
+        break;
+      }
     }
   });
 
@@ -137,6 +152,36 @@ export function lint(source: string, file?: string): Diagnostic[] {
 
   out.sort((a, b) => a.span.start.offset - b.span.start.offset);
   return out;
+}
+
+/**
+ * Type-check the program (for the type-aware rules) and return a position →
+ * type lookup. Robust to checker failure: on any error the lookup is empty, so
+ * the type-aware rules simply produce no findings rather than crashing lint.
+ */
+function buildTypeLookup(program: Program): (span: Span) => Type | null {
+  let spans: readonly { span: Span; type: Type }[] = [];
+  try {
+    spans = checkProgram(program, { recordTypes: true }).types;
+  } catch {
+    spans = [];
+  }
+  const exact = new Map<string, Type>();
+  for (const ts of spans) exact.set(`${ts.span.start.offset}:${ts.span.end.offset}`, ts.type);
+  return (span: Span): Type | null => {
+    const hit = exact.get(`${span.start.offset}:${span.end.offset}`);
+    if (hit) return hit;
+    // Fallback: the smallest recorded span that fully covers the query.
+    let best: { span: Span; type: Type } | null = null;
+    for (const ts of spans) {
+      if (ts.span.start.offset <= span.start.offset && ts.span.end.offset >= span.end.offset) {
+        if (!best || (ts.span.end.offset - ts.span.start.offset) < (best.span.end.offset - best.span.start.offset)) {
+          best = ts;
+        }
+      }
+    }
+    return best?.type ?? null;
+  };
 }
 
 /** Names that are reassigned anywhere (assignment target or `++`/`--` operand). */

@@ -105,6 +105,7 @@ These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be confi
 | SJS-L012 | warning | lint | Unused declaration — binding is never used | Stage 3 |
 | SJS-L013 | warning | lint | Explicit `dynamic` type — annotate precisely or opt out with `// @sjs:dynamic-ok` | Stage 3 |
 | SJS-L014 | warning | lint | Binding shadows a name from an enclosing scope | Stage 3 |
+| SJS-L015 | warning | lint | Floating promise — result not awaited, returned, or consumed | Stage 3 |
 
 ---
 
