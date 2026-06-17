@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/semanticTokens/full', params: {} });
+    server.handle({ id: 7, method: 'textDocument/formatting', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -229,5 +229,30 @@ describe('LspServer — signatureHelp', () => {
     server.handle(open('file:///s2.sjs', 'const x: number = 1;'));
     server.handle({ id: 4, method: 'textDocument/signatureHelp', params: at('file:///s2.sjs', 0, 6) });
     expect(sent.at(-1)).toMatchObject({ id: 4, result: null });
+  });
+});
+
+describe('LspServer — semanticTokens', () => {
+  it('advertises a semanticTokens provider with a legend', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    const cap = (sent[0]!.result as { capabilities: Record<string, { legend?: { tokenTypes: string[] } }> })
+      .capabilities.semanticTokensProvider;
+    expect(cap!.legend!.tokenTypes).toContain('keyword');
+  });
+
+  it('returns an encoded token array for an open document', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///t.sjs', 'const x = 1;'));
+    server.handle({ id: 3, method: 'textDocument/semanticTokens/full', params: td('file:///t.sjs') });
+    const data = (sent.at(-1)!.result as { data: number[] }).data;
+    expect(data.length % 5).toBe(0);
+    expect(data.slice(0, 5)).toEqual([0, 0, 5, 0, 0]); // `const` → keyword
+  });
+
+  it('returns empty data for an unopened document', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 4, method: 'textDocument/semanticTokens/full', params: td('file:///none.sjs') });
+    expect(sent.at(-1)!.result).toEqual({ data: [] });
   });
 });
