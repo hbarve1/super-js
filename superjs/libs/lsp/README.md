@@ -37,6 +37,13 @@ M2 navigation (complete):
 - `textDocument/inlayHint` — inferred-type hints after un-annotated `const` /
   `let` bindings (variable hints only at MVP).
 
-The `superjs lsp` CLI command is wired to `serveStdio`. Next: the memory
-budget + `SJS-W010` over-budget behaviour (M6) and the VS Code extension
-(Sprint 3.2). See `specs/roadmap/stage-3-dx-tools.md`.
+Memory budget (M6): the source/AST cache is bounded by a byte budget
+(`lsp.memoryBudgetMB`, default 128 MB, set via `initializationOptions`).
+When the cache exceeds it, the least-recently-touched document is evicted
+(re-added on the next edit), so a long editing session over many files does
+not grow without bound. Byte size is estimated from source length; true
+heap measurement and an over-budget client diagnostic are later work.
+
+The `superjs lsp` CLI command is wired to `serveStdio`. Next: the VS Code
+extension (Sprint 3.2) consuming this binary. See
+`specs/roadmap/stage-3-dx-tools.md`.

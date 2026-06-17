@@ -70,26 +70,41 @@ function toLspDiagnostic(d: Diagnostic): LspDiagnostic {
   };
 }
 
+/** Default cache budget (M6): 128 MB, matching `lsp.memoryBudgetMB`. */
+const DEFAULT_BUDGET_BYTES = 128 * 1024 * 1024;
+
 export interface LspServerOptions {
   /** Invoked on `exit`; defaults to a no-op so tests don't kill the process. */
   readonly onExit?: (code: number) => void;
+  /** AST/source cache budget in bytes (M6). Editors set MB via `initializationOptions`. */
+  readonly memoryBudgetBytes?: number;
 }
 
 export class LspServer {
   private readonly compiler = new Compiler();
   /** Open document sources, for the pure-AST queries (outline, folding). */
   private readonly sources = new Map<string, string>();
+  /** Per-document last-touched tick, for LRU eviction under the memory budget. */
+  private readonly touched = new Map<string, number>();
+  private tick = 0;
+  private budgetBytes: number;
   private shuttingDown = false;
 
   constructor(
     private readonly send: (msg: JsonRpcMessage) => void,
     private readonly opts: LspServerOptions = {},
-  ) {}
+  ) {
+    this.budgetBytes = opts.memoryBudgetBytes ?? DEFAULT_BUDGET_BYTES;
+  }
 
   /** Dispatch one decoded JSON-RPC message. */
   handle(msg: JsonRpcMessage): void {
     switch (msg.method) {
-      case 'initialize':
+      case 'initialize': {
+        const init = (msg.params as { initializationOptions?: { memoryBudgetMB?: unknown } })?.initializationOptions;
+        if (init && typeof init.memoryBudgetMB === 'number' && init.memoryBudgetMB > 0) {
+          this.budgetBytes = init.memoryBudgetMB * 1024 * 1024;
+        }
         return this.reply(msg.id, {
           capabilities: {
             textDocumentSync: { openClose: true, change: 1 },
@@ -112,6 +127,7 @@ export class LspServer {
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
+      }
       case 'initialized':
         return; // notification, no reply
       case 'shutdown':
@@ -165,7 +181,9 @@ export class LspServer {
     const text = doc.text ?? '';
     this.sources.set(doc.uri, text);
     this.compiler.setFile(doc.uri, text);
+    this.touch(doc.uri);
     this.publish(doc.uri);
+    this.enforceBudget(doc.uri);
   }
 
   private didChange(params: unknown): void {
@@ -177,15 +195,53 @@ export class LspServer {
     const text = changes[changes.length - 1]!.text;
     this.sources.set(uri, text);
     this.compiler.setFile(uri, text);
+    this.touch(uri);
     this.publish(uri);
+    this.enforceBudget(uri);
   }
 
   private didClose(params: unknown): void {
     const uri = (params as { textDocument?: { uri?: string } })?.textDocument?.uri;
     if (!uri) return;
+    this.evict(uri);
+  }
+
+  /** Mark a document as most-recently used. */
+  private touch(uri: string): void {
+    this.touched.set(uri, ++this.tick);
+  }
+
+  /** Drop a document from the cache and clear its diagnostics. */
+  private evict(uri: string): void {
     this.sources.delete(uri);
+    this.touched.delete(uri);
     this.compiler.removeFile(uri);
-    this.publish(uri, []); // clear diagnostics for the closed file
+    this.publish(uri, []);
+  }
+
+  /**
+   * Memory budget (M6): while the cached sources exceed `budgetBytes`, evict the
+   * least-recently-touched document (never `keep`, the just-touched one). A
+   * single document larger than the budget is retained — the floor is one doc.
+   * Byte size is estimated as UTF-16 code units of the source.
+   */
+  private enforceBudget(keep: string): void {
+    while (this.estimatedBytes() > this.budgetBytes && this.sources.size > 1) {
+      let lru: string | undefined;
+      let lruTick = Infinity;
+      for (const [uri, tick] of this.touched) {
+        if (uri === keep) continue;
+        if (tick < lruTick) { lruTick = tick; lru = uri; }
+      }
+      if (lru === undefined) break;
+      this.evict(lru);
+    }
+  }
+
+  private estimatedBytes(): number {
+    let total = 0;
+    for (const s of this.sources.values()) total += s.length * 2;
+    return total;
   }
 
   /** `textDocument/documentSymbol` — the file outline (top-level declarations). */
