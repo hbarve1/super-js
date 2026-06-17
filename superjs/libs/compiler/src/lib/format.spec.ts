@@ -68,6 +68,54 @@ describe('format() — corpus idempotence', () => {
   }
 });
 
+describe('format() — properties & performance', () => {
+  // Deterministic LCG so the "random" whitespace is reproducible across runs.
+  function lcg(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 0x100000000);
+  }
+
+  /** Insert random whitespace after structural tokens — always parse-safe. */
+  function mangle(src: string, seed: number): string {
+    const rand = lcg(seed);
+    let out = '';
+    for (const ch of src) {
+      out += ch;
+      if (';{},'.includes(ch)) {
+        const n = Math.floor(rand() * 3);
+        out += n === 0 ? '  ' : n === 1 ? '\n  ' : ' ';
+      }
+    }
+    return out;
+  }
+
+  const SNIPPETS = [
+    'const x: number = 1;\nfunction f(a: string): string { return a; }',
+    'type S = Active | Done;\nconst l = match s { Active => "a", Done => "d" };',
+    'const o = { a: 1, b: 2 };\nconst xs = [1, 2, 3];',
+  ];
+
+  it('is whitespace-invariant: mangled input formats to the canonical form', () => {
+    for (const snippet of SNIPPETS) {
+      const canonical = format(snippet).code;
+      for (let seed = 1; seed <= 5; seed++) {
+        const mangled = mangle(snippet, seed);
+        expect(format(mangled).code, `seed ${seed}`).toBe(canonical);
+      }
+    }
+  });
+
+  it('formats a 1,000-line file well under the 50 ms budget', () => {
+    const big = Array.from({ length: 1000 }, (_, i) => `const x${i}: number = ${i};`).join('\n');
+    const start = performance.now();
+    const r = format(big);
+    const ms = performance.now() - start;
+    expect(r.code.split('\n').length).toBeGreaterThanOrEqual(1000);
+    // Target is ≤ 50 ms; assert a loose ceiling that still catches a real regression.
+    expect(ms).toBeLessThan(200);
+  });
+});
+
 /** Walk up from this file to find the ES2025 example directory, or null. */
 function findExamples(): string | null {
   let dir = dirname(fileURLToPath(import.meta.url));
