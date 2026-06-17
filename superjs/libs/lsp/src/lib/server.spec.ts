@@ -400,3 +400,38 @@ describe('LspServer — inlayHint', () => {
     expect(sent.at(-1)!.result).toEqual([]);
   });
 });
+
+describe('LspServer — memory budget (M6)', () => {
+  const outlineOf = (server: LspServer, sent: JsonRpcMessage[], uri: string) => {
+    server.handle({ id: 99, method: 'textDocument/documentSymbol', params: td(uri) });
+    return sent.at(-1)!.result as unknown[];
+  };
+
+  it('evicts the least-recently-touched document when over budget', () => {
+    const sent: JsonRpcMessage[] = [];
+    // Budget fits one ~24-byte document but not two.
+    const server = new LspServer((m) => sent.push(m), { memoryBudgetBytes: 40 });
+    server.handle(open('file:///a.sjs', 'const a = 1;'));
+    server.handle(open('file:///b.sjs', 'const b = 1;')); // total exceeds 40 → evict a
+    expect(outlineOf(server, sent, 'file:///a.sjs')).toEqual([]);     // evicted
+    expect(outlineOf(server, sent, 'file:///b.sjs')).toHaveLength(1); // kept (most recent)
+  });
+
+  it('keeps every document under the default budget', () => {
+    const sent: JsonRpcMessage[] = [];
+    const server = new LspServer((m) => sent.push(m));
+    server.handle(open('file:///a.sjs', 'const a = 1;'));
+    server.handle(open('file:///b.sjs', 'const b = 1;'));
+    expect(outlineOf(server, sent, 'file:///a.sjs')).toHaveLength(1);
+    expect(outlineOf(server, sent, 'file:///b.sjs')).toHaveLength(1);
+  });
+
+  it('applies memoryBudgetMB from initializationOptions', () => {
+    const sent: JsonRpcMessage[] = [];
+    const server = new LspServer((m) => sent.push(m));
+    server.handle({ id: 1, method: 'initialize', params: { initializationOptions: { memoryBudgetMB: 0.00002 } } });
+    server.handle(open('file:///a.sjs', 'const a = 1;'));
+    server.handle(open('file:///b.sjs', 'const b = 1;'));
+    expect(outlineOf(server, sent, 'file:///a.sjs')).toEqual([]); // tiny budget evicted a
+  });
+});
