@@ -132,8 +132,8 @@ superjs format src/ --check    # CI: non-zero exit if anything would change
 Reports style findings (`SJS-L*`) and exits non-zero when any are present, so it
 gates CI. Current rules: prefer-`const` (L001), no-`var` (L002), `===`/`!==`
 (L003), `for…of` over `for…in` (L004), no-`debugger` (L005), no-empty-`match`
-(L006), no-redundant-`match`-arm (L007), prefer-arrow-callback (L008), and
-no-unused-import (L009).
+(L006), no-redundant-`match`-arm (L007), prefer-arrow-callback (L008),
+no-unused-import (L009), and import-order (L010).
 
 ```bash
 superjs lint src/                 # human-readable

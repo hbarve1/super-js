@@ -13,6 +13,8 @@
  *   directly as a call argument; an arrow is shorter and keeps lexical `this`.
  * - **L009 no-unused-import** — an import binding never referenced anywhere
  *   (value, type, or JSX position) outside the import statement itself.
+ * - **L010 import-order** — within a contiguous block of imports, the source
+ *   specifiers must be sorted ascending.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -78,6 +80,17 @@ export function lint(source: string, file?: string): Diagnostic[] {
         break;
     }
   });
+
+  // L010 import-order: within a run of adjacent imports, sources sort ascending.
+  let prevSource: string | undefined;
+  for (const stmt of program.body) {
+    if (stmt.kind !== 'ImportDecl') { prevSource = undefined; continue; }
+    const src = stmt.source.value;
+    if (prevSource !== undefined && src.localeCompare(prevSource) < 0) {
+      diag('SJS-L010', stmt.span, { source: src });
+    }
+    prevSource = src;
+  }
 
   out.sort((a, b) => a.span.start.offset - b.span.start.offset);
   return out;
