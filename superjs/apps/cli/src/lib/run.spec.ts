@@ -374,6 +374,30 @@ describe('lsp', () => {
   });
 });
 
+describe('.sjsignore', () => {
+  const tree = {
+    '/work/src/a.sjs': 'const x: number = 1;\nx;',
+    '/work/src/bad.sjs': 'var y = 1;\ny;', // would trip SJS-L002
+  };
+
+  it('lints files in a directory that .sjsignore does not exclude', async () => {
+    const io = makeIO(tree);
+    expect(await run(['lint', 'src'], io)).toBe(1); // bad.sjs reported
+    expect(io.stdout()).toContain('SJS-L002');
+  });
+
+  it('skips directory-walked files matched by .sjsignore', async () => {
+    const io = makeIO({ ...tree, '/work/.sjsignore': 'bad.sjs\n' });
+    expect(await run(['lint', 'src'], io)).toBe(0);
+    expect(io.stdout()).not.toContain('SJS-L002');
+  });
+
+  it('still lints an explicitly-named file even if .sjsignore matches it', async () => {
+    const io = makeIO({ ...tree, '/work/.sjsignore': 'bad.sjs\n' });
+    expect(await run(['lint', 'src/bad.sjs'], io)).toBe(1); // explicit arg bypasses ignore
+  });
+});
+
 describe('lint --fix', () => {
   it('rewrites var→let and removes debugger, writing the file in place', async () => {
     const io = makeIO({ '/work/a.sjs': 'var x = 1;\nx;\ndebugger;' });

@@ -18,6 +18,7 @@ import {
   formatPretty, formatJson, countErrors, countWarnings, type DiagnosticFormat,
 } from './diagnostics-format.js';
 import { DiskCacheStore, CACHE_DIR } from './cache.js';
+import { parseSjsignore, type IgnoreMatcher } from './sjsignore.js';
 
 export const VERSION = '0.0.1';
 
@@ -50,16 +51,35 @@ function walkSjs(io: IO, absDir: string, relDir: string, out: string[]): void {
  * `.sjs` files under it (recursively); a file passes through unchanged.
  */
 function expandInputs(io: IO, paths: readonly string[]): string[] {
+  const ignore = loadSjsignore(io);
   const out: string[] = [];
   for (const p of paths) {
     const abs = resolve(io, p);
     // Strip trailing slashes without a backtracking regex (avoids ReDoS).
     let base = p;
     while (base.endsWith('/')) base = base.slice(0, -1);
-    if (io.isDirectory(abs)) walkSjs(io, abs, base, out);
-    else out.push(p);
+    if (io.isDirectory(abs)) {
+      // Files discovered by walking a directory are subject to `.sjsignore`;
+      // explicitly-named files are always kept.
+      const walked: string[] = [];
+      walkSjs(io, abs, base, walked);
+      for (const f of walked) if (!ignore.ignores(f.replace(/\\/g, '/'))) out.push(f);
+    } else {
+      out.push(p);
+    }
   }
   return out;
+}
+
+/** Load `.sjsignore` from the project root (cwd), or a no-op matcher if absent. */
+function loadSjsignore(io: IO): IgnoreMatcher {
+  const path = join(io.cwd(), '.sjsignore');
+  if (!io.exists(path)) return { ignores: () => false };
+  try {
+    return parseSjsignore(io.readFile(path));
+  } catch {
+    return { ignores: () => false };
+  }
 }
 
 /** Read each path into a SourceFile, reporting unreadable files to stderr. */
