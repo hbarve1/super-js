@@ -48,7 +48,7 @@ describe('LspServer — lifecycle', () => {
 
   it('returns method-not-found for an unknown request', () => {
     const { sent, server } = harness();
-    server.handle({ id: 7, method: 'textDocument/hover', params: {} });
+    server.handle({ id: 7, method: 'textDocument/completion', params: {} });
     expect(sent[0]).toMatchObject({ id: 7, error: { code: -32601 } });
   });
 
@@ -99,5 +99,53 @@ describe('LspServer — diagnostics', () => {
     server.handle(open('file:///d.sjs', 'const count: number = "hello";'));
     server.handle({ method: 'textDocument/didClose', params: { textDocument: { uri: 'file:///d.sjs' } } });
     expect(diags(sent, 'file:///d.sjs').at(-1)).toEqual([]);
+  });
+});
+
+const at = (uri: string, line: number, character: number) => ({ textDocument: { uri }, position: { line, character } });
+
+describe('LspServer — hover', () => {
+  it('advertises hover + definition capabilities', () => {
+    const { sent, server } = harness();
+    server.handle({ id: 1, method: 'initialize', params: {} });
+    expect((sent[0]!.result as { capabilities: Record<string, unknown> }).capabilities)
+      .toMatchObject({ hoverProvider: true, definitionProvider: true });
+  });
+
+  it('returns the type of the identifier under the cursor as a markdown block', () => {
+    const { sent, server } = harness();
+    //                                 line 1: `const m = n;` — `n` reference at char 10
+    server.handle(open('file:///h.sjs', 'const n: number = 1;\nconst m = n;'));
+    server.handle({ id: 5, method: 'textDocument/hover', params: at('file:///h.sjs', 1, 10) });
+    const r = sent.at(-1)!.result as { contents: { kind: string; value: string } };
+    expect(r.contents.kind).toBe('markdown');
+    expect(r.contents.value).toContain('number');
+  });
+
+  it('returns null hover off any typed node', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///h2.sjs', 'const n: number = 1;'));
+    server.handle({ id: 6, method: 'textDocument/hover', params: at('file:///h2.sjs', 5, 0) });
+    expect(sent.at(-1)).toMatchObject({ id: 6, result: null });
+  });
+});
+
+describe('LspServer — definition', () => {
+  it('resolves a use to its declaration span (0-based range)', () => {
+    const { sent, server } = harness();
+    //                                   0         1
+    //                                   0123456789012345678
+    server.handle(open('file:///def.sjs', 'const x: number = 1;\nconst y: number = x;'));
+    server.handle({ id: 8, method: 'textDocument/definition', params: at('file:///def.sjs', 1, 18) });
+    const loc = sent.at(-1)!.result as { uri: string; range: { start: { line: number; character: number } } };
+    expect(loc.uri).toBe('file:///def.sjs');
+    expect(loc.range.start).toEqual({ line: 0, character: 6 }); // `x` declared at line 1 col 7 (0-based 6)
+  });
+
+  it('returns null when the cursor is not on a resolvable symbol', () => {
+    const { sent, server } = harness();
+    server.handle(open('file:///def2.sjs', 'const x: number = 1;'));
+    server.handle({ id: 9, method: 'textDocument/definition', params: at('file:///def2.sjs', 0, 0) });
+    expect(sent.at(-1)).toMatchObject({ id: 9, result: null });
   });
 });

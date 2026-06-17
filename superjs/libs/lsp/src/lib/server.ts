@@ -10,6 +10,7 @@
  */
 
 import { Compiler } from '@superjs/compiler';
+import { model } from '@superjs/checker';
 import type { Diagnostic, Severity, Span } from '@superjs/types';
 import type { JsonRpcMessage } from './jsonrpc.js';
 
@@ -32,6 +33,18 @@ function toRange(span: Span): LspRange {
     start: { line: span.start.line - 1, character: span.start.column },
     end: { line: span.end.line - 1, character: span.end.column },
   };
+}
+
+/**
+ * Decode a `TextDocumentPositionParams` into compiler coordinates: LSP line is
+ * 0-based, the compiler's is 1-based; columns are 0-based in both.
+ */
+function position(params: unknown): { uri: string; line: number; character: number } | null {
+  const p = params as { textDocument?: { uri?: string }; position?: { line?: number; character?: number } };
+  const uri = p?.textDocument?.uri;
+  const pos = p?.position;
+  if (!uri || typeof pos?.line !== 'number' || typeof pos.character !== 'number') return null;
+  return { uri, line: pos.line + 1, character: pos.character };
 }
 
 function toLspDiagnostic(d: Diagnostic): LspDiagnostic {
@@ -64,7 +77,11 @@ export class LspServer {
     switch (msg.method) {
       case 'initialize':
         return this.reply(msg.id, {
-          capabilities: { textDocumentSync: { openClose: true, change: 1 } },
+          capabilities: {
+            textDocumentSync: { openClose: true, change: 1 },
+            hoverProvider: true,
+            definitionProvider: true,
+          },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
       case 'initialized':
@@ -80,6 +97,10 @@ export class LspServer {
         return this.didChange(msg.params);
       case 'textDocument/didClose':
         return this.didClose(msg.params);
+      case 'textDocument/hover':
+        return this.reply(msg.id, this.hover(msg.params));
+      case 'textDocument/definition':
+        return this.reply(msg.id, this.definition(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -112,6 +133,24 @@ export class LspServer {
     this.open.delete(uri);
     this.compiler.removeFile(uri);
     this.publish(uri, []); // clear diagnostics for the closed file
+  }
+
+  /** `textDocument/hover` — the type under the cursor, as a markdown code block. */
+  private hover(params: unknown): { contents: { kind: string; value: string }; range?: LspRange } | null {
+    const pos = position(params);
+    if (!pos) return null;
+    const type = this.compiler.typeAt(pos.uri, pos.line, pos.character);
+    if (!type) return null;
+    return { contents: { kind: 'markdown', value: '```sjs\n' + model.display(type) + '\n```' } };
+  }
+
+  /** `textDocument/definition` — the declaration site of the symbol under the cursor. */
+  private definition(params: unknown): { uri: string; range: LspRange } | null {
+    const pos = position(params);
+    if (!pos) return null;
+    const sym = this.compiler.symbolAt(pos.uri, pos.line, pos.character);
+    if (!sym?.declaration) return null; // library global or unresolved
+    return { uri: pos.uri, range: toRange(sym.declaration) };
   }
 
   /** Push `textDocument/publishDiagnostics` for one document. */
