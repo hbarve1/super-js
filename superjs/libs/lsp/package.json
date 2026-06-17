@@ -24,6 +24,7 @@
   "dependencies": {
     "tslib": "^2.3.0",
     "@superjs/types": "workspace:*",
+    "@superjs/parser": "workspace:*",
     "@superjs/checker": "workspace:*",
     "@superjs/compiler": "workspace:*"
   }

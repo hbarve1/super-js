@@ -13,6 +13,7 @@ import { Compiler } from '@superjs/compiler';
 import { model } from '@superjs/checker';
 import type { Diagnostic, Severity, Span } from '@superjs/types';
 import type { JsonRpcMessage } from './jsonrpc.js';
+import { documentSymbols, foldingRanges } from './symbols.js';
 
 /** LSP `DiagnosticSeverity`. */
 const SEVERITY: Record<Severity, number> = { error: 1, warning: 2, info: 3, hint: 4 };
@@ -64,7 +65,8 @@ export interface LspServerOptions {
 
 export class LspServer {
   private readonly compiler = new Compiler();
-  private readonly open = new Set<string>();
+  /** Open document sources, for the pure-AST queries (outline, folding). */
+  private readonly sources = new Map<string, string>();
   private shuttingDown = false;
 
   constructor(
@@ -81,6 +83,8 @@ export class LspServer {
             textDocumentSync: { openClose: true, change: 1 },
             hoverProvider: true,
             definitionProvider: true,
+            documentSymbolProvider: true,
+            foldingRangeProvider: true,
           },
           serverInfo: { name: 'superjs-lsp', version: '0.0.1' },
         });
@@ -101,6 +105,10 @@ export class LspServer {
         return this.reply(msg.id, this.hover(msg.params));
       case 'textDocument/definition':
         return this.reply(msg.id, this.definition(msg.params));
+      case 'textDocument/documentSymbol':
+        return this.reply(msg.id, this.outline(msg.params));
+      case 'textDocument/foldingRange':
+        return this.reply(msg.id, this.folding(msg.params));
       default:
         // Unknown request → method-not-found; unknown notification → ignore.
         if (msg.id !== undefined && msg.id !== null) {
@@ -112,8 +120,9 @@ export class LspServer {
   private didOpen(params: unknown): void {
     const doc = (params as { textDocument?: { uri?: string; text?: string } })?.textDocument;
     if (!doc?.uri) return;
-    this.open.add(doc.uri);
-    this.compiler.setFile(doc.uri, doc.text ?? '');
+    const text = doc.text ?? '';
+    this.sources.set(doc.uri, text);
+    this.compiler.setFile(doc.uri, text);
     this.publish(doc.uri);
   }
 
@@ -123,16 +132,35 @@ export class LspServer {
     const changes = p?.contentChanges;
     if (!uri || !changes?.length) return;
     // Full sync: the last change carries the whole document.
-    this.compiler.setFile(uri, changes[changes.length - 1]!.text);
+    const text = changes[changes.length - 1]!.text;
+    this.sources.set(uri, text);
+    this.compiler.setFile(uri, text);
     this.publish(uri);
   }
 
   private didClose(params: unknown): void {
     const uri = (params as { textDocument?: { uri?: string } })?.textDocument?.uri;
     if (!uri) return;
-    this.open.delete(uri);
+    this.sources.delete(uri);
     this.compiler.removeFile(uri);
     this.publish(uri, []); // clear diagnostics for the closed file
+  }
+
+  /** `textDocument/documentSymbol` — the file outline (top-level declarations). */
+  private outline(params: unknown): ReturnType<typeof documentSymbols> {
+    const src = this.sourceOf(params);
+    return src === null ? [] : documentSymbols(src);
+  }
+
+  /** `textDocument/foldingRange` — multi-line top-level regions. */
+  private folding(params: unknown): ReturnType<typeof foldingRanges> {
+    const src = this.sourceOf(params);
+    return src === null ? [] : foldingRanges(src);
+  }
+
+  private sourceOf(params: unknown): string | null {
+    const uri = (params as { textDocument?: { uri?: string } })?.textDocument?.uri;
+    return uri ? this.sources.get(uri) ?? null : null;
   }
 
   /** `textDocument/hover` — the type under the cursor, as a markdown code block. */

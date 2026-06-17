@@ -15,7 +15,8 @@ Implemented:
 - live `textDocument/publishDiagnostics`
 - `textDocument/hover` (type under the cursor) and `textDocument/definition`
   (go-to-declaration), backed by the compiler's `typeAt` / `symbolAt`.
+- `textDocument/documentSymbol` (outline) and `textDocument/foldingRange`,
+  computed from the parsed AST.
 
-Following slices add `completion`, `signatureHelp`, `documentSymbol`,
-`foldingRange`, and `semanticTokens/full`, plus the memory budget (M6). See
-`specs/roadmap/stage-3-dx-tools.md`.
+Following slices add `completion`, `signatureHelp`, and `semanticTokens/full`,
+plus the memory budget (M6). See `specs/roadmap/stage-3-dx-tools.md`.

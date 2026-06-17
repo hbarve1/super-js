@@ -17,6 +17,9 @@
       "path": "../checker/tsconfig.lib.json"
     },
     {
+      "path": "../parser/tsconfig.lib.json"
+    },
+    {
       "path": "../types/tsconfig.lib.json"
     }
   ],
