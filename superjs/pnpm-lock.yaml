@@ -316,6 +316,9 @@ importers:
 
   libs/lsp:
     dependencies:
+      '@superjs/checker':
+        specifier: workspace:*
+        version: link:../checker
       '@superjs/compiler':
         specifier: workspace:*
         version: link:../compiler
