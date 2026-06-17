@@ -216,12 +216,17 @@ See the complete list on the [error code reference](/errors) page.
 
 ### `init`
 
-Write a default `superjs.config.json` into the current directory. Idempotent —
-running it when a config already exists does nothing.
+Write a default `superjs.config.json`, or scaffold a starter project with a
+template. Existing files are never overwritten.
 
 ```bash
-superjs init
+superjs init                  # just superjs.config.json
+superjs init fastify-api      # scaffold a Fastify API project
 ```
+
+Templates: `node-cli`, `fastify-api`, `workers-api`, `lambda-handler`. Each
+writes a `package.json`, a `superjs.config.json`, a starter `src/*.sjs`, and a
+README (plus `wrangler.toml` for `workers-api`).
 
 ### `doctor`
 

@@ -46,7 +46,8 @@ commands:
   lint <files...>      report style findings (SJS-L*)  [--format pretty|json] [--fix]
   doc <files...>       generate API docs from exports  [--format md|json] [--out-dir dir]
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
-  init                 write a default ${'superjs.config.json'}
+  init [template]      write a default config, or scaffold a template
+                       (node-cli, fastify-api, workers-api, lambda-handler)
   doctor               report environment + toolchain health
   lsp                  start the language server over stdio (for editors)
   verify <in> <out>    recompile <in> and byte-diff against expected <out>

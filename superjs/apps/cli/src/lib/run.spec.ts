@@ -269,6 +269,25 @@ describe('init & doctor', () => {
     expect(await run(['init'], io)).toBe(0);
     expect(io.stdout()).toContain('already exists');
   });
+  it('init <template> scaffolds the template files', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'fastify-api'], io)).toBe(0);
+    expect(io.fs.has('/work/src/server.sjs')).toBe(true);
+    expect(io.fs.has('/work/package.json')).toBe(true);
+    expect(io.fs.has('/work/superjs.config.json')).toBe(true);
+    expect(io.stdout()).toContain("scaffolded 'fastify-api'");
+  });
+  it('init scaffolds the workers template with wrangler config', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'workers-api'], io)).toBe(0);
+    expect(io.fs.has('/work/src/worker.sjs')).toBe(true);
+    expect(io.fs.has('/work/wrangler.toml')).toBe(true);
+  });
+  it('init rejects an unknown template', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'nope'], io)).toBe(2);
+    expect(io.stderr()).toContain('unknown template');
+  });
   it('doctor reports environment health', async () => {
     const io = makeIO();
     const code = await run(['doctor'], io);

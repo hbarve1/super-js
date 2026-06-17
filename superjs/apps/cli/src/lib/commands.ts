@@ -19,6 +19,7 @@ import {
 } from './diagnostics-format.js';
 import { DiskCacheStore, CACHE_DIR } from './cache.js';
 import { parseSjsignore, type IgnoreMatcher } from './sjsignore.js';
+import { TEMPLATE_NAMES, templateFiles, type TemplateName } from './templates.js';
 
 export const VERSION = '0.0.1';
 
@@ -532,11 +533,29 @@ export function explain(args: ParsedArgs, io: IO): number {
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
-export function init(_args: ParsedArgs, io: IO): number {
-  const path = join(io.cwd(), CONFIG_FILENAME);
-  if (io.exists(path)) { line(io, `${CONFIG_FILENAME} already exists — leaving it untouched.`); return 0; }
-  io.writeFile(path, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`);
-  line(io, `created ${CONFIG_FILENAME}`);
+export function init(args: ParsedArgs, io: IO): number {
+  const template = args.positionals[0];
+  if (template !== undefined && !TEMPLATE_NAMES.includes(template as TemplateName)) {
+    errline(io, `unknown template '${template}'. Available: ${TEMPLATE_NAMES.join(', ')}`);
+    return 2;
+  }
+  // No template → just the config file (original behaviour). With a template →
+  // scaffold its files. Existing files are never overwritten.
+  const files = template === undefined
+    ? [{ path: CONFIG_FILENAME, content: `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n` }]
+    : templateFiles(template as TemplateName);
+
+  let created = 0;
+  let skipped = 0;
+  for (const f of files) {
+    const abs = join(io.cwd(), f.path);
+    if (io.exists(abs)) { line(io, `${f.path} already exists — skipped`); skipped++; continue; }
+    io.writeFile(abs, f.content);
+    line(io, `created ${f.path}`);
+    created++;
+  }
+  if (created === 0 && skipped > 0) line(io, 'nothing to do — files already present.');
+  else if (template !== undefined) line(io, `scaffolded '${template}' (${created} file${created === 1 ? '' : 's'}).`);
   return 0;
 }
 
