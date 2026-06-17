@@ -43,6 +43,54 @@ describe('compile()', () => {
     expect(out.map.version).toBe(3);
     expect(out.map.sources).toEqual(['m.sjs']);
   });
+
+  it('resolves an imported function type across files (misuse is caught)', async () => {
+    const r = await compile([
+      { filename: 'math.sjs', source: 'export function double(n: number): number { return n * 2; }' },
+      { filename: 'app.sjs', source: 'import { double } from "./math";\nconst x: string = double(2);' },
+    ]);
+    // double()'s return type flowed in: number assigned to string → mismatch.
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
+  it('does not flag correct use of an imported function', async () => {
+    const r = await compile([
+      { filename: 'math.sjs', source: 'export function double(n: number): number { return n * 2; }' },
+      { filename: 'app.sjs', source: 'import { double } from "./math";\nconst x: number = double(2);' },
+    ]);
+    expect(r.diagnostics).toEqual([]);
+  });
+
+  it('resolves an imported type alias across files', async () => {
+    const r = await compile([
+      { filename: 'types.sjs', source: 'export type Id = string;' },
+      { filename: 'app.sjs', source: 'import { Id } from "./types";\nconst x: Id = 5;' },
+    ]);
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
+  it('resolves imports regardless of source order', async () => {
+    const r = await compile([
+      { filename: 'app.sjs', source: 'import { double } from "./math";\nconst x: number = double(2);' },
+      { filename: 'math.sjs', source: 'export function double(n: number): number { return n * 2; }' },
+    ]);
+    expect(r.diagnostics).toEqual([]);
+  });
+
+  it('leaves an unresolvable import as dynamic (no spurious error)', async () => {
+    const r = await compile([
+      { filename: 'app.sjs', source: 'import { Thing } from "./missing";\nconst x: number = 1;' },
+    ]);
+    expect(r.diagnostics).toEqual([]);
+  });
+
+  it('does not hang or crash on an import cycle', async () => {
+    const r = await compile([
+      { filename: 'a.sjs', source: 'import { B } from "./b";\nexport type A = string;' },
+      { filename: 'b.sjs', source: 'import { A } from "./a";\nexport type B = number;' },
+    ]);
+    expect(r.outputs.size).toBe(2);
+  });
 });
 
 describe('transform() — single-file async', () => {

@@ -30,11 +30,30 @@ import { isAssignable } from './subtype.js';
 import { resolveType, substitute, type TypeResolver } from './resolve.js';
 import { Scope } from './scope.js';
 
+/**
+ * The exported type/value surface of a module, as an importer needs to see it.
+ * Resolved types are immutable semantic {@link Type}s, safe to share across files.
+ */
+export interface ModuleSurface {
+  /** Exported named types (alias / object / class / sum), keyed by exported name. */
+  readonly types: ReadonlyMap<string, Type>;
+  /** Exported sum types (subset of `types`), for variant construction + `match`. */
+  readonly sums: ReadonlyMap<string, SumType>;
+  /** Exported value bindings (const/let/var/function/class), keyed by exported name. */
+  readonly values: ReadonlyMap<string, Type>;
+}
+
 export interface CheckOptions {
   readonly file?: string;
   readonly strict?: boolean;
   /** Record a (span → synthesized type) table for `typeAt` / LSP hover. */
   readonly recordTypes?: boolean;
+  /**
+   * Resolve a module specifier to its export surface, for cross-file imports.
+   * Returns `undefined` when unresolvable — imported names then stay `dynamic`,
+   * exactly as before module resolution existed (no false errors).
+   */
+  readonly resolveModule?: (specifier: string) => ModuleSurface | undefined;
 }
 
 /** One entry of the checker's type table: the type synthesized at a node's span. */
@@ -57,10 +76,13 @@ export class Checker implements TypeResolver {
   private readonly recordTypes: boolean;
   private readonly typeTable: TypedSpan[] = [];
 
+  private readonly resolveModule: CheckOptions['resolveModule'];
+
   constructor(opts: CheckOptions = {}) {
     this.bag = new DiagnosticBag({ file: opts.file, strict: opts.strict ?? false });
     this.scope = new Scope();
     this.recordTypes = opts.recordTypes ?? false;
+    this.resolveModule = opts.resolveModule;
   }
 
   // ── TypeResolver ────────────────────────────────────────────────────────────
@@ -73,10 +95,79 @@ export class Checker implements TypeResolver {
 
   // ── Entry point ─────────────────────────────────────────────────────────────
   run(program: Program) {
+    this.resolveImports(program.body); // pass 0: bind imported names before type collection
     this.collectTypes(program.body);
     this.hoist(program.body);
     this.checkBlock(program.body);
-    return { diagnostics: this.bag.all, types: this.typeTable as readonly TypedSpan[] };
+    return {
+      diagnostics: this.bag.all,
+      types: this.typeTable as readonly TypedSpan[],
+      surface: this.buildSurface(program.body),
+    };
+  }
+
+  // ── Cross-file imports / exports ──────────────────────────────────────────────
+
+  /**
+   * Bind names imported from other modules so they resolve to real types instead
+   * of `dynamic`. Runs before type collection so imported *types* are visible to
+   * this file's annotations. Unresolved specifiers are left alone (stay dynamic).
+   * Default / namespace imports and `export … from` re-exports are not yet wired.
+   */
+  private resolveImports(body: readonly Statement[]): void {
+    if (!this.resolveModule) return;
+    for (const s of body) {
+      if (s.kind !== 'ImportDecl' || s.named.length === 0) continue;
+      const surface = this.resolveModule(s.source.value);
+      if (!surface) continue;
+      for (const spec of s.named) {
+        const from = spec.imported.name;
+        const local = spec.local.name;
+        const sum = surface.sums.get(from);
+        const type = surface.types.get(from);
+        if (sum) {
+          this.namedTypes.set(local, sum);
+          this.sums.set(local, sum);
+          for (const v of sum.variants) {
+            const list = this.variantIndex.get(v.tag) ?? [];
+            list.push({ owner: local, variant: v });
+            this.variantIndex.set(v.tag, list);
+          }
+        } else if (type) {
+          this.namedTypes.set(local, type);
+        }
+        if (!s.typeOnly) {
+          const val = surface.values.get(from);
+          if (val) this.scope.define(local, { type: val, mutable: false, kind: 'const' });
+        }
+      }
+    }
+  }
+
+  /** Collect this module's exported type + value surface for importers to read. */
+  private buildSurface(body: readonly Statement[]): ModuleSurface {
+    const types = new Map<string, Type>();
+    const sums = new Map<string, SumType>();
+    const values = new Map<string, Type>();
+    const exportAs = (local: string, exported: string): void => {
+      const nt = this.namedTypes.get(local);
+      if (nt) types.set(exported, nt);
+      const sm = this.sums.get(local);
+      if (sm) sums.set(exported, sm);
+      const b = this.scope.lookup(local);
+      if (b) values.set(exported, b.type);
+    };
+    for (const s of body) {
+      if (s.kind === 'ExportNamedDecl') {
+        if (s.declaration) for (const n of declaredNames(s.declaration)) exportAs(n, n);
+        if (!s.source) for (const spec of s.specifiers) exportAs(spec.local.name, spec.exported.name);
+      } else if (s.kind === 'ExportDefaultDecl'
+        && (s.declaration.kind === 'FunctionDecl' || s.declaration.kind === 'ClassDecl')
+        && s.declaration.id) {
+        exportAs(s.declaration.id.name, 'default');
+      }
+    }
+    return { types, sums, values };
   }
 
   // ── Pass 1: register all named types (allows recursion + forward refs) ────────
@@ -1007,6 +1098,20 @@ function unwrapExport(s: Statement): Statement {
   if (s.kind === 'ExportNamedDecl' && s.declaration) return s.declaration;
   if (s.kind === 'ExportDefaultDecl' && (s.declaration.kind === 'FunctionDecl' || s.declaration.kind === 'ClassDecl')) return s.declaration;
   return s;
+}
+
+/** Top-level names introduced by an inline `export <decl>` statement. */
+function declaredNames(decl: Statement): string[] {
+  switch (decl.kind) {
+    case 'TypeDecl': case 'ObjectTypeDecl': case 'ClassDecl': case 'FunctionDecl':
+      return [decl.id.name];
+    case 'VariableDecl':
+      return decl.declarators
+        .map((d) => (d.id.kind === 'Identifier' ? d.id.name : null))
+        .filter((n): n is string => n !== null);
+    default:
+      return [];
+  }
 }
 
 function keyName(key: { kind: string; name?: string; value?: string | number }): string {
