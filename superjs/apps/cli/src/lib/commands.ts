@@ -9,6 +9,7 @@
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
 import { compile, format, lint, doc as extractDoc, renderMarkdown, renderJson } from '@superjs/compiler';
+import { serveStdio } from '@superjs/lsp';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
 import type { Diagnostic, DiagnosticCode } from '@superjs/types';
@@ -27,7 +28,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', lsp: 'Stage 3', repl: 'Stage 6',
+  verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', repl: 'Stage 6',
 };
 
 function resolve(io: IO, p: string): string {
@@ -495,6 +496,17 @@ export function doctor(_args: ParsedArgs, io: IO): number {
   line(io, `  ${CONFIG_FILENAME}     ${hasConfig ? 'found' : 'not found (run `superjs init`)'}`);
   reportPackages(io, io.cwd());
   return nodeOk ? 0 : 1;
+}
+
+/**
+ * `superjs lsp` — launch the language server (Stage 3, M1) over stdio. The
+ * process stays alive on the open stdin stream and ends on the LSP `exit`
+ * notification. stdout is the JSON-RPC channel, so this command writes nothing
+ * to it. `serve` is injectable for tests; the binary uses `serveStdio`.
+ */
+export function lsp(_args: ParsedArgs, _io: IO, serve: () => void = serveStdio): number {
+  serve();
+  return 0;
 }
 
 // ── stubs ─────────────────────────────────────────────────────────────────────

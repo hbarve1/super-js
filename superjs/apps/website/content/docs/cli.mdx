@@ -1,7 +1,7 @@
 ---
 title: CLI Reference
 sidebar_position: 5.5
-description: The superjs command-line interface — build, check, translate, add, explain, init, and doctor, plus configuration.
+description: The superjs command-line interface — build, check, translate, add, format, lint, doc, explain, init, doctor, and lsp, plus configuration.
 ---
 
 # CLI Reference
@@ -211,6 +211,23 @@ package brought in with `superjs add`.
 superjs doctor
 ```
 
+### `lsp`
+
+Start the SuperJS **language server** over stdio, for editor integration. The
+server speaks standard [LSP](https://microsoft.github.io/language-server-protocol/)
+and implements the full M1 method set — diagnostics, hover, go-to-definition,
+document outline, folding, completion, signature help, semantic tokens, and
+formatting.
+
+```bash
+superjs lsp        # reads/writes JSON-RPC on stdin/stdout
+```
+
+It is normally launched by an editor, not by hand. The VS Code extension spawns
+it automatically; for Neovim, Helix, or any LSP-aware editor, point the client at
+`superjs lsp`. `stdout` is the JSON-RPC channel, so the command prints nothing
+else there; the process runs until the client sends `exit`.
+
 ### Planned commands
 
 These subcommands are reserved — invoking one today prints a not-yet-implemented
@@ -225,10 +242,6 @@ A **Jest alternative** for `.sjs`, planned along two tracks:
   compiler's `transform()` API so they run under Jest or Vitest unchanged.
 - **Native runner** — `superjs test`, a zero-config runner for `.sjs` test
   files (watch + coverage), is planned for Stage 5 / post-1.0.
-
-#### Also reserved
-
-`superjs lsp` (Stage 3 — editor language server).
 
 ## Exit codes
 

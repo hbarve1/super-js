@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { run, parseArgs } from './run.js';
-import { VERSION } from './commands.js';
+import { VERSION, lsp } from './commands.js';
 import type { IO } from './io.js';
 
 /** In-memory IO: captures stdout/stderr, a virtual filesystem, and watchers. */
@@ -363,10 +363,21 @@ describe('doc', () => {
   });
 });
 
+describe('lsp', () => {
+  it('launches the language server and writes nothing to stdout', () => {
+    const io = makeIO();
+    let started = 0;
+    // Inject a fake server so the test never attaches to process.stdin.
+    expect(lsp({ command: 'lsp', positionals: [], flags: {} }, io, () => { started++; })).toBe(0);
+    expect(started).toBe(1);
+    expect(io.stdout()).toBe(''); // stdout is the JSON-RPC channel — must stay clean
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['lsp'], io)).toBe(2);
+    expect(await run(['verify'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {
