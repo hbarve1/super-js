@@ -144,11 +144,17 @@ so it gates CI.
 ```bash
 superjs lint src/                 # human-readable findings
 superjs lint src/ --format json   # one JSON diagnostic per line
+superjs lint src/ --fix           # apply auto-fixes in place
 ```
 
 | Flag | Values | Default | Effect |
 |------|--------|---------|--------|
 | `--format <mode>` | `pretty` \| `json` | `pretty` | Diagnostic output format |
+| `--fix` | — | off | Apply auto-fixes in place, then report what remains |
+
+`--fix` rewrites the findings that carry a safe, unambiguous fix — today
+no-`var` (`var` → `let`, L002) and no-`debugger` (delete the statement, L005) —
+writes each file back, and reports anything left unfixed.
 
 Rules:
 

@@ -362,9 +362,26 @@ export function docCmd(args: ParsedArgs, io: IO): number {
  * gates CI. `--format json` emits machine-readable diagnostics.
  */
 export function lintCmd(args: ParsedArgs, io: IO): number {
-  if (args.positionals.length === 0) { errline(io, 'usage: superjs lint <files...> [--format pretty|json]'); return 2; }
+  if (args.positionals.length === 0) { errline(io, 'usage: superjs lint <files...> [--format pretty|json] [--fix]'); return 2; }
   const format: DiagnosticFormat = args.flags['format'] === 'json' ? 'json' : 'pretty';
   const { files, missing } = readSources(io, args.positionals);
+
+  if (args.flags['fix'] === true) {
+    let fixed = 0;
+    const remaining: Diagnostic[] = [];
+    for (const f of files) {
+      const { code, applied } = applyFixes(f.source, lint(f.source, f.filename));
+      if (applied > 0) { io.writeFile(resolve(io, f.filename), code); fixed += applied; line(io, `fixed ${applied} issue${applied === 1 ? '' : 's'} in ${f.filename}`); }
+      remaining.push(...lint(code, f.filename)); // re-lint the fixed source for what's left
+    }
+    emitDiagnostics(io, remaining, format);
+    if (format !== 'json') {
+      line(io, fixed === 0 ? 'No auto-fixable findings.' : `Fixed ${fixed} issue${fixed === 1 ? '' : 's'}.`);
+      summary(io, remaining);
+    }
+    return remaining.length > 0 || missing > 0 ? 1 : 0;
+  }
+
   const findings: Diagnostic[] = [];
   for (const f of files) findings.push(...lint(f.source, f.filename));
   emitDiagnostics(io, findings, format);
@@ -373,6 +390,26 @@ export function lintCmd(args: ParsedArgs, io: IO): number {
     if (findings.length === 0 && missing === 0) line(io, 'No lint findings.');
   }
   return findings.length > 0 || missing > 0 ? 1 : 0;
+}
+
+/**
+ * Apply lint auto-fixes to a source string. Each fixable finding contributes its
+ * first fix's edits; edits are applied right-to-left so earlier offsets stay
+ * valid, and any edit overlapping one already applied is skipped.
+ */
+function applyFixes(source: string, diagnostics: readonly Diagnostic[]): { code: string; applied: number } {
+  const edits = diagnostics.flatMap((d) => d.fixes?.[0]?.edits ?? []);
+  edits.sort((a, b) => b.span.start.offset - a.span.start.offset);
+  let code = source;
+  let applied = 0;
+  let lastStart = Infinity;
+  for (const e of edits) {
+    if (e.span.end.offset > lastStart) continue; // overlaps a later edit already applied
+    code = code.slice(0, e.span.start.offset) + e.newText + code.slice(e.span.end.offset);
+    lastStart = e.span.start.offset;
+    applied++;
+  }
+  return { code, applied };
 }
 
 // ── format ────────────────────────────────────────────────────────────────────

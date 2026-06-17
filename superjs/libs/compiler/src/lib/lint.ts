@@ -22,7 +22,8 @@
  */
 
 import type {
-  Program, Diagnostic, DiagnosticCode, Span, Expression, Pattern, Node, MatchPattern, Identifier,
+  Program, Diagnostic, DiagnosticCode, Span, Position, Expression, Pattern, Node,
+  MatchPattern, Identifier, DiagnosticFix,
 } from '@superjs/types';
 import { parse } from '@superjs/parser';
 import { createDiagnostic, type MessageParams } from '@superjs/diagnostics';
@@ -34,14 +35,26 @@ export function lint(source: string, file?: string): Diagnostic[] {
 
   const reassigned = collectReassigned(program);
   const usedNames = collectUsedNames(program);
-  const diag = (code: DiagnosticCode, span: Span, params?: MessageParams): void => {
-    out.push(createDiagnostic({ code, span, ...(file !== undefined ? { file } : {}), ...(params ? { params } : {}) }));
+  const diag = (code: DiagnosticCode, span: Span, params?: MessageParams, fixes?: readonly DiagnosticFix[]): void => {
+    out.push(createDiagnostic({
+      code, span,
+      ...(file !== undefined ? { file } : {}),
+      ...(params ? { params } : {}),
+      ...(fixes ? { fixes } : {}),
+    }));
   };
 
   walk(program, (n) => {
     switch (n.kind) {
       case 'VariableDecl':
-        if (n.declKind === 'var') { diag('SJS-L002', n.span); break; }
+        if (n.declKind === 'var') {
+          // Auto-fix: rewrite the leading `var` keyword to `let`.
+          diag('SJS-L002', n.span, undefined, [{
+            description: 'Replace `var` with `let`',
+            edits: [{ span: tokenSpan(n.span.start, 3), newText: 'let' }],
+          }]);
+          break;
+        }
         if (n.declKind === 'let') {
           for (const d of n.declarators) {
             if (d.id.kind === 'Identifier' && d.init && !reassigned.has(d.id.name)) {
@@ -54,7 +67,10 @@ export function lint(source: string, file?: string): Diagnostic[] {
         if (n.operator === '==' || n.operator === '!=') diag('SJS-L003', n.span);
         break;
       case 'ForInStatement': diag('SJS-L004', n.span); break;
-      case 'DebuggerStatement': diag('SJS-L005', n.span); break;
+      case 'DebuggerStatement':
+        // Auto-fix: delete the statement.
+        diag('SJS-L005', n.span, undefined, [{ description: 'Remove `debugger`', edits: [{ span: n.span, newText: '' }] }]);
+        break;
       case 'MatchExpression': {
         if (n.arms.length === 0) { diag('SJS-L006', n.span); break; }
         const seen = new Set<string>();
@@ -137,6 +153,11 @@ function addTargetNames(node: Expression | Pattern, out: Set<string>): void {
     case 'ParenthesizedExpression': addTargetNames(node.expression, out); break;
     // MemberExpression (`a.b = …`) rebinds a property, not the binding — ignore.
   }
+}
+
+/** A span covering `len` characters from `start` (a single-line keyword token). */
+function tokenSpan(start: Position, len: number): Span {
+  return { start, end: { offset: start.offset + len, line: start.line, column: start.column + len } };
 }
 
 /** The local binding identifiers introduced by an import declaration. */
