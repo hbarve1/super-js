@@ -98,6 +98,7 @@ const TABLE: Record<string, Omit<DiagnosticDescriptor, 'code'>> = {
   'SJS-L006': d('warning', 'lint', '`match` expression has no arms', 'Stage 3'),
   'SJS-L007': d('warning', 'lint', 'Redundant match arm — variant `{variant}` is already handled', 'Stage 3'),
   'SJS-L008': d('warning', 'lint', 'Prefer an arrow function over a `function` expression callback', 'Stage 3'),
+  'SJS-L009': d('warning', 'lint', 'Unused import — `{name}` is never used', 'Stage 3'),
   'SJS-L011': d('error', 'security', 'BiDi control character rejected', 'Stage 1'),
 };
 
