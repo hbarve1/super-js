@@ -15,6 +15,8 @@
  *   (value, type, or JSX position) outside the import statement itself.
  * - **L010 import-order** — within a contiguous block of imports, the source
  *   specifiers must be sorted ascending.
+ * - **L012 no-unused-var** — a non-exported top-level binding (const/let/var,
+ *   function, class) referenced nowhere else in the module.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -108,6 +110,14 @@ export function lint(source: string, file?: string): Diagnostic[] {
     prevSource = src;
   }
 
+  // L012 no-unused-var: a non-exported top-level binding referenced nowhere else.
+  const offsets = collectIdentifierOffsets(program);
+  for (const decl of topLevelBindings(program)) {
+    const seen = offsets.get(decl.id.name);
+    const usedElsewhere = seen?.some((o) => o !== decl.id.span.start.offset) ?? false;
+    if (!usedElsewhere) diag('SJS-L012', decl.id.span, { name: decl.id.name });
+  }
+
   out.sort((a, b) => a.span.start.offset - b.span.start.offset);
   return out;
 }
@@ -186,6 +196,36 @@ function collectUsedNames(program: Program): Set<string> {
     walk(stmt, visit);
   }
   return used;
+}
+
+/**
+ * Non-exported top-level bindings (const/let/var with an identifier name,
+ * function, class). Exported declarations are part of the module's API, so they
+ * are never "unused". Destructuring binders are skipped (conservative).
+ */
+function topLevelBindings(program: Program): { id: Identifier }[] {
+  const out: { id: Identifier }[] = [];
+  for (const stmt of program.body) {
+    if (stmt.kind === 'ExportNamedDecl' || stmt.kind === 'ExportDefaultDecl' || stmt.kind === 'ExportAllDecl') continue;
+    if (stmt.kind === 'VariableDecl') {
+      for (const d of stmt.declarators) if (d.id.kind === 'Identifier') out.push({ id: d.id });
+    } else if (stmt.kind === 'FunctionDecl' || stmt.kind === 'ClassDecl') {
+      out.push({ id: stmt.id });
+    }
+  }
+  return out;
+}
+
+/** Every identifier name mapped to the source offsets at which it appears. */
+function collectIdentifierOffsets(program: Program): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  walk(program, (n) => {
+    if (n.kind !== 'Identifier') return;
+    const list = map.get(n.name);
+    if (list) list.push(n.span.start.offset);
+    else map.set(n.name, [n.span.start.offset]);
+  });
+  return map;
 }
 
 /** The variant tag of a match pattern, or undefined for the default pattern. */

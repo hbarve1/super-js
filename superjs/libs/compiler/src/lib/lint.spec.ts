@@ -93,6 +93,27 @@ describe('lint — other rules', () => {
   it('L010 resets the order check across a non-import statement', () => {
     expect(codes('import { b } from "b";\nb();\nimport { a } from "a";\na();')).not.toContain('SJS-L010');
   });
+  it('L012 flags an unused top-level const', () => {
+    const ds = lint('const unusedThing: number = 1;');
+    const u = ds.find((d) => d.code === 'SJS-L012');
+    expect(u).toBeDefined();
+    expect(u!.message).toContain('unusedThing');
+  });
+  it('L012 flags an unused function and class', () => {
+    expect(codes('function helper(): void {}')).toContain('SJS-L012');
+    expect(codes('class Widget {}')).toContain('SJS-L012');
+  });
+  it('L012 does not flag a referenced binding', () => {
+    expect(codes('const x: number = 1;\nuse(x);')).not.toContain('SJS-L012');
+    expect(codes('function f(): void {}\nf();')).not.toContain('SJS-L012');
+  });
+  it('L012 does not flag an exported binding', () => {
+    expect(codes('export const api: number = 1;')).not.toContain('SJS-L012');
+    expect(codes('export function pub(): void {}')).not.toContain('SJS-L012');
+  });
+  it('L012 does not flag a binding used only in a re-export', () => {
+    expect(codes('const x: number = 1;\nexport { x };')).not.toContain('SJS-L012');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');
@@ -111,6 +132,6 @@ describe('lint — output shape', () => {
     expect(ds[0]!.span.start.offset).toBeLessThanOrEqual(ds[1]!.span.start.offset);
   });
   it('clean code produces no findings', () => {
-    expect(lint('const x: number = 1;\nfor (const v of xs) { use(v); }')).toEqual([]);
+    expect(lint('const x: number = 1;\nuse(x);\nfor (const v of xs) { use(v); }')).toEqual([]);
   });
 });

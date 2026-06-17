@@ -321,7 +321,7 @@ describe('lint', () => {
     expect(io.stdout()).toContain('SJS-L005');
   });
   it('exits 0 and reports clean for tidy code', async () => {
-    const io = makeIO({ '/work/a.sjs': 'const x: number = 1;\n' });
+    const io = makeIO({ '/work/a.sjs': 'export const x: number = 1;\n' });
     expect(await run(['lint', 'a.sjs'], io)).toBe(0);
     expect(io.stdout()).toContain('No lint findings.');
   });

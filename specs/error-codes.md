@@ -102,6 +102,7 @@ These codes are emitted by the SuperJS linter (Stage 3). Lint rules can be confi
 | SJS-L009 | warning | lint | Unused import — binding is never used | Stage 3 |
 | SJS-L010 | warning | lint | Import out of order — sort imports by source | Stage 3 |
 | SJS-L011 | error | security | BiDi control character rejected | Stage 1 |
+| SJS-L012 | warning | lint | Unused declaration — binding is never used | Stage 3 |
 
 ---
 
