@@ -102,37 +102,42 @@ export class Compiler {
    * `undefined` for a file already mid-analysis.
    */
   private resolveSurface(fromFile: string, specifier: string): ModuleSurface | undefined {
-    const dep = specifier.startsWith('./') || specifier.startsWith('../')
-      ? resolveRelative(fromFile, specifier)
-      : this.resolveBare(specifier);
-    if (!dep) return undefined;
+    const candidates = specifier.startsWith('./') || specifier.startsWith('../')
+      ? [resolveRelative(fromFile, specifier)]
+      : this.bareCandidates(specifier);
 
-    const known = this.files.get(dep) ?? this.deps.get(dep);
-    if (known) return known.surface;
-    if (this.analysing.has(dep)) return undefined; // cycle
+    for (const dep of candidates) {
+      const known = this.files.get(dep) ?? this.deps.get(dep);
+      if (known) return known.surface;
+      if (this.analysing.has(dep)) continue; // cycle — try next candidate, else dynamic
 
-    const inSession = this.rawSources.has(dep);
-    const src = inSession ? this.rawSources.get(dep)! : this.opts.readFile?.(dep);
-    if (src === undefined) return undefined;
+      const inSession = this.rawSources.has(dep);
+      const src = inSession ? this.rawSources.get(dep)! : this.opts.readFile?.(dep);
+      if (src === undefined) continue; // not this candidate — try the next
 
-    this.analysing.add(dep);
-    try {
-      const state = this.analyse(dep, src, /*skipCache*/ true);
-      // In-session files are primary (emitted); disk-loaded deps are types-only.
-      (inSession ? this.files : this.deps).set(dep, state);
-      return state.surface;
-    } finally {
-      this.analysing.delete(dep);
+      this.analysing.add(dep);
+      try {
+        const state = this.analyse(dep, src, /*skipCache*/ true);
+        // In-session files are primary (emitted); disk-loaded deps are types-only.
+        (inSession ? this.files : this.deps).set(dep, state);
+        return state.surface;
+      } finally {
+        this.analysing.delete(dep);
+      }
     }
+    return undefined;
   }
 
-  /** Map a bare specifier to its declaration file via config `paths` (else null). */
-  private resolveBare(specifier: string): string | null {
+  /**
+   * Candidate declaration files for a bare specifier mapped through config
+   * `paths`. The target is a directory; its entry is `index.d.sjs`, falling back
+   * to `index.sjs`. Empty when the specifier isn't mapped.
+   */
+  private bareCandidates(specifier: string): string[] {
     const target = this.opts.paths?.[specifier]?.[0];
-    if (!target) return null;
-    const base = `${this.opts.rootDir ?? '.'}/${target}`;
-    // The mapped target is a directory holding the package's entry declaration.
-    return resolveRelative(`${base}/_`, './index.d.sjs');
+    if (!target) return [];
+    const base = `${this.opts.rootDir ?? '.'}/${target}/_`;
+    return [resolveRelative(base, './index.d.sjs'), resolveRelative(base, './index.sjs')];
   }
 
   private analyse(filename: string, source: string, skipCache = false): FileState {

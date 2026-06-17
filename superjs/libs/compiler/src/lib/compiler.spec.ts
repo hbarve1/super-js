@@ -110,6 +110,17 @@ describe('compile()', () => {
     expect([...r.outputs.keys()]).toEqual(['/proj/app.js']);
   });
 
+  it('falls back to index.sjs when the target has no index.d.sjs', async () => {
+    const disk: Record<string, string> = {
+      '/proj/node_modules/@superjs/types/widget/index.sjs': 'export type Widget = { id: string; };',
+    };
+    const r = await compile(
+      [{ filename: '/proj/app.sjs', source: 'import { Widget } from "widget";\nconst w: Widget = 5;' }],
+      { paths: { widget: ['node_modules/@superjs/types/widget'] }, rootDir: '/proj', readFile: (p) => disk[p] },
+    );
+    expect(r.diagnostics.some((d) => d.code === 'SJS-E002')).toBe(true);
+  });
+
   it('leaves a bare specifier without a paths entry as dynamic', async () => {
     const r = await compile(
       [{ filename: '/proj/app.sjs', source: 'import { Widget } from "widget";\nconst w: Widget = 5;' }],

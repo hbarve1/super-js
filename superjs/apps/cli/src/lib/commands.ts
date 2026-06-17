@@ -74,13 +74,22 @@ function readSources(io: IO, paths: readonly string[]): { files: { filename: str
   return { files, missing };
 }
 
-/** Read the `paths` map out of superjs.config.json (empty when absent/invalid). */
+/**
+ * Read the `paths` map out of superjs.config.json, keeping only well-formed
+ * entries (string-array values). A missing/invalid config or a malformed `paths`
+ * value yields `{}` — resolution then leaves those specifiers `dynamic`.
+ */
 function loadConfigPaths(io: IO, root: string): Record<string, readonly string[]> {
   const path = join(root, CONFIG_FILENAME);
   if (!io.exists(path)) return {};
   try {
-    const cfg = JSON.parse(io.readFile(path)) as { paths?: Record<string, string[]> };
-    return cfg.paths ?? {};
+    const cfg = JSON.parse(io.readFile(path)) as { paths?: unknown };
+    if (!cfg.paths || typeof cfg.paths !== 'object' || Array.isArray(cfg.paths)) return {};
+    const out: Record<string, readonly string[]> = {};
+    for (const [k, v] of Object.entries(cfg.paths as Record<string, unknown>)) {
+      if (Array.isArray(v) && v.every((x) => typeof x === 'string')) out[k] = v as string[];
+    }
+    return out;
   } catch { return {}; }
 }
 
@@ -90,7 +99,12 @@ function resolutionOpts(io: IO): { paths: Record<string, readonly string[]>; roo
   return {
     paths: loadConfigPaths(io, root),
     rootDir: root,
-    readFile: (p) => (io.exists(p) ? io.readFile(p) : undefined),
+    // Must never throw — a read that fails between exists() and readFile() (race,
+    // permissions) degrades to an unresolved import, not an internal error.
+    readFile: (p) => {
+      if (!io.exists(p)) return undefined;
+      try { return io.readFile(p); } catch { return undefined; }
+    },
   };
 }
 
