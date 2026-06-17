@@ -126,6 +126,19 @@ describe('lint — other rules', () => {
   it('L013 does not flag a precise annotation', () => {
     expect(codes('export const x: number = 1;')).not.toContain('SJS-L013');
   });
+  it('L014 flags an inner binding shadowing an outer one', () => {
+    const ds = lint('export const v: number = 1;\nexport function f(): number { const v: number = 2; return v; }');
+    const s = ds.find((d) => d.code === 'SJS-L014');
+    expect(s).toBeDefined();
+    expect(s!.message).toContain('v');
+  });
+  it('L014 flags a parameter shadowing an outer binding', () => {
+    expect(codes('export const p: number = 1;\nexport function f(p: number): number { return p; }')).toContain('SJS-L014');
+  });
+  it('L014 does not flag the same name in sibling scopes', () => {
+    expect(codes('export function a(x: number): number { return x; }\nexport function b(x: number): number { return x; }'))
+      .not.toContain('SJS-L014');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');

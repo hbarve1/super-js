@@ -19,6 +19,8 @@
  *   function, class) referenced nowhere else in the module.
  * - **L013 no-explicit-dynamic** — an explicit `dynamic` type annotation; add a
  *   `// @sjs:dynamic-ok` comment on the line (or the line above) to opt out.
+ * - **L014 no-shadowing** — a binding whose name shadows one from an enclosing
+ *   scope (function, block, `for`, or `catch`).
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -121,6 +123,9 @@ export function lint(source: string, file?: string): Diagnostic[] {
     }
     prevSource = src;
   }
+
+  // L014 no-shadowing: a binding that shadows a name from an enclosing scope.
+  for (const s of findShadowing(program)) diag('SJS-L014', s.span, { name: s.name });
 
   // L012 no-unused-var: a non-exported top-level binding referenced nowhere else.
   const offsets = collectIdentifierOffsets(program);
@@ -250,6 +255,136 @@ function variantName(p: MatchPattern): string | undefined {
     default:
       return undefined; // DefaultPattern
   }
+}
+
+/**
+ * L014 no-shadowing: a binding whose name already exists in an enclosing scope.
+ * A scope-aware traversal — scopes are created by functions (params + body
+ * share one), standalone blocks, `for` loops, and `catch`. Only outer scopes are
+ * consulted, so a redeclaration in the *same* scope is not a shadow.
+ */
+function findShadowing(program: Program): { name: string; span: Span }[] {
+  const found: { name: string; span: Span }[] = [];
+  const stack: Set<string>[] = [];
+
+  const declare = (name: string, span: Span): void => {
+    if (stack.slice(0, -1).some((s) => s.has(name))) found.push({ name, span });
+    stack[stack.length - 1]!.add(name);
+  };
+  const declarePattern = (node: Node): void => {
+    for (const b of bindingNames(node)) declare(b.name, b.span);
+  };
+
+  const visit = (node: Node): void => {
+    switch (node.kind) {
+      case 'FunctionDecl':
+        declare(node.id.name, node.id.span);
+        return visitFunction(node);
+      case 'FunctionExpression':
+      case 'ArrowFunction':
+        return visitFunction(node);
+      case 'ClassDecl':
+        declare(node.id.name, node.id.span);
+        return recurseChildren(node, ['id']);
+      case 'BlockStatement':
+        stack.push(new Set());
+        for (const s of node.body) visit(s);
+        stack.pop();
+        return;
+      case 'ForStatement':
+        stack.push(new Set());
+        if (node.init) visit(node.init as Node);
+        if (node.test) visit(node.test);
+        if (node.update) visit(node.update);
+        visit(node.body);
+        stack.pop();
+        return;
+      case 'ForOfStatement':
+        stack.push(new Set());
+        declarePattern(node.left as Node);
+        visit(node.right);
+        visit(node.body);
+        stack.pop();
+        return;
+      case 'ForInStatement':
+        stack.push(new Set());
+        declare(node.left.name, node.left.span);
+        visit(node.right);
+        visit(node.body);
+        stack.pop();
+        return;
+      case 'CatchClause':
+        stack.push(new Set());
+        if (node.param) declare(node.param.name, node.param.span);
+        for (const s of node.body.body) visit(s);
+        stack.pop();
+        return;
+      case 'VariableDecl':
+        for (const d of node.declarators) {
+          declarePattern(d.id as Node);
+          if (d.init) visit(d.init);
+        }
+        return;
+      case 'Identifier':
+        return;
+      default:
+        return recurseChildren(node);
+    }
+  };
+
+  const visitFunction = (fn: Extract<Node, { kind: 'FunctionDecl' | 'FunctionExpression' | 'ArrowFunction' }>): void => {
+    stack.push(new Set());
+    for (const p of fn.params) declarePattern(p.pattern as Node);
+    if (fn.body.kind === 'BlockStatement') for (const s of fn.body.body) visit(s); // params + body share one scope
+    else visit(fn.body);
+    stack.pop();
+  };
+
+  const recurseChildren = (node: Node, skip: string[] = []): void => {
+    for (const key of Object.keys(node)) {
+      if (key === 'kind' || key === 'span' || skip.includes(key)) continue;
+      const v = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(v)) { for (const e of v) if (isAstNode(e)) visit(e as Node); }
+      else if (isAstNode(v)) visit(v as Node);
+    }
+  };
+
+  stack.push(new Set()); // program scope
+  for (const s of program.body) visit(s);
+  return found;
+}
+
+function isAstNode(v: unknown): v is Node {
+  return typeof v === 'object' && v !== null && typeof (v as { kind?: unknown }).kind === 'string';
+}
+
+/** Binding names + spans introduced by a pattern (or destructuring literal). */
+function bindingNames(node: Node): { name: string; span: Span }[] {
+  const out: { name: string; span: Span }[] = [];
+  const rec = (n: Node): void => {
+    switch (n.kind) {
+      case 'Identifier': out.push({ name: n.name, span: n.span }); break;
+      case 'ArrayPattern': for (const el of n.elements) if (el) rec(el as Node); break;
+      case 'ArrayLiteral': for (const el of n.elements) if (el) rec(el as Node); break;
+      case 'ObjectPattern':
+        for (const p of n.properties) {
+          if (p.kind === 'RestElement') rec(p.argument as Node);
+          else rec(p.value as Node);
+        }
+        break;
+      case 'ObjectLiteral':
+        for (const p of n.properties) {
+          if (p.kind === 'PropertyDef') rec(p.value as Node);
+          else if (p.kind === 'SpreadElement') rec(p.argument as Node);
+        }
+        break;
+      case 'AssignmentPattern': rec(n.left as Node); break;
+      case 'RestElement': rec(n.argument as Node); break;
+      case 'ParenthesizedExpression': rec(n.expression as Node); break;
+    }
+  };
+  rec(node);
+  return out;
 }
 
 /** Generic depth-first walk over every AST node (object with a string `kind`). */
