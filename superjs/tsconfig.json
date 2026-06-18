@@ -53,6 +53,9 @@
     },
     {
       "path": "./libs/stdlib"
+    },
+    {
+      "path": "./libs/test-matchers"
     }
   ]
 }
