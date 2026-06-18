@@ -47,6 +47,15 @@
     },
     {
       "path": "./libs/lsp"
+    },
+    {
+      "path": "./libs/build-plugins"
+    },
+    {
+      "path": "./libs/stdlib"
+    },
+    {
+      "path": "./libs/test-matchers"
     }
   ]
 }

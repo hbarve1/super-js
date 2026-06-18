@@ -105,6 +105,9 @@ const TABLE: Record<string, Omit<DiagnosticDescriptor, 'code'>> = {
   'SJS-L013': d('warning', 'lint', 'Explicit `dynamic` type — annotate precisely, or add `// @sjs:dynamic-ok`', 'Stage 3'),
   'SJS-L014': d('warning', 'lint', '`{name}` shadows a binding from an enclosing scope', 'Stage 3'),
   'SJS-L015': d('warning', 'lint', 'Floating promise — `await`, `return`, or otherwise consume this `Promise`', 'Stage 3'),
+  'SJS-L016': d('warning', 'lint', 'Unhandled `Result` — `match`, `return`, or otherwise consume it', 'Stage 3'),
+  'SJS-L017': d('warning', 'lint', 'Prefer returning `Result<T, E>` over `throw` (RFC-0004)', 'Stage 3'),
+  'SJS-L018': d('warning', 'lint', 'Mixed spaces and tabs in leading indentation', 'Stage 3'),
 };
 
 export const REGISTRY: Readonly<Record<string, DiagnosticDescriptor>> = Object.freeze(

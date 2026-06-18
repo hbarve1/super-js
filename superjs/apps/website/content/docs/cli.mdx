@@ -178,6 +178,9 @@ Rules:
 | SJS-L013 | no explicit `dynamic` (opt out with `// @sjs:dynamic-ok`) |
 | SJS-L014 | no shadowing of an enclosing-scope binding |
 | SJS-L015 | no floating promise (await/return/consume it) |
+| SJS-L016 | no unhandled `Result` (match/return/consume it) |
+| SJS-L017 | prefer returning `Result` over `throw` |
+| SJS-L018 | no mixed spaces and tabs in indentation |
 
 ### `doc`
 
@@ -213,12 +216,17 @@ See the complete list on the [error code reference](/errors) page.
 
 ### `init`
 
-Write a default `superjs.config.json` into the current directory. Idempotent —
-running it when a config already exists does nothing.
+Write a default `superjs.config.json`, or scaffold a starter project with a
+template. Existing files are never overwritten.
 
 ```bash
-superjs init
+superjs init                  # just superjs.config.json
+superjs init fastify-api      # scaffold a Fastify API project
 ```
+
+Templates: `node-cli`, `fastify-api`, `workers-api`, `lambda-handler`. Each
+writes a `package.json`, a `superjs.config.json`, a starter `src/*.sjs`, and a
+README (plus `wrangler.toml` for `workers-api`).
 
 ### `doctor`
 
@@ -247,6 +255,38 @@ it automatically; for Neovim, Helix, or any LSP-aware editor, point the client a
 `superjs lsp` (see the **Editor Setup** guide for ready-to-paste configs).
 `stdout` is the JSON-RPC channel, so the command prints nothing else there; the
 process runs until the client sends `exit`.
+
+### `verify`
+
+Recompile an input tree and **byte-diff** the emitted JavaScript against an
+expected output tree — the build-determinism gate as a user-auditable command.
+Exits non-zero on any difference or missing file. Source maps are disabled so the
+comparison is path-independent.
+
+```bash
+superjs verify src/ expected-dist/
+```
+
+| Exit | Meaning |
+|------|---------|
+| `0` | every emitted file matches the expected tree |
+| `1` | a file differs, is missing, or the inputs failed to compile |
+| `2` | usage error (needs both `<input-dir>` and `<expected-dir>`) |
+
+### `migrate`
+
+Assisted migration of a TypeScript tree to SuperJS.
+
+```bash
+superjs migrate from-ts src/
+```
+
+A best-effort **textual** pass: each `.ts` becomes a `.sjs` with `any` rewritten
+to `dynamic`, and constructs that need a human rewrite — `enum`, `namespace`,
+decorators, `as const`, non-null `!` — are flagged by line in a generated
+`MIGRATION_REPORT.md`. It does not type-check the result; run `superjs check`
+afterward. Idempotent: a directory of already-migrated `.sjs` has no `.ts` to
+process.
 
 ### Planned commands
 

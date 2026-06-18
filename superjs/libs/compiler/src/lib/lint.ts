@@ -23,9 +23,15 @@
  *   scope (function, block, `for`, or `catch`).
  * - **L015 no-floating-promise** — a `Promise`-typed expression used as a
  *   statement without being awaited, returned, or otherwise consumed.
+ * - **L016 no-unhandled-result** — a `Result`-typed expression used as a
+ *   statement without being matched, returned, or otherwise consumed.
+ * - **L017 prefer-result-over-throw** — a `throw` statement; SJS favours
+ *   returning `Result<T, E>` over exceptions (RFC-0004).
+ * - **L018 no-mixed-spaces-tabs** — a line whose leading indentation mixes
+ *   spaces and tabs.
  *
- * L015 is type-aware: it type-checks the program and inspects the synthesized
- * type at each expression-statement.
+ * L015/L016 are type-aware: they type-check the program and inspect the
+ * synthesized type at each expression-statement.
  *
  * `prefer-const` and `no-unused-import` are name-based and conservative: any
  * occurrence of the name (in any scope, value or type position) suppresses the
@@ -88,6 +94,7 @@ export function lint(source: string, file?: string): Diagnostic[] {
         if (n.operator === '==' || n.operator === '!=') diag('SJS-L003', n.span);
         break;
       case 'ForInStatement': diag('SJS-L004', n.span); break;
+      case 'ThrowStatement': diag('SJS-L017', n.span); break;
       case 'DebuggerStatement':
         // Auto-fix: delete the statement.
         diag('SJS-L005', n.span, undefined, [{ description: 'Remove `debugger`', edits: [{ span: n.span, newText: '' }] }]);
@@ -119,10 +126,11 @@ export function lint(source: string, file?: string): Diagnostic[] {
         if (n.name === 'dynamic' && !dynamicOptedOut(n.span)) diag('SJS-L013', n.span);
         break;
       case 'ExpressionStatement': {
-        // L015 no-floating-promise: a Promise-typed expression used as a
-        // statement (not awaited, returned, or otherwise consumed).
+        // L015 no-floating-promise / L016 no-unhandled-result: a Promise- or
+        // Result-typed expression used as a statement without being consumed.
         const t = typeOf(n.expression.span);
         if (t?.kind === 'promise') diag('SJS-L015', n.expression.span);
+        else if (t?.kind === 'sum' && t.name === 'Result') diag('SJS-L016', n.expression.span);
         break;
       }
     }
@@ -137,6 +145,20 @@ export function lint(source: string, file?: string): Diagnostic[] {
       diag('SJS-L010', stmt.span, { source: src });
     }
     prevSource = src;
+  }
+
+  // L018 no-mixed-spaces-tabs: a line whose leading whitespace mixes both.
+  let lineOffset = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const lead = /^[ \t]*/.exec(line)![0];
+    if (lead.includes(' ') && lead.includes('\t')) {
+      diag('SJS-L018', {
+        start: { offset: lineOffset, line: i + 1, column: 0 },
+        end: { offset: lineOffset + lead.length, line: i + 1, column: lead.length },
+      });
+    }
+    lineOffset += line.length + 1; // + newline
   }
 
   // L014 no-shadowing: a binding that shadows a name from an enclosing scope.

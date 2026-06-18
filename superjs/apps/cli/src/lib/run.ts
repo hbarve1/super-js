@@ -6,10 +6,10 @@
 
 import { type IO, nodeIO, line, errline } from './io.js';
 import {
-  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, explain, init, doctor, lsp, stub,
+  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, explain, init, doctor, lsp, verify, migrate, stub,
 } from './commands.js';
 
-const STUBS = new Set(['verify', 'migrate', 'test', 'repl']);
+const STUBS = new Set(['test', 'repl']);
 
 /** Parse `argv` into command + positionals + `--flag[=value]` map. */
 export function parseArgs(argv: readonly string[]): ParsedArgs {
@@ -46,11 +46,14 @@ commands:
   lint <files...>      report style findings (SJS-L*)  [--format pretty|json] [--fix]
   doc <files...>       generate API docs from exports  [--format md|json] [--out-dir dir]
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
-  init                 write a default ${'superjs.config.json'}
+  init [template]      write a default config, or scaffold a template
+                       (node-cli, fastify-api, workers-api, lambda-handler)
   doctor               report environment + toolchain health
   lsp                  start the language server over stdio (for editors)
+  verify <in> <out>    recompile <in> and byte-diff against expected <out>
+  migrate from-ts <dir>  assisted TypeScript → SuperJS migration (+ report)
 
-  verify migrate test repl   (planned — later stages)
+  test repl            (planned — later stages)
 
 options:
   -h, --help           show this help
@@ -84,6 +87,8 @@ export async function run(argv: readonly string[], io: IO = nodeIO): Promise<num
     case 'init': return init(args, io);
     case 'doctor': return doctor(args, io);
     case 'lsp': return lsp(args, io);
+    case 'verify': return verify(args, io);
+    case 'migrate': return migrate(args, io);
     default:
       if (STUBS.has(command)) return stub(command, io);
       errline(io, `unknown command '${command}'. Run 'superjs --help'.`);

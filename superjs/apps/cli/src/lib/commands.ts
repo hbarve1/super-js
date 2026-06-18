@@ -19,6 +19,7 @@ import {
 } from './diagnostics-format.js';
 import { DiskCacheStore, CACHE_DIR } from './cache.js';
 import { parseSjsignore, type IgnoreMatcher } from './sjsignore.js';
+import { TEMPLATE_NAMES, templateFiles, type TemplateName } from './templates.js';
 
 export const VERSION = '0.0.1';
 
@@ -29,7 +30,7 @@ export interface ParsedArgs {
 }
 
 const STUB_STAGE: Record<string, string> = {
-  verify: 'Stage 4', migrate: 'Stage 2', test: 'Stage 5', repl: 'Stage 6',
+  test: 'Stage 5', repl: 'Stage 6',
 };
 
 function resolve(io: IO, p: string): string {
@@ -192,6 +193,36 @@ export async function build(args: ParsedArgs, io: IO): Promise<number> {
     return 0;
   }
   return code;
+}
+
+/**
+ * `superjs verify <input-dir> <expected-dir>` — recompile the inputs and byte-diff
+ * the emitted JavaScript against an expected output tree. Exits non-zero on any
+ * difference or missing file. Turns the build-determinism gate into a
+ * user-auditable command (no source maps, so the comparison is path-independent).
+ */
+export async function verify(args: ParsedArgs, io: IO): Promise<number> {
+  if (args.positionals.length < 2) {
+    errline(io, 'usage: superjs verify <input-dir> <expected-dir>');
+    return 2;
+  }
+  const [input, expected] = args.positionals as [string, string];
+  const { files, missing } = readSources(io, [input]);
+  const result = await compile(files, { sourceMap: 'none', ...resolutionOpts(io) });
+  const errors = countErrors(result.diagnostics);
+  if (errors > 0) { emitDiagnostics(io, result.diagnostics, 'pretty'); errline(io, `verify failed: ${errors} compile error${errors === 1 ? '' : 's'}`); return 1; }
+
+  let mismatches = 0;
+  let checked = 0;
+  for (const [name, output] of result.outputs) {
+    const expPath = join(resolve(io, expected), basename(name));
+    checked++;
+    if (!io.exists(expPath)) { errline(io, `missing: ${basename(name)} not found in ${expected}/`); mismatches++; continue; }
+    if (io.readFile(expPath) !== output.code) { errline(io, `differs: ${basename(name)}`); mismatches++; }
+  }
+  if (mismatches === 0 && missing === 0) { line(io, `verified ${checked} file${checked === 1 ? '' : 's'} — output matches ${expected}/`); return 0; }
+  errline(io, `verify failed: ${mismatches} mismatch${mismatches === 1 ? '' : 'es'}`);
+  return 1;
 }
 
 // ── translate (.d.ts → .d.sjs) ──────────────────────────────────────────────────
@@ -502,11 +533,29 @@ export function explain(args: ParsedArgs, io: IO): number {
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
-export function init(_args: ParsedArgs, io: IO): number {
-  const path = join(io.cwd(), CONFIG_FILENAME);
-  if (io.exists(path)) { line(io, `${CONFIG_FILENAME} already exists — leaving it untouched.`); return 0; }
-  io.writeFile(path, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`);
-  line(io, `created ${CONFIG_FILENAME}`);
+export function init(args: ParsedArgs, io: IO): number {
+  const template = args.positionals[0];
+  if (template !== undefined && !TEMPLATE_NAMES.includes(template as TemplateName)) {
+    errline(io, `unknown template '${template}'. Available: ${TEMPLATE_NAMES.join(', ')}`);
+    return 2;
+  }
+  // No template → just the config file (original behaviour). With a template →
+  // scaffold its files. Existing files are never overwritten.
+  const files = template === undefined
+    ? [{ path: CONFIG_FILENAME, content: `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n` }]
+    : templateFiles(template as TemplateName);
+
+  let created = 0;
+  let skipped = 0;
+  for (const f of files) {
+    const abs = join(io.cwd(), f.path);
+    if (io.exists(abs)) { line(io, `${f.path} already exists — skipped`); skipped++; continue; }
+    io.writeFile(abs, f.content);
+    line(io, `created ${f.path}`);
+    created++;
+  }
+  if (created === 0 && skipped > 0) line(io, 'nothing to do — files already present.');
+  else if (template !== undefined) line(io, `scaffolded '${template}' (${created} file${created === 1 ? '' : 's'}).`);
   return 0;
 }
 
@@ -563,6 +612,71 @@ export function doctor(_args: ParsedArgs, io: IO): number {
  */
 export function lsp(_args: ParsedArgs, _io: IO, serve: () => void = serveStdio): number {
   serve();
+  return 0;
+}
+
+// ── migrate (TS → SJS, assisted) ────────────────────────────────────────────
+
+/** Collect `.ts` files (excluding `.d.ts`) under a directory, relative to cwd. */
+function walkTs(io: IO, relDir: string): string[] {
+  const out: string[] = [];
+  const recur = (rel: string): void => {
+    const abs = resolve(io, rel);
+    if (!io.isDirectory(abs)) {
+      if (rel.endsWith('.ts') && !rel.endsWith('.d.ts')) out.push(rel);
+      return;
+    }
+    for (const entry of io.readDir(abs).sort()) recur(`${rel}/${entry}`);
+  };
+  recur(relDir.replace(/\/+$/, ''));
+  return out;
+}
+
+/** Line-level flags for TS constructs that need a human rewrite in SJS. */
+const MIGRATE_FLAGS: { re: RegExp; note: string }[] = [
+  { re: /\benum\b/, note: '`enum` — replace with a sum type (`type X = A | B`)' },
+  { re: /\bnamespace\b/, note: '`namespace` — not supported; use modules' },
+  { re: /@[A-Za-z_]/, note: 'decorator — not supported in SJS' },
+  { re: /\bas const\b/, note: '`as const` — not supported; annotate explicitly' },
+  { re: /[A-Za-z0-9_)\]]!\s*[.;)]/, note: 'non-null assertion `!` — banned; handle the null case' },
+];
+
+/**
+ * `superjs migrate from-ts <dir>` — assisted TypeScript → SuperJS migration.
+ * A best-effort *textual* pass (no TS AST): copies each `.ts` to `.sjs`, rewrites
+ * `any` → `dynamic`, and flags constructs that need a human rewrite into
+ * `MIGRATION_REPORT.md`. Idempotent — a directory of already-migrated `.sjs`
+ * has no `.ts` to process.
+ */
+export function migrate(args: ParsedArgs, io: IO): number {
+  if (args.positionals[0] !== 'from-ts' || args.positionals[1] === undefined) {
+    errline(io, 'usage: superjs migrate from-ts <dir>');
+    return 2;
+  }
+  const dir = args.positionals[1];
+  const tsFiles = walkTs(io, dir);
+  if (tsFiles.length === 0) { line(io, `no .ts files found under ${dir}/ — nothing to migrate.`); return 0; }
+
+  const report: string[] = ['# Migration Report', '', `Migrated ${tsFiles.length} file(s) from TypeScript to SuperJS.`, ''];
+  for (const tsPath of tsFiles) {
+    const source = io.readFile(resolve(io, tsPath));
+    const lines = source.split('\n');
+    // Mechanical rewrite: `any` type → `dynamic`.
+    const migrated = lines.map((l) => l.replace(/([:<]\s*)any\b/g, '$1dynamic').replace(/\bas any\b/g, 'as dynamic')).join('\n');
+    const sjsPath = `${tsPath.slice(0, -3)}.sjs`;
+    io.writeFile(resolve(io, sjsPath), migrated);
+
+    const flags: string[] = [];
+    lines.forEach((l, i) => {
+      for (const f of MIGRATE_FLAGS) if (f.re.test(l)) flags.push(`- line ${i + 1}: ${f.note}`);
+    });
+    report.push(`## ${tsPath} → ${sjsPath}`);
+    report.push(...(flags.length ? flags : ['- no manual changes flagged']));
+    report.push('');
+    line(io, `migrated ${tsPath} → ${sjsPath}${flags.length ? ` (${flags.length} flag${flags.length === 1 ? '' : 's'})` : ''}`);
+  }
+  io.writeFile(resolve(io, 'MIGRATION_REPORT.md'), `${report.join('\n')}\n`);
+  line(io, `wrote MIGRATION_REPORT.md`);
   return 0;
 }
 

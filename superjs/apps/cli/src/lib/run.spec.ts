@@ -269,6 +269,25 @@ describe('init & doctor', () => {
     expect(await run(['init'], io)).toBe(0);
     expect(io.stdout()).toContain('already exists');
   });
+  it('init <template> scaffolds the template files', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'fastify-api'], io)).toBe(0);
+    expect(io.fs.has('/work/src/server.sjs')).toBe(true);
+    expect(io.fs.has('/work/package.json')).toBe(true);
+    expect(io.fs.has('/work/superjs.config.json')).toBe(true);
+    expect(io.stdout()).toContain("scaffolded 'fastify-api'");
+  });
+  it('init scaffolds the workers template with wrangler config', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'workers-api'], io)).toBe(0);
+    expect(io.fs.has('/work/src/worker.sjs')).toBe(true);
+    expect(io.fs.has('/work/wrangler.toml')).toBe(true);
+  });
+  it('init rejects an unknown template', async () => {
+    const io = makeIO();
+    expect(await run(['init', 'nope'], io)).toBe(2);
+    expect(io.stderr()).toContain('unknown template');
+  });
   it('doctor reports environment health', async () => {
     const io = makeIO();
     const code = await run(['doctor'], io);
@@ -414,10 +433,57 @@ describe('lint --fix', () => {
   });
 });
 
+describe('verify', () => {
+  const src = { '/work/src/a.sjs': 'export const x: number = 1;\n' };
+
+  it('passes when the expected output matches a prior build', async () => {
+    const io = makeIO(src);
+    expect(await run(['build', 'src', '--out-dir', 'out', '--source-map', 'none', '--no-cache'], io)).toBe(0);
+    expect(await run(['verify', 'src', 'out'], io)).toBe(0);
+    expect(io.stdout()).toContain('output matches');
+  });
+
+  it('fails when the expected output differs', async () => {
+    const io = makeIO(src);
+    await run(['build', 'src', '--out-dir', 'out', '--source-map', 'none', '--no-cache'], io);
+    const emitted = [...io.fs.keys()].find((k) => k.startsWith('/work/out/') && k.endsWith('.js'))!;
+    io.fs.set(emitted, '/* tampered */');
+    expect(await run(['verify', 'src', 'out'], io)).toBe(1);
+    expect(io.stderr()).toContain('differs');
+  });
+
+  it('usage error with fewer than two arguments', async () => {
+    const io = makeIO(src);
+    expect(await run(['verify', 'src'], io)).toBe(2);
+  });
+});
+
+describe('migrate from-ts', () => {
+  it('rewrites .ts to .sjs, converts any→dynamic, and writes a report', async () => {
+    const io = makeIO({ '/work/ts/a.ts': 'const x: any = 1;\nenum Color { Red }\n' });
+    expect(await run(['migrate', 'from-ts', 'ts'], io)).toBe(0);
+    expect(io.fs.get('/work/ts/a.sjs')).toContain(': dynamic');
+    const report = io.fs.get('/work/MIGRATION_REPORT.md')!;
+    expect(report).toContain('ts/a.ts → ts/a.sjs');
+    expect(report).toContain('enum');
+  });
+
+  it('usage error without `from-ts <dir>`', async () => {
+    const io = makeIO();
+    expect(await run(['migrate'], io)).toBe(2);
+  });
+
+  it('reports nothing when there are no .ts files', async () => {
+    const io = makeIO({ '/work/clean/keep.sjs': 'export const x: number = 1;' });
+    expect(await run(['migrate', 'from-ts', 'clean'], io)).toBe(0);
+    expect(io.stdout()).toContain('nothing to migrate');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['verify'], io)).toBe(2);
+    expect(await run(['test'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {

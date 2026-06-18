@@ -154,6 +154,30 @@ describe('lint — other rules', () => {
       + 'export function k(): void { h(); }';
     expect(codes(src)).not.toContain('SJS-L015');
   });
+  it('L016 flags an unhandled Result used as a statement', () => {
+    const src = 'type Result<T, E> = Ok(T) | Err(E);\n'
+      + 'export function f(): Result<number, string> { return Ok(1); }\n'
+      + 'export function g(): void { f(); }';
+    expect(codes(src)).toContain('SJS-L016');
+  });
+  it('L016 does not flag a returned Result', () => {
+    const src = 'type Result<T, E> = Ok(T) | Err(E);\n'
+      + 'export function f(): Result<number, string> { return Ok(1); }\n'
+      + 'export function g(): Result<number, string> { return f(); }';
+    expect(codes(src)).not.toContain('SJS-L016');
+  });
+  it('L017 flags a throw statement', () => {
+    expect(codes('export function f(): void { throw err; }')).toContain('SJS-L017');
+  });
+  it('L017 does not flag throw-free code', () => {
+    expect(codes('export function f(): number { return 1; }')).not.toContain('SJS-L017');
+  });
+  it('L018 flags mixed spaces and tabs in indentation', () => {
+    expect(codes('export function f(): number {\n \tconst x: number = 1;\n  return x;\n}')).toContain('SJS-L018');
+  });
+  it('L018 does not flag consistent indentation', () => {
+    expect(codes('export function f(): number {\n  const x: number = 1;\n  return x;\n}')).not.toContain('SJS-L018');
+  });
   it('L002 carries a var→let auto-fix', () => {
     const d = lint('var x = 1;\nx;').find((x) => x.code === 'SJS-L002')!;
     expect(d.fixes?.[0]?.edits[0]?.newText).toBe('let');
