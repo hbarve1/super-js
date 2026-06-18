@@ -43,6 +43,30 @@ export function array<T>(item: Schema<T>): Schema<T[]> {
   return new Schema((v: dynamic): boolean => Array.isArray(v), "array");
 }
 
+export class Field {
+  key: string;
+  schema: Schema<dynamic>;
+
+  constructor(key: string, schema: Schema<dynamic>) {
+    this.key = key;
+    this.schema = schema;
+  }
+}
+
+export function field(key: string, schema: Schema<dynamic>): Field {
+  return new Field(key, schema);
+}
+
+// `object([field("name", string()), ...])` — every field must accept its value.
+export function object(fields: Field[]): Schema<dynamic> {
+  return new Schema((v: dynamic): boolean => {
+    if (typeof v !== "object" || v === null) {
+      return false;
+    }
+    return fields.every((f: Field): boolean => f.schema.accepts(v[f.key]));
+  }, "object");
+}
+
 export function literal(expected: string): Schema<string> {
   return new Schema((v: dynamic): boolean => v === expected, "literal " + expected);
 }

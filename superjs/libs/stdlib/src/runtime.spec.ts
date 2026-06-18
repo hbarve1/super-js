@@ -41,10 +41,18 @@ describe('@superjs/stdlib — compiled modules execute correctly', () => {
     expect(s.includes('hello' as never, 'ell' as never)).toBe(true);
   });
 
-  it('std-schema validates', async () => {
+  it('std-schema validates primitives and objects', async () => {
     const sc = await load('std-schema');
-    const str = sc.string();
-    expect((str as { accepts(v: unknown): boolean }).accepts('x')).toBe(true);
-    expect((str as { accepts(v: unknown): boolean }).accepts(1)).toBe(false);
+    const str = sc.string() as { accepts(v: unknown): boolean };
+    expect(str.accepts('x')).toBe(true);
+    expect(str.accepts(1)).toBe(false);
+
+    const user = sc.object([
+      sc.field('name' as never, sc.string() as never),
+      sc.field('age' as never, sc.number() as never),
+    ] as never) as { accepts(v: unknown): boolean };
+    expect(user.accepts({ name: 'a', age: 3 })).toBe(true);
+    expect(user.accepts({ name: 'a', age: 'no' })).toBe(false);
+    expect(user.accepts(42)).toBe(false);
   });
 });
