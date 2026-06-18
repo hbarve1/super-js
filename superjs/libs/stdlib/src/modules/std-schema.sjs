@@ -13,6 +13,10 @@ export class Schema<T> {
     this.label = label;
   }
 
+  accepts(value: dynamic): boolean {
+    return this.check(value);
+  }
+
   parse(value: dynamic): Validated<T> {
     return this.check(value) ? Valid(value as T) : Invalid("expected " + this.label);
   }
@@ -37,4 +41,16 @@ export function boolean(): Schema<boolean> {
 
 export function array<T>(item: Schema<T>): Schema<T[]> {
   return new Schema((v: dynamic): boolean => Array.isArray(v), "array");
+}
+
+export function literal(expected: string): Schema<string> {
+  return new Schema((v: dynamic): boolean => v === expected, "literal " + expected);
+}
+
+export function optional<T>(item: Schema<T>): Schema<T?> {
+  return new Schema((v: dynamic): boolean => v === undefined || item.accepts(v), "optional");
+}
+
+export function nullable<T>(item: Schema<T>): Schema<T?> {
+  return new Schema((v: dynamic): boolean => v === null || item.accepts(v), "nullable");
 }

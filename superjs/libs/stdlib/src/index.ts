@@ -9,6 +9,6 @@
 
 export const STDLIB_MODULES = [
   'std-core', 'std-math', 'std-string', 'std-async', 'std-path', 'std-collections',
-  'std-process', 'std-time', 'std-json', 'std-schema',
+  'std-process', 'std-time', 'std-json', 'std-schema', 'std-fs',
 ] as const;
 export type StdlibModule = (typeof STDLIB_MODULES)[number];
