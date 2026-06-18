@@ -273,6 +273,21 @@ superjs verify src/ expected-dist/
 | `1` | a file differs, is missing, or the inputs failed to compile |
 | `2` | usage error (needs both `<input-dir>` and `<expected-dir>`) |
 
+### `migrate`
+
+Assisted migration of a TypeScript tree to SuperJS.
+
+```bash
+superjs migrate from-ts src/
+```
+
+A best-effort **textual** pass: each `.ts` becomes a `.sjs` with `any` rewritten
+to `dynamic`, and constructs that need a human rewrite — `enum`, `namespace`,
+decorators, `as const`, non-null `!` — are flagged by line in a generated
+`MIGRATION_REPORT.md`. It does not type-check the result; run `superjs check`
+afterward. Idempotent: a directory of already-migrated `.sjs` has no `.ts` to
+process.
+
 ### Planned commands
 
 These subcommands are reserved — invoking one today prints a not-yet-implemented

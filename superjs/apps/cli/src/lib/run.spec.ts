@@ -458,10 +458,32 @@ describe('verify', () => {
   });
 });
 
+describe('migrate from-ts', () => {
+  it('rewrites .ts to .sjs, converts any→dynamic, and writes a report', async () => {
+    const io = makeIO({ '/work/ts/a.ts': 'const x: any = 1;\nenum Color { Red }\n' });
+    expect(await run(['migrate', 'from-ts', 'ts'], io)).toBe(0);
+    expect(io.fs.get('/work/ts/a.sjs')).toContain(': dynamic');
+    const report = io.fs.get('/work/MIGRATION_REPORT.md')!;
+    expect(report).toContain('ts/a.ts → ts/a.sjs');
+    expect(report).toContain('enum');
+  });
+
+  it('usage error without `from-ts <dir>`', async () => {
+    const io = makeIO();
+    expect(await run(['migrate'], io)).toBe(2);
+  });
+
+  it('reports nothing when there are no .ts files', async () => {
+    const io = makeIO({ '/work/clean/keep.sjs': 'export const x: number = 1;' });
+    expect(await run(['migrate', 'from-ts', 'clean'], io)).toBe(0);
+    expect(io.stdout()).toContain('nothing to migrate');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();
-    expect(await run(['migrate'], io)).toBe(2);
+    expect(await run(['test'], io)).toBe(2);
     expect(io.stderr()).toContain('not implemented yet');
   });
   it('unknown command exits 64', async () => {
