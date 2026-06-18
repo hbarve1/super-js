@@ -7,5 +7,7 @@
  * library is the `.sjs` source, validated by the spec to type-check and emit.
  */
 
-export const STDLIB_MODULES = ['std-core', 'std-math', 'std-string', 'std-async'] as const;
+export const STDLIB_MODULES = [
+  'std-core', 'std-math', 'std-string', 'std-async', 'std-path', 'std-collections',
+] as const;
 export type StdlibModule = (typeof STDLIB_MODULES)[number];
