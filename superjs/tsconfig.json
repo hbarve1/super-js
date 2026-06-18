@@ -50,6 +50,9 @@
     },
     {
       "path": "./libs/build-plugins"
+    },
+    {
+      "path": "./libs/stdlib"
     }
   ]
 }
