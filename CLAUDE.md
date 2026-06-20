@@ -37,6 +37,18 @@ Key rules for agents:
 - Branch naming: `feature/`, `fix/`, `chore/`, `release/`
 - `gh pr create --base main` — always
 
+## v1.0 parallel agents
+
+Workstreams: `specs/roadmap/v1.0/README.md` · state: `specs/roadmap/v1.0/manifest.json`
+
+```bash
+./scripts/worktree-create.sh WS-A8   # spawn isolated worktree
+./scripts/worktree-list.sh           # status
+```
+
+Each workstream = one branch under `.worktrees/`, one Cursor agent (`.cursor/agents/v1.0-ws-*.md`).
+Agents open PRs to `main` when done. Docs single source: repo-root `docs/` + `superjs/apps/website` (ADR-011).
+
 ## Next stage
 
 `specs/roadmap/stage-0-foundations.md` — start here for next work.

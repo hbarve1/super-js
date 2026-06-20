@@ -5,6 +5,35 @@ An agent can pick up any file in group A (no deps) immediately;
 group B (docs content) after WS-A3 (docs infra) is merged;
 WS-A1 (spec freeze) last.
 
+## Agent orchestration
+
+| Resource | Purpose |
+|----------|---------|
+| [`manifest.json`](./manifest.json) | Branch, worktree path, wave, status, PR URL per workstream |
+| [`../../design/ADR-011-docs-single-source.md`](../design/ADR-011-docs-single-source.md) | Docs live in repo-root `docs/` + website — no separate docs app |
+| [`agents/WS-A3.md`](./agents/WS-A3.md) | Amended brief for WS-A3 (overrides Starlight plan in WS-A3 spec) |
+| [`../../../scripts/worktree-create.sh`](../../../scripts/worktree-create.sh) | Spawn isolated worktree for a workstream |
+| [`.cursor/agents/v1.0-ws-*.md`](../../../.cursor/agents/) | One invokable Cursor agent per workstream |
+
+```bash
+# From repo root
+./scripts/worktree-create.sh WS-A8
+# → .worktrees/feature-v1.0-mvb-fastify on branch feature/v1.0-mvb-fastify
+# Open that folder in Cursor, invoke @v1.0-ws-a8-mvb-fastify
+```
+
+Agents update `manifest.json` status and open a PR to `main` when acceptance criteria pass.
+
+### Wave 1 recommended start order (low conflict → high)
+
+1. **WS-A8** mvb-fastify (smallest)
+2. **WS-A2** error-code pages
+3. **WS-A6** governance
+4. **WS-A7** Node 24 CI
+5. **WS-A5** migrate from-prototype
+6. **WS-A3** docs infra (ADR-011 — extend website + `docs/`)
+7. **WS-B3** types wrappers — Tier A first, stacked PRs on same branch
+
 ## Execution order
 
 ```
@@ -17,7 +46,7 @@ Day 1 — fully parallel (no deps):
   WS-B2  DAP debugger          (big — start scoping)
   WS-B3  types wrappers        (big — start scoping)
 
-After WS-A3 (docs site infra) merges — fully parallel:
+After WS-A3 (docs infra) merges — fully parallel:
   WS-A4a language tour
   WS-A4b migration guide
   WS-A4c API reference
@@ -38,7 +67,7 @@ Last — after all A-items above:
 |------|-----------|--------|--------|
 | [WS-A1-spec-freeze.md](./WS-A1-spec-freeze.md) | Spec assembly + freeze | large | `feature/v1.0-spec-freeze` |
 | [WS-A2-error-codes.md](./WS-A2-error-codes.md) | Missing error-code pages | medium | `feature/v1.0-error-codes` |
-| [WS-A3-docs-infra.md](./WS-A3-docs-infra.md) | Docs site infrastructure | large | `feature/v1.0-docs-infra` |
+| [WS-A3-docs-infra.md](./WS-A3-docs-infra.md) | Docs infrastructure *(see ADR-011)* | large | `feature/v1.0-docs-infra` |
 | [WS-A4a-tour.md](./WS-A4a-tour.md) | Language tour (20 lessons) | large | `feature/v1.0-tour` |
 | [WS-A4b-migration-guide.md](./WS-A4b-migration-guide.md) | Migration guide TS→SJS | medium | `feature/v1.0-migration` |
 | [WS-A4c-api-reference.md](./WS-A4c-api-reference.md) | API reference (docgen) | medium | `feature/v1.0-api-ref` |
