@@ -220,6 +220,9 @@ docs-build:
     - run: pnpm install --frozen-lockfile
     - run: npx tsx scripts/sync-error-pages.ts
     - run: cd superjs && npx nx build docs
+    - name: Serve built docs for Lighthouse
+      run: npx serve superjs/apps/docs/dist -l 4321 &
+           sleep 3  # wait for server to be ready
     - name: Lighthouse CI
       uses: treosh/lighthouse-ci-action@v11
       with:

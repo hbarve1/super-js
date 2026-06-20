@@ -66,12 +66,13 @@ Backend-first wave 1. Translator (`@superjs/interop`) must achieve 70% typed-sur
 
 Each wrapper lives in `superjs/libs/types-<name>/`:
 
-```
+```plaintext
 libs/types-fastify/
   package.json          # name: @superjs/types-fastify, version: 0.1.0
   project.json          # NX project
+  LICENSE               # upstream license (MIT/ISC/Apache) or GPL notice if upstream is LGPL/GPL
   README.md
-  STATUS.md             # YAML frontmatter: coverage, status, version
+  STATUS.md             # YAML frontmatter: coverage, status, version, license-compat
   src/
     index.sjs           # main exports
     types/
@@ -93,6 +94,9 @@ version: "4.x"
 coverage: 82
 status: "beta"
 last-updated: "2026-06-18"
+license-compat: "MIT"   # MIT/ISC/BSD/Apache-2.0 → ok to redistribute; LGPL/GPL → separate -gpl package
+esm: true
+cjs: true
 features:
   - routing
   - plugins
@@ -177,8 +181,10 @@ Tier D (cloud) + Tier E (frontend). Frontend wrappers are hardest due to JSX + h
 
 ## Acceptance criteria
 
-- [ ] `@superjs/interop` translator achieves 70% typed-surface gate on ≥ 25 of 30 packages
-- [ ] All 30 packages have `STATUS.md` with `coverage` + `status` fields
+- [ ] All 30 packages published (stage-2-interop exit criteria require all 30, not a subset); packages below 70% coverage ship with `status: wip`
+- [ ] `@superjs/interop` translator achieves 70% typed-surface gate on ≥ 25 of 30 packages; the remaining ≤5 may ship as `status: wip` with manual surface coverage
+- [ ] **Typed-surface gate measurement:** run `node superjs/apps/cli/dist/main.js translate --stats <pkg-dts>` to get `{ total, translated, dynamic, percent }`; if that `--stats` flag is not yet implemented, add it to the interop CLI before running this workstream
+- [ ] All 30 packages have `STATUS.md` with `coverage`, `status`, `license-compat`, `esm`, `cjs` fields
 - [ ] All 30 packages have `src/index.sjs` exporting the main surface
 - [ ] All 30 packages have at least 1 passing Vitest test
 - [ ] `scripts/gen-compat-matrix.ts` (from WS-A4e) reads STATUS.md files and generates compat table

@@ -2,7 +2,7 @@
 
 **Branch:** `feature/v1.0-playground`  
 **Effort:** xlarge  
-**Deps:** WS-A3 (docs site infra); WS-B3 (types wrappers, for wrapper demos) — start after A-items  
+**Deps:** WS-A4a (tour content, lesson 18 needs `?mode=workers` link); WS-B3 (types wrappers, for wrapper demos) — WS-A3 (docs infra) is NOT a dep; playground is in `apps/website`, not `apps/docs`  
 **PR base:** `main`
 
 ## Objective
@@ -21,7 +21,7 @@ Tour lesson 18 (serverless handlers) needs `?mode=workers` playground URL.
 
 ## Architecture
 
-```
+```text
 Browser                     Cloudflare Worker
 playground UI  ──POST /run──>  sandbox runner
 (Next.js)     <──result JSON──  - compile SJS input
@@ -35,7 +35,7 @@ playground UI  ──POST /run──>  sandbox runner
 ### Phase 1 — Workers backend (server-side compile + run)
 
 1. Create `superjs/apps/playground-worker/` — a Cloudflare Workers project:
-   ```
+   ```plaintext
    apps/playground-worker/
      wrangler.toml
      package.json
@@ -48,15 +48,16 @@ playground UI  ──POST /run──>  sandbox runner
 
 2. Worker endpoint: `POST /run`
    - Input: `{ code: string, mode?: 'node' | 'workers' }`
-   - Output: `{ output: string[], errors: SjsDiagnostic[], timingMs: number }`
+   - Output: `{ consoleLogs: string[], diagnostics: SjsDiagnostic[], compiledSource: string, timingMs: number }`
+   - **Schema note:** the current `POST /api/compile` in `useCompiler.ts` returns `{ output: string, errors, diagnostics }`. The new `/run` endpoint returns both compiled source AND runtime console output in separate fields. Update the `useCompiler` hook in Phase 2 to handle the new schema.
    - Max input size: 50kB
    - Rate limit: 20 requests per minute per IP
 
 3. Sandbox the emitted JS:
-   - Run via `new Function(code)()` inside a try/catch
-   - Capture `console.log` calls by overriding the console object
-   - Set a 5-second execution timeout via `AbortSignal.timeout(5000)`
-   - No `fetch`, no `fs`, no `process.env` in sandbox context
+   - Capture `console.log` calls by overriding the console object **before** `new Function(code)()` executes: create a local `logs: string[]` array, replace `globalThis.console` with a proxy that pushes to it, restore after execution.
+   - Run via `new Function('console', code)(capturedConsole)` inside a try/catch
+   - Set a 5-second execution timeout via `AbortSignal.timeout(5000)` wrapping the Function call
+   - No `fetch`, no `fs`, no `process.env` — strip these from the sandbox context by assigning `undefined` on the function scope
 
 4. Workers demo mode (`mode: 'workers'`):
    - Pre-load a minimal Workers runtime shim: `Request`, `Response`, `URL`, `Headers`
@@ -151,4 +152,4 @@ Domain: `playground.superjs.dev` or `api.superjs.dev/run`.
   PR3: UI updates + mode selector
   PR4: Demo mode + examples gallery
 - Security is critical: the sandbox must not allow Workers to read secrets or reach internal infrastructure
-- If Cloudflare Workers bundling of @superjs/compiler fails, fallback: run compilation server-side on a simple Node.js edge function (Vercel Edge or similar)
+- **Fallback if Workers bundling fails:** revert to the existing `POST /api/compile` Next.js API route (already in `apps/website/`) for compilation, and keep runtime execution in the client-side iframe sandbox (current behaviour). The UI fallback path: detect 5xx from `/run` → fall back to `/api/compile` + iframe; display a "sandbox unavailable" banner. Document the fallback as a feature flag (`NEXT_PUBLIC_USE_WORKERS_SANDBOX=false`) so it can be toggled without a deploy.
