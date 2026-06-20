@@ -37,7 +37,12 @@ fi
 echo ""
 echo "Installing monorepo deps (superjs/)…"
 if [[ -f "$WORKTREE/superjs/pnpm-lock.yaml" ]]; then
-  (cd "$WORKTREE/superjs" && pnpm install --frozen-lockfile 2>/dev/null || pnpm install)
+  (
+    cd "$WORKTREE/superjs"
+    if ! pnpm install --frozen-lockfile 2>/dev/null; then
+      pnpm install
+    fi
+  )
 fi
 
 AGENT="$(node -e "console.log(JSON.parse(process.argv[1]).agent)" "$WS_JSON")"

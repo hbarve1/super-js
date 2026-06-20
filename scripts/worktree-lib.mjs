@@ -11,13 +11,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(__dirname, '..');
 export const MANIFEST_PATH = join(REPO_ROOT, 'specs/roadmap/v1.0/manifest.json');
 
+/** Load and parse the v1.0 workstream manifest from disk. */
 export function loadManifest() {
   return JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 }
 
+/**
+ * Resolve a workstream by ID (case-insensitive, optional `WS-` prefix).
+ * @param {ReturnType<typeof loadManifest>} manifest
+ * @param {string} id e.g. `WS-A8`, `ws-a8`, or `A8`
+ */
 export function getWorkstream(manifest, id) {
-  const key = id.toUpperCase().replace(/^WS-?/, 'WS-').replace(/^WS-([^A-Z0-9])/, 'WS-$1');
-  const normalized = id.startsWith('WS-') ? id : `WS-${id}`;
+  const normalized = id.toUpperCase().replace(/^WS-?/, 'WS-');
   const ws = manifest.workstreams[normalized];
   if (!ws) {
     const keys = Object.keys(manifest.workstreams).join(', ');
@@ -26,6 +31,7 @@ export function getWorkstream(manifest, id) {
   return { id: normalized, ...ws };
 }
 
+/** Map a git branch name to a worktree directory slug (`/` → `-`). */
 export function branchToDir(branch) {
   return branch.replace(/\//g, '-');
 }

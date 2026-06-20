@@ -27,7 +27,7 @@ Do **not** create `superjs/apps/docs` or a second documentation app.
 
 ### Content layout (target)
 
-```
+```text
 docs/
   README.md                 # docs home / index
   tour/                     # WS-A4a — 20 lessons
