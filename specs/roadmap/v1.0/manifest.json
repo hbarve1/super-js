@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "conventions": {
+    "worktreeRoot": ".worktrees",
+    "branchToWorktree": "Replace / with - in branch name",
+    "prBase": "main",
+    "openPrWhenDone": true
+  },
+  "waves": {
+    "1": {
+      "label": "No deps — start immediately",
+      "ids": [
+        "WS-A8",
+        "WS-A2",
+        "WS-A6",
+        "WS-A7",
+        "WS-A5",
+        "WS-A3",
+        "WS-B3"
+      ]
+    },
+    "2": {
+      "label": "After WS-A3 merges",
+      "ids": [
+        "WS-A4a",
+        "WS-A4b",
+        "WS-A4c",
+        "WS-A4d",
+        "WS-A4e",
+        "WS-A4f"
+      ]
+    },
+    "3": {
+      "label": "After WS-B3 merges",
+      "ids": [
+        "WS-B1"
+      ]
+    },
+    "4": {
+      "label": "Last — all other A-items stable",
+      "ids": [
+        "WS-A1"
+      ]
+    },
+    "deferred": {
+      "label": "Scope in wave 1; full impl later",
+      "ids": [
+        "WS-B2"
+      ]
+    }
+  },
+  "workstreams": {
+    "WS-A1": {
+      "title": "Spec assembly + freeze",
+      "spec": "specs/roadmap/v1.0/WS-A1-spec-freeze.md",
+      "branch": "feature/v1.0-spec-freeze",
+      "worktree": ".worktrees/feature-v1.0-spec-freeze",
+      "agent": "v1.0-ws-a1-spec-freeze",
+      "wave": 4,
+      "effort": "large",
+      "blockedBy": [
+        "WS-A2",
+        "WS-A3",
+        "WS-A4a",
+        "WS-A4b",
+        "WS-A4c",
+        "WS-A4d",
+        "WS-A4e",
+        "WS-A4f"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A1"
+    },
+    "WS-A2": {
+      "title": "Error-code reference pages + CI gate",
+      "spec": "specs/roadmap/v1.0/WS-A2-error-codes.md",
+      "branch": "feature/v1.0-error-codes",
+      "worktree": ".worktrees/feature-v1.0-error-codes",
+      "agent": "v1.0-ws-a2-error-codes",
+      "wave": 1,
+      "effort": "medium",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A2"
+    },
+    "WS-A3": {
+      "title": "Docs infrastructure (single source: docs/ + website)",
+      "spec": "specs/roadmap/v1.0/WS-A3-docs-infra.md",
+      "amendment": "specs/design/ADR-011-docs-single-source.md",
+      "agentBrief": "specs/roadmap/v1.0/agents/WS-A3.md",
+      "branch": "feature/v1.0-docs-infra",
+      "worktree": ".worktrees/feature-v1.0-docs-infra",
+      "agent": "v1.0-ws-a3-docs-infra",
+      "wave": 1,
+      "effort": "large",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A3"
+    },
+    "WS-A4a": {
+      "title": "Language tour (20 lessons)",
+      "spec": "specs/roadmap/v1.0/WS-A4a-tour.md",
+      "branch": "feature/v1.0-tour",
+      "worktree": ".worktrees/feature-v1.0-tour",
+      "agent": "v1.0-ws-a4a-tour",
+      "wave": 2,
+      "effort": "large",
+      "blockedBy": [
+        "WS-A3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4a"
+    },
+    "WS-A4b": {
+      "title": "Migration guide TS→SJS",
+      "spec": "specs/roadmap/v1.0/WS-A4b-migration-guide.md",
+      "branch": "feature/v1.0-migration",
+      "worktree": ".worktrees/feature-v1.0-migration",
+      "agent": "v1.0-ws-a4b-migration",
+      "wave": 2,
+      "effort": "medium",
+      "blockedBy": [
+        "WS-A3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4b"
+    },
+    "WS-A4c": {
+      "title": "API reference (docgen)",
+      "spec": "specs/roadmap/v1.0/WS-A4c-api-reference.md",
+      "branch": "feature/v1.0-api-ref",
+      "worktree": ".worktrees/feature-v1.0-api-ref",
+      "agent": "v1.0-ws-a4c-api-ref",
+      "wave": 2,
+      "effort": "medium",
+      "blockedBy": [
+        "WS-A3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4c"
+    },
+    "WS-A4d": {
+      "title": "Why SJS page",
+      "spec": "specs/roadmap/v1.0/WS-A4d-why-sjs.md",
+      "branch": "feature/v1.0-why-sjs",
+      "worktree": ".worktrees/feature-v1.0-why-sjs",
+      "agent": "v1.0-ws-a4d-why-sjs",
+      "wave": 2,
+      "effort": "small",
+      "blockedBy": [
+        "WS-A3",
+        "WS-A8"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4d"
+    },
+    "WS-A4e": {
+      "title": "Compat matrix",
+      "spec": "specs/roadmap/v1.0/WS-A4e-compat-matrix.md",
+      "branch": "feature/v1.0-compat",
+      "worktree": ".worktrees/feature-v1.0-compat",
+      "agent": "v1.0-ws-a4e-compat",
+      "wave": 2,
+      "effort": "small",
+      "blockedBy": [
+        "WS-A3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4e"
+    },
+    "WS-A4f": {
+      "title": "Perf benchmarks page",
+      "spec": "specs/roadmap/v1.0/WS-A4f-perf-benchmarks.md",
+      "branch": "feature/v1.0-perf",
+      "worktree": ".worktrees/feature-v1.0-perf",
+      "agent": "v1.0-ws-a4f-perf",
+      "wave": 2,
+      "effort": "medium",
+      "blockedBy": [
+        "WS-A3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A4f"
+    },
+    "WS-A5": {
+      "title": "migrate from-prototype",
+      "spec": "specs/roadmap/v1.0/WS-A5-migrate-from-prototype.md",
+      "branch": "feature/v1.0-migrate-proto",
+      "worktree": ".worktrees/feature-v1.0-migrate-proto",
+      "agent": "v1.0-ws-a5-migrate-proto",
+      "wave": 1,
+      "effort": "medium",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A5"
+    },
+    "WS-A6": {
+      "title": "Governance + security files",
+      "spec": "specs/roadmap/v1.0/WS-A6-governance.md",
+      "branch": "feature/v1.0-governance",
+      "worktree": ".worktrees/feature-v1.0-governance",
+      "agent": "v1.0-ws-a6-governance",
+      "wave": 1,
+      "effort": "small",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A6"
+    },
+    "WS-A7": {
+      "title": "Node 24 blocking CI matrix",
+      "spec": "specs/roadmap/v1.0/WS-A7-node24-ci.md",
+      "branch": "feature/v1.0-node24",
+      "worktree": ".worktrees/feature-v1.0-node24",
+      "agent": "v1.0-ws-a7-node24",
+      "wave": 1,
+      "effort": "small",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A7"
+    },
+    "WS-A8": {
+      "title": "mvb-fastify example",
+      "spec": "specs/roadmap/v1.0/WS-A8-mvb-fastify.md",
+      "branch": "feature/v1.0-mvb-fastify",
+      "worktree": ".worktrees/feature-v1.0-mvb-fastify",
+      "agent": "v1.0-ws-a8-mvb-fastify",
+      "wave": 1,
+      "effort": "small",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-A8"
+    },
+    "WS-B1": {
+      "title": "Playground (Workers sandbox)",
+      "spec": "specs/roadmap/v1.0/WS-B1-playground.md",
+      "branch": "feature/v1.0-playground",
+      "worktree": ".worktrees/feature-v1.0-playground",
+      "agent": "v1.0-ws-b1-playground",
+      "wave": 3,
+      "effort": "xlarge",
+      "blockedBy": [
+        "WS-B3"
+      ],
+      "status": "pending",
+      "pr": null,
+      "id": "WS-B1"
+    },
+    "WS-B2": {
+      "title": "DAP debugger",
+      "spec": "specs/roadmap/v1.0/WS-B2-dap.md",
+      "branch": "feature/v1.0-dap",
+      "worktree": ".worktrees/feature-v1.0-dap",
+      "agent": "v1.0-ws-b2-dap",
+      "wave": "deferred",
+      "effort": "xlarge",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "note": "Wave 1: scope + skeleton only unless maintainer promotes to full impl",
+      "id": "WS-B2"
+    },
+    "WS-B3": {
+      "title": "30 @superjs/types-* wrappers",
+      "spec": "specs/roadmap/v1.0/WS-B3-types-wrappers.md",
+      "branch": "feature/v1.0-types-wrappers",
+      "worktree": ".worktrees/feature-v1.0-types-wrappers",
+      "agent": "v1.0-ws-b3-types-wrappers",
+      "wave": 1,
+      "effort": "xlarge",
+      "blockedBy": [],
+      "status": "pending",
+      "pr": null,
+      "subMilestones": [
+        "B3.1 Tier A backends",
+        "B3.2 Tier B DB",
+        "B3.3 Tier C utils",
+        "B3.4 Tier D cloud",
+        "B3.5 Tier E test/misc"
+      ],
+      "note": "Same branch/worktree; stacked PRs per sub-milestone recommended",
+      "id": "WS-B3"
+    }
+  },
+  "conflictZones": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "owners": [
+        "WS-A2",
+        "WS-A7",
+        "WS-A3",
+        "WS-A6"
+      ],
+      "policy": "Serialize merges or rebase immediately before opening PR"
+    },
+    {
+      "path": "superjs/nx.json",
+      "owners": [
+        "WS-A3",
+        "WS-B3",
+        "WS-B1"
+      ],
+      "policy": "WS-A3 owns docs/website wiring; B3 uses nx g for new libs"
+    },
+    {
+      "path": "superjs/pnpm-lock.yaml",
+      "owners": [
+        "*"
+      ],
+      "policy": "Rebase onto main before PR; expect lockfile conflicts"
+    }
+  ]
+}
