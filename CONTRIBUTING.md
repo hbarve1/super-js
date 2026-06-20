@@ -130,6 +130,20 @@ pnpm nx affected -t test lint
 
 ---
 
+## Proposing language changes
+
+Language changes require an RFC. See [rfcs/README.md](rfcs/README.md) for the process and template.
+
+## Spec changes
+
+Changes under `specs/` require maintainer approval. Post-1.0 spec changes require an RFC plus a documented "spec exception" approval.
+
+## Stability and deprecation
+
+Public API stability tiers are defined in [STABILITY.md](STABILITY.md). Deprecation windows for stable APIs are in [docs/deprecation.md](docs/deprecation.md).
+
+---
+
 ## Reporting Issues
 
 Please use [GitHub Issues](https://github.com/hbarve1/super-js/issues) to report bugs, request features, or ask questions. Before opening a new issue, search existing issues to avoid duplicates.
