@@ -10,14 +10,49 @@ permissions:
 
 jobs:
   error-pages:
-    name: Error-code reference pages
+    name: Error-code reference pages (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
 
       - name: Check error-code pages
         run: node scripts/check-error-pages.mjs
+
+  superjs:
+    name: SuperJS (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+    defaults:
+      run:
+        working-directory: superjs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+          cache-dependency-path: superjs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint, test, typecheck, and build
+        env:
+          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
+        run: pnpm nx run-many -t lint test typecheck build
