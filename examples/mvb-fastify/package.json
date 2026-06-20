@@ -1,0 +1,18 @@
+{
+  "name": "mvb-fastify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../superjs/apps/cli/dist/main.js build src --out-dir dist && node scripts/postbuild.mjs",
+    "start": "node dist/main.js",
+    "check": "node ../../superjs/apps/cli/dist/main.js check src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^4.29.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  }
+}

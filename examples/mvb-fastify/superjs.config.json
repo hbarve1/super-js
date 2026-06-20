@@ -1,0 +1,12 @@
+{
+  "language": "1.0",
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "dist",
+    "target": "ES2022"
+  },
+  "paths": {
+    "@superjs/std-core": ["../../superjs/libs/stdlib/src/modules/std-core.sjs"],
+    "@superjs/std-collections": ["../../superjs/libs/stdlib/src/modules/std-collections.sjs"]
+  }
+}
