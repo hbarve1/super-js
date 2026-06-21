@@ -96,8 +96,8 @@
       "wave": 1,
       "effort": "large",
       "blockedBy": [],
-      "status": "pending",
-      "pr": null,
+      "status": "pr_open",
+      "pr": "https://github.com/hbarve1/super-js/pull/175",
       "id": "WS-A3"
     },
     "WS-A4a": {
