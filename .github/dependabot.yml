@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/superjs"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    groups:
+      dev-deps:
+        patterns:
+          - "typescript"
+          - "vitest"
+          - "nx"
+          - "@nx/*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

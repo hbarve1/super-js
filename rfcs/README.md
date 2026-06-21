@@ -1,25 +1,43 @@
-# rfcs/
+# RFC Process
 
-Request for Comments documents for SuperJS language and toolchain changes.
+SuperJS uses RFCs (Request for Comments) for language changes and major API decisions.
 
-## Format
+## When to write an RFC
 
-Each RFC is a single file: `RFC-NNNN-short-title.md`
+- New language syntax
+- Semantic changes to existing constructs
+- Major CLI changes
+- Stability tier changes
 
-RFC files follow a standard template:
-- **Summary** — one paragraph
-- **Motivation** — why this change is needed
-- **Detailed design** — normative specification
-- **Drawbacks** — reasons not to do this
-- **Alternatives** — other approaches considered
-- **Unresolved questions** — open issues
+## Template
+
+RFCs live in `rfcs/NNNN-short-title.md`. Use this structure:
+
+```markdown
+---
+rfc: NNNN
+title: Short title
+status: draft | accepted | rejected | superseded
+author: @handle
+date: YYYY-MM-DD
+---
+
+# RFC-NNNN: Title
+
+## Summary
+## Motivation
+## Design
+## Drawbacks
+## Alternatives
+## Unresolved questions
+```
 
 ## Process
 
-1. Open a PR adding `RFC-NNNN-title.md` (pick next available number)
-2. Discussion happens on the PR
-3. RFC is merged as **accepted** or **rejected** (rejected RFCs are kept for historical record)
-4. Accepted RFCs are implemented in the referenced stage
+1. Open a PR adding `NNNN-title.md` (pick the next available number).
+2. Discussion happens on the PR.
+3. RFC is merged as **accepted** or **rejected** (rejected RFCs are kept for historical record).
+4. Accepted RFCs are implemented in the referenced stage.
 
 ## Status tags
 
@@ -27,4 +45,12 @@ RFC files follow a standard template:
 
 ## Index
 
-No RFCs filed yet. RFC-0001 through RFC-0005 were informal design notes; they will be retroactively filed as accepted RFCs in Stage 0 cleanup.
+| RFC | Title | Status |
+|-----|-------|--------|
+| [0001](0001-no-any-introduce-dynamic.md) | No `any` — introduce `dynamic` | accepted |
+| [0002](0002-ban-complex-types.md) | Ban complex types | accepted |
+| [0003](0003-sum-type-tag-representation.md) | Sum-type runtime encoding (`{_tag, _0}`) | accepted |
+| [0004](0004-result-canonical-error.md) | Result as canonical error model | accepted |
+| [0005](0005-defer-editions.md) | Defer language editions | accepted |
+
+RFCs 0001–0005 were filed retroactively in Stage 0; they record decisions already shipped in the compiler.

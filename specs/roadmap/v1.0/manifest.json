@@ -81,7 +81,7 @@
       "wave": 1,
       "effort": "medium",
       "blockedBy": [],
-      "status": "pr_open",
+      "status": "merged",
       "pr": "https://github.com/hbarve1/super-js/pull/161",
       "id": "WS-A2"
     },
@@ -213,8 +213,8 @@
       "wave": 1,
       "effort": "small",
       "blockedBy": [],
-      "status": "pending",
-      "pr": null,
+      "status": "pr_open",
+      "pr": "https://github.com/hbarve1/super-js/pull/163",
       "id": "WS-A6"
     },
     "WS-A7": {
