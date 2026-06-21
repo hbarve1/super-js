@@ -51,7 +51,9 @@ commands:
   doctor               report environment + toolchain health
   lsp                  start the language server over stdio (for editors)
   verify <in> <out>    recompile <in> and byte-diff against expected <out>
-  migrate from-ts <dir>  assisted TypeScript → SuperJS migration (+ report)
+  migrate from-ts <dir>         assisted TypeScript → SuperJS migration (+ report)
+  migrate from-prototype <dir>  rewrite prototype-era imports → @superjs/* (+ report)
+                                [--dry-run] [--out <dir>]
 
   test repl            (planned — later stages)
 

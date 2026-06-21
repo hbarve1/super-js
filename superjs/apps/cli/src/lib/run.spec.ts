@@ -480,6 +480,95 @@ describe('migrate from-ts', () => {
   });
 });
 
+// Shared prototype-era fixture files used by migrate from-prototype tests.
+const PROTO_FIXTURE: Record<string, string> = {
+  '/work/proto/parser.sjs': "import { parse } from 'superjs/parser';\nexport const x = parse;",
+  '/work/proto/codegen.sjs': "import { generate } from 'superjs/codegen';\nimport { IRNode } from 'superjs/ir';\nexport const g = generate;",
+  '/work/proto/entry.sjs': "import { compile } from 'superjs';\nimport { SourceFile } from '../prototype/src/types';\nexport const run = compile;",
+};
+
+describe('migrate from-prototype', () => {
+  it('rewrites prototype imports in-place and writes MIGRATION_REPORT.md', async () => {
+    const io = makeIO({ ...PROTO_FIXTURE });
+    expect(await run(['migrate', 'from-prototype', 'proto'], io)).toBe(0);
+
+    // parser.sjs: superjs/parser → @superjs/compiler
+    expect(io.fs.get('/work/proto/parser.sjs')).toContain("from '@superjs/compiler'");
+    expect(io.fs.get('/work/proto/parser.sjs')).not.toContain("from 'superjs/parser'");
+
+    // codegen.sjs: superjs/codegen + superjs/ir both → @superjs/compiler
+    const codegen = io.fs.get('/work/proto/codegen.sjs')!;
+    expect(codegen).not.toContain("from 'superjs/codegen'");
+    expect(codegen).not.toContain("from 'superjs/ir'");
+    expect(codegen.match(/@superjs\/compiler/g)?.length).toBeGreaterThanOrEqual(2);
+
+    // entry.sjs: bare 'superjs' + prototype/src → rewrites applied
+    const entry = io.fs.get('/work/proto/entry.sjs')!;
+    expect(entry).toContain("from '@superjs/compiler'");
+    expect(entry).not.toContain("from 'superjs'");
+
+    // MIGRATION_REPORT.md written
+    const report = io.fs.get('/work/MIGRATION_REPORT.md')!;
+    expect(report).toContain('# Migration Report');
+    expect(report).toContain('Files processed: 3');
+    expect(report).toContain('Files rewritten: 3');
+    expect(report).toContain('@superjs/compiler');
+  });
+
+  it('--dry-run prints what would change without writing files', async () => {
+    const io = makeIO({ ...PROTO_FIXTURE });
+    // Note: flags come after positionals in this CLI (parseArgs grabs next non-flag token as flag value).
+    expect(await run(['migrate', 'from-prototype', 'proto', '--dry-run'], io)).toBe(0);
+
+    // Source files must be untouched.
+    expect(io.fs.get('/work/proto/parser.sjs')).toContain("from 'superjs/parser'");
+    expect(io.fs.has('/work/MIGRATION_REPORT.md')).toBe(false);
+
+    // But stdout should describe what would have changed.
+    expect(io.stdout()).toContain('dry-run');
+    expect(io.stdout()).toContain('@superjs/compiler');
+  });
+
+  it('--out <dir> writes rewritten files to the specified directory', async () => {
+    const io = makeIO({ ...PROTO_FIXTURE });
+    expect(await run(['migrate', 'from-prototype', 'proto', '--out', 'migrated'], io)).toBe(0);
+
+    // Originals must be untouched.
+    expect(io.fs.get('/work/proto/parser.sjs')).toContain("from 'superjs/parser'");
+
+    // Outputs go under 'migrated/'.
+    expect(io.fs.get('/work/migrated/parser.sjs')).toContain("from '@superjs/compiler'");
+    expect(io.fs.has('/work/migrated/MIGRATION_REPORT.md')).toBe(true);
+  });
+
+  it('exits 0 and reports nothing when no .sjs files are found', async () => {
+    const io = makeIO({ '/work/empty/readme.md': '# nothing here' });
+    expect(await run(['migrate', 'from-prototype', 'empty'], io)).toBe(0);
+    expect(io.stdout()).toContain('nothing to migrate');
+  });
+
+  it('exits 0 and reports 0 rewritten when no prototype imports are present', async () => {
+    const io = makeIO({ '/work/clean/a.sjs': "import { x } from '@superjs/compiler';\nexport const y = x;" });
+    expect(await run(['migrate', 'from-prototype', 'clean'], io)).toBe(0);
+    const report = io.fs.get('/work/MIGRATION_REPORT.md')!;
+    expect(report).toContain('Files rewritten: 0');
+    expect(report).toContain('No prototype imports found');
+  });
+
+  it('usage error without <dir> argument', async () => {
+    const io = makeIO();
+    expect(await run(['migrate', 'from-prototype'], io)).toBe(2);
+    expect(io.stderr()).toContain('usage: superjs migrate from-prototype');
+  });
+
+  it('usage error with no subcommand shows both subcommands', async () => {
+    const io = makeIO();
+    expect(await run(['migrate'], io)).toBe(2);
+    expect(io.stderr()).toContain('from-ts');
+    expect(io.stderr()).toContain('from-prototype');
+  });
+});
+
 describe('stubs & unknown', () => {
   it('stubbed commands report a planned stage and exit 2', async () => {
     const io = makeIO();

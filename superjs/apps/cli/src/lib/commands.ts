@@ -632,6 +632,21 @@ function walkTs(io: IO, relDir: string): string[] {
   return out;
 }
 
+/** Collect `.sjs` files under a directory, relative to cwd. */
+function walkSjsFiles(io: IO, relDir: string): string[] {
+  const out: string[] = [];
+  const recur = (rel: string): void => {
+    const abs = resolve(io, rel);
+    if (!io.isDirectory(abs)) {
+      if (rel.endsWith('.sjs')) out.push(rel);
+      return;
+    }
+    for (const entry of io.readDir(abs).sort()) recur(`${rel}/${entry}`);
+  };
+  recur(relDir.replace(/\/+$/, ''));
+  return out;
+}
+
 /** Line-level flags for TS constructs that need a human rewrite in SJS. */
 const MIGRATE_FLAGS: { re: RegExp; note: string }[] = [
   { re: /\benum\b/, note: '`enum` — replace with a sum type (`type X = A | B`)' },
@@ -642,14 +657,89 @@ const MIGRATE_FLAGS: { re: RegExp; note: string }[] = [
 ];
 
 /**
+ * Import-path rewrites for `migrate from-prototype`.
+ * Applied in order — more-specific patterns must come before catch-alls.
+ */
+const PROTOTYPE_REWRITES: Array<[RegExp, string]> = [
+  [/from ['"]superjs\/parser['"]/g,    "from '@superjs/compiler'"],
+  [/from ['"]superjs\/checker['"]/g,   "from '@superjs/compiler'"],
+  [/from ['"]superjs\/codegen['"]/g,   "from '@superjs/compiler'"],
+  [/from ['"]superjs\/ir['"]/g,        "from '@superjs/compiler'"],
+  [/from ['"]superjs['"]/g,            "from '@superjs/compiler'"],
+  [/from ['"]\.\.\/prototype\/src\//g, "from '../superjs/libs/compiler/src/"],
+];
+
+/** Patterns that flag a line as needing manual intervention (prototype imports). */
+const PROTOTYPE_MANUAL_FLAGS: Array<{ re: RegExp; message: string }> = [
+  { re: /from ['"]superjs\//,        message: 'Unrecognised prototype sub-path — check manually' },
+  { re: /require\(['"]superjs/,      message: 'CommonJS require of prototype path — convert to ESM import' },
+  { re: /prototype\/src\//,          message: 'Remaining prototype/src reference — check path mapping' },
+];
+
+interface ProtoRewriteResult {
+  /** Relative path of the source .sjs file (from cwd or src root). */
+  relPath: string;
+  /** Rewritten content (equals original when nothing changed). */
+  content: string;
+  /** Whether any prototype import was rewritten. */
+  changed: boolean;
+  /** Lines that could not be auto-migrated: [lineNum, originalLine, message]. */
+  manualLines: Array<[number, string, string]>;
+  /** Summary rows for the "Rewritten import paths" table. */
+  rewrites: Array<{ oldImport: string; newImport: string }>;
+}
+
+/** Apply PROTOTYPE_REWRITES to a single file's content and collect diagnostics. */
+function rewriteProtoFile(relPath: string, source: string): ProtoRewriteResult {
+  const srcLines = source.split('\n');
+  const rewrites: ProtoRewriteResult['rewrites'] = [];
+  const manualLines: ProtoRewriteResult['manualLines'] = [];
+
+  const rewrittenLines = srcLines.map((l, idx) => {
+    let out = l;
+    for (const [re, replacement] of PROTOTYPE_REWRITES) {
+      if (re.test(out)) {
+        const oldImport = out.trim();
+        out = out.replace(re, replacement);
+        const newImport = out.trim();
+        if (oldImport !== newImport) rewrites.push({ oldImport, newImport });
+      }
+    }
+    for (const { re, message } of PROTOTYPE_MANUAL_FLAGS) {
+      if (re.test(out)) manualLines.push([idx + 1, l.trim(), message]);
+    }
+    return out;
+  });
+
+  const content = rewrittenLines.join('\n');
+  return { relPath, content, changed: content !== source, rewrites, manualLines };
+}
+
+/**
  * `superjs migrate from-ts <dir>` — assisted TypeScript → SuperJS migration.
  * A best-effort *textual* pass (no TS AST): copies each `.ts` to `.sjs`, rewrites
  * `any` → `dynamic`, and flags constructs that need a human rewrite into
  * `MIGRATION_REPORT.md`. Idempotent — a directory of already-migrated `.sjs`
  * has no `.ts` to process.
+ *
+ * `superjs migrate from-prototype [--dry-run] [--out <dir>] <dir>` — rewrite
+ * prototype-era import paths in `.sjs` files to the current `@superjs/*` layout.
+ * Emits `MIGRATION_REPORT.md` (or prints to stdout with `--dry-run`).
  */
 export function migrate(args: ParsedArgs, io: IO): number {
-  if (args.positionals[0] !== 'from-ts' || args.positionals[1] === undefined) {
+  const sub = args.positionals[0];
+
+  if (sub === 'from-ts') return migrateFromTs(args, io);
+  if (sub === 'from-prototype') return migrateFromPrototype(args, io);
+
+  errline(io, 'usage: superjs migrate <subcommand> [options] <dir>');
+  errline(io, '  superjs migrate from-ts <dir>');
+  errline(io, '  superjs migrate from-prototype [--dry-run] [--out <dir>] <dir>');
+  return 2;
+}
+
+function migrateFromTs(args: ParsedArgs, io: IO): number {
+  if (args.positionals[1] === undefined) {
     errline(io, 'usage: superjs migrate from-ts <dir>');
     return 2;
   }
@@ -677,6 +767,100 @@ export function migrate(args: ParsedArgs, io: IO): number {
   }
   io.writeFile(resolve(io, 'MIGRATION_REPORT.md'), `${report.join('\n')}\n`);
   line(io, `wrote MIGRATION_REPORT.md`);
+  return 0;
+}
+
+function migrateFromPrototype(args: ParsedArgs, io: IO): number {
+  const srcDir = args.positionals[1];
+  if (srcDir === undefined) {
+    errline(io, 'usage: superjs migrate from-prototype [--dry-run] [--out <dir>] <dir>');
+    return 2;
+  }
+
+  const dryRun = args.flags['dry-run'] === true;
+  const outDir = typeof args.flags['out'] === 'string' ? args.flags['out'] : undefined;
+
+  const sjsFiles = walkSjsFiles(io, srcDir);
+  if (sjsFiles.length === 0) {
+    line(io, `no .sjs files found under ${srcDir}/ — nothing to migrate.`);
+    return 0;
+  }
+
+  const results: ProtoRewriteResult[] = [];
+  for (const relPath of sjsFiles) {
+    const source = io.readFile(resolve(io, relPath));
+    const result = rewriteProtoFile(relPath, source);
+    results.push(result);
+  }
+
+  const rewritten = results.filter((r) => r.changed);
+  const allManual = results.flatMap((r) => r.manualLines.map((ml) => ({ file: r.relPath, line: ml[0], code: ml[1], message: ml[2] })));
+  const allRewrites = results.flatMap((r) => r.rewrites.map((rw) => ({ file: r.relPath, ...rw })));
+
+  // Build MIGRATION_REPORT.md content.
+  const reportLines: string[] = [
+    '# Migration Report',
+    '',
+    'Generated by `superjs migrate from-prototype`.',
+    '',
+    '## Summary',
+    `- Files processed: ${results.length}`,
+    `- Files rewritten: ${rewritten.length}`,
+    `- Manual interventions required: ${allManual.length}`,
+    '',
+    '## Rewritten import paths',
+  ];
+
+  if (allRewrites.length === 0) {
+    reportLines.push('', '_No prototype imports found._', '');
+  } else {
+    reportLines.push('| File | Old import | New import |');
+    reportLines.push('|------|-----------|-----------|');
+    for (const rw of allRewrites) {
+      reportLines.push(`| ${rw.file} | \`${rw.oldImport}\` | \`${rw.newImport}\` |`);
+    }
+    reportLines.push('');
+  }
+
+  reportLines.push('## Manual interventions required');
+  if (allManual.length === 0) {
+    reportLines.push('', '_None — all imports were auto-migrated._', '');
+  } else {
+    reportLines.push('| File | Line | Code | Message |');
+    reportLines.push('|------|------|------|---------|');
+    for (const m of allManual) {
+      reportLines.push(`| ${m.file} | ${m.line} | \`${m.code}\` | ${m.message} |`);
+    }
+    reportLines.push('');
+  }
+
+  const reportContent = `${reportLines.join('\n')}\n`;
+
+  if (dryRun) {
+    line(io, `[dry-run] would rewrite ${rewritten.length} of ${results.length} file(s)`);
+    for (const r of rewritten) {
+      line(io, `  ${r.relPath} (${r.rewrites.length} import rewrite${r.rewrites.length === 1 ? '' : 's'})`);
+    }
+    line(io, '');
+    line(io, reportContent);
+    return 0;
+  }
+
+  // Write output files.
+  for (const r of results) {
+    if (!r.changed) continue;
+    const destPath = outDir
+      ? join(outDir, r.relPath.slice(srcDir.replace(/\/+$/, '').length + 1))
+      : r.relPath;
+    io.writeFile(resolve(io, destPath), r.content);
+    line(io, `rewritten ${r.relPath}${outDir ? ` → ${destPath}` : ''}`);
+  }
+
+  // Write report — always to the cwd root (or outDir if provided).
+  const reportPath = outDir ? join(outDir, 'MIGRATION_REPORT.md') : 'MIGRATION_REPORT.md';
+  io.writeFile(resolve(io, reportPath), reportContent);
+  line(io, `wrote ${reportPath}`);
+  line(io, `${rewritten.length} of ${results.length} file(s) rewritten; ${allManual.length} manual intervention(s) required`);
   return 0;
 }
 

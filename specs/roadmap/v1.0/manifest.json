@@ -200,7 +200,7 @@
       "wave": 1,
       "effort": "medium",
       "blockedBy": [],
-      "status": "pending",
+      "status": "pr_open",
       "pr": null,
       "id": "WS-A5"
     },
