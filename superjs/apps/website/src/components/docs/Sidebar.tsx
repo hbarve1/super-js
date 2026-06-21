@@ -3,43 +3,78 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import type { NavItem } from '@/lib/docs'
+import type { NavItem, NavGroup } from '@/lib/docs'
+
+interface DocsNavListProps {
+  /** Flat list of items (legacy API — renders without group headers) */
+  items?: NavItem[]
+  /** Grouped navigation (v1.0 API — renders with section headers) */
+  groups?: NavGroup[]
+  onLinkClick?: () => void
+}
+
+function NavLink({ item, onLinkClick }: { item: NavItem; onLinkClick?: () => void }) {
+  const pathname = usePathname()
+  const isActive = pathname === item.href
+  return (
+    <li>
+      <Link
+        href={item.href}
+        onClick={onLinkClick}
+        className={[
+          'block px-3 py-2 rounded-md text-sm transition-colors',
+          isActive
+            ? 'bg-orange/15 text-orange font-medium'
+            : 'text-text-muted hover:text-text-primary hover:bg-surface-2',
+        ].join(' ')}
+      >
+        {item.title}
+      </Link>
+    </li>
+  )
+}
 
 /** The nav link list — reused by the desktop sidebar and the mobile drawer. */
-export function DocsNavList({ items, onLinkClick }: { items: NavItem[]; onLinkClick?: () => void }) {
-  const pathname = usePathname()
+export function DocsNavList({ items, groups, onLinkClick }: DocsNavListProps) {
+  // Grouped mode (v1.0 sections)
+  if (groups && groups.length > 0) {
+    return (
+      <nav data-pagefind-ignore>
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <div key={group.label}>
+              <div className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-2 px-3">
+                {group.label}
+              </div>
+              <ul className="space-y-1">
+                {group.items.map((item) => (
+                  <NavLink key={item.slug} item={item} onLinkClick={onLinkClick} />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </nav>
+    )
+  }
+
+  // Legacy flat mode
   return (
     <nav data-pagefind-ignore>
       <div className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-4 px-3">
         Documentation
       </div>
       <ul className="space-y-1">
-        {items.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <li key={item.slug}>
-              <Link
-                href={item.href}
-                onClick={onLinkClick}
-                className={[
-                  'block px-3 py-2 rounded-md text-sm transition-colors',
-                  isActive
-                    ? 'bg-orange/15 text-orange font-medium'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-2',
-                ].join(' ')}
-              >
-                {item.title}
-              </Link>
-            </li>
-          )
-        })}
+        {(items ?? []).map((item) => (
+          <NavLink key={item.slug} item={item} onLinkClick={onLinkClick} />
+        ))}
       </ul>
     </nav>
   )
 }
 
 /** Mobile-only floating "Docs" button + slide-in drawer (SPEC §E-6). */
-export default function MobileDocsNav({ items }: { items: NavItem[] }) {
+export default function MobileDocsNav({ items, groups }: { items?: NavItem[]; groups?: NavGroup[] }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -83,7 +118,7 @@ export default function MobileDocsNav({ items }: { items: NavItem[] }) {
             </svg>
           </button>
         </div>
-        <DocsNavList items={items} onLinkClick={() => setOpen(false)} />
+        <DocsNavList items={items} groups={groups} onLinkClick={() => setOpen(false)} />
       </div>
     </div>
   )

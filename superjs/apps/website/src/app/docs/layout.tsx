@@ -1,22 +1,22 @@
 import type { ReactNode } from 'react'
-import { getDocNavTree } from '@/lib/docs'
+import { getDocNavGroups } from '@/lib/docs'
 import MobileDocsNav, { DocsNavList } from '@/components/docs/Sidebar'
 import SearchButton from '@/components/docs/SearchButton'
 
 export default async function DocsLayout({ children }: { children: ReactNode }) {
-  const navItems = await getDocNavTree()
+  const groups = await getDocNavGroups()
   return (
     <div className="min-h-screen bg-bg-deep pt-16">
       <div className="max-w-screen-2xl mx-auto flex">
         <aside className="hidden md:block w-64 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-8 pr-4 border-r border-hairline-soft">
           <SearchButton />
-          <DocsNavList items={navItems} />
+          <DocsNavList groups={groups} />
         </aside>
         <main id="main-content" className="flex-1 min-w-0 flex px-6 md:px-8 py-8">
           {children}
         </main>
       </div>
-      <MobileDocsNav items={navItems} />
+      <MobileDocsNav groups={groups} />
     </div>
   )
 }

@@ -26,6 +26,31 @@ jobs:
       - name: Check error-code pages
         run: node scripts/check-error-pages.mjs
 
+  docs-build:
+    name: Docs site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: superjs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd superjs && pnpm install --frozen-lockfile
+
+      - name: Sync error-code pages
+        run: node scripts/sync-error-pages.mjs
+
+      - name: Build website (includes docs routes)
+        run: cd superjs && pnpm nx build website
+
   superjs:
     name: SuperJS (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
