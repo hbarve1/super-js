@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "tslib": "^2.3.0",
-    "typescript": "^5.9.0",
+    "typescript": "^6.0.3",
     "@superjs/types": "workspace:*",
     "@superjs/compiler": "workspace:*"
   }
