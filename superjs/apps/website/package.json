@@ -25,7 +25,7 @@
     "next": "16.2.9",
     "next-mdx-remote": "^6.0.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react-dom": "19.2.7",
     "remark-gfm": "^4.0.1",
     "shiki": "^4.2.0"
   },
