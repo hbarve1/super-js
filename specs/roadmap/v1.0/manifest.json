@@ -201,7 +201,7 @@
       "effort": "medium",
       "blockedBy": [],
       "status": "pr_open",
-      "pr": null,
+      "pr": "https://github.com/hbarve1/super-js/pull/174",
       "id": "WS-A5"
     },
     "WS-A6": {
