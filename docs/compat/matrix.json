@@ -1,0 +1,635 @@
+{
+  "generatedAt": "2026-06-24",
+  "count": 30,
+  "rows": [
+    {
+      "package": "@aws-sdk/client-*",
+      "wrapper": "@superjs/types-aws-sdk-core",
+      "coverage": 71,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "ClientConfig",
+        "send command",
+        "middleware stack",
+        "region/credentials"
+      ],
+      "missing": [
+        "per-service command input/output shapes",
+        "waiters/paginators"
+      ]
+    },
+    {
+      "package": "@cloudflare/workers-types",
+      "wrapper": "@superjs/types-cloudflare-workers",
+      "coverage": 76,
+      "status": "beta",
+      "version": "4.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "fetch handler",
+        "Request/Response",
+        "ExecutionContext",
+        "KV/R2 bindings"
+      ],
+      "missing": [
+        "Durable Objects stubs",
+        "Queues consumer depth"
+      ]
+    },
+    {
+      "package": "@prisma/client",
+      "wrapper": "@superjs/types-prisma",
+      "coverage": 72,
+      "status": "beta",
+      "version": "5.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "PrismaClient lifecycle",
+        "$transaction",
+        "$queryRaw",
+        "log options"
+      ],
+      "missing": [
+        "generated model delegates",
+        "full DMMF types",
+        "extension API"
+      ]
+    },
+    {
+      "package": "axios",
+      "wrapper": "@superjs/types-axios",
+      "coverage": 80,
+      "status": "beta",
+      "version": "1.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "AxiosInstance",
+        "request/response",
+        "interceptors",
+        "HTTP verbs"
+      ],
+      "missing": [
+        "AxiosHeaders generics",
+        "cancel token API"
+      ]
+    },
+    {
+      "package": "bullmq",
+      "wrapper": "@superjs/types-bullmq",
+      "coverage": 78,
+      "status": "beta",
+      "version": "5.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "Queue",
+        "Worker",
+        "Job",
+        "add/process lifecycle"
+      ],
+      "missing": [
+        "FlowProducer",
+        "QueueScheduler internals"
+      ]
+    },
+    {
+      "package": "connect",
+      "wrapper": "@superjs/types-connect",
+      "coverage": 71,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-21",
+      "features": [
+        "middleware stack",
+        "request/response passthrough"
+      ],
+      "missing": [
+        "body-parser integration",
+        "serve-static helpers"
+      ]
+    },
+    {
+      "package": "dotenv",
+      "wrapper": "@superjs/types-dotenv",
+      "coverage": 85,
+      "status": "beta",
+      "version": "16.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "config()",
+        "parse()",
+        "DotenvConfigOptions"
+      ],
+      "missing": [
+        "vault expansion",
+        "multi-file loading"
+      ]
+    },
+    {
+      "package": "express",
+      "wrapper": "@superjs/types-express",
+      "coverage": 78,
+      "status": "beta",
+      "version": "4.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-21",
+      "features": [
+        "routing",
+        "middleware",
+        "request/response",
+        "Router"
+      ],
+      "missing": [
+        "express-session typings",
+        "multer integration"
+      ]
+    },
+    {
+      "package": "fastify",
+      "wrapper": "@superjs/types-fastify",
+      "coverage": 82,
+      "status": "beta",
+      "version": "4.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-21",
+      "features": [
+        "routing",
+        "plugins",
+        "hooks",
+        "reply methods",
+        "request parsing"
+      ],
+      "missing": [
+        "fastify-plugin type helpers",
+        "decorateRequest/decorateReply typings",
+        "runtime `.delete()` / `.options()` use reserved keywords — bindings expose `del` / `optsRoute`"
+      ]
+    },
+    {
+      "package": "hono",
+      "wrapper": "@superjs/types-hono",
+      "coverage": 76,
+      "status": "beta",
+      "version": "4.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-21",
+      "features": [
+        "routing",
+        "middleware",
+        "context",
+        "json helpers"
+      ],
+      "missing": [
+        "jsx route handlers",
+        "RPC client types"
+      ]
+    },
+    {
+      "package": "ioredis",
+      "wrapper": "@superjs/types-redis",
+      "coverage": 79,
+      "status": "beta",
+      "version": "5.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "string commands",
+        "hash commands",
+        "pub/sub",
+        "pipeline"
+      ],
+      "missing": [
+        "cluster/sentinel topology",
+        "Lua script generics"
+      ]
+    },
+    {
+      "package": "jest",
+      "wrapper": "@superjs/types-jest",
+      "coverage": 76,
+      "status": "beta",
+      "version": "29.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "describe/it/expect",
+        "jest.fn",
+        "mock modules",
+        "lifecycle hooks"
+      ],
+      "missing": [
+        "snapshot serializers",
+        "jest-worker internals"
+      ]
+    },
+    {
+      "package": "joi",
+      "wrapper": "@superjs/types-joi",
+      "coverage": 74,
+      "status": "beta",
+      "version": "17.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "string/number/object schemas",
+        "validate",
+        "options"
+      ],
+      "missing": [
+        "alternatives/conditional",
+        "extension API"
+      ]
+    },
+    {
+      "package": "jsonwebtoken",
+      "wrapper": "@superjs/types-jsonwebtoken",
+      "coverage": 79,
+      "status": "beta",
+      "version": "9.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "sign",
+        "verify",
+        "decode",
+        "JwtPayload"
+      ],
+      "missing": [
+        "asymmetric key option matrix",
+        "notBefore/leeway combos"
+      ]
+    },
+    {
+      "package": "koa",
+      "wrapper": "@superjs/types-koa",
+      "coverage": 73,
+      "status": "beta",
+      "version": "2.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-21",
+      "features": [
+        "middleware stack",
+        "context",
+        "request/response"
+      ],
+      "missing": [
+        "koa-router plugin types",
+        "koa-body integration"
+      ]
+    },
+    {
+      "package": "mongoose",
+      "wrapper": "@superjs/types-mongoose",
+      "coverage": 74,
+      "status": "beta",
+      "version": "8.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "Schema",
+        "Model queries",
+        "Document",
+        "connection"
+      ],
+      "missing": [
+        "aggregation pipeline typings",
+        "virtuals/populate depth"
+      ]
+    },
+    {
+      "package": "multer",
+      "wrapper": "@superjs/types-multer",
+      "coverage": 80,
+      "status": "beta",
+      "version": "1.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "disk/memory storage",
+        "single/array/fields",
+        "File metadata"
+      ],
+      "missing": [
+        "custom storage engine API",
+        "limits option matrix"
+      ]
+    },
+    {
+      "package": "mysql2",
+      "wrapper": "@superjs/types-mysql2",
+      "coverage": 77,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "Pool",
+        "Connection",
+        "prepared statements",
+        "pool config"
+      ],
+      "missing": [
+        "promise wrapper edge cases",
+        "SSL option matrix"
+      ]
+    },
+    {
+      "package": "next",
+      "wrapper": "@superjs/types-nextjs",
+      "coverage": 70,
+      "status": "beta",
+      "version": "14.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "NextRequest/NextResponse",
+        "route handlers",
+        "metadata",
+        "cookies"
+      ],
+      "missing": [
+        "full App Router cache APIs",
+        "middleware matcher generics"
+      ]
+    },
+    {
+      "package": "node-fetch",
+      "wrapper": "@superjs/types-node-fetch",
+      "coverage": 78,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "fetch",
+        "Request",
+        "Response",
+        "Headers"
+      ],
+      "missing": [
+        "FormData/Blob depth",
+        "agent options"
+      ]
+    },
+    {
+      "package": "passport",
+      "wrapper": "@superjs/types-passport",
+      "coverage": 73,
+      "status": "beta",
+      "version": "0.7.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "use strategy",
+        "authenticate",
+        "serializeUser",
+        "session"
+      ],
+      "missing": [
+        "custom strategy generics",
+        "oauth state helpers"
+      ]
+    },
+    {
+      "package": "pg",
+      "wrapper": "@superjs/types-pg",
+      "coverage": 81,
+      "status": "beta",
+      "version": "8.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "Pool",
+        "PoolClient",
+        "QueryResult",
+        "connection config"
+      ],
+      "missing": [
+        "COPY streams",
+        "cursor API",
+        "notice listeners"
+      ]
+    },
+    {
+      "package": "pino",
+      "wrapper": "@superjs/types-pino",
+      "coverage": 82,
+      "status": "beta",
+      "version": "9.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "Logger levels",
+        "child loggers",
+        "serializers",
+        "transport hook"
+      ],
+      "missing": [
+        "multistream typings",
+        "browser build"
+      ]
+    },
+    {
+      "package": "react",
+      "wrapper": "@superjs/types-react",
+      "coverage": 72,
+      "status": "beta",
+      "version": "18.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "ReactElement",
+        "ReactNode",
+        "component props",
+        "hook result shapes"
+      ],
+      "missing": [
+        "full hooks generic matrix",
+        "ref forwarding",
+        "Suspense boundaries"
+      ]
+    },
+    {
+      "package": "supertest",
+      "wrapper": "@superjs/types-supertest",
+      "coverage": 75,
+      "status": "beta",
+      "version": "6.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "HTTP verbs",
+        "expect status/body",
+        "agent",
+        "cookies"
+      ],
+      "missing": [
+        "full superagent response typings",
+        "multipart uploads"
+      ]
+    },
+    {
+      "package": "undici",
+      "wrapper": "@superjs/types-undici",
+      "coverage": 75,
+      "status": "beta",
+      "version": "6.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "fetch",
+        "request",
+        "Dispatcher",
+        "Agent"
+      ],
+      "missing": [
+        "MockAgent",
+        "diagnostics channel types"
+      ]
+    },
+    {
+      "package": "vite",
+      "wrapper": "@superjs/types-vite",
+      "coverage": 74,
+      "status": "beta",
+      "version": "5.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "UserConfig",
+        "Plugin",
+        "defineConfig",
+        "server/build options"
+      ],
+      "missing": [
+        "SSR hook depth",
+        "Vitest mergeConfig edge cases"
+      ]
+    },
+    {
+      "package": "vitest",
+      "wrapper": "@superjs/types-vitest",
+      "coverage": 78,
+      "status": "beta",
+      "version": "1.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "describe/it/expect",
+        "vi mocks",
+        "TestContext",
+        "hooks"
+      ],
+      "missing": [
+        "bench API",
+        "workspace project graph"
+      ]
+    },
+    {
+      "package": "winston",
+      "wrapper": "@superjs/types-winston",
+      "coverage": 77,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "createLogger",
+        "transports",
+        "log levels",
+        "format"
+      ],
+      "missing": [
+        "profiler API",
+        "exceptionHandlers depth"
+      ]
+    },
+    {
+      "package": "zod",
+      "wrapper": "@superjs/types-zod",
+      "coverage": 76,
+      "status": "beta",
+      "version": "3.x",
+      "licenseCompat": "MIT",
+      "esm": true,
+      "cjs": true,
+      "lastUpdated": "2026-06-24",
+      "features": [
+        "ZodType",
+        "object/string/number parsers",
+        "parse/safeParse",
+        "infer helper"
+      ],
+      "missing": [
+        "mapped/conditional transforms",
+        "effects/refinements depth"
+      ]
+    }
+  ]
+}

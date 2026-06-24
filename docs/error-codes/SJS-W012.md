@@ -43,7 +43,7 @@ identifiers resolve to different symbols. This behaviour cannot be suppressed.
 
 - Boucher, N., Shumailov, I., Anderson, R., Collberg, C. (2021). **Trojan Source: Invisible
   Vulnerabilities**. USENIX Security '22. arXiv:2111.00169. CVE-2021-42574.
-- GitHub Security Advisory: <https://github.com/advisories/GHSA-vwm3-crmr-xfxw>
+- GitHub Security Advisory: [GHSA-vwm3-crmr-xfxw](https://github.com/advisories/GHSA-vwm3-crmr-xfxw)
 
 ## Example
 
