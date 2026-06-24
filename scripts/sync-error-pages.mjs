@@ -21,6 +21,11 @@ mkdirSync(DEST, { recursive: true });
 
 const files = readdirSync(SRC).filter(f => /^SJS-[EPLW]\d{3}\.md$/.test(f));
 
+/** Escape a string for use inside YAML single-quoted values. */
+function escapeYamlSingleQuoted(text) {
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 let synced = 0;
 for (const file of files) {
   const content = readFileSync(join(SRC, file), 'utf8');
@@ -29,7 +34,7 @@ for (const file of files) {
   // Extract title from first heading
   const titleMatch = content.match(/^# (.+)$/m);
   const title = titleMatch?.[1] ?? code;
-  const escapedTitle = title.replace(/'/g, "\\'");
+  const escapedTitle = escapeYamlSingleQuoted(title);
 
   // Strip the first heading — frontmatter title replaces it
   const bodyWithoutH1 = content.replace(/^# .+\n/, '');

@@ -16,10 +16,7 @@ overrides:
   cookie: '^0.7.0'
   dompurify: '>=3.4.11'
   postcss: '>=8.5.15'
-  # NOTE: js-yaml is intentionally NOT overridden — gray-matter pins js-yaml 3.x
-  # and calls the removed `safeLoad`, so forcing >=4.2.0 breaks the build. The
-  # remaining js-yaml advisory is a transitive dev/build-time alert with no
-  # gray-matter-compatible fix.
+  js-yaml: '>=4.2.0'
 allowBuilds:
   esbuild: false
   sharp: false

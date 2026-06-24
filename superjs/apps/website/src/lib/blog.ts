@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
+import { normalizeFrontmatterDates, parseFrontmatter } from './frontmatter'
 
 const BLOG_DIR = path.join(process.cwd(), 'content', 'blog')
 
@@ -33,12 +33,9 @@ export async function getAllPostSlugs(): Promise<string[]> {
 export async function getPostBySlug(slug: string): Promise<Post> {
   const filePath = path.join(BLOG_DIR, `${slug}.mdx`)
   const raw = fs.readFileSync(filePath, 'utf-8')
-  const { data, content } = matter(raw)
-  // gray-matter parses date fields as Date objects; normalize to YYYY-MM-DD.
-  if (data.date instanceof Date) {
-    data.date = data.date.toISOString().split('T')[0]
-  }
-  return { slug, frontmatter: data as PostFrontmatter, content }
+  const { data, content } = parseFrontmatter(raw)
+  const frontmatter = normalizeFrontmatterDates(data) as unknown as PostFrontmatter
+  return { slug, frontmatter, content }
 }
 
 export async function getAllPosts(): Promise<PostSummary[]> {

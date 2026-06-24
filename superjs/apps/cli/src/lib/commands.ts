@@ -668,6 +668,13 @@ export function debug(_args: ParsedArgs, _io: IO, run: () => void = runDebugStdi
 
 // ── migrate (TS → SJS, assisted) ────────────────────────────────────────────
 
+/** Strip trailing `/` without regex (avoids ReDoS on long `/` runs). */
+function stripTrailingSlashes(s: string): string {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === '/') end--;
+  return end === s.length ? s : s.slice(0, end);
+}
+
 /** Collect `.ts` files (excluding `.d.ts`) under a directory, relative to cwd. */
 function walkTs(io: IO, relDir: string): string[] {
   const out: string[] = [];
@@ -679,7 +686,7 @@ function walkTs(io: IO, relDir: string): string[] {
     }
     for (const entry of io.readDir(abs).sort()) recur(`${rel}/${entry}`);
   };
-  recur(relDir.replace(/\/+$/, ''));
+  recur(stripTrailingSlashes(relDir));
   return out;
 }
 
@@ -694,7 +701,7 @@ function walkSjsFiles(io: IO, relDir: string): string[] {
     }
     for (const entry of io.readDir(abs).sort()) recur(`${rel}/${entry}`);
   };
-  recur(relDir.replace(/\/+$/, ''));
+  recur(stripTrailingSlashes(relDir));
   return out;
 }
 
@@ -901,7 +908,7 @@ function migrateFromPrototype(args: ParsedArgs, io: IO): number {
   for (const r of results) {
     if (!r.changed) continue;
     const destPath = outDir
-      ? join(outDir, r.relPath.slice(srcDir.replace(/\/+$/, '').length + 1))
+      ? join(outDir, r.relPath.slice(stripTrailingSlashes(srcDir).length + 1))
       : r.relPath;
     io.writeFile(resolve(io, destPath), r.content);
     line(io, `rewritten ${r.relPath}${outDir ? ` → ${destPath}` : ''}`);

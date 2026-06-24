@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
+import { parseFrontmatter } from './frontmatter'
 
 /**
  * Two content roots:
@@ -102,8 +102,8 @@ async function getLegacyDocBySlug(slug: string[]): Promise<Doc | null> {
   const filePath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null
   if (!filePath) return null
   const raw = fs.readFileSync(filePath, 'utf-8')
-  const { data, content } = matter(raw)
-  return { frontmatter: data as DocFrontmatter, content, slug, filePath }
+  const { data, content } = parseFrontmatter(raw)
+  return { frontmatter: data as unknown as DocFrontmatter, content, slug, filePath }
 }
 
 // ---------------------------------------------------------------------------
@@ -136,8 +136,8 @@ async function getSectionDocBySlug(slug: string[]): Promise<Doc | null> {
   const filePath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null
   if (!filePath) return null
   const raw = fs.readFileSync(filePath, 'utf-8')
-  const { data, content } = matter(raw)
-  return { frontmatter: data as DocFrontmatter, content, slug, filePath }
+  const { data, content } = parseFrontmatter(raw)
+  return { frontmatter: data as unknown as DocFrontmatter, content, slug, filePath }
 }
 
 // ---------------------------------------------------------------------------
