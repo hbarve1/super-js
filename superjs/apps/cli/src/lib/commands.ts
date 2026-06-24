@@ -238,10 +238,13 @@ export async function verify(args: ParsedArgs, io: IO): Promise<number> {
  */
 export async function translate(args: ParsedArgs, io: IO): Promise<number> {
   if (args.positionals.length === 0) {
-    errline(io, 'usage: superjs translate <files.d.ts...> [--out-dir dir]');
+    errline(io, 'usage: superjs translate <files.d.ts...> [--out-dir dir] [--stats]');
     return 2;
   }
-  let translateDts: (source: string, fileName?: string) => { code: string; unsupported: readonly string[] };
+  let translateDts: (
+    source: string,
+    fileName?: string,
+  ) => { code: string; unsupported: readonly string[]; surface: { typed: number; total: number } };
   try {
     ({ translateDts } = await import('@superjs/interop'));
   } catch {
@@ -249,6 +252,7 @@ export async function translate(args: ParsedArgs, io: IO): Promise<number> {
     return 2;
   }
 
+  const statsOnly = args.flags.stats === true;
   const outDir = typeof args.flags['out-dir'] === 'string' ? (args.flags['out-dir'] as string) : undefined;
   const SUFFIX = '.d.ts';
   let failed = 0;
@@ -256,7 +260,13 @@ export async function translate(args: ParsedArgs, io: IO): Promise<number> {
     if (!p.endsWith(SUFFIX)) { errline(io, `error: '${p}' is not a .d.ts file`); failed++; continue; }
     const abs = resolve(io, p);
     if (!io.exists(abs)) { errline(io, `error: cannot find file '${p}'`); failed++; continue; }
-    const { code, unsupported } = translateDts(io.readFile(abs), basename(p));
+    const { code, unsupported, surface } = translateDts(io.readFile(abs), basename(p));
+    if (statsOnly) {
+      const dynamic = surface.total - surface.typed;
+      const percent = surface.total === 0 ? 0 : Math.round((surface.typed / surface.total) * 100);
+      line(io, JSON.stringify({ total: surface.total, translated: surface.typed, dynamic, percent }));
+      continue;
+    }
     const outName = `${basename(p).slice(0, -SUFFIX.length)}.d.sjs`;
     const outPath = outDir ? join(resolve(io, outDir), outName) : join(dirname(abs), outName);
     io.writeFile(outPath, code);

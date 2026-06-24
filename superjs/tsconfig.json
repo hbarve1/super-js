@@ -56,6 +56,21 @@
     },
     {
       "path": "./libs/test-matchers"
+    },
+    {
+      "path": "./libs/types-connect"
+    },
+    {
+      "path": "./libs/types-express"
+    },
+    {
+      "path": "./libs/types-fastify"
+    },
+    {
+      "path": "./libs/types-hono"
+    },
+    {
+      "path": "./libs/types-koa"
     }
   ]
 }
