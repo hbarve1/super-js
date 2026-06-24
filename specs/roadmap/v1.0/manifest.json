@@ -157,7 +157,7 @@
         "WS-A3",
         "WS-A8"
       ],
-      "status": "pending",
+      "status": "pr_open",
       "pr": null,
       "id": "WS-A4d"
     },
