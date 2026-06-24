@@ -92,6 +92,18 @@ Each feature file follows `NNN-feature-name.md` and contains:
 | `053-match-lowering.md` | `match` → if-chain/switch compilation | Stage 1 — planned |
 | `054-source-maps.md` | Source map fidelity requirements, `.sjs`→`.js` mapping | Stage 1 — planned |
 
+### Group 8 — Platform & integration
+
+| File | Feature | Status |
+|------|---------|--------|
+| `lexical.md` | Token grammar prose | v1.0 — assembled |
+| `syntax.md` | Concrete syntax index | v1.0 — assembled |
+| `cli-surface.md` | CLI commands and exit codes | v1.0 — complete |
+| `incremental-model.md` | Cache keys, `apiHash`, LSP session | v1.0 — complete |
+| `interop.md` | TS interop, `dynamic`, wrappers | v1.0 — complete |
+| `stdlib-surface.md` | v1.0 `@superjs/std-*` stable surface | v1.0 — complete |
+| `build-tool-integration.md` | Vite/esbuild/Jest/Vitest plugins | v1.0 — complete |
+
 ### Group 7 — Diagnostics
 
 | File | Feature | Status |
