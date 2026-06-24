@@ -111,7 +111,7 @@
       "blockedBy": [
         "WS-A3"
       ],
-      "status": "pending",
+      "status": "pr_open",
       "pr": null,
       "id": "WS-A4a"
     },
@@ -141,7 +141,7 @@
       "blockedBy": [
         "WS-A3"
       ],
-      "status": "pr_open",
+      "status": "merged",
       "pr": "https://github.com/hbarve1/super-js/pull/190",
       "id": "WS-A4c"
     },
