@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
-import { Playground } from '@/components/playground/Playground'
+import { Suspense } from 'react'
+import { PlaygroundWithUrl } from '@/components/playground/PlaygroundWithUrl'
 
 export const metadata: Metadata = {
   title: 'Playground',
-  description: 'Write Super.js in the browser and compile it to JavaScript instantly.',
+  description: 'Write Super.js in the browser, compile, and run it in a sandboxed runtime.',
 }
 
 export default function PlaygroundPage() {
@@ -13,11 +14,17 @@ export default function PlaygroundPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-text-primary">Playground</h1>
           <p className="mt-1 text-text-muted text-sm">
-            Write Super.js, press Run (or ⌘/Ctrl+Enter) to compile to JavaScript.
+            Write Super.js, choose a runtime mode, and press Run (or ⌘/Ctrl+Enter).
           </p>
         </div>
         <div className="flex-1 min-h-0">
-          <Playground height="100%" />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-text-muted">Loading playground…</div>
+            }
+          >
+            <PlaygroundWithUrl height="100%" />
+          </Suspense>
         </div>
       </div>
     </main>

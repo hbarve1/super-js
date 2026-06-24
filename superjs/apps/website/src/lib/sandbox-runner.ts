@@ -1,0 +1,134 @@
+/** Runtime execution for compiled playground JS (Node or Workers isolate). */
+
+export type RunMode = 'node' | 'workers' | 'lambda'
+
+export interface RunResult {
+  consoleLogs: string[]
+  runtimeError?: string
+  timingMs: number
+}
+
+export const MAX_INPUT_BYTES = 50_000
+export const RUN_TIMEOUT_MS = 5_000
+
+function formatArgs(args: unknown[]): string {
+  return args
+    .map((a) => {
+      try {
+        return typeof a === 'string' ? a : JSON.stringify(a)
+      } catch {
+        return String(a)
+      }
+    })
+    .join(' ')
+}
+
+/** Strip `export` so compiled ESM can run inside `new Function` / `AsyncFunction`. */
+export function stripExportKeywords(source: string): string {
+  return source.replace(/^export\s+(?=async\s+function|function|const|let|class)/gm, '')
+}
+
+function makeConsole(logs: string[]) {
+  return {
+    log: (...args: unknown[]) => logs.push(formatArgs(args)),
+    info: (...args: unknown[]) => logs.push(formatArgs(args)),
+    warn: (...args: unknown[]) => logs.push(`[warn] ${formatArgs(args)}`),
+    error: (...args: unknown[]) => logs.push(`[error] ${formatArgs(args)}`),
+  }
+}
+
+type Globals = Record<string, unknown>
+
+/** Execute compiled JS synchronously (node mode). */
+export function runCompiledSync(compiledSource: string, mode: RunMode = 'node'): RunResult {
+  const logs: string[] = []
+  const capture = makeConsole(logs)
+  const start = performance.now()
+  let runtimeError: string | undefined
+
+  const code = stripExportKeywords(compiledSource)
+  const globals: Globals = { console: capture }
+
+  try {
+    if (mode === 'node') {
+      const fn = new Function(...Object.keys(globals), code)
+      fn(...Object.values(globals))
+    } else {
+      throw new Error(`Mode "${mode}" requires async runner`)
+    }
+  } catch (e) {
+    runtimeError = e instanceof Error ? e.message : String(e)
+  }
+
+  return { consoleLogs: logs, runtimeError, timingMs: performance.now() - start }
+}
+
+/** Execute compiled JS (async modes invoke exported handlers). */
+export async function runCompiledAsync(compiledSource: string, mode: RunMode = 'node'): Promise<RunResult> {
+  const logs: string[] = []
+  const capture = makeConsole(logs)
+  const start = performance.now()
+  let runtimeError: string | undefined
+
+  const code = stripExportKeywords(compiledSource)
+
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Execution timed out after ${RUN_TIMEOUT_MS}ms`)), RUN_TIMEOUT_MS)
+  })
+
+  const exec = async () => {
+    if (mode === 'workers') {
+      const body = `
+${code}
+if (typeof fetch === 'function') {
+  const __req = new Request('https://example.com/health');
+  const __res = await fetch(__req);
+  console.log('Response status:', __res.status);
+  console.log('Response body:', await __res.text());
+}
+`
+      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (
+        ...args: string[]
+      ) => (...args: unknown[]) => Promise<void>
+      const fn = new AsyncFunction('Request', 'Response', 'URL', 'Headers', 'console', body)
+      await fn(Request, Response, URL, Headers, capture)
+      return
+    }
+
+    if (mode === 'lambda') {
+      const body = `
+${code}
+const __event = { body: JSON.stringify({ name: 'World' }), headers: {} };
+const __ctx = { functionName: 'handler', awsRequestId: 'local-1', getRemainingTimeInMillis: () => 30000 };
+if (typeof handler === 'function') {
+  const __result = await handler(__event, __ctx);
+  console.log('Lambda result:', typeof __result === 'string' ? __result : JSON.stringify(__result));
+}
+`
+      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (
+        ...args: string[]
+      ) => (...args: unknown[]) => Promise<void>
+      const fn = new AsyncFunction('console', body)
+      await fn(capture)
+      return
+    }
+
+    const fn = new Function('console', code)
+    fn(capture)
+  }
+
+  try {
+    await Promise.race([exec(), timeout])
+  } catch (e) {
+    runtimeError = e instanceof Error ? e.message : String(e)
+  }
+
+  return { consoleLogs: logs, runtimeError, timingMs: performance.now() - start }
+}
+
+export function runCompiled(compiledSource: string, mode: RunMode): Promise<RunResult> {
+  if (mode === 'node') {
+    return Promise.resolve(runCompiledSync(compiledSource, mode))
+  }
+  return runCompiledAsync(compiledSource, mode)
+}
