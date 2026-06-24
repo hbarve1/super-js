@@ -14,9 +14,10 @@ SuperJS compiler throughput on real hardware. Numbers below are **measured**, no
 Reproduce locally:
 
 ```bash
-cd superjs && pnpm nx build compiler
+cd superjs && pnpm nx build compiler && pnpm nx build lsp
 cd .. && node scripts/gen-bench-corpus.mjs
-node scripts/bench.mjs   # writes benchmarks/results.json
+node scripts/bench.mjs              # compile metrics → benchmarks/results.json
+node --expose-gc scripts/bench-lsp.mjs   # LSP metrics (merge into results.json)
 ```
 
 ## Stage 6 targets
@@ -25,8 +26,8 @@ node scripts/bench.mjs   # writes benchmarks/results.json
 |--------|--------|-------------------|--------|
 | Cold compile (~10k LOC) | ≤ 2s | **81.5 ms** | ✓ |
 | Warm rebuild (avg 5×) | ≤ 100 ms | **56.5 ms** | ✓ |
-| LSP idle memory (100k LOC) | ≤ 250 MB | _pending_ | — |
-| LSP P99 hover | ≤ 200 ms | _pending_ | — |
+| LSP idle memory (100k LOC) | ≤ 250 MB | **195.8 MB** | ✓ |
+| LSP P99 hover | ≤ 200 ms | **13.2 ms** | ✓ |
 
 ## Compile time
 
@@ -52,18 +53,22 @@ SJS cold compile is **~0.11×** the wall time of `tsc` and **~0.19×** `esbuild`
 
 ## LSP
 
-| Metric | Value | Target | Notes |
-|--------|-------|--------|-------|
-| Idle memory (100k LOC) | _pending_ | ≤ 250 MB | Manual measurement — automation tracked separately |
-| P99 hover latency | _pending_ | ≤ 200 ms | Manual measurement — automation tracked separately |
+Single-file workspace: **~140k LOC** synthetic corpus (`genSjsCorpus(100_000)`), one `textDocument/didOpen`, memory budget 512 MB.
 
-LSP benchmarks require loading a large workspace into `@superjs/lsp` and sampling heap + hover latency. Until that harness ships, compiler numbers above are the authoritative published metrics.
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Open + index (cold) | 735.5 ms | — | — |
+| Idle heap after open | **195.8 MB** | ≤ 250 MB | ✓ |
+| P50 hover latency | 5.6 ms | — | — |
+| P99 hover latency | **13.2 ms** | ≤ 200 ms | ✓ |
+
+Harness: [`scripts/bench-lsp.mjs`](../../scripts/bench-lsp.mjs) (200 hover samples at a fixed identifier position). Run with `--expose-gc` for stable heap readings.
 
 ## Methodology
 
 - **Cold:** first `compile()` call after process start, no persistent cache.
 - **Warm:** average of 5 subsequent `compile()` calls on identical sources (in-memory incremental session).
-- **Harness:** [`scripts/bench.mjs`](../../scripts/bench.mjs)
+- **Harness:** [`scripts/bench.mjs`](../../scripts/bench.mjs) (compile), [`scripts/bench-lsp.mjs`](../../scripts/bench-lsp.mjs) (LSP)
 - **Corpus generator:** [`scripts/gen-bench-corpus.mjs`](../../scripts/gen-bench-corpus.mjs)
 - **Committed results:** [`benchmarks/results.json`](../../benchmarks/results.json)
 

@@ -151,7 +151,7 @@ async function main() {
       },
     },
     lsp: {
-      note: 'LSP heap and P99 hover are measured manually until an automated harness lands.',
+      note: 'Run node --expose-gc scripts/bench-lsp.mjs after bench.mjs to populate LSP metrics.',
       idleMemoryMb: null,
       p99HoverMs: null,
     },
