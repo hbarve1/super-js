@@ -116,6 +116,21 @@
     },
     {
       "path": "./libs/types-zod"
+    },
+    {
+      "path": "./libs/types-cloudflare-workers"
+    },
+    {
+      "path": "./libs/types-aws-sdk-core"
+    },
+    {
+      "path": "./libs/types-supertest"
+    },
+    {
+      "path": "./libs/types-bullmq"
+    },
+    {
+      "path": "./libs/types-multer"
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "name": "@superjs/types-supertest",
+  "version": "0.1.0",
+  "description": "SJS type bindings for supertest 6.x",
+  "license": "MIT",
+  "type": "module",
+  "sjs": "./src/index.sjs",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "sjs": "./src/index.sjs",
+      "default": "./src/index.sjs"
+    }
+  },
+  "nx": {
+    "tags": [
+      "tier:4",
+      "scope:types"
+    ]
+  },
+  "devDependencies": {
+    "@superjs/compiler": "workspace:*"
+  }
+}
