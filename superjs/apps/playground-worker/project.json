@@ -5,6 +5,12 @@
   "sourceRoot": "apps/playground-worker/src",
   "tags": ["tier:app", "scope:internal"],
   "targets": {
+    "build": {
+      "command": "wrangler deploy --dry-run",
+      "options": { "cwd": "apps/playground-worker" },
+      "dependsOn": ["^build"],
+      "cache": true
+    },
     "dev": {
       "command": "wrangler dev",
       "options": { "cwd": "apps/playground-worker" }

@@ -66,6 +66,9 @@ jobs:
       - name: Check docs internal links
         run: node scripts/check-docs-links.mjs
 
+      - name: Check playground worker bundle
+        run: node scripts/check-playground-worker.mjs
+
       - name: Assemble language spec
         run: node scripts/assemble-language-spec.mjs
 

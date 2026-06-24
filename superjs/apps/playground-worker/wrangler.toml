@@ -2,6 +2,10 @@ name = "superjs-playground"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# Uncomment after DNS is configured:
+# routes = [{ pattern = "api.superjs.dev/run*", zone_name = "superjs.dev" }]
 
 [observability]
 enabled = true
