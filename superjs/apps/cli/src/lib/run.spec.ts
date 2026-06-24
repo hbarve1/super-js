@@ -191,6 +191,14 @@ describe('translate (.d.ts → .d.sjs)', () => {
     expect(await run(['translate'], io)).toBe(2);
     expect(io.stderr()).toContain('usage: superjs translate');
   });
+  it('prints typed-surface stats as JSON with --stats', async () => {
+    const io = makeIO({ '/work/types.d.ts': 'export type Id = string;\nexport interface User { name: string; age: number; }' });
+    expect(await run(['translate', 'types.d.ts', '--stats'], io)).toBe(0);
+    const row = JSON.parse(io.stdout().trim());
+    expect(row).toMatchObject({ total: expect.any(Number), translated: expect.any(Number), dynamic: expect.any(Number), percent: expect.any(Number) });
+    expect(row.total).toBe(row.translated + row.dynamic);
+    expect(io.fs.has('/work/types.d.sjs')).toBe(false);
+  });
 });
 
 describe('add (npm package types → .d.sjs)', () => {

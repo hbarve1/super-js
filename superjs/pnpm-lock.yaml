@@ -404,6 +404,36 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/types-connect:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-express:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-fastify:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-hono:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-koa:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

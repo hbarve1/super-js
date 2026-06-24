@@ -96,7 +96,7 @@
       "wave": 1,
       "effort": "large",
       "blockedBy": [],
-      "status": "pr_open",
+      "status": "merged",
       "pr": "https://github.com/hbarve1/super-js/pull/175",
       "id": "WS-A3"
     },
@@ -200,7 +200,7 @@
       "wave": 1,
       "effort": "medium",
       "blockedBy": [],
-      "status": "pr_open",
+      "status": "merged",
       "pr": "https://github.com/hbarve1/super-js/pull/174",
       "id": "WS-A5"
     },
@@ -281,8 +281,8 @@
       "wave": 1,
       "effort": "xlarge",
       "blockedBy": [],
-      "status": "pending",
-      "pr": null,
+      "status": "pr_open",
+      "pr": "https://github.com/hbarve1/super-js/pull/180",
       "subMilestones": [
         "B3.1 Tier A backends",
         "B3.2 Tier B DB",

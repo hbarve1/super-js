@@ -40,7 +40,7 @@ usage: superjs <command> [options]
 commands:
   build <files...>     compile to JS (+ source maps) under --out-dir (default dist)
   check <files...>     type-check and report diagnostics  [--format pretty|json]
-  translate <d.ts...>  translate TypeScript .d.ts declarations to .d.sjs  [--out-dir dir]
+  translate <d.ts...>  translate TypeScript .d.ts declarations to .d.sjs  [--out-dir dir] [--stats]
   add <package>        resolve an installed npm package's types to .d.sjs
   format <files...>    rewrite .sjs files in canonical style  [--check]
   lint <files...>      report style findings (SJS-L*)  [--format pretty|json] [--fix]
