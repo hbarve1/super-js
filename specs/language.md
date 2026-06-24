@@ -3,7 +3,6 @@
 **Version:** 1.0  
 **Status:** FROZEN  
 **Frozen:** 2026-06-24  
-**Frozen-at:** `d0941d5`
 
 > This document is the canonical language reference for SuperJS 1.0.
 > It was assembled from per-feature sections authored across Stages 1–5
@@ -4217,7 +4216,7 @@ for (const x: number of strs) { } // ← SJS-E002: string not assignable to numb
 
 ## 3. Type system {#3-type-system}
 
-> **Grammar:** <Type>, <TypeDecl>, <MatchExpression> — see [`specs/grammar.ebnf`](./grammar.ebnf)  
+> **Grammar:** <Type>, <TypeDecl>, <SumTypeDef>, <MatchExpression> — see [`specs/grammar.ebnf`](./grammar.ebnf)  
 > **Errors:** SJS-E001–SJS-E012, SJS-E020, SJS-W001–SJS-W010 — see [`specs/error-codes.md`](./error-codes.md)
 
 # 001 — Null Safety
