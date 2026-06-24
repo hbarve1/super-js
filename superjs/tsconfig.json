@@ -71,6 +71,21 @@
     },
     {
       "path": "./libs/types-koa"
+    },
+    {
+      "path": "./libs/types-mongoose"
+    },
+    {
+      "path": "./libs/types-mysql2"
+    },
+    {
+      "path": "./libs/types-prisma"
+    },
+    {
+      "path": "./libs/types-redis"
+    },
+    {
+      "path": "./libs/types-pg"
     }
   ]
 }
