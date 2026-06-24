@@ -1,5 +1,6 @@
 // @superjs/std-string — string helpers (thin, total wrappers over JS string ops).
 
+/** Remove leading and trailing whitespace. */
 export function trim(s: string): string {
   return s.trim();
 }

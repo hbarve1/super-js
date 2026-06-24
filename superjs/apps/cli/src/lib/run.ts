@@ -6,7 +6,7 @@
 
 import { type IO, nodeIO, line, errline } from './io.js';
 import {
-  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, explain, init, doctor, lsp, verify, migrate, stub,
+  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, docgenCmd, explain, init, doctor, lsp, verify, migrate, stub,
 } from './commands.js';
 
 const STUBS = new Set(['test', 'repl']);
@@ -45,6 +45,7 @@ commands:
   format <files...>    rewrite .sjs files in canonical style  [--check]
   lint <files...>      report style findings (SJS-L*)  [--format pretty|json] [--fix]
   doc <files...>       generate API docs from exports  [--format md|json] [--out-dir dir]
+  docgen <files...>    generate docs/api Markdown pages  [--out dir]
   explain <CODE>       describe a diagnostic code, e.g. superjs explain E001
   init [template]      write a default config, or scaffold a template
                        (node-cli, fastify-api, workers-api, lambda-handler)
@@ -85,6 +86,7 @@ export async function run(argv: readonly string[], io: IO = nodeIO): Promise<num
     case 'format': return fmt(args, io);
     case 'lint': return lintCmd(args, io);
     case 'doc': return docCmd(args, io);
+    case 'docgen': return docgenCmd(args, io);
     case 'explain': return explain(args, io);
     case 'init': return init(args, io);
     case 'doctor': return doctor(args, io);

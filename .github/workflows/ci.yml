@@ -48,11 +48,17 @@ jobs:
       - name: Sync error-code pages
         run: node scripts/sync-error-pages.mjs
 
+      - name: Build compiler (docgen check)
+        run: cd superjs && pnpm nx build compiler
+
       - name: Check compat matrix
         run: node scripts/check-compat-matrix.mjs
 
       - name: Check benchmark results
         run: node scripts/check-bench-results.mjs
+
+      - name: Check API docs
+        run: node scripts/check-api-docs.mjs
 
       - name: Build website (includes docs routes)
         run: cd superjs && pnpm nx build website

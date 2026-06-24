@@ -1,8 +1,11 @@
 // @superjs/std-math — numeric helpers over the JS Math global.
 
+/** Ratio of a circle's circumference to its diameter. */
 export const PI: number = 3.141592653589793;
+/** Euler's number. */
 export const E: number = 2.718281828459045;
 
+/** Absolute value (sign stripped). */
 export function abs(x: number): number {
   return x < 0 ? -x : x;
 }
@@ -19,6 +22,7 @@ export function max(a: number, b: number): number {
   return a > b ? a : b;
 }
 
+/** Clamp `x` to the inclusive range `[lo, hi]`. */
 export function clamp(x: number, lo: number, hi: number): number {
   return x < lo ? lo : x > hi ? hi : x;
 }

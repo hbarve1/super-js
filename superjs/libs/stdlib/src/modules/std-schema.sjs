@@ -2,8 +2,10 @@
 // Predicate-based: each Schema carries a structural check; `parse` returns a
 // Validated<T> (Valid payload or an Invalid message). Combinators compose checks.
 
+/** Outcome of `Schema.parse` — either `Valid(T)` or `Invalid(message)`. */
 export type Validated<T> = Valid(T) | Invalid(string);
 
+/** Reified validator with `accepts` and `parse`. */
 export class Schema<T> {
   private check: (value: dynamic) => boolean;
   private label: string;
@@ -17,6 +19,7 @@ export class Schema<T> {
     return this.check(value);
   }
 
+  /** Return `Valid(value)` when the check passes, else `Invalid`. */
   parse(value: dynamic): Validated<T> {
     return this.check(value) ? Valid(value as T) : Invalid("expected " + this.label);
   }
@@ -27,6 +30,7 @@ export class Schema<T> {
   }
 }
 
+/** Schema that accepts JavaScript strings. */
 export function string(): Schema<string> {
   return new Schema((v: dynamic): boolean => typeof v === "string", "string");
 }

@@ -8,7 +8,7 @@
  */
 
 import { join, isAbsolute, basename, dirname } from 'node:path';
-import { compile, format, lint, doc as extractDoc, renderMarkdown, renderJson } from '@superjs/compiler';
+import { compile, format, lint, doc as extractDoc, renderMarkdown, renderJson, renderApiPage, moduleDescriptionFromSource } from '@superjs/compiler';
 import { serveStdio } from '@superjs/lsp';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
@@ -411,6 +411,37 @@ export function docCmd(args: ParsedArgs, io: IO): number {
     } else {
       line(io, rendered);
     }
+  }
+  return missing > 0 ? 1 : 0;
+}
+
+/**
+ * Generate website-ready API reference pages (WS-A4c). Writes one `.md` per module
+ * with docs frontmatter under `--out` (default `docs/api` at repo root).
+ */
+export function docgenCmd(args: ParsedArgs, io: IO): number {
+  const outDir = typeof args.flags['out'] === 'string'
+    ? (args.flags['out'] as string)
+    : 'docs/api';
+  if (args.positionals.length === 0) {
+    errline(io, 'usage: superjs docgen <files...> [--out dir]');
+    return 2;
+  }
+  const { files, missing } = readSources(io, args.positionals);
+  const sorted = [...files].sort((a, b) => a.filename.localeCompare(b.filename));
+  for (let i = 0; i < sorted.length; i++) {
+    const f = sorted[i]!;
+    const title = basename(f.filename).replace(/\.sjs$/, '');
+    const symbols = extractDoc(f.source, f.filename);
+    const description = moduleDescriptionFromSource(f.source, title);
+    const rendered = renderApiPage(title, symbols, {
+      description,
+      sidebarPosition: i + 2,
+      section: 'api',
+    });
+    const outPath = join(resolve(io, outDir), `${title}.md`);
+    io.writeFile(outPath, rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+    line(io, `docgen ${f.filename} → ${outPath}`);
   }
   return missing > 0 ? 1 : 0;
 }
