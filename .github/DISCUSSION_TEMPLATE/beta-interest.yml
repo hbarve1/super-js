@@ -1,0 +1,59 @@
+title: "Beta interest: "
+labels:
+  - beta
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in the SuperJS **v1.0 beta**. We are recruiting up to
+        three teams before `1.0.0-rc.1`. See [`docs/beta/index.md`](https://github.com/hbarve1/super-js/blob/main/docs/beta/index.md).
+
+  - type: input
+    id: org
+    attributes:
+      label: Team or organization name
+      placeholder: Acme Corp backend team
+    validations:
+      required: true
+
+  - type: textarea
+    id: project
+    attributes:
+      label: Project description
+      description: What you are building with SuperJS (or migrating from TypeScript)
+    validations:
+      required: true
+
+  - type: input
+    id: loc
+    attributes:
+      label: Estimated SJS LOC at beta start
+      placeholder: "1500"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: repo_visibility
+    attributes:
+      label: Can the repo be public (or shared with maintainers)?
+      options:
+        - Public GitHub repo
+        - Private — can grant read access
+        - Private — cannot share code
+    validations:
+      required: true
+
+  - type: input
+    id: start
+    attributes:
+      label: Target beta start date
+      placeholder: "2026-07-01"
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (GitHub handle or email)
+    validations:
+      required: true

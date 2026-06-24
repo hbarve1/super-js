@@ -294,6 +294,21 @@
       "id": "WS-B3"
     }
   },
+  "milestone": {
+    "workstreamsComplete": true,
+    "completedAt": "2026-06-24",
+    "agentWorkComplete": true,
+    "deferred": ["WS-B2"]
+  },
+  "postWorkstreams": [
+    { "title": "v1.0 closeout + docs links", "pr": 194, "status": "merged" },
+    { "title": "Playground CF deploy workflow", "pr": 195, "status": "merged" },
+    { "title": "LSP bench + CI gate", "pr": 196, "status": "merged" },
+    { "title": "Threat model + RC docs", "pr": 197, "status": "merged" },
+    { "title": "LSP memory audit + npm audit gate", "pr": 198, "status": "merged" },
+    { "title": "RC ops runbooks", "pr": 199, "status": "merged" },
+    { "title": "Launch scaffolds + rc-preflight", "pr": 200, "status": "merged" }
+  ],
   "conflictZones": [
     {
       "path": ".github/workflows/ci.yml",
