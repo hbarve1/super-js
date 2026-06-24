@@ -10,16 +10,17 @@ import { fileURLToPath } from 'node:url';
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'tour');
 const SITE = 'https://superjs.org';
 
-function pg(code) {
+function pg(code, opts = {}) {
   const enc = Buffer.from(code.trim())
     .toString('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-  return `${SITE}/playground#code=${enc}`;
+  const mode = opts.mode ? `?mode=${opts.mode}` : '';
+  return `${SITE}/playground${mode}#code=${enc}`;
 }
 
-function lesson({ num, slug, title, description, goal, sections, code, takeaways, next }) {
+function lesson({ num, slug, title, description, goal, sections, code, takeaways, next, playgroundMode }) {
   const file = `${String(num).padStart(2, '0')}-${slug}.md`;
   const body = [
     '---',
@@ -41,7 +42,7 @@ function lesson({ num, slug, title, description, goal, sections, code, takeaways
     code.trim(),
     '```',
     '',
-    `[Open in playground](${pg(code)})`,
+    `[Open in playground](${pg(code, { mode: playgroundMode })})`,
     '',
     '## Key takeaways',
     '',
@@ -397,6 +398,7 @@ console.log(sum(values))`,
   return new Response("not found", { status: 404 })
 }`,
     takeaways: ['Handlers take `dynamic` at the platform boundary.', 'Use `match` on paths and event shapes.', 'Not decorators — serverless export handlers only.'],
+    playgroundMode: 'workers',
     next: { num: 19, slug: 'tooling-tour', title: 'Tooling tour' },
   }),
   lesson({

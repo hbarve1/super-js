@@ -41,7 +41,18 @@ const COLOR: Record<LogLine['level'], string> = {
 }
 
 /** Runs `code` in a sandboxed iframe each time `runToken` changes; shows console output. */
-export function ConsolePanel({ code, runToken }: { code: string; runToken: number }) {
+export function ConsolePanel({
+  code,
+  runToken,
+  serverLogs,
+  runtimeError,
+}: {
+  code: string
+  runToken: number
+  /** When set, display server-side console output instead of the iframe runner. */
+  serverLogs?: string[]
+  runtimeError?: string
+}) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [logs, setLogs] = useState<LogLine[]>([])
   const [done, setDone] = useState(false)
@@ -60,11 +71,31 @@ export function ConsolePanel({ code, runToken }: { code: string; runToken: numbe
 
   useEffect(() => {
     if (runToken === 0) return
+    if (serverLogs !== undefined) return
     setLogs([])
     setDone(false)
     if (iframeRef.current) iframeRef.current.srcdoc = buildSrcDoc(code)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runToken])
+  }, [runToken, serverLogs])
+
+  if (serverLogs !== undefined && runToken > 0) {
+    return (
+      <div className="flex h-full flex-col overflow-auto p-4 font-mono text-sm">
+        {runtimeError && <div className="mb-2 whitespace-pre-wrap text-red-400">{runtimeError}</div>}
+        {serverLogs.length === 0 && !runtimeError ? (
+          <p className="text-text-muted">(no console output)</p>
+        ) : (
+          <div className="space-y-1">
+            {serverLogs.map((text, id) => (
+              <div key={id} className="whitespace-pre-wrap text-text-secondary">
+                {text}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 font-mono text-sm">

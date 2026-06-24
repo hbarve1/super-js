@@ -1,0 +1,21 @@
+{
+  "name": "@superjs/playground-worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/playground-worker/src",
+  "tags": ["tier:app", "scope:internal"],
+  "targets": {
+    "dev": {
+      "command": "wrangler dev",
+      "options": { "cwd": "apps/playground-worker" }
+    },
+    "deploy": {
+      "command": "wrangler deploy",
+      "options": { "cwd": "apps/playground-worker" }
+    },
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "options": { "cwd": "apps/playground-worker" }
+    }
+  }
+}

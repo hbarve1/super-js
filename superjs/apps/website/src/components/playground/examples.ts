@@ -3,9 +3,18 @@ export interface Example {
   id: string
   label: string
   code: string
+  /** Suggested runtime mode when loading this example. */
+  mode?: 'node' | 'workers' | 'lambda'
 }
 
 export const EXAMPLES: Example[] = [
+  {
+    id: 'hello-world',
+    label: 'Hello world',
+    code: `const name: string = "Super.js"
+console.log("Hello,", name)
+`,
+  },
   {
     id: 'result',
     label: 'Result & match',
@@ -67,6 +76,17 @@ console.log(map([1, 2, 3], (n) => n * n))
 `,
   },
   {
+    id: 'async',
+    label: 'async/await',
+    code: `async function greet(name: string): Promise<string> {
+  return "Hello, " + name
+}
+
+const msg: string = await greet("async")
+console.log(msg)
+`,
+  },
+  {
     id: 'exhaustive',
     label: 'Exhaustive match',
     code: `type Shape =
@@ -82,6 +102,45 @@ function area(s: Shape): number {
 
 console.log(area(Circle(2)))
 console.log(area(Rect({ w: 3, h: 4 })))
+`,
+  },
+  {
+    id: 'fastify-route',
+    label: 'Fastify route (snippet)',
+    code: `// Minimal route handler shape — see examples/mvb-fastify for a full app.
+type Health = { status: string }
+
+function healthHandler(): Health {
+  return { status: "ok" }
+}
+
+const body: Health = healthHandler()
+console.log(JSON.stringify(body))
+`,
+  },
+  {
+    id: 'workers-handler',
+    label: 'Workers handler (lesson 18)',
+    mode: 'workers',
+    code: `export async function fetch(request: dynamic): Promise<dynamic> {
+  const url: dynamic = new URL(request.url as string)
+  const path: string = url.pathname as string
+  if (path === "/health") {
+    return new Response("ok", { status: 200 })
+  }
+  return new Response("not found", { status: 404 })
+}
+`,
+  },
+  {
+    id: 'lambda-handler',
+    label: 'Lambda handler',
+    mode: 'lambda',
+    code: `export async function handler(event: dynamic, context: dynamic): Promise<dynamic> {
+  const body: dynamic = JSON.parse(event.body as string)
+  const name: string = body.name as string
+  return JSON.stringify({ message: "Hello, " + name })
+}
 `,
   },
 ]

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../libs/compiler"
+    }
+  ]
+}

@@ -146,6 +146,9 @@
     },
     {
       "path": "./libs/types-vite"
+    },
+    {
+      "path": "./apps/playground-worker"
     }
   ]
 }
