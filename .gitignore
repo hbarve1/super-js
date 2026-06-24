@@ -82,3 +82,6 @@ graphify-out/
 website/public/pagefind/
 .claude/worktrees/
 .vercel
+
+# LSP heap snapshots (local audit only)
+benchmarks/*.heapsnapshot

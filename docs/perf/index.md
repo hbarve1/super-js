@@ -64,6 +64,8 @@ Single-file workspace: **~140k LOC** synthetic corpus (`genSjsCorpus(100_000)`),
 
 Harness: [`scripts/bench-lsp.mjs`](../../scripts/bench-lsp.mjs) (200 hover samples at a fixed identifier position). Run with `--expose-gc` for stable heap readings.
 
+See also: [LSP Memory Audit](./lsp-memory-audit.md) — `didClose` release and LRU eviction checks.
+
 ## Methodology
 
 - **Cold:** first `compile()` call after process start, no persistent cache.

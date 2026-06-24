@@ -60,6 +60,9 @@ jobs:
       - name: Check benchmark results
         run: node scripts/check-bench-results.mjs
 
+      - name: Check LSP memory audit
+        run: node scripts/check-lsp-memory-audit.mjs
+
       - name: Check API docs
         run: node scripts/check-api-docs.mjs
 
@@ -104,6 +107,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Dependency audit (no high/critical)
+        run: pnpm audit --audit-level=high
 
       - name: Lint, test, typecheck, and build
         env:

@@ -1,0 +1,40 @@
+{
+  "measuredAt": "2026-06-24T15:03:17.118Z",
+  "node": "v24.14.1",
+  "exposeGc": true,
+  "targets": {
+    "idleOpenMb": 250,
+    "closeReleaseRatio": 0.35,
+    "lruPlateauMb": 120
+  },
+  "singleFile": {
+    "loc": 140000,
+    "sourceBytes": 5557798,
+    "sourceMb": 5.3,
+    "baselineMb": 8.2,
+    "idleOpenMb": 195.8,
+    "afterCloseMb": 9,
+    "releasedMb": 186.8,
+    "releaseRatio": 1,
+    "withinTarget": true,
+    "closeReleased": true
+  },
+  "lruEviction": {
+    "filesOpened": 5,
+    "budgetMb": 2,
+    "baselineMb": 6.9,
+    "plateauMb": 45,
+    "growthMb": 38.1,
+    "oldestEvicted": true,
+    "withinPlateau": true
+  },
+  "snapshotPath": null,
+  "findings": [
+    "Primary retention: parsed AST, type environment, and diagnostics per open file (compiler FileState).",
+    "LSP sources map shares the same string reference as compiler rawSources when opened via didOpen.",
+    "LRU eviction (lsp.memoryBudgetMB) drops evicted files from sources + compiler via removeFile.",
+    "didClose clears all per-file state; heap drops measurably after gc.",
+    "Bench harness (bench-lsp.mjs) idle reading is authoritative for CI; this audit adds close/LRU checks."
+  ],
+  "pass": true
+}
