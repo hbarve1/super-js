@@ -57,8 +57,16 @@ pnpm exec wrangler deploy
 ## 4. Smoke test
 
 ```bash
+# Health + /run
 PLAYGROUND_RUN_URL=https://superjs-playground.<account>.workers.dev/run \
   node scripts/smoke-playground-run.mjs
+```
+
+Or health only:
+
+```bash
+curl -s https://superjs-playground.<account>.workers.dev/health
+# → {"ok":true,"service":"superjs-playground"}
 ```
 
 Expect: `playground smoke OK`.

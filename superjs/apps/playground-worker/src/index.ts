@@ -32,7 +32,7 @@ function checkRateLimit(ip: string): { ok: boolean; remaining: number; retryAfte
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -42,6 +42,10 @@ export default {
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS })
+    }
+
+    if (request.method === 'GET' && url.pathname === '/health') {
+      return Response.json({ ok: true, service: 'superjs-playground' }, { headers: CORS_HEADERS })
     }
 
     if (request.method !== 'POST' || url.pathname !== '/run') {
