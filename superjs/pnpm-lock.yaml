@@ -458,6 +458,12 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-jest:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-joi:
     devDependencies:
       '@superjs/compiler':
@@ -494,6 +500,12 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-nextjs:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-node-fetch:
     devDependencies:
       '@superjs/compiler':
@@ -524,6 +536,12 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-react:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-redis:
     devDependencies:
       '@superjs/compiler':
@@ -537,6 +555,18 @@ importers:
         version: link:../compiler
 
   libs/types-undici:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-vite:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-vitest:
     devDependencies:
       '@superjs/compiler':
         specifier: workspace:*

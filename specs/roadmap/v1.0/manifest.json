@@ -282,13 +282,13 @@
       "effort": "xlarge",
       "blockedBy": [],
       "status": "pr_open",
-      "pr": "https://github.com/hbarve1/super-js/pull/183",
+      "pr": null,
       "subMilestones": [
         "B3.1 Tier A backends (merged #180)",
         "B3.2 Tier B DB (merged #181)",
         "B3.3 Tier C utils (merged #182)",
-        "B3.4 Tier D cloud",
-        "B3.5 Tier E test/misc"
+        "B3.4 Tier D cloud (merged #183)",
+        "B3.5 Tier E frontend/test",
       ],
       "note": "Same branch/worktree; stacked PRs per sub-milestone recommended",
       "id": "WS-B3"
