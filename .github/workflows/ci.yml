@@ -96,8 +96,9 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # pnpm 11 requires Node ≥22.13; use pnpm 9 on Node 20 (WS-A7 matrix).
-          version: ${{ matrix.node-version == 20 && 9 || 11 }}
+          # pnpm 11 requires Node ≥22.13; pnpm 9 cannot read pnpm-11 lockfile overrides.
+          # pnpm 10 on Node 20 matches the lockfile written by pnpm 11 on 22/24.
+          version: ${{ matrix.node-version == 20 && 10 || 11 }}
 
       - uses: actions/setup-node@v6
         with:
