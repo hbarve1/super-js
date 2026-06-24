@@ -255,7 +255,7 @@
         "WS-B3"
       ],
       "status": "pr_open",
-      "pr": null,
+      "pr": "https://github.com/hbarve1/super-js/pull/192",
       "id": "WS-B1"
     },
     "WS-B2": {
