@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "package.json"
+  ],
+  "references": [
+    {
+      "path": "../compiler/tsconfig.lib.json"
+    }
+  ]
+}
