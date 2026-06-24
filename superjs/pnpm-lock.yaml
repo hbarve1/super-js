@@ -404,7 +404,19 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/types-axios:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-connect:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-dotenv:
     devDependencies:
       '@superjs/compiler':
         specifier: workspace:*
@@ -428,6 +440,18 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-joi:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-jsonwebtoken:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-koa:
     devDependencies:
       '@superjs/compiler':
@@ -446,7 +470,25 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-node-fetch:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-passport:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
   libs/types-pg:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-pino:
     devDependencies:
       '@superjs/compiler':
         specifier: workspace:*
@@ -459,6 +501,24 @@ importers:
         version: link:../compiler
 
   libs/types-redis:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-undici:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-winston:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-zod:
     devDependencies:
       '@superjs/compiler':
         specifier: workspace:*

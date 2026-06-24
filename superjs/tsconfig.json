@@ -86,6 +86,36 @@
     },
     {
       "path": "./libs/types-pg"
+    },
+    {
+      "path": "./libs/types-jsonwebtoken"
+    },
+    {
+      "path": "./libs/types-node-fetch"
+    },
+    {
+      "path": "./libs/types-passport"
+    },
+    {
+      "path": "./libs/types-winston"
+    },
+    {
+      "path": "./libs/types-dotenv"
+    },
+    {
+      "path": "./libs/types-undici"
+    },
+    {
+      "path": "./libs/types-axios"
+    },
+    {
+      "path": "./libs/types-pino"
+    },
+    {
+      "path": "./libs/types-joi"
+    },
+    {
+      "path": "./libs/types-zod"
     }
   ]
 }
