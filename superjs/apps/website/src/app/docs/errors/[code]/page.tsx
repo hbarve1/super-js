@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
+import { parseFrontmatter } from '@/lib/frontmatter'
 import DocContent from '@/components/docs/DocContent'
 import TableOfContents from '@/components/docs/TableOfContents'
 import { JsonLd } from '@/components/seo/JsonLd'
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: PageProps) {
   if (!isValidCode(code)) return { title: 'Error Code — Super.js Docs' }
   const filePath = getErrorCodeFilePath(code)
   if (!fs.existsSync(filePath)) return { title: `${code} — Super.js Docs` }
-  const { data } = matter(fs.readFileSync(filePath, 'utf-8'))
+  const { data } = parseFrontmatter(fs.readFileSync(filePath, 'utf-8'))
   const title = (data.title as string | undefined) ?? code
   const description = (data.description as string | undefined) ?? `${code} diagnostic reference`
   const docPath = `/docs/errors/${code}`
@@ -71,7 +71,7 @@ export default async function ErrorCodePage({ params }: PageProps) {
   if (!fs.existsSync(filePath)) notFound()
 
   const raw = fs.readFileSync(filePath, 'utf-8')
-  const { data, content } = matter(raw)
+  const { data, content } = parseFrontmatter(raw)
   const title = (data.title as string | undefined) ?? code
   const description = (data.description as string | undefined) ?? `${code} diagnostic reference`
   const docPath = `/docs/errors/${code}`

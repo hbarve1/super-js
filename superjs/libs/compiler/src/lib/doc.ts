@@ -148,7 +148,7 @@ export function renderMarkdown(symbols: readonly DocSymbol[], title = 'API'): st
       else out.push(`**@${t.tag}** ${t.value}`.trimEnd(), '');
     }
   }
-  return out.join('\n').replace(/\n+$/, '\n');
+  return ensureSingleTrailingNewline(out.join('\n'));
 }
 
 /** Render symbols as a JSON string. */
@@ -177,6 +177,18 @@ function escapeMdxProse(text: string): string {
   return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Escape a string for use inside YAML double-quoted values. */
+function escapeYamlDoubleQuoted(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/** Collapse trailing newlines to exactly one (no regex — avoids ReDoS on `\n` runs). */
+function ensureSingleTrailingNewline(text: string): string {
+  let end = text.length;
+  while (end > 0 && text[end - 1] === '\n') end--;
+  return text.slice(0, end) + '\n';
+}
+
 /** Render one module page for docs/api/ (ADR-011 website + GitHub). */
 export function renderApiPage(
   moduleName: string,
@@ -186,7 +198,7 @@ export function renderApiPage(
   const section = opts.section ?? 'api';
   const sidebar = opts.sidebarPosition ?? 99;
   const desc = opts.description ?? `API reference for ${moduleName}.`;
-  const escapedDesc = escapeMdxProse(desc).replace(/"/g, '\\"');
+  const escapedDesc = escapeYamlDoubleQuoted(escapeMdxProse(desc));
 
   const lines: string[] = [
     '---',
@@ -224,7 +236,7 @@ export function renderApiPage(
     }
   }
 
-  return lines.join('\n').replace(/\n+$/, '\n');
+  return ensureSingleTrailingNewline(lines.join('\n'));
 }
 
 /** Extract module description from `// @superjs/name — blurb` header line. */

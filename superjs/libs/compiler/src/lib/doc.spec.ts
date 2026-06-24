@@ -87,4 +87,9 @@ describe('renderApiPage()', () => {
     expect(md).toContain('## Functions');
     expect(md).toContain('A fn.');
   });
+
+  it('escapes backslashes and quotes in YAML description', () => {
+    const md = renderApiPage('mod', [], { description: 'path\\to "value"' });
+    expect(md).toContain('description: "path\\\\to \\"value\\""');
+  });
 });
