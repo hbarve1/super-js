@@ -3,6 +3,7 @@
 **Version:** 1.0  
 **Status:** FROZEN  
 **Frozen:** 2026-06-24  
+**Frozen-at:** `d0941d5`
 
 > This document is the canonical language reference for SuperJS 1.0.
 > It was assembled from per-feature sections authored across Stages 1–5
