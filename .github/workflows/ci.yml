@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: cd superjs && pnpm install --frozen-lockfile
 
+      - name: Validate grammar + parser fixtures
+        run: node scripts/validate-grammar.mjs
+
       - name: Sync error-code pages
         run: node scripts/sync-error-pages.mjs
 
@@ -59,6 +62,12 @@ jobs:
 
       - name: Check API docs
         run: node scripts/check-api-docs.mjs
+
+      - name: Assemble language spec
+        run: node scripts/assemble-language-spec.mjs
+
+      - name: Check language spec is committed
+        run: git diff --exit-code specs/language.md
 
       - name: Build website (includes docs routes)
         run: cd superjs && pnpm nx build website
