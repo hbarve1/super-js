@@ -307,7 +307,8 @@
     { "title": "Threat model + RC docs", "pr": 197, "status": "merged" },
     { "title": "LSP memory audit + npm audit gate", "pr": 198, "status": "merged" },
     { "title": "RC ops runbooks", "pr": 199, "status": "merged" },
-    { "title": "Launch scaffolds + rc-preflight", "pr": 200, "status": "merged" }
+    { "title": "Launch scaffolds + rc-preflight", "pr": 200, "status": "merged" },
+    { "title": "Final closeout trademark + beta templates", "pr": 201, "status": "merged" }
   ],
   "conflictZones": [
     {

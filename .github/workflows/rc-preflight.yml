@@ -1,0 +1,45 @@
+name: RC preflight
+
+# Maintainer gate before tagging 1.0.0-rc.N — runs scripts/rc-preflight.mjs.
+# Does not publish or tag anything.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_slow:
+        description: Skip playground worker bundle (faster)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: RC automated gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: superjs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd superjs && pnpm install --frozen-lockfile
+
+      - name: Build compiler (playground worker check)
+        if: ${{ !inputs.skip_slow }}
+        run: cd superjs && pnpm nx build compiler
+
+      - name: Run RC preflight
+        run: |
+          ARGS=""
+          if [ "${{ inputs.skip_slow }}" = "true" ]; then ARGS="--skip-slow"; fi
+          node scripts/rc-preflight.mjs $ARGS

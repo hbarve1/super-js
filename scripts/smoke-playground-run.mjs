@@ -19,12 +19,26 @@ const runUrl = raw.endsWith('/run')
   ? raw
   : `${raw.replace(/\/$/, '')}/run`;
 
+const baseUrl = runUrl.replace(/\/run$/, '');
+
 const SAMPLE = `export function answer(): number {
   return 42
 }
 `;
 
 async function main() {
+  const healthUrl = `${baseUrl}/health`;
+  const healthRes = await fetch(healthUrl);
+  if (!healthRes.ok) {
+    console.error(`GET ${healthUrl} failed: ${healthRes.status}`);
+    process.exit(1);
+  }
+  const health = await healthRes.json();
+  if (!health.ok) {
+    console.error('Health check returned ok=false');
+    process.exit(1);
+  }
+
   const res = await fetch(runUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

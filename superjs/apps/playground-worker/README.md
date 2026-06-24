@@ -2,7 +2,7 @@
 
 Cloudflare Worker that compiles and runs SuperJS playground snippets server-side.
 
-**Endpoint:** `POST /run`  
+**Endpoint:** `GET /health` (liveness), `POST /run` (compile + run)  
 **Body:** `{ "code": string, "mode"?: "node" | "workers" | "lambda" }`  
 **Response:** `{ compiledSource, consoleLogs, errors, diagnostics, timingMs }`
 
