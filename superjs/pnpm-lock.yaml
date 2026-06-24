@@ -434,6 +434,36 @@ importers:
         specifier: workspace:*
         version: link:../compiler
 
+  libs/types-mongoose:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-mysql2:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-pg:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-prisma:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
+  libs/types-redis:
+    devDependencies:
+      '@superjs/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

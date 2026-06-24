@@ -1,0 +1,24 @@
+{
+  "name": "@superjs/types-mongoose",
+  "version": "0.1.0",
+  "description": "SJS type bindings for mongoose 8.x",
+  "license": "MIT",
+  "type": "module",
+  "sjs": "./src/index.sjs",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "sjs": "./src/index.sjs",
+      "default": "./src/index.sjs"
+    }
+  },
+  "nx": {
+    "tags": [
+      "tier:4",
+      "scope:types"
+    ]
+  },
+  "devDependencies": {
+    "@superjs/compiler": "workspace:*"
+  }
+}
