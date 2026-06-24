@@ -34,6 +34,8 @@ pnpm exec wrangler deploy
 
 Or trigger **Actions → Playground Worker → Run workflow** (needs `CLOUDFLARE_API_TOKEN` repo secret).
 
+Full runbook: [`docs/ops/playground-deploy.md`](../../../docs/ops/playground-deploy.md).
+
 ### Custom domain (optional)
 
 Uncomment and set in `wrangler.toml`:
