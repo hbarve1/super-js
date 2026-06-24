@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { doc, renderMarkdown, renderJson } from '../index.js';
+import { doc, renderMarkdown, renderJson, renderApiPage } from '../index.js';
 
 describe('doc() — extraction', () => {
   it('documents an exported function from its signature', () => {
@@ -74,5 +74,17 @@ describe('doc() — rendering', () => {
   it('renders JSON', () => {
     const parsed = JSON.parse(renderJson(doc('export const x: number = 1;')));
     expect(parsed[0]).toMatchObject({ name: 'x', kind: 'const' });
+  });
+});
+
+describe('renderApiPage()', () => {
+  it('renders frontmatter and grouped sections', () => {
+    const src = '/** A fn. */\nexport function f(): void {}\nexport type T = number;';
+    const md = renderApiPage('std-test', doc(src), { description: 'Test module', sidebarPosition: 3 });
+    expect(md).toContain('title: std-test');
+    expect(md).toContain('section: api');
+    expect(md).toContain('## Types');
+    expect(md).toContain('## Functions');
+    expect(md).toContain('A fn.');
   });
 });

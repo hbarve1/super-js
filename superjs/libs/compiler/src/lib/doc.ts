@@ -155,3 +155,80 @@ export function renderMarkdown(symbols: readonly DocSymbol[], title = 'API'): st
 export function renderJson(symbols: readonly DocSymbol[]): string {
   return JSON.stringify(symbols, null, 2);
 }
+
+const API_SECTION_ORDER: { kinds: readonly DocKind[]; heading: string }[] = [
+  { kinds: ['type'], heading: 'Types' },
+  { kinds: ['class'], heading: 'Classes' },
+  { kinds: ['function'], heading: 'Functions' },
+  { kinds: ['const'], heading: 'Constants' },
+  { kinds: ['default'], heading: 'Default export' },
+];
+
+export interface RenderApiPageOpts {
+  /** Repo-root docs frontmatter section */
+  section?: string;
+  sidebarPosition?: number;
+  /** Module-level blurb (first line of file or file-level doc comment) */
+  description?: string;
+}
+
+/** Escape `<`/`>` in prose so MDX does not treat generics as JSX. */
+function escapeMdxProse(text: string): string {
+  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Render one module page for docs/api/ (ADR-011 website + GitHub). */
+export function renderApiPage(
+  moduleName: string,
+  symbols: readonly DocSymbol[],
+  opts: RenderApiPageOpts = {},
+): string {
+  const section = opts.section ?? 'api';
+  const sidebar = opts.sidebarPosition ?? 99;
+  const desc = opts.description ?? `API reference for ${moduleName}.`;
+  const escapedDesc = escapeMdxProse(desc).replace(/"/g, '\\"');
+
+  const lines: string[] = [
+    '---',
+    `title: ${moduleName}`,
+    `sidebar_position: ${sidebar}`,
+    `description: "${escapedDesc}"`,
+    `section: ${section}`,
+    '---',
+    '',
+    `# ${moduleName}`,
+    '',
+  ];
+
+  if (opts.description) {
+    lines.push(escapeMdxProse(opts.description), '');
+  }
+
+  if (symbols.length === 0) {
+    lines.push('_No exported symbols._', '');
+    return lines.join('\n');
+  }
+
+  for (const { kinds, heading } of API_SECTION_ORDER) {
+    const group = symbols.filter((s) => kinds.includes(s.kind));
+    if (group.length === 0) continue;
+    lines.push(`## ${heading}`, '');
+    for (const s of group) {
+      lines.push(`### \`${s.name}\``, '', '```sjs', s.signature, '```', '');
+      if (s.doc?.description) lines.push(escapeMdxProse(s.doc.description), '');
+      for (const t of s.doc?.tags ?? []) {
+        if (t.tag === 'example') lines.push('**Example**', '', '```sjs', t.value, '```', '');
+        else if (t.tag === 'deprecated') lines.push(`> **Deprecated** ${t.value}`.trimEnd(), '');
+        else lines.push(`**@${t.tag}** ${t.value}`.trimEnd(), '');
+      }
+    }
+  }
+
+  return lines.join('\n').replace(/\n+$/, '\n');
+}
+
+/** Extract module description from `// @superjs/name — blurb` header line. */
+export function moduleDescriptionFromSource(source: string, moduleName: string): string | undefined {
+  const header = source.match(new RegExp(`^//\\s*@superjs/${moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*—\\s*(.+)$`, 'm'));
+  return header?.[1]?.trim();
+}
