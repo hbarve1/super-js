@@ -72,5 +72,6 @@ without explicit approval and npm token rotation (see release checklist).
 4. `pnpm audit --audit-level=high` clean; CodeQL green on `main`.
 5. Smoke on 3 OSes + Node 20/22/24: `superjs build`, `superjs check`, LSP hover fixture.
 6. Playground Worker deployed + smoke (`docs/ops/playground-deploy.md`) if using CF path.
+7. Automated preflight: `node scripts/rc-preflight.mjs` (see `--skip-slow` for quick pass).
 
 **Publishing RC:** same `release-npm.yml` flow with `v1.0.0-rc.N` tag; npm dist-tag `next` recommended until GA.

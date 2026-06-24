@@ -1,0 +1,47 @@
+---
+title: Preparing for SuperJS v1.0 RC
+date: 2026-06-24
+description: All v1.0 workstreams have merged — here's what shipped and what happens before the first release candidate.
+author: Himank Barve
+---
+
+# Preparing for SuperJS v1.0 RC
+
+SuperJS v1.0 is the first stable release of our hand-written compiler, CLI, LSP,
+docs site, and ecosystem wrappers. **We have not tagged `1.0.0-rc.1` yet** — this
+post explains where we are and what comes next.
+
+## What merged
+
+- **Language spec freeze** — `specs/language.md` with CI grammar gate
+- **Docs** — 20-lesson tour, migration guide, API reference, compat matrix, perf benchmarks
+- **Playground** — server-side `/api/run`, Workers mode, Cloudflare Worker scaffold
+- **Interop** — 30 `@superjs/types-*` wrappers
+- **Governance** — STABILITY, Dependabot, CodeQL, threat model v1.0 review
+
+## Cut from v1.0
+
+- **DAP debugger** — deferred to post-1.0
+- **LLVM native backend** — v2.0 milestone
+
+## Path to RC
+
+1. Playground Worker production deploy (maintainer)
+2. Beta program — three teams on `1.0.0-rc.X`
+3. Bug bash + external security review
+4. RC tags (`rc.1` → `rc.2` → GA)
+
+Follow progress: [v1.0 RC status](/docs/roadmap/v1.0-rc-status).
+
+## Try it today
+
+The playground and docs are live on [superjs.org](https://superjs.org). Published
+npm packages remain `0.1.x` until the RC cycle begins.
+
+```bash
+npm install -g @superjsorg/cli
+superjs init
+superjs build
+```
+
+We will announce `1.0.0-rc.1` on this blog when beta onboarding opens.

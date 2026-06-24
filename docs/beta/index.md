@@ -62,7 +62,12 @@ superjs doctor --json > beta-doctor-baseline.json
 Each team runs before RC exit:
 
 1. `superjs doctor --json` — attach output to the team tracking issue.
-2. Count `dynamic` occurrences per kLOC (script or manual audit).
+2. Count `dynamic` occurrences per kLOC:
+
+```bash
+node scripts/count-dynamic.mjs ./your-sjs-project
+```
+
 3. Classify each use by reason per [`spec/dts-dynamic-reasons.md`](https://github.com/hbarve1/super-js/blob/main/spec/dts-dynamic-reasons.md).
 4. Maintainer aggregates into `docs/beta/dynamic-usage-survey.md`.
 

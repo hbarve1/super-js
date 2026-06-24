@@ -11,7 +11,7 @@ overrides:
   undici: '>=6.27.0'
   ws: '>=8.21.0'
   cookie: ^0.7.0
-  dompurify: '>=3.4.10'
+  dompurify: '>=3.4.11'
   postcss: '>=8.5.15'
 
 importers:
@@ -3499,8 +3499,8 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
-  dompurify@3.4.10:
-    resolution: {integrity: sha512-0xzNv0e7oYC6yyuOGZIABPM4qtg3QxLFniDNPP4ZP90wR8Yq3zgwpRbrNiT4N3IKqDbbYFEJLV+JWEs19aZ//w==}
+  dompurify@3.4.11:
+    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
 
   dot-prop@10.1.0:
     resolution: {integrity: sha512-MVUtAugQMOff5RnBy2d9N31iG0lNwg1qAoAOn7pOK5wf94WIaE3My2p3uwTQuvS2AcqchkcR3bHByjaM0mmi7Q==}
@@ -8076,7 +8076,7 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
-  dompurify@3.4.10:
+  dompurify@3.4.11:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -9369,7 +9369,7 @@ snapshots:
 
   monaco-editor@0.55.1:
     dependencies:
-      dompurify: 3.4.10
+      dompurify: 3.4.11
       marked: 14.0.0
 
   ms@2.1.3: {}
