@@ -131,6 +131,21 @@
     },
     {
       "path": "./libs/types-multer"
+    },
+    {
+      "path": "./libs/types-nextjs"
+    },
+    {
+      "path": "./libs/types-vitest"
+    },
+    {
+      "path": "./libs/types-react"
+    },
+    {
+      "path": "./libs/types-jest"
+    },
+    {
+      "path": "./libs/types-vite"
     }
   ]
 }
