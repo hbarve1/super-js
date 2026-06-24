@@ -35,8 +35,15 @@
     }
   },
   "lsp": {
-    "note": "LSP heap and P99 hover are measured manually until an automated harness lands.",
-    "idleMemoryMb": null,
-    "p99HoverMs": null
+    "corpusLoc": 140000,
+    "openMs": 735.5,
+    "idleMemoryMb": 195.8,
+    "hoverSamples": 200,
+    "p50HoverMs": 5.6,
+    "p99HoverMs": 13.2,
+    "withinTargets": {
+      "idleMemoryMb": true,
+      "p99HoverMs": true
+    }
   }
 }
