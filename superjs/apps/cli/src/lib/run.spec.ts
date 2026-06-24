@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { run, parseArgs } from './run.js';
-import { VERSION, lsp } from './commands.js';
+import { VERSION, lsp, debug } from './commands.js';
 import type { IO } from './io.js';
 
 /** In-memory IO: captures stdout/stderr, a virtual filesystem, and watchers. */
@@ -398,6 +398,16 @@ describe('lsp', () => {
     expect(lsp({ command: 'lsp', positionals: [], flags: {} }, io, () => { started++; })).toBe(0);
     expect(started).toBe(1);
     expect(io.stdout()).toBe(''); // stdout is the JSON-RPC channel — must stay clean
+  });
+});
+
+describe('debug', () => {
+  it('launches the DAP adapter and writes nothing to stdout', () => {
+    const io = makeIO();
+    let started = 0;
+    expect(debug({ command: 'debug', positionals: [], flags: {} }, io, () => { started++; })).toBe(0);
+    expect(started).toBe(1);
+    expect(io.stdout()).toBe('');
   });
 });
 

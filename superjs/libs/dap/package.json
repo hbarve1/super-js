@@ -1,14 +1,11 @@
 {
-  "name": "@superjs/cli",
-  "version": "0.1.0",
+  "name": "@superjs/dap",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "superjs": "./dist/main.js"
-  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -20,18 +17,13 @@
   },
   "nx": {
     "tags": [
-      "tier:app",
+      "tier:4",
       "scope:internal"
     ]
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@superjs/types": "workspace:*",
-    "@superjs/compiler": "workspace:*",
-    "@superjs/config": "workspace:*",
-    "@superjs/diagnostics": "workspace:*",
-    "@superjs/interop": "workspace:*",
-    "@superjs/lsp": "workspace:*",
-    "@superjs/dap": "workspace:*"
+    "@vscode/debugadapter": "^1.68.0",
+    "@vscode/debugprotocol": "^1.68.0",
+    "tslib": "^2.3.0"
   }
 }

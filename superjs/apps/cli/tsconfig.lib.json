@@ -14,6 +14,9 @@
       "path": "../../libs/lsp/tsconfig.lib.json"
     },
     {
+      "path": "../../libs/dap/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/interop/tsconfig.lib.json"
     },
     {

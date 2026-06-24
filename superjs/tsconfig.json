@@ -149,6 +149,9 @@
     },
     {
       "path": "./apps/playground-worker"
+    },
+    {
+      "path": "./libs/dap"
     }
   ]
 }

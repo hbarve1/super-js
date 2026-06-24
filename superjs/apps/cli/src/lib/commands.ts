@@ -10,6 +10,7 @@
 import { join, isAbsolute, basename, dirname } from 'node:path';
 import { compile, format, lint, doc as extractDoc, renderMarkdown, renderJson, renderApiPage, moduleDescriptionFromSource } from '@superjs/compiler';
 import { serveStdio } from '@superjs/lsp';
+import { runDebugStdio } from '@superjs/dap';
 import { getDescriptor, specUrlFor } from '@superjs/diagnostics';
 import { DEFAULT_CONFIG, CONFIG_FILENAME } from '@superjs/config';
 import type { Diagnostic, DiagnosticCode } from '@superjs/types';
@@ -653,6 +654,15 @@ export function doctor(_args: ParsedArgs, io: IO): number {
  */
 export function lsp(_args: ParsedArgs, _io: IO, serve: () => void = serveStdio): number {
   serve();
+  return 0;
+}
+
+/**
+ * `superjs debug` — DAP adapter over stdio (WS-B2 Phase 0 skeleton). VS Code
+ * spawns this with launch args; stdout is the DAP channel.
+ */
+export function debug(_args: ParsedArgs, _io: IO, run: () => void = runDebugStdio): number {
+  run();
   return 0;
 }
 
