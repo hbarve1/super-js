@@ -69,8 +69,16 @@ jobs:
         run: cd superjs && pnpm nx build compiler
 
       - name: Deploy worker
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: superjs/apps/playground-worker
           command: deploy
+
+      - name: Smoke test /run endpoint
+        if: steps.deploy.outputs.deployment-url != ''
+        env:
+          PLAYGROUND_RUN_URL: ${{ steps.deploy.outputs.deployment-url }}/run
+        run: node scripts/smoke-playground-run.mjs

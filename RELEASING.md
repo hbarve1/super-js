@@ -51,3 +51,26 @@ A patch may ship only when:
 3. `NPM_TOKEN` secret present in CI (provenance requires the trusted workflow).
 4. Tag `vX.Y.Z`; confirm the workflow published and provenance shows on npm.
 5. Cut the GitHub Release with the changelog.
+
+## Release candidate (RC) cycle
+
+v1.0 ships after at least one RC (`1.0.0-rc.1`). Maintainer-only — do not tag RC
+without explicit approval and npm token rotation (see release checklist).
+
+| Phase | Tag | Duration | Allowed changes |
+|-------|-----|----------|-----------------|
+| RC.1 | `v1.0.0-rc.1` | ≥ 2 weeks | Blocker fixes only |
+| RC.2 | `v1.0.0-rc.2` | ≥ 2 weeks | Blocker fixes only |
+| RC.3 | `v1.0.0-rc.3` (if needed) | ≥ 2 weeks | Blocker fixes only |
+| GA | `v1.0.0` | — | Changelog + launch artefacts |
+
+**RC checklist:**
+
+1. Beta teams on `rc.N` (see `docs/beta/index.md`).
+2. Bug bash complete — no open `severity=blocker` (see `docs/beta/bug-bash.md`).
+3. External security review (S7) — critical/high fixed (`docs/security-review.md` when available).
+4. `pnpm audit --audit-level=high` clean; CodeQL green on `main`.
+5. Smoke on 3 OSes + Node 20/22/24: `superjs build`, `superjs check`, LSP hover fixture.
+6. Playground Worker deployed + smoke (`docs/ops/playground-deploy.md`) if using CF path.
+
+**Publishing RC:** same `release-npm.yml` flow with `v1.0.0-rc.N` tag; npm dist-tag `next` recommended until GA.

@@ -16,6 +16,7 @@ const ROOT_DOCS_DIR = path.join(process.cwd(), '..', '..', '..', 'docs')
 /** v1.0 section directories under docs/ at repo root */
 const SECTION_DIRS = [
   { dir: 'roadmap', label: 'Roadmap', groupPosition: 5 },
+  { dir: 'ops', label: 'Operations', groupPosition: 8 },
   { dir: 'tour', label: 'Language Tour', groupPosition: 10 },
   { dir: 'migration', label: 'Migration Guide', groupPosition: 20 },
   { dir: 'api', label: 'API Reference', groupPosition: 30 },
