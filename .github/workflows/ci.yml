@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
           cache-dependency-path: superjs/pnpm-lock.yaml
 
@@ -69,7 +69,8 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 11
+          # pnpm 11 requires Node ≥22.13; use pnpm 9 on Node 20 (WS-A7 matrix).
+          version: ${{ matrix.node-version == 20 && 9 || 11 }}
 
       - uses: actions/setup-node@v6
         with:
