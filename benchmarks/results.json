@@ -1,0 +1,42 @@
+{
+  "measuredAt": "2026-06-24",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v24.14.1",
+    "cpus": 10
+  },
+  "targets": {
+    "coldCompile10kMs": 2000,
+    "warmCompile10kMs": 100,
+    "lspIdleMemoryMb": 250,
+    "lspP99HoverMs": 200
+  },
+  "compile": {
+    "stdlib": {
+      "name": "stdlib",
+      "loc": 382,
+      "coldMs": 19.9,
+      "warmMs": 3.7,
+      "runs": 5
+    },
+    "corpus10k": {
+      "name": "10k LOC",
+      "loc": 14000,
+      "coldMs": 81.5,
+      "warmMs": 56.5,
+      "runs": 5
+    },
+    "comparison": {
+      "tscTypecheckMs": 720.7,
+      "esbuildTranspileMs": 431,
+      "sjsVsTsc": 0.11,
+      "sjsVsEsbuild": 0.19
+    }
+  },
+  "lsp": {
+    "note": "LSP heap and P99 hover are measured manually until an automated harness lands.",
+    "idleMemoryMb": null,
+    "p99HoverMs": null
+  }
+}
