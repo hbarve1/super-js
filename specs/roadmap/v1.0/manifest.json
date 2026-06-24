@@ -69,8 +69,7 @@
         "WS-A4f"
       ],
       "status": "pr_open",
-      "pr": null,
-      "id": "WS-A1"
+      "pr": "https://github.com/hbarve1/super-js/pull/193",
     },
     "WS-A2": {
       "title": "Error-code reference pages + CI gate",
