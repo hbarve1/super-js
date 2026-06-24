@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { getDocBySlug, getAllDocSlugs, slugify, editUrl, type Doc } from '@/lib/docs'
+import { loadCompatMatrix, stripGeneratedTable } from '@/lib/compat-matrix'
 import DocContent from '@/components/docs/DocContent'
+import CompatMatrix from '@/components/docs/CompatMatrix'
 import TableOfContents from '@/components/docs/TableOfContents'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { SITE_URL, SITE_NAME } from '@/lib/site'
@@ -54,9 +56,12 @@ export default async function DocPage({ params }: PageProps) {
   }
   if (!doc) notFound()
 
-  const headings = extractHeadings(doc.content)
+  const isCompatMatrix = slug[0] === 'compat' && slug[1] === 'index'
+  const docContent = isCompatMatrix ? stripGeneratedTable(doc.content) : doc.content
+  const headings = extractHeadings(docContent)
   const docPath = `/docs/${slug.join('/')}`
   const ghEditUrl = editUrl(doc.filePath)
+  const compatData = isCompatMatrix ? loadCompatMatrix() : null
 
   const structuredData = [
     {
@@ -82,7 +87,10 @@ export default async function DocPage({ params }: PageProps) {
     <>
       <JsonLd data={structuredData} />
       <div className="w-full min-w-0 max-w-3xl">
-        <DocContent source={doc.content} />
+        <DocContent source={docContent} />
+        {compatData && (
+          <CompatMatrix rows={compatData.rows} generatedAt={compatData.generatedAt} />
+        )}
         <footer className="mt-12 pt-6 border-t border-border">
           <a
             href={ghEditUrl}

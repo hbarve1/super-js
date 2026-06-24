@@ -48,6 +48,9 @@ jobs:
       - name: Sync error-code pages
         run: node scripts/sync-error-pages.mjs
 
+      - name: Check compat matrix
+        run: node scripts/check-compat-matrix.mjs
+
       - name: Build website (includes docs routes)
         run: cd superjs && pnpm nx build website
 
