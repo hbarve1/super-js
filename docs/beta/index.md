@@ -78,7 +78,7 @@ If aggregate `dynamic` rate exceeds **20%** across teams, we file
 
 Beta slots are limited to **three teams** for v1.0. To express interest before RC.1:
 
-1. Open a [GitHub Discussion](https://github.com/hbarve1/super-js/discussions) titled **Beta interest — &lt;team/org&gt;**.
+1. Open a [GitHub Discussion](https://github.com/hbarve1/super-js/discussions/new?category=general) using the **Beta interest** template (or title **Beta interest — &lt;team/org&gt;**).
 2. Include: project description, approximate LOC, target start date, and whether the repo can be public.
 
 Maintainers will confirm participants when `1.0.0-rc.1` is ready.

@@ -1,0 +1,56 @@
+name: Beta team tracking
+description: Track a v1.0 RC beta participant (maintainer or team opens after onboarding)
+title: "[Beta] "
+labels:
+  - beta
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tracking issue for a v1.0 beta team. Contract: [`docs/beta/index.md`](https://github.com/hbarve1/super-js/blob/main/docs/beta/index.md)
+
+  - type: input
+    id: team
+    attributes:
+      label: Team name
+    validations:
+      required: true
+
+  - type: input
+    id: rc_version
+    attributes:
+      label: RC version in use
+      placeholder: 1.0.0-rc.1
+    validations:
+      required: true
+
+  - type: input
+    id: repo
+    attributes:
+      label: Repository link (if shareable)
+      placeholder: https://github.com/org/project
+
+  - type: textarea
+    id: stack
+    attributes:
+      label: Stack summary
+      placeholder: Node 22, Fastify, ~1200 LOC SJS
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`superjs doctor --json` baseline"
+      description: Paste output or attach file from onboarding
+      render: shell
+
+  - type: checkboxes
+    id: commitments
+    attributes:
+      label: Commitments
+      options:
+        - label: ≥1,000 LOC SJS in a non-toy project
+          required: true
+        - label: Weekly check-in for first month (async OK)
+          required: true
+        - label: Will complete dynamic usage survey (C5) before RC exit
+          required: true

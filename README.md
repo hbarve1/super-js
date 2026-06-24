@@ -247,6 +247,7 @@ Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 | [`docs/comparisons/`](docs/comparisons/) | SJS vs JS, TypeScript, Rust, Go, Dart, JVM languages |
 | [`specs/design/`](specs/design/) | Architecture Decision Records (ADRs) |
 | [`rfcs/`](rfcs/) | Language change proposals |
+| [`TRADEMARK.md`](TRADEMARK.md) | Name usage — not a registered trademark |
 | [`superjs/apps/website/`](superjs/apps/website/) | Public docs site + playground ([superjs.org](https://superjs.org)) |
 
 ---
