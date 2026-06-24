@@ -4,6 +4,11 @@
 > every new threat surface discovered during development MUST be added here before
 > the relevant feature ships. The `Owner Stage` column indicates the earliest stage
 > at which the mitigation is expected to be in force.
+>
+> **v1.0 review (2026-06-24):** Post-workstream pass after WS-A1…B3 merged.
+> Playground (T4), types wrappers (T9), LSP memory budget (T3), and BiDi lexer
+> checks (T6) updated to reflect shipped code. Parser/lexer hard caps (T1/T2) and
+> LSP message-size limits remain partially implemented — see Status column.
 
 ---
 
@@ -33,14 +38,15 @@
 
 | # | Surface | Threat | STRIDE category | Mitigation | Owner Stage | Status |
 |---|---------|--------|-----------------|------------|-------------|--------|
-| T1 | Parser — pathological nesting | DoS via deeply nested expressions (`((((x))))` 10 000 deep), huge identifiers, or quadratic lookahead | **Denial of Service** | Nesting depth limit ≤ 1 000; identifier length cap 16 384 chars; O(n) lexer guarantee; `SJS-P099` after 3 failed recoveries | Stage 1 | Planned |
-| T2 | Lexer — massive token streams | DoS via 100 MB string literals, Unicode escape loops, or token-count explosion | **Denial of Service** | Per-file token limit 10 M; per-token 1 MiB cap; Unicode escape flood guard (>256 consecutive); early `SJS-P002` abort | Stage 1 | Planned |
-| T3 | LSP message handling | Malformed/oversized JSON-RPC crashes or hangs the LSP server; malicious workspace config injects options | **Tampering / Denial of Service** | Message size cap 8 MiB; JSON schema validation before dispatch; no `eval`/`exec` in LSP server; config validated against `spec/config-schema.json` | Stage 1 | Planned |
-| T4 | Playground sandbox isolation | Untrusted SJS executed server-side (`/api/run`, CF Worker) or in sandboxed iframe; escape could run arbitrary JS, exfiltrate data, or abuse compute | **Elevation of Privilege / Denial of Service** | Server path: `new Function` with 5 s timeout, 50 kB cap, 20 req/min per IP, no `fetch`/`fs`/`process` in scope; CF Worker + Next.js fallback; client iframe: `sandbox="allow-scripts"`, CSP `default-src 'none'`; feature flag `NEXT_PUBLIC_USE_WORKERS_SANDBOX` | Stage 3 / v1.0 | **Partially mitigated** (#192 server run; CF deploy via `workflow_dispatch`) |
-| T5 | Supply-chain: `--provenance` | Compromised CI or stolen npm token pushes tampered `@superjs/*` package | **Tampering** | SLSA Level 2; publishes via GitHub Actions only; `npm publish --provenance`; 2FA required on all publish accounts; Dependabot on all dep files | Stage 0 | Partially mitigated (policy in place; attestation active from first publish) |
-| T6 | BiDi-spoofing in source | U+202A–U+202E, U+2066–U+2069 make code appear different from what compiles (Trojan Source, CVE-2021-42574) | **Tampering / Spoofing** | Default: `SJS-W012` warning; strict (`--strict-bidi`): `SJS-L011` error; inside identifiers: always rejected | Stage 1 | Partially mitigated (SJS-W012 registered; lexer enforcement in Stage 1) |
-| T7 | Crash-log data leakage | `.superjs/crash-*.log` contains full paths and symbol names; leaks codebase layout when shared in bug reports | **Information Disclosure** | Basenames only by default (R4 policy); full paths opt-in via `--crash-full`; logs excluded from git via `superjs init` | Stage 0/1 | Implemented (SECURITY.md policy; Stage 1 enforces in crash handler) |
-| T8 | Dependency confusion: `@superjs/*` | Attacker registers `@superjs/types-core` on npm before SuperJS does; confused installs pull malicious package | **Tampering / Elevation of Privilege** | `@superjs` npm org scope claimed; 2FA on all publish accounts; Dependabot on all `package.json` files; CodeQL enabled | Stage 0 | Partially mitigated (org scope and 2FA policy defined) |
+| T1 | Parser — pathological nesting | DoS via deeply nested expressions, huge inputs, or error-recovery storms | **Denial of Service** | Panic-mode recovery + `SJS-P099` after error budget; spec calls for nesting ≤1 000 and identifier cap 16 KiB (full enforcement tracked in Stage 1) | Stage 1 | **Partially mitigated** (recovery + P099 shipped) |
+| T2 | Lexer — massive token streams | DoS via huge literals or token-count explosion | **Denial of Service** | BiDi scan (T6); per-token / per-file caps in spec — not all wired in lexer yet | Stage 1 | **Partially mitigated** |
+| T3 | LSP message handling | Malformed/oversized JSON-RPC or unbounded workspace memory | **Tampering / Denial of Service** | `lsp.memoryBudgetMB` LRU eviction (default 128 MB); config schema validation; no `eval` in server; **8 MiB message cap planned** | Stage 1 / v1.0 | **Partially mitigated** (memory budget + bench: 195 MB @ 140k LOC) |
+| T4 | Playground sandbox isolation | Untrusted SJS executed server-side (`/api/run`, CF Worker) or in sandboxed iframe; escape could run arbitrary JS, exfiltrate data, or abuse compute | **Elevation of Privilege / Denial of Service** | Server path: `new Function` with 5 s timeout, 50 kB cap, 20 req/min per IP, no `fetch`/`fs`/`process` in scope; CF Worker + Next.js fallback; client iframe: `sandbox="allow-scripts"`, CSP `default-src 'none'`; feature flag `NEXT_PUBLIC_USE_WORKERS_SANDBOX` | Stage 3 / v1.0 | **Partially mitigated** (#192; CF deploy via `workflow_dispatch`) |
+| T5 | Supply-chain: `--provenance` | Compromised CI or stolen npm token pushes tampered `@superjs/*` package | **Tampering** | SLSA Level 2; publishes via GitHub Actions only; `npm publish --provenance`; 2FA required on all publish accounts; Dependabot on all dep files | Stage 0 | **Partially mitigated** (policy in place; attestation active from first publish) |
+| T6 | BiDi-spoofing in source | U+202A–U+202E, U+2066–U+2069 Trojan Source (CVE-2021-42574) | **Tampering / Spoofing** | Lexer emits `SJS-L011` (error) / `SJS-W012` (warning) per `superjs/libs/lexer`; strict mode via lint config | Stage 1 | **Mitigated** (lexer enforcement + error codes) |
+| T7 | Crash-log data leakage | `.superjs/crash-*.log` exposes paths/symbols in public issues | **Information Disclosure** | Basenames only by default (R4); `--crash-full` opt-in; `.superjs/` in gitignore template | Stage 0/1 | **Mitigated** (SECURITY.md policy) |
+| T8 | Dependency confusion: `@superjs/*` | Squatting on `@superjs/types-*` package names | **Tampering / Elevation of Privilege** | `@superjs` npm org scope; 2FA; Dependabot; CodeQL; pin exact versions in lockfile | Stage 0 | **Partially mitigated** (org scope and CI policy) |
+| T9 | Types wrapper surface (`@superjs/types-*`) | Inaccurate or malicious hand-written `.sjs` wrappers misrepresent npm APIs | **Information Disclosure** | 30 curated wrappers (#184); `translateDts` rejects banned TS; per-package `STATUS.md` + compat matrix; consumers should verify wrapper coverage | Stage 2 / v1.0 | **Partially mitigated** (curated wrappers shipped; no runtime attestation) |
 
 ---
 

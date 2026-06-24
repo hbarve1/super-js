@@ -15,6 +15,7 @@ const ROOT_DOCS_DIR = path.join(process.cwd(), '..', '..', '..', 'docs')
 
 /** v1.0 section directories under docs/ at repo root */
 const SECTION_DIRS = [
+  { dir: 'roadmap', label: 'Roadmap', groupPosition: 5 },
   { dir: 'tour', label: 'Language Tour', groupPosition: 10 },
   { dir: 'migration', label: 'Migration Guide', groupPosition: 20 },
   { dir: 'api', label: 'API Reference', groupPosition: 30 },
@@ -25,6 +26,7 @@ const SECTION_DIRS = [
   { dir: 'spec', label: 'Language Spec', groupPosition: 80 },
   { dir: 'cli', label: 'CLI Reference', groupPosition: 90 },
   { dir: 'stdlib', label: 'Standard Library', groupPosition: 100 },
+  { dir: 'beta', label: 'Beta Program', groupPosition: 110 },
 ]
 
 export interface DocFrontmatter {
