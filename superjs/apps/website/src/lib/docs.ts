@@ -17,6 +17,8 @@ const ROOT_DOCS_DIR = path.join(process.cwd(), '..', '..', '..', 'docs')
 const SECTION_DIRS = [
   { dir: 'roadmap', label: 'Roadmap', groupPosition: 5 },
   { dir: 'ops', label: 'Operations', groupPosition: 8 },
+  { dir: 'launch', label: 'Launch', groupPosition: 9 },
+  { dir: 'press', label: 'Press', groupPosition: 12 },
   { dir: 'tour', label: 'Language Tour', groupPosition: 10 },
   { dir: 'migration', label: 'Migration Guide', groupPosition: 20 },
   { dir: 'api', label: 'API Reference', groupPosition: 30 },

@@ -8,6 +8,9 @@ SuperJS is **not** TypeScript with a different extension. It deliberately bans t
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#roadmap)
 
+> **v1.0 RC prep:** All workstreams merged — preparing for `1.0.0-rc.1`. Status:
+> [v1.0 RC docs](docs/roadmap/v1.0-rc-status.md) · [Release checklist](specs/roadmap/v1.0-release-checklist.md)
+
 ---
 
 ## Key Features
@@ -222,7 +225,7 @@ super-js/
 | 3 — DX Tools | **In progress** | VS Code extension + `--watch` shipped; formatter & linter (17 rules) next |
 | 4 — Stdlib | Planned | `@superjs/stdlib` — Result, Option, Iterator, collections |
 | 5 — Ecosystem | Planned | React wrapper, Node.js types, Jest transform, Vite plugin |
-| 6 — Stability | Planned | 1.0 semver, migration guide, public docs, community open |
+| 6 — Stability | **RC prep** | v1.0 workstreams merged; beta + RC cycle next — [status](docs/roadmap/v1.0-rc-status.md) |
 
 Full per-stage plans: [`specs/roadmap/`](specs/roadmap/)
 
