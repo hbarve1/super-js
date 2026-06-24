@@ -63,6 +63,9 @@ jobs:
       - name: Check API docs
         run: node scripts/check-api-docs.mjs
 
+      - name: Check docs internal links
+        run: node scripts/check-docs-links.mjs
+
       - name: Assemble language spec
         run: node scripts/assemble-language-spec.mjs
 

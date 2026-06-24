@@ -24,6 +24,9 @@ WS-A1 (spec freeze) last.
 
 Agents update `manifest.json` status and open a PR to `main` when acceptance criteria pass.
 
+**All v1.0 workstreams merged as of 2026-06-24** (see `manifest.json`). Post-workstream
+work follows [`v1.0-release-checklist.md`](../v1.0-release-checklist.md).
+
 ### Wave 1 recommended start order (low conflict → high)
 
 1. **WS-A8** mvb-fastify (smallest)
