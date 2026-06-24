@@ -267,9 +267,9 @@
       "wave": "deferred",
       "effort": "xlarge",
       "blockedBy": [],
-      "status": "pending",
+      "status": "pr_open",
       "pr": null,
-      "note": "Wave 1: scope + skeleton only unless maintainer promotes to full impl",
+      "note": "Phase 0 skeleton — DAP handshake, formatRuntimeValue, superjs debug, VS Code debuggers contribution",
       "id": "WS-B2"
     },
     "WS-B3": {

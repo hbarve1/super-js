@@ -91,6 +91,44 @@
         "title": "SuperJS: Restart Language Server"
       }
     ],
+    "debuggers": [
+      {
+        "type": "superjs",
+        "label": "SuperJS Debug",
+        "languages": ["superjs"],
+        "program": "superjs",
+        "args": ["debug"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "SJS entrypoint to compile and debug"
+              },
+              "outDir": {
+                "type": "string",
+                "description": "Compiled JS output directory",
+                "default": "dist"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "superjs",
+            "request": "launch",
+            "name": "Debug SuperJS",
+            "program": "${file}",
+            "outDir": "${workspaceFolder}/dist"
+          }
+        ]
+      }
+    ],
     "configuration": {
       "title": "SuperJS",
       "properties": {

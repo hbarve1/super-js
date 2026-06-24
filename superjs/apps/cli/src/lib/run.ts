@@ -6,7 +6,7 @@
 
 import { type IO, nodeIO, line, errline } from './io.js';
 import {
-  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, docgenCmd, explain, init, doctor, lsp, verify, migrate, stub,
+  type ParsedArgs, VERSION, check, build, translate, add, fmt, lintCmd, docCmd, docgenCmd, explain, init, doctor, lsp, debug, verify, migrate, stub,
 } from './commands.js';
 
 const STUBS = new Set(['test', 'repl']);
@@ -51,6 +51,7 @@ commands:
                        (node-cli, fastify-api, workers-api, lambda-handler)
   doctor               report environment + toolchain health
   lsp                  start the language server over stdio (for editors)
+  debug                start the debug adapter over stdio (for editors, WS-B2)
   verify <in> <out>    recompile <in> and byte-diff against expected <out>
   migrate from-ts <dir>         assisted TypeScript → SuperJS migration (+ report)
   migrate from-prototype <dir>  rewrite prototype-era imports → @superjs/* (+ report)
@@ -91,6 +92,7 @@ export async function run(argv: readonly string[], io: IO = nodeIO): Promise<num
     case 'init': return init(args, io);
     case 'doctor': return doctor(args, io);
     case 'lsp': return lsp(args, io);
+    case 'debug': return debug(args, io);
     case 'verify': return verify(args, io);
     case 'migrate': return migrate(args, io);
     default:
