@@ -13,7 +13,8 @@ const OUT = join(ROOT, 'specs/language.md');
 const GRAMMAR = 'specs/grammar.ebnf';
 const ERROR_REGISTRY = 'specs/error-codes.md';
 
-const FROZEN_DATE = new Date().toISOString().slice(0, 10);
+/** v1.0 freeze date — update only when deliberately re-freezing the spec. */
+const FROZEN_DATE = '2026-06-24';
 
 /** Chapters: title + ordered source files (relative to specs/language/). */
 const CHAPTERS = [

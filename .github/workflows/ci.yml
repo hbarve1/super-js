@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v7
 
@@ -87,7 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24]
     defaults:
       run:
         working-directory: superjs
@@ -96,9 +96,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          # pnpm 11 requires Node ≥22.13; pnpm 9 cannot read pnpm-11 lockfile overrides.
-          # pnpm 10 on Node 20 matches the lockfile written by pnpm 11 on 22/24.
-          version: ${{ matrix.node-version == 20 && 10 || 11 }}
+          version: 11
 
       - uses: actions/setup-node@v6
         with:
