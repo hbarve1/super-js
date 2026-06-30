@@ -16,7 +16,7 @@
     "@types/node": "20.19.9",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
-    "@vitest/coverage-v8": "~4.1.0",
+    "@vitest/coverage-v8": "~4.1.9",
     "eslint": "~8.57.0",
     "eslint-config-prettier": "^10.0.0",
     "jsonc-eslint-parser": "^2.1.0",
