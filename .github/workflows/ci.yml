@@ -90,11 +90,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Dependency audit (no high/critical)
-        run: bun audit --audit-level=high
-
       - name: Lint, test, typecheck, and build
         run: bun run nx run-many -t lint test typecheck build
+
+      # Runs last on purpose: this gate tracks upstream advisory publication, so
+      # it can go red without anything in the repo changing. Ordering it after
+      # the build keeps a red audit from masking real build/test signal.
+      - name: Dependency audit (no high/critical)
+        run: bun audit --audit-level=high
 
   # The published packages must keep running on every Node version they claim
   # to support (publish manifests declare engines.node >=18, and the CLI bundle
