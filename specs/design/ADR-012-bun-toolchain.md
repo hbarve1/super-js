@@ -67,11 +67,14 @@ compat job installs nothing, so that constraint no longer bounds the matrix.
   only through pnpm's hoisting of a transitive dependency; bun's isolated layout
   does not expose transitive binaries in `node_modules/.bin`, and the publish
   build scripts invoke it directly.
-- `superjs/scripts/ci-node-setup.cjs` is kept. It suppresses Node's
-  `MaxListenersExceededWarning` when NX forks many task processes — NX still
-  forks *Node* children under bun, so the warning still fires. bun honours
-  `NODE_OPTIONS=--require …` and passes it down, so the existing preload
-  continues to work unchanged.
+- `superjs/scripts/ci-node-setup.cjs` was deleted, along with the
+  `NODE_OPTIONS=--require …` that preloaded it. It suppressed Node's
+  `MaxListenersExceededWarning` from NX's forked task processes. NX still forks
+  Node children under bun, so the warning still fires — but the preload no
+  longer reaches those children: with `NODE_OPTIONS` set, the warning still
+  printed in CI. Since the shim can no longer do its job, it is removed rather
+  than left as configuration that looks load-bearing and is not. The warning is
+  log noise, not a failure; `bun run nx run-many` completes green.
 - `apps/vscode-extension` is unchanged — it stays outside the workspace with its
   own `package-lock.json` and is built, tested, and published with npm, because
   of its native `oniguruma` dependency.

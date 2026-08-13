@@ -35,8 +35,6 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Typecheck, lint & build the website
-        env:
-          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
         run: bun run nx run-many -t typecheck lint build --projects=@superjs/website
 
       # Quality gate: Lighthouse runs `next start` against the built app and
