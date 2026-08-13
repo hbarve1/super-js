@@ -3,7 +3,7 @@
  * bench-lsp.mjs — LSP idle memory + hover latency benchmarks.
  *
  * Prerequisites:
- *   cd superjs && pnpm nx build lsp
+ *   cd superjs && bunx nx build lsp
  *
  * Run from repo root (use --expose-gc for stable heap readings):
  *   node --expose-gc scripts/bench-lsp.mjs

@@ -185,7 +185,7 @@ The compiler and tooling live in an [NX](https://nx.dev) monorepo under `superjs
 
 ```
 super-js/
-├── superjs/                  # NX monorepo (pnpm workspace)
+├── superjs/                  # NX monorepo (bun workspace)
 │   ├── libs/                 # The compiler pipeline, by tier:
 │   │   ├── types/            # @superjs/types — shared AST / Diagnostic / Type model
 │   │   ├── diagnostics/      # @superjs/diagnostics — error-code registry + factory

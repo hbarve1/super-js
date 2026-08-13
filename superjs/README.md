@@ -37,25 +37,27 @@ and [`@superjsorg/compiler`](https://www.npmjs.com/package/@superjsorg/compiler)
 
 ## Getting started
 
-Requires Node 24+ and [pnpm](https://pnpm.io) 11+.
+Requires [bun](https://bun.sh) 1.3+ for building and running the workspace.
+The published packages themselves only require Node 18+ — bun is a build-time
+tool, never a runtime dependency for consumers.
 
 ```bash
-pnpm install
+bun install
 ```
 
 ## Running tasks
 
-Always go through `nx` (prefixed with `pnpm` to use the workspace-pinned CLI):
+Always go through `nx` via `bunx` so the workspace-pinned CLI is used:
 
 ```bash
-pnpm nx test @superjs/checker          # one project
-pnpm nx build @superjs/compiler        # build (and its deps)
-pnpm nx run-many -t lint test typecheck build   # everything — what CI runs
-pnpm nx affected -t test lint          # only what your change touched
-pnpm nx graph                          # visualize the project graph
+bunx nx test @superjs/checker          # one project
+bunx nx build @superjs/compiler        # build (and its deps)
+bunx nx run-many -t lint test typecheck build   # everything — what CI runs
+bunx nx affected -t test lint          # only what your change touched
+bunx nx graph                          # visualize the project graph
 ```
 
-The `vscode-extension` app is excluded from the pnpm workspace (it has its own
+The `vscode-extension` app is excluded from the bun workspace (it has its own
 lockfile and a native dependency); build and test it from its own directory with
 `npm`.
 

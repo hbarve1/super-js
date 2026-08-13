@@ -396,7 +396,7 @@ Typed SuperJS bindings for [\`${lib.pkg}\`](https://www.npmjs.com/package/${lib.
 ## Install
 
 \`\`\`bash
-pnpm add ${lib.pkg} @superjs/types-${lib.name}
+bun add ${lib.pkg} @superjs/types-${lib.name}
 \`\`\`
 
 ## Usage

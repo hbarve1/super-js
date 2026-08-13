@@ -370,7 +370,7 @@ Typed SuperJS bindings for \`${lib.pkg}\` ${lib.version}.
 ## Install
 
 \`\`\`bash
-pnpm add <runtime-package> @superjs/types-${lib.name}
+bun add <runtime-package> @superjs/types-${lib.name}
 \`\`\`
 
 ## Usage

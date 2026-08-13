@@ -17,7 +17,7 @@
 
 ## Checklist
 
-- [ ] Lint, tests & typecheck pass (`cd superjs && pnpm nx run-many -t lint test typecheck`)
+- [ ] Lint, tests & typecheck pass (`cd superjs && bunx nx run-many -t lint test typecheck`)
 - [ ] Documentation updated (if user-facing change)
 - [ ] Commits are signed off (`git commit -s`)
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)

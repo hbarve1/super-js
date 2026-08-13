@@ -95,37 +95,37 @@ Before opening a PR, confirm the following:
 
 - [ ] All commits are signed off (`Signed-off-by:` trailer present).
 - [ ] Commit messages follow Conventional Commits format.
-- [ ] `pnpm nx run-many -t lint test typecheck` passes with no errors.
+- [ ] `bunx nx run-many -t lint test typecheck` passes with no errors.
 - [ ] Documentation has been updated if the PR adds or changes user-facing behavior.
 
 ---
 
 ## How to Run Tests
 
-All work happens in the NX workspace under `superjs/` with [pnpm](https://pnpm.io):
+All work happens in the NX workspace under `superjs/` with [bun](https://bun.sh):
 
 ```bash
 cd superjs
-pnpm install
+bun install
 ```
 
 Run a target for a single project (build, test, typecheck, lint):
 
 ```bash
-pnpm nx test @superjs/checker
-pnpm nx build @superjs/compiler
+bunx nx test @superjs/checker
+bunx nx build @superjs/compiler
 ```
 
 Run every check across the whole workspace (what CI runs):
 
 ```bash
-pnpm nx run-many -t lint test typecheck build
+bunx nx run-many -t lint test typecheck build
 ```
 
 Only re-run what your change affected:
 
 ```bash
-pnpm nx affected -t test lint
+bunx nx affected -t test lint
 ```
 
 ---

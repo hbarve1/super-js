@@ -36,6 +36,7 @@ build/Release
 node_modules/
 jspm_packages/
 .pnpm-store/
+.bun-store/
 
 # TypeScript v1 declaration files
 typings/

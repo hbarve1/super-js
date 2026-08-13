@@ -53,7 +53,7 @@ for (const prod of REQUIRED_PRODUCTIONS) {
 
 // Parser tests exercise the real grammar implementation
 try {
-  execSync('pnpm nx test parser --skip-nx-cache', {
+  execSync('bunx nx test parser --skip-nx-cache', {
     cwd: join(ROOT, 'superjs'),
     stdio: 'pipe',
     encoding: 'utf8',

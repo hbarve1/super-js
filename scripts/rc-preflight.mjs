@@ -20,7 +20,7 @@ const steps = [
   ['LSP memory audit', 'node scripts/check-lsp-memory-audit.mjs'],
   ['Grammar validation', 'node scripts/validate-grammar.mjs'],
   ['Language spec assembled', 'node scripts/assemble-language-spec.mjs && git diff --exit-code specs/language.md'],
-  ['npm audit (high+)', 'pnpm audit --audit-level=high', join(ROOT, 'superjs')],
+  ['npm audit (high+)', 'bun audit --audit-level=high', join(ROOT, 'superjs')],
 ];
 
 if (!skipSlow) {

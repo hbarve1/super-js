@@ -8,7 +8,7 @@ This checklist covers the full end-to-end process for adding a new language feat
 
 A "language feature" is anything that requires changes in two or more of: grammar, lexer, parser, type-checker, IR lowering, codegen. Examples: a new statement form, a new type constructor, a new expression operator.
 
-The SuperJS compiler is **hand-written end-to-end** — there is no Babel, no preprocessor, and no source-level transform step. Everything lives in an NX monorepo under `superjs/` (pnpm workspace, Vitest, TypeScript, ESM/`nodenext`). The compiler is a chain of libraries under `superjs/libs/`, each a published `@superjs/*` package:
+The SuperJS compiler is **hand-written end-to-end** — there is no Babel, no preprocessor, and no source-level transform step. Everything lives in an NX monorepo under `superjs/` (bun workspace, Vitest, TypeScript, ESM/`nodenext`). The compiler is a chain of libraries under `superjs/libs/`, each a published `@superjs/*` package:
 
 | Library | Package | Responsibility |
 |---|---|---|
@@ -165,13 +165,13 @@ Run tests from inside `superjs/`:
 
 ```bash
 # a single library
-pnpm nx test @superjs/parser
+bunx nx test @superjs/parser
 
 # everything across the workspace
-pnpm nx run-many -t lint test typecheck build
+bunx nx run-many -t lint test typecheck build
 
 # only what your change affected
-pnpm nx affected -t test
+bunx nx affected -t test
 ```
 
 Confirm zero failures before opening a PR.
@@ -192,5 +192,5 @@ Confirm zero failures before opening a PR.
 - [ ] `@superjs/ir` (`libs/ir`) — lowering case + tests added
 - [ ] `@superjs/codegen-js` (`libs/codegen-js`) — printing case + tests added (if a new IR shape was introduced)
 - [ ] `superjs/apps/e2e/fixtures/` — end-to-end fixture added
-- [ ] `pnpm nx run-many -t lint test typecheck build` passes (or `pnpm nx affected -t test`) — zero failures
+- [ ] `bunx nx run-many -t lint test typecheck build` passes (or `bunx nx affected -t test`) — zero failures
 - [ ] PR description references the spec file and the stage this feature belongs to

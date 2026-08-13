@@ -151,7 +151,7 @@ it('is a warning by default but an error under strict', () => {
 Run the checker tests:
 
 ```
-cd superjs && pnpm nx test @superjs/checker
+cd superjs && bunx nx test @superjs/checker
 ```
 
 ---
@@ -167,7 +167,7 @@ If your rule should be user-configurable, add its key to the config schema (`spe
 ## Step 6 — Run all checks before opening a PR
 
 ```
-cd superjs && pnpm nx run-many -t lint test typecheck build
+cd superjs && bunx nx run-many -t lint test typecheck build
 ```
 
 ### Checklist
@@ -176,4 +176,4 @@ cd superjs && pnpm nx run-many -t lint test typecheck build
 - [ ] Rule implemented in `superjs/libs/checker/src/lib/checker.ts`, emitting via `this.bag.report({ code: Codes[...], span, params })`
 - [ ] Tests in `superjs/libs/checker/src/lib/checker.spec.ts` cover the violation and the clean case (and strict promotion, if applicable)
 - [ ] If configurable: `specs/config-schema.json` updated and the rule reads its level from config
-- [ ] `pnpm nx run-many -t lint test typecheck build` passes
+- [ ] `bunx nx run-many -t lint test typecheck build` passes

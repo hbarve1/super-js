@@ -17,6 +17,10 @@ ADRs document the *why* behind key design choices — the constraints considered
 | [ADR-005](ADR-005-match-over-switch.md) | `match` expression over `switch` for sum types | Accepted |
 | [ADR-006](ADR-006-null-safety-model.md) | Null safety model: non-nullable by default, no `!` | Accepted |
 | [ADR-007](ADR-007-two-backend-strategy.md) | Two active backends: Babel prototype and plain-JS compiler | Accepted |
+| [ADR-008](ADR-008-nx-monorepo.md) | NX monorepo layout and tier model | Accepted (package manager amended by ADR-012) |
+| [ADR-009](ADR-009-doc-gen.md) | Documentation generation | Accepted |
+| [ADR-011](ADR-011-docs-single-source.md) | Docs single source: repo-root `docs/` + website | Accepted |
+| [ADR-012](ADR-012-bun-toolchain.md) | bun as package manager and tooling runtime; Node stays the published runtime | Accepted |
 
 ### ADR Quick Reference
 

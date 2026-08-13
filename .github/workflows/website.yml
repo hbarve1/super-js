@@ -27,25 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 11
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: superjs/pnpm-lock.yaml
+          bun-version: 1.3.14
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Typecheck, lint & build the website
-        # Preload (after checkout, so the script exists) lifts Node's listener cap
-        # and filters MaxListenersExceededWarning from nx's parallel task spawns.
-        env:
-          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
-        run: pnpm nx run-many -t typecheck lint build --projects=@superjs/website
+        run: bun run nx run-many -t typecheck lint build --projects=@superjs/website
 
       # Quality gate: Lighthouse runs `next start` against the built app and
       # asserts budgets. Accessibility & SEO are blocking (≥0.95); performance &

@@ -14,7 +14,7 @@ SuperJS compiler throughput on real hardware. Numbers below are **measured**, no
 Reproduce locally:
 
 ```bash
-cd superjs && pnpm nx build compiler && pnpm nx build lsp
+cd superjs && bunx nx build compiler && bunx nx build lsp
 cd .. && node scripts/gen-bench-corpus.mjs
 node scripts/bench.mjs              # compile metrics → benchmarks/results.json
 node --expose-gc scripts/bench-lsp.mjs   # LSP metrics (merge into results.json)

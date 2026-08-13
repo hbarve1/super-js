@@ -17,7 +17,7 @@ latency + idle-heap benchmarks in [Performance Benchmarks](./index.md).
 Reproduce:
 
 ```bash
-cd superjs && pnpm nx build lsp
+cd superjs && bunx nx build lsp
 cd .. && node --expose-gc scripts/audit-lsp-memory.mjs
 # optional heap snapshot for Chrome DevTools:
 node --expose-gc scripts/audit-lsp-memory.mjs --snapshot
