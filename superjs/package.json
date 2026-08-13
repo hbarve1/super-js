@@ -12,7 +12,7 @@
   "scripts": {},
   "private": true,
   "overrides": {
-    "esbuild": ">=0.28.1",
+    "esbuild": "$esbuild",
     "form-data": ">=4.0.6",
     "tmp": ">=0.2.7",
     "undici": ">=6.27.0",
