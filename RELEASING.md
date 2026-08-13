@@ -69,7 +69,7 @@ without explicit approval and npm token rotation (see release checklist).
 1. Beta teams on `rc.N` (see `docs/beta/index.md`).
 2. Bug bash complete — no open `severity=blocker` (see `docs/beta/bug-bash.md`).
 3. External security review (S7) — critical/high fixed (`docs/security-review.md` when available).
-4. `pnpm audit --audit-level=high` clean; CodeQL green on `main`.
+4. `bun audit --audit-level=high` clean; CodeQL green on `main`.
 5. Smoke on 3 OSes + Node 20/22/24: `superjs build`, `superjs check`, LSP hover fixture.
 6. Playground Worker deployed + smoke (`docs/ops/playground-deploy.md`) if using CF path.
 7. Automated preflight: `node scripts/rc-preflight.mjs` (see `--skip-slow` for quick pass).

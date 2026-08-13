@@ -8,23 +8,22 @@ on:
 permissions:
   contents: read
 
+env:
+  BUN_VERSION: 1.3.14
+
 jobs:
   error-pages:
-    name: Error-code reference pages (Node ${{ matrix.node-version }})
+    name: Error-code reference pages
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Check error-code pages
-        run: node scripts/check-error-pages.mjs
+        run: bun scripts/check-error-pages.mjs
 
   docs-build:
     name: Docs site build
@@ -32,85 +31,160 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 11
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: pnpm
-          cache-dependency-path: superjs/pnpm-lock.yaml
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
-        run: cd superjs && pnpm install --frozen-lockfile
+        run: cd superjs && bun install --frozen-lockfile
 
       - name: Validate grammar + parser fixtures
-        run: node scripts/validate-grammar.mjs
+        run: bun scripts/validate-grammar.mjs
 
       - name: Sync error-code pages
-        run: node scripts/sync-error-pages.mjs
+        run: bun scripts/sync-error-pages.mjs
 
       - name: Build compiler (docgen check)
-        run: cd superjs && pnpm nx build compiler
+        run: cd superjs && bunx nx build compiler
 
       - name: Check compat matrix
-        run: node scripts/check-compat-matrix.mjs
+        run: bun scripts/check-compat-matrix.mjs
 
       - name: Check benchmark results
-        run: node scripts/check-bench-results.mjs
+        run: bun scripts/check-bench-results.mjs
 
       - name: Check LSP memory audit
-        run: node scripts/check-lsp-memory-audit.mjs
+        run: bun scripts/check-lsp-memory-audit.mjs
 
       - name: Check API docs
-        run: node scripts/check-api-docs.mjs
+        run: bun scripts/check-api-docs.mjs
 
       - name: Check docs internal links
-        run: node scripts/check-docs-links.mjs
+        run: bun scripts/check-docs-links.mjs
 
       - name: Check playground worker bundle
-        run: node scripts/check-playground-worker.mjs
+        run: bun scripts/check-playground-worker.mjs
 
       - name: Assemble language spec
-        run: node scripts/assemble-language-spec.mjs
+        run: bun scripts/assemble-language-spec.mjs
 
       - name: Check language spec is committed
         run: git diff --exit-code specs/language.md
 
       - name: Build website (includes docs routes)
-        run: cd superjs && pnpm nx build website
+        run: cd superjs && bunx nx build website
 
   superjs:
-    name: SuperJS (Node ${{ matrix.node-version }})
+    name: SuperJS (bun)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [22, 24]
     defaults:
       run:
         working-directory: superjs
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 11
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint, test, typecheck, and build
+        run: bun run nx run-many -t lint test typecheck build
+
+      # Runs last on purpose: this gate tracks upstream advisory publication, so
+      # it can go red without anything in the repo changing. Ordering it after
+      # the build keeps a red audit from masking real build/test signal.
+      - name: Dependency audit (no high/critical)
+        run: bun audit --audit-level=high
+
+  # The published packages must keep running on every Node version they claim
+  # to support (publish manifests declare engines.node >=18, and the CLI bundle
+  # is emitted with --target=node18). Bun is the build tool only — it never
+  # becomes a runtime requirement for consumers. Build the publishable bundles
+  # once with bun, then execute them under each supported Node.
+  bundles:
+    name: Publish bundles
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: superjs
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build compiler + CLI bundles
+        run: |
+          bun scripts/build-compiler-publish.mjs
+          bun scripts/build-cli-publish.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publish-bundles
+          path: |
+            superjs/apps/cli/publish/
+            superjs/libs/compiler/publish/
+          retention-days: 1
+
+  node-compat:
+    name: Node compat (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    needs: bundles
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
-          cache-dependency-path: superjs/pnpm-lock.yaml
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: publish-bundles
+          path: bundles
 
-      - name: Dependency audit (no high/critical)
-        run: pnpm audit --audit-level=high
+      - name: CLI runs under Node ${{ matrix.node-version }}
+        run: node bundles/apps/cli/publish/main.js --version
 
-      - name: Lint, test, typecheck, and build
-        env:
-          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
-        run: pnpm nx run-many -t lint test typecheck build
+      - name: CLI compiles a program and the output executes
+        run: |
+          set -euo pipefail
+          mkdir -p compat && cd compat
+          cat > answer.sjs <<'SJS'
+          type Result<T, E> = Ok(T) | Err(E)
+
+          function unwrapOr(r: Result<number, string>, fallback: number): number {
+            return match r {
+              Ok(v) => v,
+              Err(_) => fallback,
+            }
+          }
+
+          const answer: number = unwrapOr(Ok(42), 0)
+          console.log(answer)
+          SJS
+          node ../bundles/apps/cli/publish/main.js build answer.sjs --out-dir out
+          OUT="$(node out/answer.js)"
+          echo "emitted program printed: $OUT"
+          test "$OUT" = "42"
+
+      - name: Compiler API is importable under Node ${{ matrix.node-version }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e "
+            const m = await import('./bundles/libs/compiler/publish/index.js')
+            if (typeof m.transform !== 'function') {
+              throw new Error('compiler bundle does not export transform()')
+            }
+            console.log('compiler bundle OK')
+          "

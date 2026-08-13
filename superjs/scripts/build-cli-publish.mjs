@@ -6,7 +6,7 @@
  * @superjs/* dependency, so the published CLI has zero runtime dependencies.
  *
  * Usage (from superjs/):
- *   node scripts/build-cli-publish.mjs
+ *   bun scripts/build-cli-publish.mjs
  *   cd apps/cli/publish && npm publish --access public
  */
 import { execSync } from 'node:child_process'
@@ -17,7 +17,7 @@ const root = resolve(import.meta.dirname, '..')
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' })
 
 // 1. Build the CLI + its dependency graph.
-run('pnpm nx build @superjs/cli')
+run('bunx nx build @superjs/cli')
 
 // 2. Bundle the binary to a single self-contained ESM file (shebang preserved).
 //    The `translate` command pulls in the TypeScript compiler — a CommonJS module

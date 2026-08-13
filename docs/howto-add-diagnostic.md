@@ -152,7 +152,7 @@ Run it from the workspace:
 
 ```bash
 cd superjs
-pnpm nx test @superjs/checker
+bunx nx test @superjs/checker
 ```
 
 For an end-to-end assertion (source → compiled), add a fixture under
@@ -170,6 +170,6 @@ Before opening a PR for a new diagnostic code:
 - [ ] `superjs/libs/diagnostics/src/lib/registry.ts` — `TABLE` entry added
 - [ ] `superjs/libs/checker/src/lib/checker.ts` — `this.bag.report(...)` call added
 - [ ] `superjs/libs/checker/src/lib/checker.spec.ts` — test covering violation and valid form
-- [ ] `pnpm nx run-many -t test lint typecheck` passes with zero failures
+- [ ] `bunx nx run-many -t test lint typecheck` passes with zero failures
 - [ ] PR description references the owning stage and the issue/ticket motivating the diagnostic
 - [ ] No existing code number reused (double-check the Retired Codes section too)

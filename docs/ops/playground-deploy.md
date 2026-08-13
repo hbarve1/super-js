@@ -48,10 +48,10 @@ Optional if deploy fails with account errors:
 
 ```bash
 cd superjs
-pnpm nx build compiler
+bunx nx build compiler
 cd apps/playground-worker
-pnpm exec wrangler login    # interactive, once
-pnpm exec wrangler deploy
+bunx wrangler login    # interactive, once
+bunx wrangler deploy
 ```
 
 ## 4. Smoke test

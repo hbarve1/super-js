@@ -17,7 +17,7 @@ const root = resolve(import.meta.dirname, '..')
 const run = (cmd) => execSync(cmd, { cwd: root, stdio: 'inherit' })
 
 // 1. Build the compiler + its dependency graph (emits dist/*.d.ts for each lib).
-run('pnpm nx build @superjs/compiler')
+run('bunx nx build @superjs/compiler')
 
 // 2. Bundle the runtime to a single self-contained ESM file.
 run(

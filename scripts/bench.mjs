@@ -3,7 +3,7 @@
  * bench.mjs — SuperJS compiler benchmark harness.
  *
  * Prerequisites:
- *   cd superjs && pnpm nx build compiler
+ *   cd superjs && bunx nx build compiler
  *
  * Run from repo root:
  *   node scripts/gen-bench-corpus.mjs
@@ -70,8 +70,8 @@ function benchExternal(filePath, tool) {
     const rel = filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
     const fromSuperjs = rel.startsWith('benchmarks/') ? `../${rel}` : rel;
     const r = spawnSync(
-      'pnpm',
-      ['exec', 'tsc', '--noEmit', '--skipLibCheck', '--ignoreConfig', fromSuperjs],
+      'bunx',
+      ['tsc', '--noEmit', '--skipLibCheck', '--ignoreConfig', fromSuperjs],
       { cwd: SUPERJS_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     if (r.status !== 0) {
@@ -81,8 +81,8 @@ function benchExternal(filePath, tool) {
     const rel = filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
     const fromSuperjs = rel.startsWith('benchmarks/') ? `../${rel}` : rel;
     const r = spawnSync(
-      'pnpm',
-      ['exec', 'esbuild', fromSuperjs, '--bundle=false', '--outfile=/dev/null'],
+      'bunx',
+      ['esbuild', fromSuperjs, '--bundle=false', '--outfile=/dev/null'],
       { cwd: SUPERJS_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     if (r.status !== 0) {

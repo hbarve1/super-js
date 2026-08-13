@@ -10,8 +10,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SUPERJS = join(ROOT, 'superjs');
 const WORKER = join(SUPERJS, 'apps/playground-worker');
 
-execSync('pnpm nx build compiler', { cwd: SUPERJS, stdio: 'inherit' });
-const out = execSync('pnpm exec wrangler deploy --dry-run', {
+execSync('bunx nx build compiler', { cwd: SUPERJS, stdio: 'inherit' });
+const out = execSync('bunx wrangler deploy --dry-run', {
   cwd: WORKER,
   encoding: 'utf8',
   env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },

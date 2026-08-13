@@ -54,7 +54,7 @@ RC cycle accepts **blocker fixes only** between `rc.N` tags (see `RELEASING.md`)
 ## Patch release checklist
 
 1. Reproduce on `main` with minimal fixture.
-2. Fix + test (`pnpm nx run-many -t test` in `superjs/`).
+2. Fix + test (`bunx nx run-many -t test` in `superjs/`).
 3. Changeset or changelog entry.
 4. Verify bench targets: `node scripts/check-bench-results.mjs`.
 5. Tag `vX.Y.Z` → `release-npm.yml` publishes with provenance.

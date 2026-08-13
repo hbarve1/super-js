@@ -6,7 +6,7 @@
  * releases memory, and checks LRU eviction keeps multi-file sessions bounded.
  *
  * Prerequisites:
- *   cd superjs && pnpm nx build lsp
+ *   cd superjs && bunx nx build lsp
  *
  * Run from repo root (use --expose-gc for stable readings):
  *   node --expose-gc scripts/audit-lsp-memory.mjs

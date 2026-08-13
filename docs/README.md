@@ -36,10 +36,10 @@ Each library and app lives under `superjs/libs/<name>/` and `superjs/apps/<name>
 
 ```bash
 cd superjs
-pnpm install
-pnpm nx run-many -t test            # every project
-pnpm nx test @superjs/checker       # one project
-pnpm nx affected -t test            # only what changed
+bun install
+bunx nx run-many -t test            # every project
+bunx nx test @superjs/checker       # one project
+bunx nx affected -t test            # only what changed
 ```
 
 ### Check what diagnostic codes are available

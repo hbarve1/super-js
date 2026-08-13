@@ -2,7 +2,7 @@
 
 > **Status:** Pending external reviewer engagement. This document tracks scope,
 > findings, and remediation for the v1.0 RC gate. Internal review complete:
-> CodeQL on `main`, `pnpm audit --audit-level=high` clean, threat model v1.0 pass
+> CodeQL on `main`, `bun audit --audit-level=high` clean, threat model v1.0 pass
 > ([`docs/security/threat-model.md`](./security/threat-model.md)).
 
 **Target:** complete before `1.0.0-rc.1` tag.  

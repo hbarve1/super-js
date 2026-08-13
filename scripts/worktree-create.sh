@@ -36,11 +36,11 @@ fi
 
 echo ""
 echo "Installing monorepo deps (superjs/)…"
-if [[ -f "$WORKTREE/superjs/pnpm-lock.yaml" ]]; then
+if [[ -f "$WORKTREE/superjs/bun.lock" ]]; then
   (
     cd "$WORKTREE/superjs"
-    if ! pnpm install --frozen-lockfile 2>/dev/null; then
-      pnpm install
+    if ! bun install --frozen-lockfile 2>/dev/null; then
+      bun install
     fi
   )
 fi
