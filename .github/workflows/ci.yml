@@ -91,6 +91,12 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Lint, test, typecheck, and build
+        # nx forks a Node process per task, each attaching exit listeners to the
+        # shared process and tripping Node's 10-listener heuristic. Preload the
+        # shim to keep that warning out of the logs; bun honours NODE_OPTIONS and
+        # passes it down to the forked children.
+        env:
+          NODE_OPTIONS: --require ${{ github.workspace }}/superjs/scripts/ci-node-setup.cjs
         run: bun run nx run-many -t lint test typecheck build
 
       # Runs last on purpose: this gate tracks upstream advisory publication, so
