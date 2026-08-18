@@ -34,7 +34,7 @@
     "@nx/js": "23.0.2",
     "@nx/vite": "23.0.2",
     "@nx/vitest": "23.0.2",
-    "@swc-node/register": "1.11.1",
+    "@swc-node/register": "1.12.1",
     "@swc/core": "1.15.41",
     "@swc/helpers": "0.5.18",
     "@types/node": "20.19.9",
