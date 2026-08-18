@@ -38,7 +38,7 @@
     "@swc/core": "1.15.41",
     "@swc/helpers": "0.5.18",
     "@types/node": "20.19.9",
-    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^7.16.0",
     "@vitest/coverage-v8": "~4.1.0",
     "esbuild": "^0.28.1",
