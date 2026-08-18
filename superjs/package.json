@@ -36,7 +36,7 @@
     "@nx/vitest": "23.0.2",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.41",
-    "@swc/helpers": "0.5.18",
+    "@swc/helpers": "0.5.23",
     "@types/node": "20.19.9",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
