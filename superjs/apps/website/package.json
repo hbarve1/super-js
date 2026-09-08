@@ -40,6 +40,6 @@
     "eslint": "^9",
     "react-doctor": "^0.5.5",
     "tailwindcss": "^4",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   }
 }
